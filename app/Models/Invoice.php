@@ -9,10 +9,7 @@ class Invoice extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'invoice_number', 'client_id', 'invoice_date', 'subtotal', 'tax_amount',
-        'total', 'received_amount', 'balance', 'amount_in_words'
-    ];
+    protected $guarded = ['id'];
 
     public function client()
     {
@@ -22,5 +19,9 @@ class Invoice extends Model
     public function items()
     {
         return $this->hasMany(InvoiceItem::class);
+    }
+
+    public function business(){
+        return $this->belongsTo(Business::class, 'business_id');
     }
 }

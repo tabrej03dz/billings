@@ -48,6 +48,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('edit/{user}', 'edit')->name('edit');
         Route::post('update/{user}', 'update')->name('update');
         Route::post('delete/{user}', 'delete')->name('delete');
+        Route::get('permissions/{user}', 'permissions')->name('permissions');
+        Route::get('permission/remove/{user}/{permission}', 'permissionRemove')->name('permission.remove');
+    });
+
+    Route::prefix('permissions')->name('permissions.')->controller(\App\Http\Controllers\PermissionController::class)->group(function(){
+        Route::get('/', 'index')->name('index');
+        Route::post('assign', 'assign')->name('assign');
+//        Route::get('create', 'create')->name('create');
+//        Route::post('store', 'store')->name('store');
+//        Route::get('edit/{user}', 'edit')->name('edit');
+//        Route::post('update/{user}', 'update')->name('update');
+//        Route::post('delete/{user}', 'delete')->name('delete');
     });
 });
 

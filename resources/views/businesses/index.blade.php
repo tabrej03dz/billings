@@ -36,11 +36,15 @@
                         <td class="px-6 py-4">{{ $business->gstin ?? 'N/A' }}</td>
                         <td class="px-6 py-4">{{ $business->address ?? 'N/A' }}</td>
                         <td class="px-6 py-4">
+                            @can('edit business')
                             <a href="{{ route('businesses.edit', $business->id) }}" class="text-yellow-600 hover:underline mr-2">Edit</a>
+                            @endcan
+                            @can('delete business')
                             <form action="{{ route('businesses.delete', $business->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure?');">
                                 @csrf
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            @endcan
                         </td>
                     </tr>
                 @empty

@@ -20,7 +20,6 @@
             <form action="{{ $isEdit ? route('businesses.update', $business->id) : route('businesses.store') }}"
                   method="POST" enctype="multipart/form-data" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 @csrf
-                @if($isEdit) @method('PUT') @endif
 
                 <!-- Business Name -->
                 <div class="col-span-1">

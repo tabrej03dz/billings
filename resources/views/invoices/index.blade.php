@@ -2,9 +2,11 @@
     <div class="flex flex-col gap-4">
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Invoices</h1>
+            @can('create invoice')
             <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-blue-600 rounded-lg hover:bg-blue-700">
                 + New Invoice
             </a>
+            @endcan
         </div>
 
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
@@ -27,8 +29,10 @@
                         <td class="px-6 py-4">
                             <a href="{{ route('invoices.show', $invoice->id) }}"
                                class="text-blue-600 hover:underline mr-2">View</a>
+                            @can('download invoice')
                             <a href="{{ route('invoices.download', $invoice->id) }}"
                                class="text-green-600 hover:underline">Download</a>
+                            @endcan
                         </td>
                     </tr>
                 @empty

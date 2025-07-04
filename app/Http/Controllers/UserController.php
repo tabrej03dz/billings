@@ -12,7 +12,10 @@ class UserController extends Controller
     // List all users
     public function index()
     {
-        $users = User::with('business')->latest()->get();
+        $users = User::with('business')
+            ->where('name', '!=', 'Super Admin')
+            ->latest()
+            ->get();
         return view('users.index', compact('users'));
     }
 
@@ -96,5 +99,21 @@ class UserController extends Controller
     {
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+    }
+
+    public function permissions(User $user){
+        $permissions = $user->getAllPermissions();
+        return view('users.permissions', compact('permissions', 'user'));
+    }
+
+    public function permissionRemove(User $user, $permission)
+    {
+        // Ensure the user has the permission before trying to revoke it
+        if ($user->hasPermissionTo($permission)) {
+            $user->revokePermissionTo($permission);
+            return back()->with('success', "Permission '{$permission}' removed from user '{$user->name}'.");
+        }
+
+        return back()->with('error', "User '{$user->name}' does not have permission '{$permission}'.");
     }
 }

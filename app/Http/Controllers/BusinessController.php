@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Business;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class BusinessController extends Controller
 {
@@ -33,6 +34,18 @@ class BusinessController extends Controller
             'logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
+        // Generate unique slug
+        $baseSlug = Str::slug($validated['name']);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (Business::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter++;
+        }
+
+        $validated['slug'] = $slug;
+
+        // Handle logo upload
         if ($request->hasFile('logo')) {
             $validated['logo'] = $request->file('logo')->store('logos', 'public');
         }
@@ -43,10 +56,6 @@ class BusinessController extends Controller
     }
 
     // Show single business (optional, if needed)
-    public function show(Business $business)
-    {
-        return view('businesses.show', compact('business'));
-    }
 
     // Show edit form
     public function edit(Business $business)
@@ -66,11 +75,26 @@ class BusinessController extends Controller
             'logo'    => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
+        // If name changed or slug is missing, regenerate slug
+        if ($business->name !== $validated['name'] || empty($business->slug)) {
+            $baseSlug = Str::slug($validated['name']);
+            $slug = $baseSlug;
+            $counter = 1;
+
+            while (Business::where('slug', $slug)->where('id', '!=', $business->id)->exists()) {
+                $slug = $baseSlug . '-' . $counter++;
+            }
+
+            $validated['slug'] = $slug;
+        }
+
+        // Handle logo upload
         if ($request->hasFile('logo')) {
-            // Delete old logo if exists
+            // Delete old logo if it exists
             if ($business->logo && Storage::disk('public')->exists($business->logo)) {
                 Storage::disk('public')->delete($business->logo);
             }
+
             $validated['logo'] = $request->file('logo')->store('logos', 'public');
         }
 

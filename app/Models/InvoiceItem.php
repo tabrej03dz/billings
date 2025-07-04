@@ -9,9 +9,7 @@ class InvoiceItem extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'invoice_id', 'description', 'sac_code', 'quantity', 'rate', 'tax_percent', 'amount'
-    ];
+    protected $guarded = ['id'];
 
     public function invoice()
     {

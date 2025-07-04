@@ -17,34 +17,46 @@
                 </flux:navlist.group>
             </flux:navlist>
 
-            @role('super admin')
+            @can('show businesses')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('businesses.index')" :current="request()->routeIs('businesses.index')" wire:navigate>{{ __('Businesses') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
-            @endrole
+            @endcan
 
-            @role('super admin|admin')
+            @can('show users')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="user" :href="route('users.index')" :current="request()->routeIs('users.index')" wire:navigate>{{ __('Users') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
-            @endrole
+            @endcan
 
+            @can('show clients')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('clients.index')" :current="request()->routeIs('clients.index')" wire:navigate>{{ __('Clients') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+            @endcan
 
+            @can('show invoices')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('invoices.index')" :current="request()->routeIs('invoices.index')" wire:navigate>{{ __('Invoices') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+            @endcan
 
+
+            @can('show permissions')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('permissions.index')" :current="request()->routeIs('permissions.index')" wire:navigate>{{ __('Permissions') }}</flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+            @endcan
 
             <flux:spacer />
 

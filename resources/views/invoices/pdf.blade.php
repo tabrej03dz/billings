@@ -38,11 +38,11 @@
 <table class="header">
     <tr>
         <td style="width: 70%;">
-            <img src="{{ public_path('logo.png') }}" class="logo" alt="Logo"><br>
-            <span class="title">Real Victory Groups</span><br>
-            73 - Basement, Ekta Enclave Society, Lakhanpur, Kanpur (208024), Kanpur Nagar, Uttar Pradesh - 208024<br>
-            Mobile: 7753800444 | GSTIN: 09CYMPP9152J2ZK<br>
-            Email: info@realvictorygroups.com
+            <img src="{{ asset('storage/'. $invoice->business->logo) }}" class="logo" alt="Logo"><br>
+            <span class="title">{{$invoice->business->name}}</span><br>
+            {{$invoice->business->address}}<br>
+            Mobile: {{$invoice->business->phone}} | GSTIN: {{$invoice->business->gstin}}<br>
+            Email: {{$invoice->business->email}}
         </td>
         <td style="text-align: right;">
             <h4>TAX INVOICE <small>(ORIGINAL FOR RECIPIENT)</small></h4>

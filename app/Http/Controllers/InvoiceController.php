@@ -19,16 +19,13 @@ class InvoiceController extends Controller
 
     public function create()
     {
-        $clients = Client::where('business_id', auth()->user()->business_id);
+        $clients = Client::where('business_id', auth()->user()->business_id)->get();
         return view('invoices.create', compact('clients'));
     }
 
     public function store(Request $request)
     {
-        $invoice = Invoice::create($request->only([
-            'invoice_number', 'client_id', 'invoice_date', 'subtotal', 'tax_amount',
-            'total', 'received_amount', 'balance', 'amount_in_words'
-        ]));
+        $invoice = Invoice::create($request->all() + ['business_id' => auth()->user()->business_id]);
 
         foreach ($request->items as $item) {
             $invoice->items()->create($item);
@@ -48,6 +45,7 @@ class InvoiceController extends Controller
     public function download(Invoice $invoice)
     {
         $invoice->load('client', 'items');
+
         $pdf = PDF::loadView('invoices.pdf', compact('invoice'));
         return $pdf->download("Invoice_{$invoice->invoice_number}.pdf");
     }
