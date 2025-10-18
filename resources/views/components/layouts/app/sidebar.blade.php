@@ -3,7 +3,7 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
+    <body class="min-h-screen bg-white dark:bg-zinc-800 ">
         <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
@@ -17,7 +17,17 @@
                 </flux:navlist.group>
             </flux:navlist>
 
-            @can('show businesses')
+            <form action="{{ route('business.switch') }}" method="POST">
+                @csrf
+                <select name="business_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                    @foreach(auth()->user()->businesses as $b)
+                        <option value="{{ $b->id }}" @selected(session('active_business_id')==$b->id)>{{ $b->name }}</option>
+                    @endforeach
+                </select>
+            </form>
+
+
+        @can('show businesses')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('businesses.index')" :current="request()->routeIs('businesses.index')" wire:navigate>{{ __('Businesses') }}</flux:navlist.item>
@@ -41,6 +51,23 @@
             </flux:navlist>
             @endcan
 
+{{--            @can('show categories')--}}
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('categories.index')" :current="request()->routeIs('categories.index')" wire:navigate>{{ __('Categories') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+{{--            @endcan--}}
+
+
+            {{--            @can('show items')--}}
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('items.index')" :current="request()->routeIs('items.index')" wire:navigate>{{ __('Items') }}</flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+            {{--            @endcan--}}
+
             @can('show invoices')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
@@ -48,6 +75,14 @@
                 </flux:navlist.group>
             </flux:navlist>
             @endcan
+
+{{--            @can('show permissions')--}}
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('additional-charges.index')" :current="request()->routeIs('additional-charges.index')" wire:navigate>{{ __('Additional Charge') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+{{--            @endcan--}}
 
 
             @can('show permissions')
@@ -57,6 +92,8 @@
                 </flux:navlist.group>
             </flux:navlist>
             @endcan
+
+
 
             <flux:spacer />
 

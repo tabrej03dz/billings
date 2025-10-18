@@ -37,7 +37,6 @@ class DatabaseSeeder extends Seeder
             'name' => 'Super Admin',
             'email' => 'super@admin.com',
             'password' => Hash::make('password'),
-            'business_id' => $business->id,
         ]);
 
         $superAdminRole = Role::create(['name' => 'super admin']);

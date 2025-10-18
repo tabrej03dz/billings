@@ -60,4 +60,11 @@ class User extends Authenticatable
     public function business(){
         return $this->belongsTo(Business::class);
     }
+
+    public function businesses()
+    {
+        return $this->belongsToMany(\App\Models\Business::class)
+            ->withPivot('role')
+            ->withTimestamps();
+    }
 }

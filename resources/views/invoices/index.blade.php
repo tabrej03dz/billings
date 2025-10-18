@@ -1,47 +1,56 @@
 <x-layouts.app :title="__('Invoices')">
-    <div class="flex flex-col gap-4">
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Invoices</h1>
-            @can('create invoice')
-            <a href="{{ route('invoices.create') }}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-green-600 bg-blue-600 rounded-lg hover:bg-blue-700">
-                + New Invoice
-            </a>
-            @endcan
-        </div>
-
-        <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
-            <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
-                <tr>
-                    <th scope="col" class="px-6 py-3">Invoice No</th>
-                    <th scope="col" class="px-6 py-3">Client</th>
-                    <th scope="col" class="px-6 py-3">Date</th>
-                    <th scope="col" class="px-6 py-3">Total</th>
-                </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
-                @forelse ($invoices as $invoice)
-                    <tr>
-                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ $invoice->invoice_number }}</td>
-                        <td class="px-6 py-4">{{ $invoice->client->name }}</td>
-                        <td class="px-6 py-4">{{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d M Y') }}</td>
-                        <td class="px-6 py-4">₹ {{ number_format($invoice->total, 2) }}</td>
-                        <td class="px-6 py-4">
-                            <a href="{{ route('invoices.show', $invoice->id) }}"
-                               class="text-blue-600 hover:underline mr-2">View</a>
-                            @can('download invoice')
-                            <a href="{{ route('invoices.download', $invoice->id) }}"
-                               class="text-green-600 hover:underline">Download</a>
-                            @endcan
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="4" class="px-6 py-4 text-center text-gray-500">No invoices found.</td>
-                    </tr>
-                @endforelse
-                </tbody>
-            </table>
-        </div>
+    <div class="flex items-center justify-between mb-3">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Invoices</h1>
+        <a href="{{ route('invoices.create') }}" class="px-3 py-2 rounded bg-blue-600 text-white">+ New</a>
     </div>
+
+    @if(session('success'))
+        <div class="p-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="overflow-auto border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+        <table class="min-w-full text-sm border-separate border-spacing-0">
+            <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
+            <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">
+                <th>#</th>
+                <th>Date</th>
+                <th>Client</th>
+                <th>Total</th>
+                <th>Received</th>
+                <th>Balance</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">
+            @forelse($invoices as $inv)
+                <tr class="hover:bg-gray-50 dark:hover:bg-neutral-800/60">
+                    <td class="px-4 py-2">{{ $inv->invoice_number }}</td>
+                    <td class="px-4 py-2">{{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}</td>
+                    <td class="px-4 py-2">{{ $inv->client->name }}</td>
+                    <td class="px-4 py-2">₹ {{ number_format($inv->total,2) }}</td>
+                    <td class="px-4 py-2">₹ {{ number_format($inv->received_amount,2) }}</td>
+                    <td class="px-4 py-2">₹ {{ number_format($inv->balance,2) }}</td>
+                    <td class="px-4 py-2 space-x-3">
+                        <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
+                        <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
+                        <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
+                            @csrf @method('DELETE')
+                            <button class="text-red-600 hover:underline">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="7" class="px-4 py-3 text-center text-gray-500 dark:text-neutral-400">
+                        No invoices.
+                    </td>
+                </tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4">{{ $invoices->links() }}</div>
 </x-layouts.app>
