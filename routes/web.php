@@ -47,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\InvoiceController::class, 'download'])
             ->name('invoices.download');
+        Route::get('invoices/{invoice}/view', [\App\Http\Controllers\InvoiceController::class, 'show'])
+            ->name('invoices.show'); // View page
 
         Route::post('/invoices/preview-number', [InvoiceController::class, 'previewNumber'])
             ->name('invoices.preview-number');
@@ -54,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::resource('additional-charges', \App\Http\Controllers\AdditionalChargeController::class)
             ->only(['index','create','store','edit','update','destroy']);
-        
+
 
     Route::prefix('clients')->name('clients.')->controller(\App\Http\Controllers\ClientController::class)->group(function(){
         Route::get('/', 'index')->name('index');

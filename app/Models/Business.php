@@ -10,7 +10,7 @@ class Business extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'logo', 'email', 'mobile', 'gstin', 'address', 'signature'
+        'name', 'slug', 'logo', 'email', 'mobile', 'gstin', 'address', 'signature', 'terms'
     ];
 
     public function users()

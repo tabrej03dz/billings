@@ -17,10 +17,11 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('logo')->nullable();
             $table->string('email')->unique();
-            $table->string('mobile')->unique();
+            $table->string('mobile')->nullable()->unique();
             $table->string('gstin')->nullable();
             $table->string('address')->nullable();
             $table->string('signature')->nullable();
+            $table->text('terms')->nullable();
             $table->timestamps();
         });
     }

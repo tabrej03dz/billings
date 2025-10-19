@@ -161,10 +161,14 @@
             {{-- Notes + Totals --}}
             <div class="grid lg:grid-cols-2 gap-4">
                 <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+{{--                    <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and Conditions</label>--}}
+{{--                    <textarea name="terms" rows="4"--}}
+{{--                              class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700--}}
+{{--                           bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100"></textarea>--}}
                     <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and Conditions</label>
                     <textarea name="terms" rows="4"
                               class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                           bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100"></textarea>
+                 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100">{{ old('terms', $defaultTerms) }}</textarea>
 
                     <label class="mt-3 block text-sm font-medium text-gray-700 dark:text-neutral-300">Notes</label>
                     <textarea name="notes" rows="3"

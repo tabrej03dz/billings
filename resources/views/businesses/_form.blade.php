@@ -30,9 +30,9 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium mb-1">Mobile <span class="text-red-600">*</span></label>
+            <label class="block text-sm font-medium mb-1">Mobile </label>
             <input type="text" name="mobile" value="{{ old('mobile', $business->mobile ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2" required>
+                   class="mt-1 w-full border rounded px-3 py-2" >
             @error('mobile') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -66,9 +66,7 @@
                 </div>
             @endif
         </div>
-    </div>
 
-    <div class="grid md:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium mb-1">Signature</label>
             <input type="file" name="signature" accept="image/*" class="mt-1 w-full border rounded px-3 py-2">
@@ -82,6 +80,15 @@
                     </label>
                 </div>
             @endif
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-1">Terms & Conditions</label>
+            <textarea name="terms" rows="3" class="mt-1 w-full border rounded px-3 py-2"
+                      placeholder="Optional">{{ old('terms', $business->terms ?? '') }}</textarea>
+            @error('terms') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
 

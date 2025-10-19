@@ -33,6 +33,7 @@
                     <td class="px-4 py-2">₹ {{ number_format($inv->received_amount,2) }}</td>
                     <td class="px-4 py-2">₹ {{ number_format($inv->balance,2) }}</td>
                     <td class="px-4 py-2 space-x-3">
+                        <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>
                         <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
                         <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
                         <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
