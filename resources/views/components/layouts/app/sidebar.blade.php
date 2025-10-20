@@ -51,13 +51,13 @@
             </flux:navlist>
             @endcan
 
-{{--            @can('show categories')--}}
+            @can('show categories')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">
                         <flux:navlist.item icon="home" :href="route('categories.index')" :current="request()->routeIs('categories.index')" wire:navigate>{{ __('Categories') }}</flux:navlist.item>
                     </flux:navlist.group>
                 </flux:navlist>
-{{--            @endcan--}}
+            @endcan
 
 
             {{--            @can('show items')--}}

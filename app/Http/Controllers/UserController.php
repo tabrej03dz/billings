@@ -17,7 +17,7 @@ class UserController extends Controller
         $user = $request->user();
 
         // SUPER ADMIN → optional filter
-        if ($user->hasRole('super-admin') || $user->can('view all users')) {
+        if ($user->hasRole('super admin') || $user->can('view all users')) {
             $businessId = $request->query('business_id'); // may be null for "All"
             $query = \App\Models\User::query();
 

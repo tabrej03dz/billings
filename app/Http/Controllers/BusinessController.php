@@ -121,7 +121,7 @@ class BusinessController extends Controller
     {
         // Show only businesses the user belongs to,
         // unless they have a permission to view all.
-        if ($request->user()->can('view all businesses')) {
+        if ($request->user()->hasRole('super admin') ||$request->user()->can('view all businesses')) {
             $businesses = Business::latest()->paginate(15);
         } else {
             $businesses = $request->user()

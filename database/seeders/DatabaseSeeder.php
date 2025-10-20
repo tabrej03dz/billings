@@ -62,6 +62,13 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'download invoice']);
         Permission::create(['name' => 'show permissions']);
         Permission::create(['name' => 'assign permissions']);
+        Permission::create(['name' => 'view all businesses']);
+        Permission::create(['name' => 'view all users']);
+        Permission::create(['name' => 'show categories']);
+        Permission::create(['name' => 'create category']);
+        Permission::create(['name' => 'edit category']);
+        Permission::create(['name' => 'delete category']);
+
 
         $permissions = Permission::all();
         $superAdminRole->givePermissionTo($permissions);

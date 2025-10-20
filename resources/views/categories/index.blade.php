@@ -7,10 +7,12 @@
         {{-- Header --}}
         <div class="flex items-center justify-between mb-4">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Categories</h1>
+            @can('create category')
             <button @click="openForm()"
                     class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow">
                 + New Category
             </button>
+            @endcan
         </div>
 
         {{-- Inline Form --}}
@@ -68,8 +70,12 @@
                                   :class="category.is_active ? 'text-green-600' : 'text-red-600'"></span>
                         </td>
                         <td class="px-6 py-3 flex gap-3">
+                            @can('edit category')
                             <button @click="editCategory(category)" class="text-yellow-600 hover:underline">Edit</button>
+                            @endcan
+                            @can('delete category')
                             <button @click="deleteCategory(category.id)" class="text-red-600 hover:underline">Delete</button>
+                                @endcan
                         </td>
                     </tr>
                 </template>
