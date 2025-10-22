@@ -70,6 +70,7 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'delete category']);
 
 
+
         $permissions = Permission::all();
         $superAdminRole->givePermissionTo($permissions);
 
