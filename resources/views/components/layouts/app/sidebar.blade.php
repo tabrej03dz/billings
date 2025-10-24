@@ -76,13 +76,13 @@
             </flux:navlist>
             @endcan
 
-{{--            @can('show permissions')--}}
+            @can('show additional charges')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">
                         <flux:navlist.item icon="home" :href="route('additional-charges.index')" :current="request()->routeIs('additional-charges.index')" wire:navigate>{{ __('Additional Charge') }}</flux:navlist.item>
                     </flux:navlist.group>
                 </flux:navlist>
-{{--            @endcan--}}
+            @endcan
 
 
             @can('show permissions')
@@ -91,6 +91,14 @@
                     <flux:navlist.item icon="home" :href="route('permissions.index')" :current="request()->routeIs('permissions.index')" wire:navigate>{{ __('Permissions') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+            @endcan
+
+            @can('show roles')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('roles.index')" :current="request()->routeIs('roles.index')" wire:navigate>{{ __('Roles') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
             @endcan
 
 

@@ -47,4 +47,24 @@ class PermissionController extends Controller
     }
 
 
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:191|unique:permissions,name',
+            'guard_name' => 'nullable|string|in:web,api'
+        ]);
+
+        $data['guard_name'] = $data['guard_name'] ?? 'web';
+        Permission::create($data);
+
+        return back()->with('success', 'Permission created successfully.');
+    }
+
+    public function destroy(Permission $permission)
+    {
+        $permission->delete();
+        return back()->with('success', 'Permission deleted successfully.');
+    }
+
+
 }

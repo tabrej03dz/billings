@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -114,12 +115,22 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('permissions')->name('permissions.')->controller(\App\Http\Controllers\PermissionController::class)->group(function(){
         Route::get('/', 'index')->name('index');
         Route::post('assign', 'assign')->name('assign');
-//        Route::get('create', 'create')->name('create');
-//        Route::post('store', 'store')->name('store');
-//        Route::get('edit/{user}', 'edit')->name('edit');
-//        Route::post('update/{user}', 'update')->name('update');
-//        Route::post('delete/{user}', 'delete')->name('delete');
+        Route::get('create', 'create')->name('create');
+        Route::post('store', 'store')->name('store');
+        Route::get('edit/{user}', 'edit')->name('edit');
+        Route::post('update/{user}', 'update')->name('update');
+
+        // ✅ Permission destroy (POST)
+        Route::post('destroy/{permission}', 'destroy')->name('destroy');
     });
+
+    Route::prefix('roles')->name('roles.')->controller(RoleController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('assign', 'assign')->name('assign');   // user ko roles assign
+        Route::post('store', 'store')->name('store');      // role create
+        Route::post('destroy/{role}', 'destroy')->name('destroy'); // role delete
+    });
+
 });
 
 
