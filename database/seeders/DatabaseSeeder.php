@@ -68,6 +68,18 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'create category']);
         Permission::create(['name' => 'edit category']);
         Permission::create(['name' => 'delete category']);
+        Permission::create(['name' => 'show items']);
+        Permission::create(['name' => 'create item']);
+        Permission::create(['name' => 'edit item']);
+        Permission::create(['name' => 'delete item']);
+        Permission::create(['name' => 'show additional charges']);
+        Permission::create(['name' => 'create additional charge']);
+        Permission::create(['name' => 'edit additional charge']);
+        Permission::create(['name' => 'delete additional charge']);
+        Permission::create(['name' => 'show roles']);
+        Permission::create(['name' => 'create role']);
+        Permission::create(['name' => 'delete role']);
+
 
 
 

@@ -21,6 +21,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2)->default(0);
             $table->decimal('cost_price', 10, 2)->nullable();
             $table->integer('stock_qty')->default(0);
+            $table->decimal('weight', 8, 3)->nullable();
             $table->string('unit')->nullable();
             $table->decimal('tax_rate', 5, 2)->default(0);
             $table->boolean('is_active')->default(true);

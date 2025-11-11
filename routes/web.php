@@ -131,6 +131,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('destroy/{role}', 'destroy')->name('destroy'); // role delete
     });
 
+    Route::post('/roles/{role}/permissions/sync', [RoleController::class, 'syncPermissions'])
+        ->name('roles.permissions.sync');
+
 });
 
 
