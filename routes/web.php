@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -70,12 +71,13 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('items')->name('items.')->controller(\App\Http\Controllers\ItemController::class)->group(function(){
         Route::get('/', 'index')->name('index');
-        Route::get('create', 'create')->name('create');
         Route::get('edit/{item}', 'edit')->name('edit');
         Route::post('store', 'store')->name('store');
         Route::put('update/{item}', 'update')->name('update');
         Route::delete('destroy/{item}', 'destroy')->name('destroy');
     });
+
+    Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('item.create');
 
 
 
@@ -100,6 +102,11 @@ Route::middleware(['auth'])->group(function () {
 //    });
 
     Route::resource('categories', CategoryController::class);
+
+
+    Route::resource('metal-rates', MetalRateController::class);
+
+    Route::post('metal-rates/toggle/{metalRate}', [MetalRateController::class, 'toggle'])->name('metal-rates.toggle');
 
     Route::prefix('users')->name('users.')->controller(\App\Http\Controllers\UserController::class)->group(function(){
         Route::get('/', 'index')->name('index');

@@ -101,6 +101,14 @@
                 </flux:navlist>
             @endcan
 
+            @can('show metal rates')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('metal-rates.index')" :current="request()->routeIs('metal-rates.index')" wire:navigate>{{ __('Metal Rates') }}</flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+            @endcan
+
 
 
             <flux:spacer />

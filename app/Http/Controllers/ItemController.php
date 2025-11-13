@@ -58,6 +58,7 @@ class ItemController extends Controller
             'making_charge'=> ['nullable','numeric','min:0'],
             'cost_price'  => ['nullable','numeric','min:0'],
             'stock_qty'   => ['required','integer','min:0'],
+            'weight'        => ['nullable'],
             'unit'        => ['nullable','string','max:50'],
             'tax_rate'    => ['required','numeric','min:0','max:100'],
             'is_active'   => ['nullable','boolean'],

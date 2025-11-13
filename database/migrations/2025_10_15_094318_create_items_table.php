@@ -27,6 +27,12 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->decimal('making_charge', 10, 2)->nullable();
             $table->string('sac', 32)->nullable();
+            $table->enum('metal_type', ['gold', 'silver', 'other'])->default('gold');
+            $table->string('purity')->nullable(); // e.g. "22K"
+            $table->decimal('gross_weight', 12, 3)->nullable();
+            $table->decimal('metal_weight', 12, 3)->nullable();
+            $table->decimal('stone_weight', 12, 3)->nullable();
+            $table->decimal('stone_charges', 12, 2)->nullable();
             $table->timestamps();
         });
     }

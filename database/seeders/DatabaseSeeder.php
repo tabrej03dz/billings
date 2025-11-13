@@ -79,6 +79,7 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'show roles']);
         Permission::create(['name' => 'create role']);
         Permission::create(['name' => 'delete role']);
+        Permission::create(['name' => 'show metal rates']);
 
 
 
