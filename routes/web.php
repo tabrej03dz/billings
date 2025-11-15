@@ -67,6 +67,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('store', 'store')->name('store');
         Route::put('update/{client}', 'update')->name('update');
         Route::delete('destroy/{client}', 'destroy')->name('destroy');
+        Route::get('show/{client}', 'show')->name('show');
     });
 
     Route::prefix('items')->name('items.')->controller(\App\Http\Controllers\ItemController::class)->group(function(){

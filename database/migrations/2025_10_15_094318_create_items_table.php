@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('sku')->nullable();
             $table->text('description')->nullable();
-            $table->decimal('price', 10, 2)->default(0);
+            $table->decimal('price', 10, 2)->nullable();
             $table->decimal('cost_price', 10, 2)->nullable();
             $table->integer('stock_qty')->default(0);
             $table->decimal('weight', 8, 3)->nullable();

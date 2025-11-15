@@ -36,6 +36,11 @@ return new class extends Migration
             $table->decimal('discount', 10, 2)->default(0); // NEW
             $table->decimal('tax_percent', 5, 2)->default(0);
             $table->decimal('amount', 10, 2);
+            $table->enum('metal_type', ['gold','silver','other'])->nullable()->after('quantity');
+            $table->string('purity')->nullable()->after('metal_type');
+            $table->decimal('metal_weight', 12, 3)->nullable()->after('purity');
+            $table->decimal('metal_rate', 12, 2)->nullable()->after('metal_weight');
+            $table->decimal('stone_charges', 12, 2)->nullable()->after('metal_rate');
             $table->timestamps();
         });
 

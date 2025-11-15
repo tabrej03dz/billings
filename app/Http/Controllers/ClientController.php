@@ -147,4 +147,58 @@ class ClientController extends Controller
         ]);
     }
 
+    // App\Http\Controllers\ClientController.php
+
+    public function show(Request $request, \App\Models\Client $client)
+    {
+        // Multi-business context (same logic jaisa invoice edit me)
+        $user = $request->user();
+
+        $businessId =
+            $user->current_business_id
+            ?? session('active_business_id')
+            ?? $user->businesses()->pluck('businesses.id')->first();
+
+        // ✔️ Invoices for this client + business
+        $invoiceQuery = $client->invoices()
+            ->where('business_id', $businessId)
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id');
+
+        // Summary totals (alag se, taaki full history ka data mile)
+        $summary = [
+            'total_invoices' => (clone $invoiceQuery)->count(),
+            'total_amount'   => (clone $invoiceQuery)->sum('total'),
+            'total_received' => (clone $invoiceQuery)->sum('received_amount'),
+            'total_balance'  => (clone $invoiceQuery)->sum('balance'),
+        ];
+
+        // List ke liye paginate
+        $invoices = $invoiceQuery
+            ->withCount('items')
+            ->paginate(15)
+            ->withQueryString();
+
+        // Recent purchased items (last 10 lines)
+        $recentItems = \App\Models\InvoiceItem::with(['invoice' => function ($q) use ($businessId, $client) {
+            $q->where('business_id', $businessId)
+                ->where('client_id', $client->id);
+        }])
+            ->whereHas('invoice', function ($q) use ($businessId, $client) {
+                $q->where('business_id', $businessId)
+                    ->where('client_id', $client->id);
+            })
+            ->latest('created_at')
+            ->limit(10)
+            ->get();
+
+        return view('clients.show', [
+            'client'      => $client,
+            'invoices'    => $invoices,
+            'summary'     => $summary,
+            'recentItems' => $recentItems,
+        ]);
+    }
+
+
 }

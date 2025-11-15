@@ -29,6 +29,7 @@
         .brand { display:flex; align-items:center; gap:10px; }
         .brand-logo { height: 50px; width:auto; }
         .sign-img { height: 50px; width:auto; }
+        .small-text { font-size: 10px; }
     </style>
 </head>
 <body>
@@ -89,7 +90,9 @@
                     <div class="muted">TCS ({{ $fmt($tcs_percent) }}%): ₹ {{ $fmt($tcs_amount) }}</div>
                 @endif
                 @if(($round_off ?? 0) != 0)
-                    <div class="muted">Round Off: {{ ($round_off >= 0 ? '+' : '−') }} ₹ {{ $fmt(abs($round_off)) }}</div>
+                    <div class="muted">
+                        Round Off: {{ ($round_off >= 0 ? '+' : '−') }} ₹ {{ $fmt(abs($round_off)) }}
+                    </div>
                 @endif
                 <div class="muted">Total: <strong>₹ {{ $fmt($grand_total) }}</strong></div>
                 <div class="muted">Received: ₹ {{ $fmt($received) }}</div>
@@ -115,18 +118,46 @@
         <tbody>
         @foreach(($items ?? []) as $i => $it)
             @php
-                $qty   = (float)($it->quantity ?? 0);
-                $rate  = (float)($it->rate ?? 0);
-                $mk    = (float)($it->making_charge ?? 0);
-                $tp    = (float)($it->tax_percent ?? 0);
-                $base  = max(0, $qty * ($rate + $mk));
-                $tax   = $base * ($tp/100);
+                $qty    = (float)($it->quantity ?? 0);
+                $rate   = (float)($it->rate ?? 0);
+                $mk     = (float)($it->making_charge ?? 0);
+                $stone  = (float)($it->stone_charges ?? 0);
+                $disc   = (float)($it->discount ?? 0);
+                $tp     = (float)($it->tax_percent ?? 0);
+
+                $basePerUnit = $rate + $mk + $stone;
+                $base        = max(0, $qty * $basePerUnit - $disc);
+                $tax         = $base * ($tp/100);
+
                 // Prefer DB amount if present, else compute
                 $amount = $it->amount ?? ($base + $tax);
             @endphp
             <tr>
                 <td class="text-center">{{ $i+1 }}</td>
-                <td>{{ $it->description ?? ($it->item?->name ?? '') }}</td>
+                <td>
+                    {{ $it->description ?? ($it->item?->name ?? '') }}
+
+                    {{-- Metal info line --}}
+                    @if($it->metal_type || $it->purity || $it->metal_weight || $it->metal_rate || $it->stone_charges)
+                        <div class="muted small-text">
+                            @if($it->metal_type)
+                                {{ strtoupper($it->metal_type) }}
+                            @endif
+                            @if($it->purity)
+                                • {{ $it->purity }}
+                            @endif
+                            @if($it->metal_weight)
+                                • Wt: {{ $fmt($it->metal_weight) }} g
+                            @endif
+                            @if($it->metal_rate)
+                                • Rate: ₹ {{ $fmt($it->metal_rate) }}/g
+                            @endif
+                            @if($it->stone_charges)
+                                • Stone: ₹ {{ $fmt($it->stone_charges) }}
+                            @endif
+                        </div>
+                    @endif
+                </td>
                 <td class="text-center">{{ $it->sac_code ?? '' }}</td>
                 <td class="text-center">{{ $fmt($qty) }}</td>
                 <td class="text-right">₹ {{ $fmt($rate) }}</td>
@@ -192,7 +223,12 @@
                         <tr><td class="text-right">TCS ({{ $fmt($tcs_percent) }}%)</td><td class="text-right">₹ {{ $fmt($tcs_amount) }}</td></tr>
                     @endif
                     @if(($round_off ?? 0) != 0)
-                        <tr><td class="text-right">Round Off</td><td class="text-right">{{ ($round_off >= 0 ? '+' : '−') }} ₹ {{ $fmt(abs($round_off)) }}</td></tr>
+                        <tr>
+                            <td class="text-right">Round Off</td>
+                            <td class="text-right">
+                                {{ ($round_off >= 0 ? '+' : '−') }} ₹ {{ $fmt(abs($round_off)) }}
+                            </td>
+                        </tr>
                     @endif
                     <tr><td class="text-right"><strong>Total</strong></td><td class="text-right"><strong>₹ {{ $fmt($grand_total) }}</strong></td></tr>
                     <tr><td class="text-right">Received</td><td class="text-right">₹ {{ $fmt($received) }}</td></tr>

@@ -1,34 +1,46 @@
 @php
     $b = $inv->business;
     $c = $inv->client;
+
+    $fmt = fn($v) => number_format((float)$v, 2);
+    $dateFmt = fn($d) => $d ? \Illuminate\Support\Carbon::parse($d)->format('d M Y') : '';
 @endphp
 
 <x-layouts.app :title="__('Invoice '.$inv->invoice_number)">
     {{-- Action Bar (screen पर दिखे, print में hide) --}}
     <div class="mb-3 no-print" style="display:flex;gap:8px;align-items:center;justify-content:space-between;">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Invoice #{{ $inv->invoice_number }}</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">
+            Invoice #{{ $inv->invoice_number }}
+        </h1>
         <div style="display:flex;gap:8px;">
-            <a href="{{ route('invoices.download',$inv->id) }}" class="px-3 py-2 rounded bg-emerald-600 text-white">Download PDF</a>
-            <button onclick="window.print()" class="px-3 py-2 rounded bg-gray-800 text-white">Print</button>
-            <a href="{{ route('invoices.index') }}" class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700">Back</a>
+            <a href="{{ route('invoices.download',$inv->id) }}"
+               class="px-3 py-2 rounded bg-emerald-600 text-white">
+                Download PDF
+            </a>
+            <button onclick="window.print()"
+                    class="px-3 py-2 rounded bg-gray-800 text-white">
+                Print
+            </button>
+            <a href="{{ route('invoices.index') }}"
+               class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700">
+                Back
+            </a>
         </div>
     </div>
 
     {{-- PDF-like Wrapper --}}
     <div class="print-wrap">
         <style>
-            /* ===== A4 sheet sizing (screen + print identical) ===== */
             :root{
-                --a4-w: 210mm;     /* width  */
-                --a4-h: 297mm;     /* height */
-                --sheet-pad: 12mm; /* inner padding of the sheet */
+                --a4-w: 210mm;
+                --a4-h: 297mm;
+                --sheet-pad: 12mm;
             }
 
             * { box-sizing: border-box; }
-            body { background: #f3f4f6; } /* light gray on screen */
+            body { background: #f3f4f6; }
             .no-print { display: block; }
 
-            /* A4 sheet on screen */
             .print-page{
                 width: var(--a4-w);
                 min-height: var(--a4-h);
@@ -42,9 +54,8 @@
                 position: relative;
             }
 
-            /* General visuals */
-            .row:after { content:""; display:block; clear:both; }
-            .text-right { text-align:right; } .text-center { text-align:center; }
+            .text-right { text-align:right; }
+            .text-center { text-align:center; }
             .muted { color:#555; }
             h1,h2,h3,h4 { margin:0 0 6px 0; }
             table { width:100%; border-collapse: collapse; }
@@ -56,55 +67,43 @@
             .brand-logo { height: 50px; width:auto; }
             .sign-img { height: 50px; width:auto; }
             .totals td { padding:6px 8px; }
+            .small-text { font-size:10px; }
 
-            /* PRINT: keep the exact same sheet size + padding */
             @media print {
                 @page {
                     size: A4;
-                    margin: 0; /* important: no outer page margin so the sheet padding stays identical */
+                    margin: 0;
                 }
                 html, body { background: #fff; }
-                .no-print { display: none !important; }
+                .no-print { display:none !important; }
 
-                /* Keep the same sheet box on print */
                 .print-wrap{
                     width: var(--a4-w);
-                    margin: 0 auto;
+                    margin:0 auto;
                 }
                 .print-page{
                     width: var(--a4-w);
                     min-height: var(--a4-h);
-                    margin: 0 auto;     /* center on page */
+                    margin:0 auto;
                     padding: var(--sheet-pad);
-                    box-shadow: none;    /* no shadow on paper */
+                    box-shadow:none;
                     background:#fff;
                 }
 
-                /* Keep table headers on each page */
                 thead { display: table-header-group; }
                 tfoot { display: table-footer-group; }
                 tr, img { page-break-inside: avoid; }
 
-                @media print {
-                    @page { size: A4; margin: 0; }          /* A4, outer margin 0 */
-                    body * { visibility: hidden !important; }
-                    .print-page, .print-page * {
-                        visibility: visible !important;
-                    }
-                    .print-page {
-                        position: absolute;
-                        left: 0; top: 0;
-                        width: 210mm;               /* same as on screen */
-                        min-height: 297mm;
-                        padding: 12mm;              /* jo padding screen par hai wohi */
-                        background: #fff;
-                        box-shadow: none !important;
-                    }
-                    .no-print { display: none !important; }  /* action bar wagaira hide */
+                body * { visibility: hidden !important; }
+                .print-page, .print-page * {
+                    visibility: visible !important;
+                }
+                .print-page {
+                    position:absolute;
+                    left:0; top:0;
                 }
             }
 
-            /* Optional utility for manual breaks */
             .page-break { page-break-after: always; }
         </style>
 
@@ -119,18 +118,26 @@
                             @endif
                             <div>
                                 <h2>{{ $b->name }}</h2>
-                                <div class="muted">{{ $b->address }}</div>
-                                <div class="muted">Email: {{ $b->email }} | Phone: {{ $b->mobile }}</div>
-                                @if($b->gstin)<div class="muted">GSTIN: {{ $b->gstin }}</div>@endif
+                                @if($b->address)
+                                    <div class="muted">{{ $b->address }}</div>
+                                @endif
+                                <div class="muted">
+                                    @if($b->email) Email: {{ $b->email }} @endif
+                                    @if($b->email && $b->mobile) | @endif
+                                    @if($b->mobile) Phone: {{ $b->mobile }} @endif
+                                </div>
+                                @if($b->gstin)
+                                    <div class="muted">GSTIN: {{ $b->gstin }}</div>
+                                @endif
                             </div>
                         </div>
                     </td>
                     <td class="no-border text-right" style="vertical-align:top;">
                         <h2>INVOICE</h2>
                         <div>Invoice No: <strong>{{ $inv->invoice_number }}</strong></div>
-                        <div>Date: <strong>{{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}</strong></div>
+                        <div>Date: <strong>{{ $dateFmt($inv->invoice_date) }}</strong></div>
                         @if($inv->due_date)
-                            <div>Due: <strong>{{ \Illuminate\Support\Carbon::parse($inv->due_date)->format('d M Y') }}</strong></div>
+                            <div>Due: <strong>{{ $dateFmt($inv->due_date) }}</strong></div>
                         @endif
                     </td>
                 </tr>
@@ -142,37 +149,43 @@
                     <td style="width:55%; vertical-align:top;">
                         <h4>Bill To</h4>
                         <div><strong>{{ $c->name }}</strong></div>
-                        <div class="muted">{{ $c->address }}</div>
-                        <div class="muted">Mobile: {{ $c->mobile }}</div>
+                        @if($c->address)<div class="muted">{{ $c->address }}</div>@endif
+                        @if($c->mobile)<div class="muted">Mobile: {{ $c->mobile }}</div>@endif
                         @if($c->gstin)<div class="muted">GSTIN: {{ $c->gstin }}</div>@endif
                     </td>
                     <td style="width:45%; vertical-align:top;">
                         <h4>Details</h4>
-                        <div class="muted">Subtotal: ₹ {{ number_format($inv->subtotal,2) }}</div>
-                        <div class="muted">Tax: ₹ {{ number_format($inv->tax_amount,2) }}</div>
+                        <div class="muted">Subtotal: ₹ {{ $fmt($subtotal) }}</div>
+                        <div class="muted">Tax: ₹ {{ $fmt($taxTotal) }}</div>
 
-                        {{-- Optional: Discount / Charges / TCS / Round Off --}}
-                        @if(($inv->discount_total ?? 0) > 0)
-                            <div class="muted">Discount: - ₹ {{ number_format($inv->discount_total,2) }}</div>
-                        @endif
-                        @if(isset($charges) && $charges->count())
-                            <div class="muted">Additional Charges:</div>
-                            <ul style="margin:0 0 6px 16px; padding:0;">
-                                @foreach($charges as $ch)
-                                    <li class="muted">{{ $ch->name }} — ₹ {{ number_format($ch->amount,2) }}</li>
-                                @endforeach
-                            </ul>
-                        @endif
-                        @if(($inv->tcs_percent ?? 0) > 0)
-                            <div class="muted">TCS ({{ number_format($inv->tcs_percent,2) }}%): ₹ {{ number_format($inv->tcs_amount,2) }}</div>
-                        @endif
-                        @if(($inv->round_off ?? 0) != 0)
-                            <div class="muted">Round Off: ₹ {{ number_format($inv->round_off,2) }}</div>
+                        @if(($discountTotal ?? 0) > 0)
+                            <div class="muted">Discount: - ₹ {{ $fmt($discountTotal) }}</div>
                         @endif
 
-                        <div class="muted">Total: ₹ {{ number_format($inv->total,2) }}</div>
-                        <div class="muted">Received: ₹ {{ number_format($inv->received_amount,2) }}</div>
-                        <div class="muted">Balance: ₹ {{ number_format($inv->balance,2) }}</div>
+                        @if(($chargesTotal ?? 0) > 0)
+                            <div class="muted">Additional Charges: ₹ {{ $fmt($chargesTotal) }}</div>
+                        @endif
+
+                        @if(($tcsPercent ?? 0) > 0)
+                            <div class="muted">
+                                TCS ({{ $fmt($tcsPercent) }}%): ₹ {{ $fmt($tcsAmount) }}
+                            </div>
+                        @endif
+
+                        @if(($roundOff ?? 0) != 0)
+                            <div class="muted">
+                                Round Off:
+                                {{ ($roundOff >= 0 ? '+' : '−') }} ₹ {{ $fmt(abs($roundOff)) }}
+                            </div>
+                        @endif
+
+                        <div class="muted">
+                            Total: <strong>₹ {{ $fmt($grandTotal) }}</strong>
+                        </div>
+                        <div class="muted">Received: ₹ {{ $fmt($received) }}</div>
+                        <div class="muted">
+                            Balance: <strong>₹ {{ $fmt($balance) }}</strong>
+                        </div>
                     </td>
                 </tr>
             </table>
@@ -193,15 +206,52 @@
                 </thead>
                 <tbody>
                 @foreach($inv->items as $i => $it)
+                    @php
+                        $qty    = (float)($it->quantity ?? 0);
+                        $rate   = (float)($it->rate ?? 0);
+                        $mk     = (float)($it->making_charge ?? 0);
+                        $stone  = (float)($it->stone_charges ?? 0);
+                        $disc   = (float)($it->discount ?? 0);
+                        $tp     = (float)($it->tax_percent ?? 0);
+
+                        $basePerUnit = $rate + $mk + $stone;
+                        $base        = max(0, $qty * $basePerUnit - $disc);
+                        $tax         = $base * ($tp/100);
+
+                        $amount = $it->amount ?? ($base + $tax);
+                    @endphp
                     <tr>
                         <td class="text-center">{{ $i+1 }}</td>
-                        <td>{{ $it->description }}</td>
+                        <td>
+                            {{ $it->description }}
+
+                            {{-- Metal info --}}
+                            @if($it->metal_type || $it->purity || $it->metal_weight || $it->metal_rate || $it->stone_charges)
+                                <div class="muted small-text">
+                                    @if($it->metal_type)
+                                        {{ strtoupper($it->metal_type) }}
+                                    @endif
+                                    @if($it->purity)
+                                        • {{ $it->purity }}
+                                    @endif
+                                    @if($it->metal_weight)
+                                        • Wt: {{ $fmt($it->metal_weight) }} g
+                                    @endif
+                                    @if($it->metal_rate)
+                                        • Rate: ₹ {{ $fmt($it->metal_rate) }}/g
+                                    @endif
+                                    @if($it->stone_charges)
+                                        • Stone: ₹ {{ $fmt($it->stone_charges) }}
+                                    @endif
+                                </div>
+                            @endif
+                        </td>
                         <td class="text-center">{{ $it->sac_code }}</td>
-                        <td class="text-center">{{ $it->quantity }}</td>
-                        <td class="text-right">₹ {{ number_format($it->rate,2) }}</td>
-                        <td class="text-right">₹ {{ number_format($it->making_charge,2) }}</td>
-                        <td class="text-center">{{ number_format($it->tax_percent,2) }}</td>
-                        <td class="text-right">₹ {{ number_format($it->amount,2) }}</td>
+                        <td class="text-center">{{ $fmt($qty) }}</td>
+                        <td class="text-right">₹ {{ $fmt($rate) }}</td>
+                        <td class="text-right">₹ {{ $fmt($mk) }}</td>
+                        <td class="text-center">{{ $fmt($tp) }}</td>
+                        <td class="text-right">₹ {{ $fmt($amount) }}</td>
                     </tr>
                 @endforeach
                 </tbody>
@@ -217,38 +267,69 @@
                         @endif
 
                         @if($inv->terms)
-                            <div class="mt-10 mb-6"><strong>Terms & Conditions</strong></div>
+                            <div class="mt-10 mb-6"><strong>Terms &amp; Conditions</strong></div>
                             <div class="muted" style="white-space:pre-wrap;">{{ $inv->terms }}</div>
                         @endif
                     </td>
                     <td class="no-border" style="width:45%; vertical-align:top;">
                         <table class="totals" style="width:100%; margin-bottom:20px;">
-                            <tr><td class="text-right"><strong>Subtotal</strong></td><td class="text-right">₹ {{ number_format($inv->subtotal,2) }}</td></tr>
-                            <tr><td class="text-right"><strong>Tax</strong></td><td class="text-right">₹ {{ number_format($inv->tax_amount,2) }}</td></tr>
-                            @if(($inv->discount_total ?? 0) > 0)
-                                <tr><td class="text-right">Discount</td><td class="text-right">- ₹ {{ number_format($inv->discount_total,2) }}</td></tr>
+                            <tr>
+                                <td class="text-right"><strong>Subtotal</strong></td>
+                                <td class="text-right">₹ {{ $fmt($subtotal) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-right"><strong>Tax</strong></td>
+                                <td class="text-right">₹ {{ $fmt($taxTotal) }}</td>
+                            </tr>
+                            @if(($discountTotal ?? 0) > 0)
+                                <tr>
+                                    <td class="text-right">Discount</td>
+                                    <td class="text-right">- ₹ {{ $fmt($discountTotal) }}</td>
+                                </tr>
                             @endif
-                            @if(isset($charges) && $charges->count())
-                                @foreach($charges as $ch)
-                                    <tr><td class="text-right">{{ $ch->name }}</td><td class="text-right">₹ {{ number_format($ch->amount,2) }}</td></tr>
-                                @endforeach
+                            @if(($chargesTotal ?? 0) > 0)
+                                <tr>
+                                    <td class="text-right">Additional Charges</td>
+                                    <td class="text-right">₹ {{ $fmt($chargesTotal) }}</td>
+                                </tr>
                             @endif
-                            @if(($inv->tcs_percent ?? 0) > 0)
-                                <tr><td class="text-right">TCS ({{ number_format($inv->tcs_percent,2) }}%)</td><td class="text-right">₹ {{ number_format($inv->tcs_amount,2) }}</td></tr>
+                            @if(($tcsPercent ?? 0) > 0)
+                                <tr>
+                                    <td class="text-right">
+                                        TCS ({{ $fmt($tcsPercent) }}%)
+                                    </td>
+                                    <td class="text-right">₹ {{ $fmt($tcsAmount) }}</td>
+                                </tr>
                             @endif
-                            @if(($inv->round_off ?? 0) != 0)
-                                <tr><td class="text-right">Round Off</td><td class="text-right">₹ {{ number_format($inv->round_off,2) }}</td></tr>
+                            @if(($roundOff ?? 0) != 0)
+                                <tr>
+                                    <td class="text-right">Round Off</td>
+                                    <td class="text-right">
+                                        {{ ($roundOff >= 0 ? '+' : '−') }} ₹ {{ $fmt(abs($roundOff)) }}
+                                    </td>
+                                </tr>
                             @endif
-                            <tr><td class="text-right"><strong>Total</strong></td><td class="text-right"><strong>₹ {{ number_format($inv->total,2) }}</strong></td></tr>
-                            <tr><td class="text-right">Received</td><td class="text-right">₹ {{ number_format($inv->received_amount,2) }}</td></tr>
-                            <tr><td class="text-right"><strong>Balance</strong></td><td class="text-right"><strong>₹ {{ number_format($inv->balance,2) }}</strong></td></tr>
+                            <tr>
+                                <td class="text-right"><strong>Total</strong></td>
+                                <td class="text-right"><strong>₹ {{ $fmt($grandTotal) }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-right">Received</td>
+                                <td class="text-right">₹ {{ $fmt($received) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-right"><strong>Balance</strong></td>
+                                <td class="text-right"><strong>₹ {{ $fmt($balance) }}</strong></td>
+                            </tr>
                         </table>
 
                         <div class="text-right">
                             @if(!empty($sign))
                                 <img class="sign-img" src="{{ $sign }}" alt="Signature">
                             @endif
-                            <div style="border-top:1px solid #999; margin-top:6px; padding-top:4px;">Authorized Signatory</div>
+                            <div style="border-top:1px solid #999; margin-top:6px; padding-top:4px;">
+                                Authorized Signatory
+                            </div>
                             <div class="muted">{{ $b->name }}</div>
                         </div>
                     </td>

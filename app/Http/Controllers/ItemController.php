@@ -54,7 +54,7 @@ class ItemController extends Controller
             ],
             'category_id' => ['nullable','integer','exists:categories,id'],
             'description' => ['nullable','string','max:2000'],
-            'price'       => ['required','numeric','min:0'],
+            'price'       => ['nullable','numeric','min:0'],
             'making_charge'=> ['nullable','numeric','min:0'],
             'cost_price'  => ['nullable','numeric','min:0'],
             'stock_qty'   => ['required','integer','min:0'],
@@ -62,6 +62,12 @@ class ItemController extends Controller
             'unit'        => ['nullable','string','max:50'],
             'tax_rate'    => ['required','numeric','min:0','max:100'],
             'is_active'   => ['nullable','boolean'],
+            'metal_weight' => '',
+            'metal_type' => '',
+            'purity' => '',
+            'gross_weight' => '',
+            'stone_weight' => '',
+            'stone_charges' => '',
 
         ]);
 
@@ -100,13 +106,19 @@ class ItemController extends Controller
             ],
             'category_id' => ['nullable','integer','exists:categories,id'],
             'description' => ['nullable','string','max:2000'],
-            'price'       => ['required','numeric','min:0'],
+            'price'       => ['nullable','numeric','min:0'],
             'making_charge'=> ['nullable','numeric','min:0'],
             'cost_price'  => ['nullable','numeric','min:0'],
             'stock_qty'   => ['required','integer','min:0'],
             'unit'        => ['nullable','string','max:50'],
             'tax_rate'    => ['required','numeric','min:0','max:100'],
             'is_active'   => ['nullable','boolean'],
+            'metal_weight' => '',
+            'metal_type' => '',
+            'purity' => '',
+            'gross_weight' => '',
+            'stone_weight' => '',
+            'stone_charges' => '',
         ]);
 
         if (!empty($data['category_id'])) {
