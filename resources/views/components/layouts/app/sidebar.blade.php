@@ -59,6 +59,13 @@
                 </flux:navlist>
             @endcan
 
+            @can('show metal rates')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('metal-rates.index')" :current="request()->routeIs('metal-rates.index')" wire:navigate>{{ __('Metal Rates') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+            @endcan
 
             @can('show items')
             <flux:navlist variant="outline">
@@ -67,6 +74,18 @@
                 </flux:navlist.group>
             </flux:navlist>
             @endcan
+
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('purchases.index')" :current="request()->routeIs('purchases.index')" wire:navigate>{{ __('Purchases') }}</flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('inventory.summary')" :current="request()->routeIs('inventory.summary')" wire:navigate>{{ __('Inventory') }}</flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
 
             @can('show invoices')
             <flux:navlist variant="outline">
@@ -101,13 +120,7 @@
                 </flux:navlist>
             @endcan
 
-            @can('show metal rates')
-            <flux:navlist variant="outline">
-                <flux:navlist.group class="grid">
-                    <flux:navlist.item icon="home" :href="route('metal-rates.index')" :current="request()->routeIs('metal-rates.index')" wire:navigate>{{ __('Metal Rates') }}</flux:navlist.item>
-                </flux:navlist.group>
-            </flux:navlist>
-            @endcan
+
 
 
 

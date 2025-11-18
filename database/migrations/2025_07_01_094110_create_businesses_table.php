@@ -22,6 +22,15 @@ return new class extends Migration
             $table->string('address')->nullable();
             $table->string('signature')->nullable();
             $table->text('terms')->nullable();
+            $table->boolean('gst_enabled')->default(true)->after('gstin');
+
+            $table->enum('rounding_mode', ['none', 'nearest', 'up', 'down'])
+                ->default('none')
+                ->after('signature');
+
+            $table->decimal('rounding_step', 8, 2)
+                ->default(1.00)
+                ->after('rounding_mode');
             $table->timestamps();
         });
     }

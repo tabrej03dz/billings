@@ -13,9 +13,16 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-Route::view('dashboard', 'dashboard')
+//Route::view('dashboard', 'dashboard')
+//    ->middleware(['auth', 'verified'])
+//    ->name('dashboard');
+Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+
+Route::post('/metal-rates/today', [\App\Http\Controllers\MetalRateController::class, 'storeToday'])
+    ->name('metal-rates.store-today');
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
@@ -80,6 +87,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('item.create');
 
+    Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
+
+    // routes/web.php
+    Route::get('/inventory/summary', [\App\Http\Controllers\InventoryController::class, 'summary'])
+        ->name('inventory.summary');
 
 
 

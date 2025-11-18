@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToBusiness;
+use App\Services\StockService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -28,5 +29,27 @@ class Invoice extends Model
 
 //    public function additonalCharges(){
 //        return $this->hasMany(Additional)
+//    }
+
+
+//    protected static function booted()
+//    {
+//        static::created(function (Invoice $invoice) {
+//            $invoice->loadMissing('items.item');
+//            app(StockService::class)->recordSale($invoice);
+//        });
+//
+//        static::updated(function (Invoice $invoice) {
+//            $invoice->loadMissing('items.item');
+//            $service = app(StockService::class);
+//
+//            $service->rollbackReference($invoice);
+//            $service->recordSale($invoice);
+//        });
+//
+//        static::deleted(function (Invoice $invoice) {
+//            $invoice->loadMissing('items.item');
+//            app(StockService::class)->rollbackReference($invoice);
+//        });
 //    }
 }

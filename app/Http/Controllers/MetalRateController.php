@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\MetalRate;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -207,5 +208,48 @@ class MetalRateController extends Controller
             'success' => true,
             'rate' => $rate
         ]);
+    }
+
+    public function storeToday(Request $request)
+    {
+        $bid = auth()->user()->current_business_id ?? session('active_business_id');
+        if (!$bid) {
+            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
+        }
+
+        $today = Carbon::today();
+
+        $data = $request->validate([
+            'rates'               => ['array'],
+            'rates.gold'          => ['array'],
+            'rates.silver'        => ['array'],
+            'rates.gold.*'        => ['nullable', 'numeric', 'min:0'],
+            'rates.silver.*'      => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $rates = $data['rates'] ?? [];
+
+        foreach (['gold', 'silver'] as $metal) {
+            foreach (($rates[$metal] ?? []) as $purity => $value) {
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                MetalRate::updateOrCreate(
+                    [
+                        'business_id' => $bid,
+                        'rate_date'   => $today->toDateString(),
+                        'metal_type'  => $metal,
+                        'purity'      => $purity,
+                    ],
+                    [
+                        'rate_per_gram' => $value,
+                        'is_active'     => true,
+                    ]
+                );
+            }
+        }
+
+        return back()->with('success', 'Today metal rates saved successfully.');
     }
 }

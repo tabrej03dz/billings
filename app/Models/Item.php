@@ -23,4 +23,51 @@ class Item extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    // Accessor: $item->current_stock
+    public function getCurrentStockAttribute()
+    {
+        // agar stock_movements use karna hai live
+        return $this->stockMovements()->sum('qty_change');
+    }
+
+    // Cache column sync (items.stock_qty)
+//    public function refreshStockQty(): void
+//    {
+//        $this->stock_qty = $this->stockMovements()->sum('qty_change');
+//        $this->saveQuietly();
+//    }
+
+
+    public function refreshStockQty(): void
+    {
+        $total = \App\Models\StockMovement::where('item_id', $this->id)
+            ->sum('qty_change');    // purchase +, sale -, adjustment ±
+
+        $this->stock_qty = (int)$total;
+        $this->save();
+    }
+
+    /**
+     * Qty +ve (purchase) ya -ve (sale) adjust karega.
+     */
+    public function adjustStock(int $qtyChange): void
+    {
+        $this->stock_qty = ($this->stock_qty ?? 0) + $qtyChange;
+        $this->saveQuietly(); // silent save, events fire nahi honge
+    }
+
+    /**
+     * Agar kabhi full recalc karna ho ledger se.
+     */
+    public function refreshStockFromLedger(): void
+    {
+        $this->stock_qty = $this->stockMovements()->sum('qty_change');
+        $this->saveQuietly();
+    }
+
 }

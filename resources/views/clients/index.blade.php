@@ -51,7 +51,7 @@
                         <td class="px-6 py-3">{{ $c->state ?? '—' }}</td>
                         <td class="px-6 py-3">{{ $c->address ? Str::limit($c->address, 60) : '—' }}</td>
                         <td class="px-6 py-3 space-x-2">
-                            <a href="{{ route('clients.show', $c->id) }}" class="text-blue-600 hover:underline">View</a>
+                            <a href="{{ route('clients.show', $c->id) }}" class="text-blue-600 hover:underline">Record</a>
                             <a href="{{ route('clients.edit', $c->id) }}" class="text-yellow-600 hover:underline">Edit</a>
                             <form action="{{ route('clients.destroy', $c->id) }}" method="POST" class="inline-block"
                                   onsubmit="return confirm('Delete this client?');">
