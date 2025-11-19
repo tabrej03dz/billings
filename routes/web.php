@@ -40,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
 //    });
 
 
+    Route::resource('api-keys', \App\Http\Controllers\ApiKeyController::class);
 
         Route::get('/invoices',              [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/create',       [InvoiceController::class, 'create'])->name('invoices.create');
