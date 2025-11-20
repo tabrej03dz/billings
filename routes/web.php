@@ -14,9 +14,9 @@ use Livewire\Volt\Volt;
 // frontend web routes:::::
 Route::get('/', [HomeController::class, 'index'])->name('index');
 
-// Route::get('/', function () {
-//     return view('welcome');
-// })->name('home');
+Route::get('/welcome', function () {
+    return view('welcome');
+})->name('home');
 
 //Route::view('dashboard', 'dashboard')
 //    ->middleware(['auth', 'verified'])

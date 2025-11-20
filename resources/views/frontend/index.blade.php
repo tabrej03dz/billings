@@ -55,7 +55,7 @@
 
         <!-- Feature 2 -->
         <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col items-center text-center">
-          <i class='bx bx-shield text-5xl text-green-500 mb-4'></i>
+          <img src="https://cdn.pixabay.com/photo/2025/01/06/11/35/list-9314591_1280.png" alt="" class="w-24 h-24 mb-4">
           <h3 class="text-2xl font-semibold text-gray-900 mb-2">Secure & Reliable</h3>
           <p class="text-gray-600">
             Keep your financial data safe with our secure, GDPR-compliant system that ensures complete confidentiality.
@@ -64,7 +64,7 @@
 
         <!-- Feature 3 -->
         <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col items-center text-center">
-          <i class='bx bx-line-chart text-5xl text-yellow-500 mb-4'></i>
+           <img src="https://cdn.pixabay.com/photo/2024/06/13/17/33/graph-8828099_1280.png" alt="" class="w-24 h-24 mb-4">
           <h3 class="text-2xl font-semibold text-gray-900 mb-2">Analytics & Insights</h3>
           <p class="text-gray-600">
             Gain actionable insights from detailed reports and analytics to optimize your financial performance.
@@ -73,7 +73,7 @@
 
         <!-- Feature 4 -->
         <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col items-center text-center">
-          <i class='bx bx-cog text-5xl text-red-500 mb-4'></i>
+          <img src="https://cdn.pixabay.com/photo/2016/06/15/16/16/man-1459246_1280.png" alt="" class="w-24 h-24 mb-4">
           <h3 class="text-2xl font-semibold text-gray-900 mb-2">Customizable</h3>
           <p class="text-gray-600">
             Tailor invoices, templates, and workflows according to your business needs for a personalized experience.
@@ -82,7 +82,7 @@
 
         <!-- Feature 5 -->
         <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col items-center text-center">
-          <i class='bx bx-user text-5xl text-purple-500 mb-4'></i>
+          <img src="https://cdn.pixabay.com/photo/2019/07/10/13/03/people-4328648_1280.png" alt="" class="w-24 h-24 mb-4">
           <h3 class="text-2xl font-semibold text-gray-900 mb-2">User-Friendly</h3>
           <p class="text-gray-600">
             Simple and intuitive interface that allows anyone on your team to manage finances without training.
@@ -91,7 +91,7 @@
 
         <!-- Feature 6 -->
         <div class="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col items-center text-center">
-          <i class='bx bx-support text-5xl text-teal-500 mb-4'></i>
+        <img src="https://cdn.pixabay.com/photo/2022/01/13/08/59/phone-support-6934722_1280.png" alt="" class="w-24 h-24 mb-4">
           <h3 class="text-2xl font-semibold text-gray-900 mb-2">24/7 Support</h3>
           <p class="text-gray-600">
             Our expert support team is available around the clock to help you with any questions or issues.
