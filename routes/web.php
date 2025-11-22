@@ -6,6 +6,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
+use App\Http\Controllers\NoBusinessWhatsappController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -28,6 +29,30 @@ Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'inde
 
 Route::post('/metal-rates/today', [\App\Http\Controllers\MetalRateController::class, 'storeToday'])
     ->name('metal-rates.store-today');
+
+
+
+
+
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/no-business/whatsapp', [NoBusinessWhatsappController::class, 'index'])
+        ->name('no-business.whatsapp');
+
+    Route::post('/no-business/whatsapp/send-pdf', [NoBusinessWhatsappController::class, 'sendInvoiceWhatsapp'])
+        ->name('no-business.send-pdf');
+
+    Route::post('/no-business/whatsapp/save-api', [NoBusinessWhatsappController::class, 'saveApi'])
+        ->name('no-business.save-api');
+});
+
+
+
+
+
+
+
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');

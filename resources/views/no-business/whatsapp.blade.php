@@ -1,0 +1,258 @@
+<x-layouts.app :title="__('Dashboard')">
+
+    <div class="max-w-6xl mx-auto py-8 px-3 sm:px-4 lg:px-6 space-y-6">
+
+        {{-- ALERTS --}}
+        @if(session('success'))
+            <div class="rounded-xl bg-emerald-50/90 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('info'))
+            <div class="rounded-xl bg-blue-50/90 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+                {{ session('info') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="rounded-xl bg-red-50/90 border border-red-200 px-4 py-3 text-sm text-red-800 space-y-1">
+                @foreach($errors->all() as $error)
+                    <div>• {{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
+
+        {{-- TOP HEADER CARD --}}
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 shadow-lg shadow-slate-900/40 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg">
+                        <i class="fas fa-paper-plane text-sm"></i>
+                    </span>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-semibold text-white">
+                            Send PDF via WhatsApp
+                        </h1>
+                        <p class="mt-1 text-xs sm:text-sm text-slate-300">
+                            Ye page un users ke liye hai jo abhi kisi business se linked nahi hain. PDF upload karo
+                            aur WhatsApp par direct bhejo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- STATUS PILL --}}
+            <div class="flex flex-col items-end gap-1 text-[11px] sm:text-xs">
+                @if($apiKey ?? false)
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-200 border border-emerald-400/50">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-2"></span>
+                        WhatsApp API configured
+                    </span>
+                    <span class="text-slate-300/80">
+                        Base URL:
+                        {{ \Illuminate\Support\Str::limit($apiKey->base_url, 34) }}
+                    </span>
+                @else
+                    <span
+                        class="inline-flex items-center px-3 py-1 rounded-full bg-amber-500/10 text-amber-200 border border-amber-400/60">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2"></span>
+                        WhatsApp API not set
+                    </span>
+                    <span class="text-slate-400/90">
+                        Pehle API set karo, phir send kar paoge.
+                    </span>
+                @endif
+            </div>
+        </div>
+
+        {{-- MAIN CONTENT GRID --}}
+        <div class="grid md:grid-cols-2 gap-6">
+
+            {{-- LEFT: PDF + PHONE FORM --}}
+            <div class="bg-white/95 rounded-2xl border border-slate-200 shadow-md shadow-slate-900/5 p-4 sm:p-5 space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-slate-900 text-white text-[11px] font-semibold">
+                            1
+                        </span>
+                        <h2 class="font-semibold text-slate-900 text-sm sm:text-base">
+                            Upload PDF & Phone Number
+                        </h2>
+                    </div>
+                    @if($apiKey ?? false)
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Ready to send
+                        </span>
+                    @endif
+                </div>
+
+                <p class="text-[11px] sm:text-xs text-slate-500">
+                    PDF file choose karo, WhatsApp number (country code ke saath) daalo.
+                    Submit ke baad same number par PDF chali jayegi.
+                </p>
+
+                <form action="{{ route('no-business.send-pdf') }}"
+                      method="POST"
+                      enctype="multipart/form-data"
+                      class="space-y-4">
+                    @csrf
+
+                    {{-- PDF INPUT --}}
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-700">
+                            PDF File <span class="text-red-500">*</span>
+                        </label>
+                        <div
+                            class="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-3">
+                            <div
+                                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm border border-slate-200">
+                                <i class="fas fa-file-pdf text-[15px] text-rose-500"></i>
+                            </div>
+                            <div class="flex-1">
+                                <input type="file" name="pdf" accept="application/pdf"
+                                       class="block w-full text-[11px] sm:text-xs border-0 bg-transparent px-0 py-1 focus:outline-none focus:ring-0">
+                                <p class="text-[10px] text-slate-400">
+                                    Max 5 MB, only .pdf allowed.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- PHONE INPUT --}}
+                    <div class="space-y-1">
+                        <label class="block text-xs font-medium text-slate-700">
+                            WhatsApp Number <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" name="phone"
+                                   placeholder="e.g. 9198XXXXXXXX"
+                                   class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   value="{{ old('phone') }}">
+                        </div>
+                        <p class="text-[10px] text-slate-400">
+                            Number without <code>+</code>, full with country code (e.g. <b>919876543210</b>).
+                        </p>
+                    </div>
+
+                    {{-- SUBMIT BTN --}}
+                    <div class="pt-1">
+                        <button type="submit"
+                                class="inline-flex items-center justify-center w-full md:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md shadow-indigo-500/30 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100">
+                            <i class="fas fa-paper-plane mr-2 text-xs"></i>
+                            Send PDF on WhatsApp
+                        </button>
+
+                        @if(!($apiKey ?? false))
+                            <p class="mt-2 text-[11px] text-red-500 flex items-center gap-1">
+                                <i class="fas fa-exclamation-triangle text-[10px]"></i>
+                                WhatsApp API abhi set nahi hai. Pehle right side se API configure kar lo.
+                            </p>
+                        @endif
+                    </div>
+                </form>
+            </div>
+
+            {{-- RIGHT: API SETTINGS --}}
+            <div class="bg-white/95 rounded-2xl border border-slate-200 shadow-md shadow-slate-900/5 p-4 sm:p-5 space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-slate-900 text-white text-[11px] font-semibold">
+                            2
+                        </span>
+                        <h2 class="font-semibold text-slate-900 text-sm sm:text-base">
+                            WhatsApp API Settings
+                        </h2>
+                    </div>
+
+                    <button type="button"
+                            id="toggleApiForm"
+                            class="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-medium border border-slate-300 text-slate-700 bg-slate-50 hover:bg-slate-100">
+                        <i class="fas fa-sliders-h mr-1 text-[10px]"></i>
+                        <span id="toggleApiFormLabel">
+                            {{ ($apiKey ?? false) ? 'Hide API Form' : 'Set WhatsApp API' }}
+                        </span>
+                    </button>
+                </div>
+
+                <p class="text-[11px] sm:text-xs text-slate-500">
+                    Yahan apne WhatsApp provider ka <b>Base URL</b>, <b>API Key</b> aur <b>Secret / Token</b> save karo.
+                    Ye settings sirf is user ke liye rahengi (kisi business se linked nahi).
+                </p>
+
+                <div id="apiFormWrapper"
+                     class="{{ ($apiKey ?? false) ? 'hidden' : '' }} border-t border-slate-200 pt-3 mt-1">
+                    <form action="{{ route('no-business.save-api') }}"
+                          method="POST"
+                          class="space-y-3">
+                        @csrf
+
+                        <div class="space-y-1">
+                            <label class="block text-xs font-medium text-slate-700">
+                                Base URL <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="base_url"
+                                   placeholder="https://your-whatsapp-provider.com/api"
+                                   class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   value="{{ old('base_url', $apiKey->base_url ?? '') }}">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-xs font-medium text-slate-700">
+                                API Key
+                            </label>
+                            <input type="text" name="key"
+                                   class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   value="{{ old('key', $apiKey->key ?? '') }}">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-xs font-medium text-slate-700">
+                                API Secret / Token
+                            </label>
+                            <input type="text" name="secret"
+                                   class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                   value="{{ old('secret', $apiKey->secret ?? '') }}">
+                            <p class="text-[10px] text-slate-400">
+                                Agar provider sirf ek token deta hai to use yahan daal sakte ho.
+                            </p>
+                        </div>
+
+                        <button type="submit"
+                                class="inline-flex items-center justify-center w-full md:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-1 focus:ring-offset-slate-100">
+                            <i class="fas fa-save mr-2 text-xs"></i>
+                            Save WhatsApp API Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {{-- Toggle Script --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const btn   = document.getElementById('toggleApiForm');
+            const wrap  = document.getElementById('apiFormWrapper');
+            const label = document.getElementById('toggleApiFormLabel');
+
+            if (btn && wrap && label) {
+                btn.addEventListener('click', function () {
+                    const isHidden = wrap.classList.contains('hidden');
+                    wrap.classList.toggle('hidden');
+
+                    if (isHidden) {
+                        label.textContent = 'Hide API Form';
+                    } else {
+                        label.textContent = '{{ ($apiKey ?? false) ? 'Edit API' : 'Set WhatsApp API' }}';
+                    }
+                });
+            }
+        });
+    </script>
+
+</x-layouts.app>

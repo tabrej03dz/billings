@@ -83,8 +83,20 @@ class DashboardController extends Controller
 //        ));
 //    }
 
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+
+        if (!$user) {
+            abort(401);
+        }
+
+        // user kisi bhi business ko belong nahi karta
+        if (!$user->businesses()->exists()) {
+            return redirect()
+                ->route('no-business.whatsapp')
+                ->with('info', 'Please configure WhatsApp API and send PDFs directly.');
+        }
         $today      = Carbon::today();
         $monthStart = Carbon::now()->startOfMonth();
 

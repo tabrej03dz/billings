@@ -13,10 +13,13 @@ return new class extends Migration
     {
         Schema::create('api_keys', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('business_id')->constrained('businesses')->cascadeOnDelete();
+            $table->unsignedBigInteger('business_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->string('base_url')->nullable();
             $table->string('key')->nullable();
             $table->string('secret')->nullable();
+            $table->foreign('business_id')->references('id')->on('businesses')->onDelete('SET NULL');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('SET NULL');
             $table->timestamps();
         });
     }
