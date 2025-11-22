@@ -206,6 +206,56 @@
                     </div>
                 </div>
 
+                {{-- ADD MORE GOLD PURITIES --}}
+                <div x-data="{ goldRows: [] }" class="mt-3">
+
+                    <h4 class="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-1">
+                        Add Custom Gold Purity
+                    </h4>
+
+                    <template x-for="(row, index) in goldRows" :key="index">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-2">
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                    Custom Purity
+                                </label>
+                                <input type="text"
+                                       x-model="row.purity"
+                                       placeholder="e.g. 23K"
+                                       name="custom[gold][purity][]"
+                                       class="w-full border rounded px-2 py-1.5 text-sm
+                              dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                    Rate (₹/gm)
+                                </label>
+                                <input type="number" step="0.01" min="0"
+                                       x-model="row.rate"
+                                       name="custom[gold][rate][]"
+                                       class="w-full border rounded px-2 py-1.5 text-sm
+                              dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                            </div>
+
+                            <button type="button"
+                                    @click="goldRows.splice(index, 1)"
+                                    class="self-end text-xs bg-red-500 text-white px-2 py-1 rounded">
+                                Remove
+                            </button>
+                        </div>
+                    </template>
+
+                    <button type="button"
+                            @click="goldRows.push({ purity:'', rate:'' })"
+                            class="mt-1 px-3 py-1.5 rounded text-xs font-medium
+                   bg-amber-600 text-white hover:bg-amber-700">
+                        + Add More Gold Purity
+                    </button>
+                </div>
+
+
                 {{-- SILVER RATES --}}
                 <div>
                     <h3 class="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-2">
@@ -230,6 +280,56 @@
                         @endforeach
                     </div>
                 </div>
+
+                {{-- ADD MORE SILVER PURITIES --}}
+                <div x-data="{ silverRows: [] }" class="mt-3">
+
+                    <h4 class="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Add Custom Silver Purity
+                    </h4>
+
+                    <template x-for="(row, index) in silverRows" :key="index">
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-2">
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                    Custom Purity
+                                </label>
+                                <input type="text"
+                                       x-model="row.purity"
+                                       placeholder="e.g. 999"
+                                       name="custom[silver][purity][]"
+                                       class="w-full border rounded px-2 py-1.5 text-sm
+                              dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                    Rate (₹/gm)
+                                </label>
+                                <input type="number" step="0.01" min="0"
+                                       x-model="row.rate"
+                                       name="custom[silver][rate][]"
+                                       class="w-full border rounded px-2 py-1.5 text-sm
+                              dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                            </div>
+
+                            <button type="button"
+                                    @click="silverRows.splice(index, 1)"
+                                    class="self-end text-xs bg-red-500 text-white px-2 py-1 rounded">
+                                Remove
+                            </button>
+                        </div>
+                    </template>
+
+                    <button type="button"
+                            @click="silverRows.push({ purity:'', rate:'' })"
+                            class="mt-1 px-3 py-1.5 rounded text-xs font-medium
+                   bg-slate-700 text-white hover:bg-slate-800">
+                        + Add More Silver Purity
+                    </button>
+                </div>
+
 
                 <div class="flex items-center justify-end gap-2 pt-2 border-t border-dashed border-gray-200 dark:border-neutral-700">
                     <button type="button"

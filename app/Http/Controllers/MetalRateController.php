@@ -210,6 +210,49 @@ class MetalRateController extends Controller
         ]);
     }
 
+//    public function storeToday(Request $request)
+//    {
+//        $bid = auth()->user()->current_business_id ?? session('active_business_id');
+//        if (!$bid) {
+//            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
+//        }
+//
+//        $today = Carbon::today();
+//
+//        $data = $request->validate([
+//            'rates'               => ['array'],
+//            'rates.gold'          => ['array'],
+//            'rates.silver'        => ['array'],
+//            'rates.gold.*'        => ['nullable', 'numeric', 'min:0'],
+//            'rates.silver.*'      => ['nullable', 'numeric', 'min:0'],
+//        ]);
+//
+//        $rates = $data['rates'] ?? [];
+//
+//        foreach (['gold', 'silver'] as $metal) {
+//            foreach (($rates[$metal] ?? []) as $purity => $value) {
+//                if ($value === null || $value === '') {
+//                    continue;
+//                }
+//
+//                MetalRate::updateOrCreate(
+//                    [
+//                        'business_id' => $bid,
+//                        'rate_date'   => $today->toDateString(),
+//                        'metal_type'  => $metal,
+//                        'purity'      => $purity,
+//                    ],
+//                    [
+//                        'rate_per_gram' => $value,
+//                        'is_active'     => true,
+//                    ]
+//                );
+//            }
+//        }
+//
+//        return back()->with('success', 'Today metal rates saved successfully.');
+//    }
+
     public function storeToday(Request $request)
     {
         $bid = auth()->user()->current_business_id ?? session('active_business_id');
@@ -219,16 +262,31 @@ class MetalRateController extends Controller
 
         $today = Carbon::today();
 
+        // ✅ Validation (normal + custom purities)
         $data = $request->validate([
             'rates'               => ['array'],
             'rates.gold'          => ['array'],
             'rates.silver'        => ['array'],
             'rates.gold.*'        => ['nullable', 'numeric', 'min:0'],
             'rates.silver.*'      => ['nullable', 'numeric', 'min:0'],
+
+            // custom purities
+            'custom'                   => ['nullable', 'array'],
+            'custom.gold.purity'       => ['nullable', 'array'],
+            'custom.gold.purity.*'     => ['nullable', 'string', 'max:50'],
+            'custom.gold.rate'         => ['nullable', 'array'],
+            'custom.gold.rate.*'       => ['nullable', 'numeric', 'min:0'],
+
+            'custom.silver.purity'     => ['nullable', 'array'],
+            'custom.silver.purity.*'   => ['nullable', 'string', 'max:50'],
+            'custom.silver.rate'       => ['nullable', 'array'],
+            'custom.silver.rate.*'     => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $rates = $data['rates'] ?? [];
+        $rates  = $data['rates']  ?? [];
+        $custom = $data['custom'] ?? [];
 
+        // ✅ 1) Fixed (pre-defined) purities save/update
         foreach (['gold', 'silver'] as $metal) {
             foreach (($rates[$metal] ?? []) as $purity => $value) {
                 if ($value === null || $value === '') {
@@ -250,6 +308,35 @@ class MetalRateController extends Controller
             }
         }
 
+        // ✅ 2) Custom purities save/update
+        foreach (['gold', 'silver'] as $metal) {
+            $purities = $custom[$metal]['purity'] ?? [];
+            $values   = $custom[$metal]['rate']   ?? [];
+
+            foreach ($purities as $index => $purity) {
+                $purity = trim((string) $purity);
+                $value  = $values[$index] ?? null;
+
+                if ($purity === '' || $value === null || $value === '') {
+                    continue;
+                }
+
+                MetalRate::updateOrCreate(
+                    [
+                        'business_id' => $bid,
+                        'rate_date'   => $today->toDateString(),
+                        'metal_type'  => $metal,
+                        'purity'      => $purity,
+                    ],
+                    [
+                        'rate_per_gram' => $value,
+                        'is_active'     => true,
+                    ]
+                );
+            }
+        }
+
         return back()->with('success', 'Today metal rates saved successfully.');
     }
+
 }
