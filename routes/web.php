@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
@@ -9,7 +10,11 @@ use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
-Route::get('/', function () {
+
+// frontend web routes:::::
+Route::get('/', [HomeController::class, 'index'])->name('index');
+
+Route::get('/welcome', function () {
     return view('welcome');
 })->name('home');
 
