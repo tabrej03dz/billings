@@ -45,7 +45,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/no-business/whatsapp/save-api', [NoBusinessWhatsappController::class, 'saveApi'])
         ->name('no-business.save-api');
+
+    Route::get('send-invoice-whatsapp', [\App\Http\Controllers\InvoiceSendController::class, 'index'])->name('send-invoice-whatsapp.index');
 });
+
+
 
 
 

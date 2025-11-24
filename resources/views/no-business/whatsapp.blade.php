@@ -102,24 +102,37 @@
 
                     {{-- PDF INPUT --}}
                     <div class="space-y-1">
-                        <label class="block text-xs font-medium text-slate-700">
+                        <label for="pdf" class="block text-xs font-medium text-slate-700">
                             PDF File <span class="text-red-500">*</span>
                         </label>
-                        <div
-                            class="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-3">
+
+                        {{-- Ye pura box clickable hoga --}}
+                        <label for="pdf"
+                               class="flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-3 cursor-pointer">
                             <div
                                 class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm border border-slate-200">
                                 <i class="fas fa-file-pdf text-[15px] text-rose-500"></i>
                             </div>
                             <div class="flex-1">
-                                <input type="file" name="pdf" accept="application/pdf"
-                                       class="block w-full text-[11px] sm:text-xs border-0 bg-transparent px-0 py-1 focus:outline-none focus:ring-0">
+                                <p class="text-[11px] sm:text-xs text-slate-700">
+                                    Choose PDF file (max 5 MB)
+                                </p>
                                 <p class="text-[10px] text-slate-400">
-                                    Max 5 MB, only .pdf allowed.
+                                    Only .pdf allowed.
                                 </p>
                             </div>
-                        </div>
+                        </label>
+
+                        {{-- Actual input hidden, but label click se open hoga --}}
+                        <input
+                            id="pdf"
+                            type="file"
+                            name="pdf"
+                            accept="application/pdf"
+                            class="hidden"
+                        />
                     </div>
+
 
                     {{-- PHONE INPUT --}}
                     <div class="space-y-1">

@@ -17,6 +17,7 @@
                 </flux:navlist.group>
             </flux:navlist>
 
+            @role('super_admin')
             <form action="{{ route('business.switch') }}" method="POST">
                 @csrf
                 <select name="business_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
@@ -25,6 +26,7 @@
                     @endforeach
                 </select>
             </form>
+            @endcan
 
 
         @can('show businesses')
@@ -75,17 +77,21 @@
             </flux:navlist>
             @endcan
 
+            @can('show purchases')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('purchases.index')" :current="request()->routeIs('purchases.index')" wire:navigate>{{ __('Purchases') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+            @endcan
 
+            @can('show inventory')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('inventory.summary')" :current="request()->routeIs('inventory.summary')" wire:navigate>{{ __('Inventory') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+            @endcan
 
             @can('show invoices')
             <flux:navlist variant="outline">

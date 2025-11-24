@@ -131,41 +131,33 @@ class NoBusinessWhatsappController extends Controller
         // 4) PDF ko store karo (public disk)
         $path   = $request->file('pdf')->store('no-business-pdfs', 'public');
         $pdfUrl = asset('storage/' . $path);
+        $pdfUrl = 'https://post.realvictorygroups.com/assets/logo1.png';
 
-        // 5) WhatsApp message
+        // 5) WhatsApp message text
         $message = 'Your document from Real Victory Groups';
 
         /**
-         * 6) base_url example (jo tum save karoge):
-         * https://webhook.whatapi.in/webhook/XXXX...?number=$phoneNumber&video=$mediaUrl&text=$message
+         * 6) whatapi.in base URL
+         * Database me sirf itna store karo:
+         * https://webhook.whatapi.in/webhook/6878c6bae3591ae351d0aae6
          */
-        $templateUrl = $apiKey->base_url;
+        $baseUrl = $apiKey->base_url;
+//        $baseUrl = 'https://webhook.whatapi.in/webhook/68886786de405dae96e96a73';
 
-        // Placeholder replace
-        $endpoint = str_replace(
-            ['$phoneNumber', '$mediaUrl', '$message'],
-            [urlencode($phone), urlencode($pdfUrl), urlencode($message)],
-            $templateUrl
-        );
+        // Agar kisi ne galti se query ke sath save kar diya ho to usko strip kar do
+        $baseUrl = strtok($baseUrl, '?');
 
-        // Agar abhi bhi placeholder bache ho to fallback query build
-        if (strpos($endpoint, '$phoneNumber') !== false ||
-            strpos($endpoint, '$mediaUrl')   !== false ||
-            strpos($endpoint, '$message')    !== false) {
+        // 7) Final endpoint build karo (sample):
+        // https://webhook.whatapi.in/webhook/XXXX?number=91XXXXXXXXXX&image=MEDIA_URL&text=hi
+        $query = [
+            'number' => $phone,
+            'file'  => $pdfUrl,   // whatapi pe agar 'document' ya 'file' param chahiye ho to yaha change kar lena
+            'text'   => $message,
+        ];
 
-            $base = rtrim($templateUrl, '?&');
+        $endpoint = $baseUrl . '?' . http_build_query($query);
 
-            $query = http_build_query([
-                'number' => $phone,
-                'video'  => $pdfUrl,
-                'text'   => $message,
-                'verify' => false,
-            ]);
-
-            $endpoint = $base . '?' . $query;
-        }
-
-        // 7) WhatsApp API call (GET webhook)
+        // 8) WhatsApp API call (GET webhook)
         $response = null;
         $success  = false;
         $status   = null;
@@ -190,7 +182,7 @@ class NoBusinessWhatsappController extends Controller
             $success = false;
         }
 
-        // 8) Log: kisne kya send kiya
+        // 9) Log: kisne kya send kiya
         InvoiceSend::create([
             'business_id'         => null,
             'user_id'             => $user->id,
@@ -198,7 +190,7 @@ class NoBusinessWhatsappController extends Controller
             'channel'             => 'whatsapp',
             'recipient_phone'     => $phone,
             'recipient_email'     => null,
-            'file_url'            => $pdfUrl, // <-- apne migration me yeh column hona chahiye
+            'file_url'            => $pdfUrl,
             'status'              => $success ? 'success' : 'failed',
             'response_code'       => $status,
             'provider_message_id' => null,
@@ -219,5 +211,6 @@ class NoBusinessWhatsappController extends Controller
 
         return back()->with('success', 'PDF WhatsApp par send ho gaya!');
     }
+
 
 }
