@@ -41,6 +41,10 @@
                 Login (Admin)
             </a>
 
+            <a href="{{route('no-business.whatsapp')}}" class="text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition">
+                Send Invoice
+            </a>
+
             <a href="/register" class="text-sm px-3 py-1.5 rounded-lg border border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-slate-900 transition">
                 Register
             </a>
@@ -104,7 +108,7 @@
                     </div>
 
                     <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
-                        Smart GST Billing for  
+                        Smart GST Billing for
                         <span class="bg-gradient-to-r from-emerald-400 via-cyan-400 to-sky-400 bg-clip-text text-transparent">
                             Jewellery Businesses
                         </span>
