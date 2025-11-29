@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\InvoicesExport;
 use App\Models\AdditionalCharge;
 use App\Models\Business;
 use App\Models\Invoice;
@@ -19,7 +20,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-
+use Maatwebsite\Excel\Facades\Excel;
 
 
 class InvoiceController extends Controller
@@ -33,11 +34,63 @@ class InvoiceController extends Controller
     }
 
 
+//    public function index(Request $r)
+//    {
+//        $invoices = Invoice::with('client')->latest()->paginate(15);
+//        return view('invoices.index', compact('invoices'));
+//    }
+
     public function index(Request $r)
     {
-        $invoices = Invoice::with('client')->latest()->paginate(15);
+        $query = Invoice::with('client')->latest();
+
+        // Search by invoice number / client name / client email
+        if ($r->filled('search')) {
+            $search = $r->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($sub) use ($search) {
+                        $sub->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Date range filter
+        if ($r->filled('from_date')) {
+            $query->whereDate('invoice_date', '>=', $r->from_date);
+        }
+
+        if ($r->filled('to_date')) {
+            $query->whereDate('invoice_date', '<=', $r->to_date);
+        }
+
+        // Status filter (Paid / Partial / Unpaid)
+        if ($r->filled('status') && in_array($r->status, ['paid', 'partial', 'unpaid'])) {
+            $status = $r->status;
+
+            $query->where(function ($q) use ($status) {
+                if ($status === 'paid') {
+                    // fully paid: balance <= 0
+                    $q->where('balance', '<=', 0);
+                } elseif ($status === 'partial') {
+                    // kuch amount mila hai, lekin balance bhi bacha hai
+                    $q->where('received_amount', '>', 0)
+                        ->where('balance', '>', 0);
+                } elseif ($status === 'unpaid') {
+                    // abhi tak kuch receive nahi hua
+                    $q->where('received_amount', '<=', 0)
+                        ->where('total', '>', 0);
+                }
+            });
+        }
+
+        $invoices = $query->paginate(15)->appends($r->query());
+
         return view('invoices.index', compact('invoices'));
     }
+
 
 
 
@@ -2418,6 +2471,11 @@ class InvoiceController extends Controller
         return redirect()
             ->route('invoices.index')
             ->with('success', 'Invoice updated successfully.');
+    }
+
+    public function export(Request $r)
+    {
+        return Excel::download(new InvoicesExport($r->all()), 'invoices-report.xlsx');
     }
 
 

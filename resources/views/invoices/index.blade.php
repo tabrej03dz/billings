@@ -1,11 +1,82 @@
 <x-layouts.app :title="__('Invoices')">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Invoices</h1>
-        <a href="{{ route('invoices.create') }}" class="px-3 py-2 rounded bg-blue-600 text-white">+ New</a>
+        <a href="{{ route('invoices.create') }}"
+           class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+            + New
+        </a>
     </div>
 
-    @if(session('success'))
-        <div class="p-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded">
+    {{-- Filters --}}
+    <form method="GET"
+          action="{{ route('invoices.index') }}"
+          class="mb-4 grid gap-3 md:grid-cols-5 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
+
+        {{-- Search --}}
+        <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
+                Search (Invoice / Client)
+            </label>
+            <input type="text" name="search"
+                   value="{{ request('search') }}"
+                   class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500"
+                   placeholder="Invoice no, client name, email...">
+        </div>
+
+        {{-- From date --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
+                From date
+            </label>
+            <input type="date" name="from_date"
+                   value="{{ request('from_date') }}"
+                   class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        {{-- To date --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
+                To date
+            </label>
+            <input type="date" name="to_date"
+                   value="{{ request('to_date') }}"
+                   class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+
+        {{-- Status --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
+                Status
+            </label>
+            <select name="status"
+                    class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
+                <option value="">All</option>
+                <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid</option>
+                <option value="partial" {{ request('status') === 'partial' ? 'selected' : '' }}>Partially Paid</option>
+                <option value="unpaid" {{ request('status') === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
+            </select>
+        </div>
+
+        {{-- Buttons --}}
+        <div class="md:col-span-5 flex items-center justify-end gap-2 pt-1">
+            <a href="{{ route('invoices.index') }}"
+               class="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 dark:border-neutral-700 text-xs font-medium text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                Reset
+            </a>
+            <button type="submit"
+                    class="inline-flex items-center px-4 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700">
+                Apply Filters
+            </button>
+        </div>
+    </form>
+    <a href="{{ route('invoices.export', request()->query()) }}"
+       class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium">
+        📄 Download Full Report
+    </a>
+
+
+@if(session('success'))
+        <div class="p-2 mb-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded">
             {{ session('success') }}
         </div>
     @endif
@@ -53,5 +124,7 @@
         </table>
     </div>
 
-    <div class="mt-4">{{ $invoices->links() }}</div>
+    <div class="mt-4">
+        {{ $invoices->links() }}
+    </div>
 </x-layouts.app>

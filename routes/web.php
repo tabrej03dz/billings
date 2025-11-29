@@ -17,9 +17,9 @@ Route::get('/', function (){
     return view('welcome');
 })->name('index');
 
-//Route::get('/welcome', function () {
-//    return view('welcome');
-//})->name('home');
+Route::get('/welcome', function () {
+    return view('welcome');
+})->name('home');
 
 //Route::view('dashboard', 'dashboard')
 //    ->middleware(['auth', 'verified'])
@@ -85,9 +85,12 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/invoices/{invoice}',    [InvoiceController::class, 'update'])->name('invoices.update');
         Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
+        Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
 
 
-        Route::post('/clients/quick-store', [ClientController::class, 'quickStore'])->name('clients.quick-store');
+
+
+    Route::post('/clients/quick-store', [ClientController::class, 'quickStore'])->name('clients.quick-store');
 
         // Optional: item lookup by id (JSON). Not required if you preload items.
         Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
