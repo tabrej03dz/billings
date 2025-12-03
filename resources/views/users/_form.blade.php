@@ -67,7 +67,9 @@
                         </td>
                         <td class="px-4 py-2">{{ $biz->name }} <span class="text-xs text-gray-400">/{{ $biz->slug }}</span></td>
                         <td class="px-4 py-2">
-                            <select name="roles[{{ $biz->id }}]" class="border rounded px-2 py-1">
+                            <select name="roles[{{ $biz->id }}]"
+                                    class="border rounded px-2 py-1 bg-white text-black
+                                        dark:bg-neutral-800 dark:text-white">
                                 @foreach($roles as $k => $label)
                                     <option value="{{ $k }}" @selected($roleVal === $k)>{{ $label }}</option>
                                 @endforeach

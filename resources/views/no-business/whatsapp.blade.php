@@ -34,10 +34,6 @@
                         <h1 class="text-xl sm:text-2xl font-semibold text-white">
                             Send PDF via WhatsApp
                         </h1>
-                        <p class="mt-1 text-xs sm:text-sm text-slate-300">
-                            Ye page un users ke liye hai jo abhi kisi business se linked nahi hain. PDF upload karo
-                            aur WhatsApp par direct bhejo.
-                        </p>
                     </div>
                 </div>
             </div>
@@ -59,9 +55,6 @@
                         class="inline-flex items-center px-3 py-1 rounded-full bg-amber-500/10 text-amber-200 border border-amber-400/60">
                         <span class="w-1.5 h-1.5 rounded-full bg-amber-400 mr-2"></span>
                         WhatsApp API not set
-                    </span>
-                    <span class="text-slate-400/90">
-                        Pehle API set karo, phir send kar paoge.
                     </span>
                 @endif
             </div>
@@ -161,7 +154,7 @@
                         @if(!($apiKey ?? false))
                             <p class="mt-2 text-[11px] text-red-500 flex items-center gap-1">
                                 <i class="fas fa-exclamation-triangle text-[10px]"></i>
-                                WhatsApp API abhi set nahi hai. Pehle right side se API configure kar lo.
+                                WhatsApp API abhi set nahi hai.
                             </p>
                         @endif
                     </div>
@@ -192,8 +185,8 @@
                 </div>
 
                 <p class="text-[11px] sm:text-xs text-slate-500">
-                    Yahan apne WhatsApp provider ka <b>Base URL</b>, <b>API Key</b> aur <b>Secret / Token</b> save karo.
-                    Ye settings sirf is user ke liye rahengi (kisi business se linked nahi).
+                    Yahan apne WhatsApp provider ka <b>Base URL</b>, <b>API Key</b> aur <b>Secret / Token</b> save karein.
+
                 </p>
 
                 <div id="apiFormWrapper"

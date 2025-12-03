@@ -66,25 +66,36 @@
 
             <div>
                 <label class="block text-sm font-medium mb-1">Metal Type</label>
-                <select name="metal_type" class="mt-1 w-full border rounded px-3 py-2">
-                    <option value="gold" @selected(old('metal_type', $item->metal_type ?? '')=='gold')>Gold</option>
+
+                <select name="metal_type"
+                        class="mt-1 w-full border rounded px-3 py-2
+               bg-white text-black
+               dark:bg-neutral-800 dark:text-white dark:border-neutral-600
+               focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+                    <option value="gold"   @selected(old('metal_type', $item->metal_type ?? '')=='gold')>Gold</option>
                     <option value="silver" @selected(old('metal_type', $item->metal_type ?? '')=='silver')>Silver</option>
-                    <option value="other" @selected(old('metal_type', $item->metal_type ?? '')=='other')>Other</option>
+                    <option value="other"  @selected(old('metal_type', $item->metal_type ?? '')=='other')>Other</option>
                 </select>
+
                 @error('metal_type')
                 <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                 @enderror
             </div>
 
+
             <div>
                 <label class="block text-sm font-medium mb-1">Purity</label>
 
                 <select name="purity"
-                        class="mt-1 w-full border rounded px-3 py-2 bg-white text-gray-800">
+                        class="mt-1 w-full border rounded px-3 py-2
+               bg-white text-gray-900
+               dark:bg-neutral-800 dark:text-white dark:border-neutral-600
+               focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
 
                     <option value="">Select Purity</option>
 
-                    {{-- Gold Purities --}}
+                    <!-- Gold Purities -->
                     <option value="24K (999)" @selected(old('purity', $item->purity ?? '') == '24K (999)')>
                         24K (999)
                     </option>
@@ -101,7 +112,7 @@
                         14K (585)
                     </option>
 
-                    {{-- Silver Purities --}}
+                    <!-- Silver Purities -->
                     <option value="999" @selected(old('purity', $item->purity ?? '') == '999')>
                         Silver 999
                     </option>
@@ -110,10 +121,12 @@
                         Silver 925
                     </option>
                 </select>
+
                 @error('purity')
                 <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                 @enderror
             </div>
+
 
             <div>
                 <label class="block text-sm font-medium mb-1">Gross Weight (gm)</label>

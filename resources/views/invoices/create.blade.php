@@ -89,30 +89,30 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                Payment Terms
-                            </label>
-                            <div
-                                class="flex overflow-hidden rounded border border-gray-300 dark:border-neutral-700 max-w-[190px]">
-                                <input type="number" min="0" x-model.number="hdr.terms"
-                                       class="w-24 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100
-                                              border-0 px-2 py-1 text-sm focus:ring-0 focus:outline-none">
-                                <span
-                                    class="px-2 py-1 text-xs bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 border-l border-gray-300 dark:border-neutral-700">
-                                    days
-                                </span>
-                            </div>
-                            <input type="hidden" name="payment_terms" :value="hdr.terms">
+{{--                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">--}}
+{{--                                Payment Terms--}}
+{{--                            </label>--}}
+{{--                            <div--}}
+{{--                                class="flex overflow-hidden rounded border border-gray-300 dark:border-neutral-700 max-w-[190px]">--}}
+{{--                                <input type="number" min="0" x-model.number="hdr.terms"--}}
+{{--                                       class="w-24 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100--}}
+{{--                                              border-0 px-2 py-1 text-sm focus:ring-0 focus:outline-none">--}}
+{{--                                <span--}}
+{{--                                    class="px-2 py-1 text-xs bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 border-l border-gray-300 dark:border-neutral-700">--}}
+{{--                                    days--}}
+{{--                                </span>--}}
+{{--                            </div>--}}
+{{--                            <input type="hidden" name="payment_terms" :value="hdr.terms">--}}
                         </div>
 
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                Due Date
-                            </label>
-                            <input type="date" name="due_date" x-model="hdr.due" readonly
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                          bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-neutral-100 text-sm">
-                        </div>
+{{--                        <div>--}}
+{{--                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">--}}
+{{--                                Due Date--}}
+{{--                            </label>--}}
+{{--                            <input type="date" name="due_date" x-model="hdr.due" readonly--}}
+{{--                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700--}}
+{{--                                          bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-neutral-100 text-sm">--}}
+{{--                        </div>--}}
                     </div>
                 </div>
             </div>

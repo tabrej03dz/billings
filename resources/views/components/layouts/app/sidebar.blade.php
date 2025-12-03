@@ -17,7 +17,7 @@
                 </flux:navlist.group>
             </flux:navlist>
 
-            @role('super_admin')
+            @role('super admin')
             <form action="{{ route('business.switch') }}" method="POST">
                 @csrf
                 <select name="business_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
