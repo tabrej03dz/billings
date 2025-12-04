@@ -3077,34 +3077,57 @@ class InvoiceController extends Controller
 
     public function send(Invoice $invoice)
     {
-        // 1) Client ka mobile nikaalo
+        // 1) Client + Business load
         $invoice->loadMissing('client', 'business');
 
-        $client = $invoice->client;
+        $client  = $invoice->client;
+        $biz     = $invoice->business;
+
         if (!$client || empty($client->mobile)) {
             return back()->withErrors([
                 'whatsapp' => 'Client ke mobile number ke bina WhatsApp par invoice nahi bhej sakte.',
             ]);
         }
 
-        // mobile ko normalize karo (sirf digits)
+        // 2) Mobile normalize
         $rawMobile = preg_replace('/\D+/', '', $client->mobile);
 
-        // Agar 10 digit hai to Indian number मान के "91" prefix
         if (strlen($rawMobile) === 10) {
             $number = '91' . $rawMobile;
         } else {
-            // Agar already 91... se start ho raha ho to waise hi rehne do
             if (str_starts_with($rawMobile, '91')) {
                 $number = $rawMobile;
             } else {
-                // fallback – phir bhi 91 prefix
                 $number = '91' . $rawMobile;
             }
         }
 
-        // 2) Ensure PDF exists: agar pdf_url hai & file exist karti hai to use,
-        //    warna naya generate karke save & pdf_url update
+        // 3) API config dynamic uthao (pehle business se, phir fallback user/global)
+        $apiConfig = ApiKey::query()
+            ->when($biz?->id, fn ($q) => $q->where('business_id', $biz->id))
+            ->when(!$biz?->id, fn ($q) => $q->whereNull('business_id'))
+            ->whereNotNull('base_url')
+            ->first();
+
+        // agar ऊपर वाला बहुत strict लगे to is तरह fallback chain bhi कर सकते हो:
+        if (! $apiConfig) {
+            // business-specific
+            $apiConfig = ApiKey::where('business_id', $biz?->id)->whereNotNull('base_url')->first()
+                // user-specific
+                ?? ApiKey::where('user_id', auth()->id())->whereNotNull('base_url')->first()
+                // global default (business_id/user_id null)
+                ?? ApiKey::whereNull('business_id')->whereNull('user_id')->whereNotNull('base_url')->first();
+        }
+
+        if (! $apiConfig) {
+            return back()->withErrors([
+                'whatsapp' => 'WhatsApp API config nahi mila. Pehle Settings → API Keys me base_url set karein.',
+            ]);
+        }
+
+        $apiBase = rtrim($apiConfig->base_url, '/');
+
+        // 4) Ensure PDF exists
         $path = null;
 
         if (!empty($invoice->pdf_url)) {
@@ -3131,24 +3154,26 @@ class InvoiceController extends Controller
             ]);
         }
 
-        // 3) Public URL nikaalo (jo WhatsApp API ko jayega)
+        // 5) Public URL
         $fileUrl = Storage::disk('public')->url($path);
 
-        // 4) WhatsAPI webhook call karo
-        //    Tumne example diya:
-        //    https://webhook.whatapi.in/webhook/68eb74c51b9845c02d38aa93?number=917753800444&otp=1235
-        //    Yaha hum file URL aur caption bhejenge
-        $apiBase = 'https://webhook.whatapi.in/webhook/68eb74c51b9845c02d38aa93';
-
+        // 6) WhatsApp API call – yaha key/secret bhi bhej सकते हो
         try {
-            $response = Http::timeout(20)->get($apiBase, [
+            $query = [
                 'number'  => $number,
-                // yaha API ka actual expected param naam tumhare docs ke mutabik change ho sakta hai
-                // maine example ke liye 'file' use kiya hai
                 'file'    => $fileUrl,
-                // extra param, tum chaiye to hata sakte ho
-                'caption' => 'Your invoice '.$invoice->invoice_number.' from '.($invoice->business->name ?? 'Our Business'),
-            ]);
+                'caption' => 'Your invoice '.$invoice->invoice_number.' from '.($biz->name ?? 'Our Business'),
+            ];
+
+            // agar tumhari 3rd-party API query string me key/secret leti hai:
+            if (!empty($apiConfig->key)) {
+                $query['key'] = $apiConfig->key;
+            }
+            if (!empty($apiConfig->secret)) {
+                $query['secret'] = $apiConfig->secret;
+            }
+
+            $response = Http::timeout(20)->get($apiBase, $query);
 
             if (!$response->successful()) {
                 return back()->withErrors([

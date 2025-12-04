@@ -23,4 +23,7 @@ class Business extends Model
         return $this->belongsToMany(User::class)
             ->wherePivot('role', 'owner');
     }
+    public function apiKey(){
+        return $this->hasOne(ApiKey::class, 'business_id');
+    }
 }

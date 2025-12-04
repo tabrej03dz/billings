@@ -11,4 +11,14 @@ class ApiKey extends Model
 
     protected $guarded = ['id'];
 
+    public function business()
+    {
+        return $this->belongsTo(\App\Models\Business::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
+
 }
