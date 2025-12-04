@@ -173,7 +173,11 @@ class BusinessController extends Controller
             $data['logo'] = $request->file('logo_path')->store('business_logos', 'public');
         }
         if ($request->hasFile('signature')) {
-            $data['logo'] = $request->file('logo_path')->store('business_signatures', 'public');
+            $data['signature'] = $request->file('signature_path')->store('business_signatures', 'public');
+        }
+
+        if ($request->hasFile('letter_head')) {
+            $data['letter_head'] = $request->file('letter_head_path')->store('business_letter_heads', 'public');
         }
 
         $business = Business::create($data);
@@ -244,7 +248,7 @@ class BusinessController extends Controller
         }
 
 
-        // Replace logo
+        // Replace signature
         if ($request->boolean('remove_signature') && $business->signature) {
             Storage::disk('public')->delete($business->signature);
             $data['signature'] = null;
@@ -254,6 +258,18 @@ class BusinessController extends Controller
                 Storage::disk('public')->delete($business->signature);
             }
             $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
+        }
+
+        // replace letter head
+        if ($request->boolean('remove_letter_head') && $business->letter_head) {
+            Storage::disk('public')->delete($business->letter_head);
+            $data['letter_head'] = null;
+        }
+        if ($request->hasFile('letter_head')) {
+            if ($business->letter_head) {
+                Storage::disk('public')->delete($business->letter_head);
+            }
+            $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
         }
 
         $business->update($data);

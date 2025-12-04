@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -1707,97 +1708,122 @@ class InvoiceController extends Controller
         return back()->with('success','Deleted.');
     }
 
-    public function download(\App\Models\Invoice $invoice)
+//    public function download(\App\Models\Invoice $invoice)
+//    {
+//        // relations
+//        $invoice->load(['client','items','business']);
+//
+//        $biz    = $invoice->business;
+//        $client = $invoice->client;
+//        $items  = $invoice->items ?? collect();
+//
+//        // charges: try relation if it exists, else fallback to charges_json
+//        if (method_exists($invoice, 'additionalCharges')) {
+//            $charges = $invoice->additionalCharges()->get(['name','amount']);
+//        } else {
+//            $arr = [];
+//            if (!empty($invoice->charges_json)) {
+//                $decoded = json_decode($invoice->charges_json, true);
+//                if (is_array($decoded)) {
+//                    foreach ($decoded as $c) {
+//                        $arr[] = (object)[
+//                            'name'   => (string)($c['name'] ?? ''),
+//                            'amount' => (float) ($c['amount'] ?? 0),
+//                        ];
+//                    }
+//                }
+//            }
+//            $charges = collect($arr);
+//        }
+//
+//        // --- totals (server-side recompute, same as store() & JS) ---
+//        $subtotal = 0.0;
+//        $taxTotal = 0.0;
+//
+//        foreach ($items as $it) {
+//            $qty    = (float) ($it->quantity ?? 0);
+//            $rate   = (float) ($it->rate ?? 0);             // metal value per unit
+//            $mk     = (float) ($it->making_charge ?? 0);    // making per unit
+//            $stone  = (float) ($it->stone_charges ?? 0);    // stone per unit / per line (we treat as per unit in same way as JS)
+//            $disc   = (float) ($it->discount ?? 0);         // line discount
+//            $tp     = (float) ($it->tax_percent ?? 0);
+//
+//            $basePerUnit = $rate + $mk + $stone;
+//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
+//            $lineTax     = $lineBase * ($tp / 100);
+//
+//            $subtotal += $lineBase;
+//            $taxTotal += $lineTax;
+//        }
+//
+//        $discountTotal = (float) ($invoice->discount_total ?? 0.0); // extra invoice-level discount
+//        $chargesTotal  = (float) $charges->reduce(
+//            fn($s, $r) => $s + (float) ($r->amount ?? 0),
+//            0.0
+//        );
+//        $tcsPercent    = (float) ($invoice->tcs_percent ?? 0.0);
+//        $received      = (float) ($invoice->received_amount ?? 0.0);
+//        $roundOff      = (float) ($invoice->round_off ?? 0.0);
+//
+//        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
+//        $tcsAmount = $tcsPercent > 0
+//            ? round($tcsBase * ($tcsPercent / 100), 2)
+//            : 0.0;
+//
+//        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
+//        $grandTotal       = (float) ($totalBeforeRound + $roundOff);
+//        $balance          = max(0, $grandTotal - $received);
+//
+//        // data URIs
+//        [$logoDataUri, $signDataUri] = [
+//            $this->imageDataUri($biz?->logo),
+//            $this->imageDataUri($biz?->signature),
+//        ];
+//
+//        $vm = compact(
+//            'invoice','biz','client','items','charges',
+//            'logoDataUri','signDataUri',
+//            'subtotal','taxTotal','discountTotal','chargesTotal','tcsPercent','tcsAmount',
+//            'roundOff','grandTotal','received','balance'
+//        );
+//
+//        // rename keys to what blade expects
+//        $vm['inv']            = $invoice;
+//        $vm['logo']           = $logoDataUri;
+//        $vm['sign']           = $signDataUri;
+//        $vm['tax_total']      = $taxTotal;
+//        $vm['discount_total'] = $discountTotal;
+//        $vm['charges_total']  = $chargesTotal;
+//        $vm['tcs_percent']    = $tcsPercent;
+//        $vm['tcs_amount']     = $tcsAmount;
+//        $vm['grand_total']    = $grandTotal;
+//
+//        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', $vm)->setPaper('a4');
+//
+//        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//        return $pdf->download('Invoice-'.$safeNumber.'.pdf');
+//    }
+
+
+
+    public function download(Invoice $invoice)
     {
-        // relations
-        $invoice->load(['client','items','business']);
+        // 1) Check if invoice already has pdf_url saved
+        if (!empty($invoice->pdf_url)) {
 
-        $biz    = $invoice->business;
-        $client = $invoice->client;
-        $items  = $invoice->items ?? collect();
+            // normalize path (handles full URLs, storage/... etc.)
+            $path = $this->normalizePdfPath($invoice->pdf_url);
 
-        // charges: try relation if it exists, else fallback to charges_json
-        if (method_exists($invoice, 'additionalCharges')) {
-            $charges = $invoice->additionalCharges()->get(['name','amount']);
-        } else {
-            $arr = [];
-            if (!empty($invoice->charges_json)) {
-                $decoded = json_decode($invoice->charges_json, true);
-                if (is_array($decoded)) {
-                    foreach ($decoded as $c) {
-                        $arr[] = (object)[
-                            'name'   => (string)($c['name'] ?? ''),
-                            'amount' => (float) ($c['amount'] ?? 0),
-                        ];
-                    }
-                }
+            // agar file storage/public me exist karta hai -> directly download
+            if ($path && Storage::disk('public')->exists($path)) {
+                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+
+                return Storage::disk('public')->download($path, 'Invoice-' . $safeNumber . '.pdf');
             }
-            $charges = collect($arr);
         }
 
-        // --- totals (server-side recompute, same as store() & JS) ---
-        $subtotal = 0.0;
-        $taxTotal = 0.0;
-
-        foreach ($items as $it) {
-            $qty    = (float) ($it->quantity ?? 0);
-            $rate   = (float) ($it->rate ?? 0);             // metal value per unit
-            $mk     = (float) ($it->making_charge ?? 0);    // making per unit
-            $stone  = (float) ($it->stone_charges ?? 0);    // stone per unit / per line (we treat as per unit in same way as JS)
-            $disc   = (float) ($it->discount ?? 0);         // line discount
-            $tp     = (float) ($it->tax_percent ?? 0);
-
-            $basePerUnit = $rate + $mk + $stone;
-            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
-            $lineTax     = $lineBase * ($tp / 100);
-
-            $subtotal += $lineBase;
-            $taxTotal += $lineTax;
-        }
-
-        $discountTotal = (float) ($invoice->discount_total ?? 0.0); // extra invoice-level discount
-        $chargesTotal  = (float) $charges->reduce(
-            fn($s, $r) => $s + (float) ($r->amount ?? 0),
-            0.0
-        );
-        $tcsPercent    = (float) ($invoice->tcs_percent ?? 0.0);
-        $received      = (float) ($invoice->received_amount ?? 0.0);
-        $roundOff      = (float) ($invoice->round_off ?? 0.0);
-
-        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
-        $tcsAmount = $tcsPercent > 0
-            ? round($tcsBase * ($tcsPercent / 100), 2)
-            : 0.0;
-
-        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
-        $grandTotal       = (float) ($totalBeforeRound + $roundOff);
-        $balance          = max(0, $grandTotal - $received);
-
-        // data URIs
-        [$logoDataUri, $signDataUri] = [
-            $this->imageDataUri($biz?->logo),
-            $this->imageDataUri($biz?->signature),
-        ];
-
-        $vm = compact(
-            'invoice','biz','client','items','charges',
-            'logoDataUri','signDataUri',
-            'subtotal','taxTotal','discountTotal','chargesTotal','tcsPercent','tcsAmount',
-            'roundOff','grandTotal','received','balance'
-        );
-
-        // rename keys to what blade expects
-        $vm['inv']            = $invoice;
-        $vm['logo']           = $logoDataUri;
-        $vm['sign']           = $signDataUri;
-        $vm['tax_total']      = $taxTotal;
-        $vm['discount_total'] = $discountTotal;
-        $vm['charges_total']  = $chargesTotal;
-        $vm['tcs_percent']    = $tcsPercent;
-        $vm['tcs_amount']     = $tcsAmount;
-        $vm['grand_total']    = $grandTotal;
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', $vm)->setPaper('a4');
+        // 2) Otherwise — generate fresh PDF (fallback)
+        $pdf = $this->buildInvoicePdf($invoice);
 
         $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
         return $pdf->download('Invoice-'.$safeNumber.'.pdf');
@@ -1911,94 +1937,394 @@ class InvoiceController extends Controller
 //    }
 
 
-    public function show(\App\Models\Invoice $invoice)
+//    public function show(\App\Models\Invoice $invoice)
+//    {
+//        $invoice->load(['client', 'items', 'business']);
+//
+//        $items = $invoice->items ?? collect();
+//
+//        // --- Additional charges (relation हो तो उससे, वरना JSON fallback) ---
+//        if (method_exists($invoice, 'additionalCharges')) {
+//            $charges = $invoice->additionalCharges()->get(['name', 'amount']);
+//        } else {
+//            $arr = [];
+//            if (!empty($invoice->charges_json)) {
+//                $decoded = json_decode($invoice->charges_json, true);
+//                if (is_array($decoded)) {
+//                    foreach ($decoded as $c) {
+//                        $arr[] = (object)[
+//                            'name'   => (string)($c['name'] ?? ''),
+//                            'amount' => (float)($c['amount'] ?? 0),
+//                        ];
+//                    }
+//                }
+//            }
+//            $charges = collect($arr);
+//        }
+//
+//        // --- Totals (same formula as store() + download()) ---
+//        $subtotal = 0.0;
+//        $taxTotal = 0.0;
+//
+//        foreach ($items as $it) {
+//            $qty    = (float)($it->quantity ?? 0);
+//            $rate   = (float)($it->rate ?? 0);             // metal value per unit
+//            $mk     = (float)($it->making_charge ?? 0);    // making per unit
+//            $stone  = (float)($it->stone_charges ?? 0);    // stone per unit
+//            $disc   = (float)($it->discount ?? 0);         // line discount
+//            $tp     = (float)($it->tax_percent ?? 0);
+//
+//            $basePerUnit = $rate + $mk + $stone;
+//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
+//            $lineTax     = $lineBase * ($tp / 100);
+//
+//            $subtotal += $lineBase;
+//            $taxTotal += $lineTax;
+//        }
+//
+//        $discountTotal = (float)($invoice->discount_total ?? 0.0);
+//        $chargesTotal  = (float)$charges->reduce(
+//            fn ($s, $r) => $s + (float)($r->amount ?? 0),
+//            0.0
+//        );
+//        $tcsPercent    = (float)($invoice->tcs_percent ?? 0.0);
+//        $roundOff      = (float)($invoice->round_off ?? 0.0);
+//        $received      = (float)($invoice->received_amount ?? 0.0);
+//
+//        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
+//        $tcsAmount = $tcsPercent > 0
+//            ? round($tcsBase * ($tcsPercent / 100), 2)
+//            : 0.0;
+//
+//        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
+//        $grandTotal       = (float)($totalBeforeRound + $roundOff);
+//        $balance          = max(0, $grandTotal - $received);
+//
+//        // same helper you used for PDF
+//        [$logoDataUri, $signDataUri] = [
+//            $this->imageDataUri($invoice->business->logo ?? null),
+//            $this->imageDataUri($invoice->business->signature ?? null),
+//        ];
+//
+//        return view('invoices.show', [
+//            'inv'            => $invoice,
+//            'charges'        => $charges,
+//            'logo'           => $logoDataUri,
+//            'sign'           => $signDataUri,
+//
+//            // totals for Blade
+//            'subtotal'       => $subtotal,
+//            'taxTotal'       => $taxTotal,
+//            'discountTotal'  => $discountTotal,
+//            'chargesTotal'   => $chargesTotal,
+//            'tcsPercent'     => $tcsPercent,
+//            'tcsAmount'      => $tcsAmount,
+//            'roundOff'       => $roundOff,
+//            'grandTotal'     => $grandTotal,
+//            'received'       => $received,
+//            'balance'        => $balance,
+//        ]);
+//    }
+
+
+    public function show(Invoice $invoice)
     {
-        $invoice->load(['client', 'items', 'business']);
+        // 1) Agar invoice ke paas pdf_url hai, to pehle wahi try karte hain
+        if (!empty($invoice->pdf_url)) {
+            $path = $this->normalizePdfPath($invoice->pdf_url);
 
-        $items = $invoice->items ?? collect();
+            if ($path && Storage::disk('public')->exists($path)) {
+                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
 
-        // --- Additional charges (relation हो तो उससे, वरना JSON fallback) ---
-        if (method_exists($invoice, 'additionalCharges')) {
-            $charges = $invoice->additionalCharges()->get(['name', 'amount']);
-        } else {
-            $arr = [];
-            if (!empty($invoice->charges_json)) {
-                $decoded = json_decode($invoice->charges_json, true);
-                if (is_array($decoded)) {
-                    foreach ($decoded as $c) {
-                        $arr[] = (object)[
-                            'name'   => (string)($c['name'] ?? ''),
-                            'amount' => (float)($c['amount'] ?? 0),
-                        ];
-                    }
-                }
+                return response()->file(
+                    Storage::disk('public')->path($path),
+                    [
+                        'Content-Type'        => 'application/pdf',
+                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+                    ]
+                );
             }
-            $charges = collect($arr);
         }
 
-        // --- Totals (same formula as store() + download()) ---
-        $subtotal = 0.0;
-        $taxTotal = 0.0;
+        // 2) Yaha tak aa gaye matlab:
+        //    - ya to pdf_url empty hai
+        //    - ya file missing hai
+        //    => ab naya PDF generate karke save karein, aur phir dikhayein
 
-        foreach ($items as $it) {
-            $qty    = (float)($it->quantity ?? 0);
-            $rate   = (float)($it->rate ?? 0);             // metal value per unit
-            $mk     = (float)($it->making_charge ?? 0);    // making per unit
-            $stone  = (float)($it->stone_charges ?? 0);    // stone per unit
-            $disc   = (float)($it->discount ?? 0);         // line discount
-            $tp     = (float)($it->tax_percent ?? 0);
+        // fresh relations ke liye (optional but safe)
+        $invoice = $invoice->fresh(['client','items','business']);
 
-            $basePerUnit = $rate + $mk + $stone;
-            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
-            $lineTax     = $lineBase * ($tp / 100);
+        $pdf = $this->buildInvoicePdf($invoice);
 
-            $subtotal += $lineBase;
-            $taxTotal += $lineTax;
-        }
+        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+        $fileName   = 'invoices/Invoice-'.$safeNumber.'.pdf';
 
-        $discountTotal = (float)($invoice->discount_total ?? 0.0);
-        $chargesTotal  = (float)$charges->reduce(
-            fn ($s, $r) => $s + (float)($r->amount ?? 0),
-            0.0
-        );
-        $tcsPercent    = (float)($invoice->tcs_percent ?? 0.0);
-        $roundOff      = (float)($invoice->round_off ?? 0.0);
-        $received      = (float)($invoice->received_amount ?? 0.0);
+        // storage/app/public/invoices/Invoice-XXX.pdf
+        Storage::disk('public')->put($fileName, $pdf->output());
 
-        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
-        $tcsAmount = $tcsPercent > 0
-            ? round($tcsBase * ($tcsPercent / 100), 2)
-            : 0.0;
-
-        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
-        $grandTotal       = (float)($totalBeforeRound + $roundOff);
-        $balance          = max(0, $grandTotal - $received);
-
-        // same helper you used for PDF
-        [$logoDataUri, $signDataUri] = [
-            $this->imageDataUri($invoice->business->logo ?? null),
-            $this->imageDataUri($invoice->business->signature ?? null),
-        ];
-
-        return view('invoices.show', [
-            'inv'            => $invoice,
-            'charges'        => $charges,
-            'logo'           => $logoDataUri,
-            'sign'           => $signDataUri,
-
-            // totals for Blade
-            'subtotal'       => $subtotal,
-            'taxTotal'       => $taxTotal,
-            'discountTotal'  => $discountTotal,
-            'chargesTotal'   => $chargesTotal,
-            'tcsPercent'     => $tcsPercent,
-            'tcsAmount'      => $tcsAmount,
-            'roundOff'       => $roundOff,
-            'grandTotal'     => $grandTotal,
-            'received'       => $received,
-            'balance'        => $balance,
+        // pdf_url me relative path save kar rahe hain
+        $invoice->update([
+            'pdf_url' => $fileName,
         ]);
+
+        return response()->file(
+            Storage::disk('public')->path($fileName),
+            [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+            ]
+        );
     }
+
+
+//    public function store(Request $r)
+//    {
+//        $bid = $r->user()->current_business_id ?? session('active_business_id');
+//        if (!$bid) {
+//            return back()
+//                ->withErrors(['business' => 'Active business select/attach नहीं है.'])
+//                ->withInput();
+//        }
+//
+//        $data = $r->validate([
+//            'client_id'       => ['required','exists:clients,id'],
+//            'invoice_date'    => ['required','date'],
+//            'invoice_prefix'  => ['nullable','string','max:100'],
+//
+//            'payment_terms'   => ['nullable','integer','min:0','max:365'],
+//            'due_date'        => ['nullable','date'],
+//            'notes'           => ['nullable','string','max:2000'],
+//            'terms'           => ['nullable','string','max:2000'],
+//
+//            'discount_total'  => ['nullable','numeric','min:0'],
+//            'charge_total'    => ['nullable','numeric','min:0'], // ignored; recompute
+//            'tcs_percent'     => ['nullable','numeric','min:0','max:100'],
+//            'round_off'       => ['nullable','numeric'], // +/- allowed
+//            'amount_received' => ['nullable','numeric','min:0'],
+//            'payment_method'  => ['nullable','string','max:50'],
+//
+//            'items_json'      => ['required','string'],
+//            'charges_json'    => ['nullable','string'],
+//        ]);
+//
+//        // FY prefix compute helper
+//        $computePrefix = function (string $date, string $base = 'INV'): string {
+//            $ts = strtotime($date);
+//            $y  = (int)date('Y', $ts);
+//            $m  = (int)date('n', $ts);
+//
+//            $startYY = ($m >= 4) ? ($y % 100) : (($y - 1) % 100);
+//            $a = str_pad((string)$startYY, 2, '0', STR_PAD_LEFT);
+//            $b = str_pad((string)(($startYY + 1) % 100), 2, '0', STR_PAD_LEFT);
+//            $fy = "{$a}-{$b}";
+//
+//            $base = rtrim($base, '/');
+//            return "{$base}/{$fy}/";
+//        };
+//
+//        $invoiceDate  = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
+//        $prefix       = trim($data['invoice_prefix'] ?? '');
+//        if ($prefix === '') {
+//            $prefix = $computePrefix($invoiceDate, 'INV');
+//        }
+//
+//        $paymentTerms = (int)($data['payment_terms'] ?? 0);
+//        $dueDate      = $data['due_date']
+//            ?? \Carbon\Carbon::parse($invoiceDate)->addDays($paymentTerms)->toDateString();
+//
+//        // -------- ITEMS JSON PARSE --------
+//        $rows = json_decode($data['items_json'], true);
+//        if (!is_array($rows) || count($rows) < 1) {
+//            return back()
+//                ->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])
+//                ->withInput();
+//        }
+//
+//        // -------- CHARGES JSON PARSE --------
+//        $chargesRaw = [];
+//        if (filled($data['charges_json'] ?? '')) {
+//            $decoded = json_decode($data['charges_json'], true);
+//            if (is_array($decoded)) {
+//                foreach ($decoded as $c) {
+//                    $name   = trim(Arr::get($c, 'name', ''));
+//                    $amount = (float)Arr::get($c, 'amount', 0);
+//                    if ($name !== '' && $amount >= 0) {
+//                        $chargesRaw[] = [
+//                            'id'     => Arr::get($c, 'id'),
+//                            'name'   => $name,
+//                            'amount' => round($amount, 2),
+//                        ];
+//                    }
+//                }
+//            }
+//        }
+//        $charge_total = round(array_sum(array_map(
+//            fn($c) => (float)$c['amount'],
+//            $chargesRaw
+//        )), 2);
+//
+//        // -------- TOTALS (PHP == JS LOGIC) --------
+//        $subtotal  = 0.0;
+//        $taxTotal  = 0.0;
+//        $cleanRows = [];
+//
+//        foreach ($rows as $i => $row) {
+//            $desc    = trim($row['description'] ?? '');
+//            $sac     = trim($row['sac'] ?? '');
+//            $qty     = (int)($row['qty'] ?? 0);
+//
+//            // metal fields from JS
+//            $metal_type    = $row['metal_type']    ?? null;
+//            $purity        = trim($row['purity']   ?? '');
+//            $metal_weight  = (float)($row['metal_weight']  ?? 0);
+//            $metal_rate    = (float)($row['metal_rate']    ?? 0);
+//            $stoneCharges  = (float)($row['stone_charges'] ?? 0);
+//
+//            // price/making/discount/tax
+//            $price   = (float)($row['price'] ?? 0);           // metal value per unit
+//            $making  = (float)($row['making_charge'] ?? 0);   // per unit making
+//            $disc    = (float)($row['discount'] ?? 0);        // line discount
+//            $taxPct  = (float)($row['tax_percent'] ?? 0);
+//            $item_id = $row['item_id'] ?? null;
+//
+//            if (
+//                $desc === '' || $qty < 1 ||
+//                $price < 0 || $making < 0 || $disc < 0 || $taxPct < 0 ||
+//                $metal_weight < 0 || $metal_rate < 0 || $stoneCharges < 0
+//            ) {
+//                return back()
+//                    ->withErrors(['items' => "Row ".($i+1)." invalid है."])
+//                    ->withInput();
+//            }
+//
+//            // JS logic:
+//            // basePerUnit = price + making_charge + stone_charges
+//            // base        = max(0, qty * basePerUnit - discount)
+//            // tax         = base * (tax_percent/100)
+//            $basePerUnit = $price + $making + $stoneCharges;
+//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
+//            $lineTax     = $lineBase * ($taxPct / 100);
+//            $lineAmt     = round($lineBase + $lineTax, 2);
+//
+//            $subtotal += $lineBase;
+//            $taxTotal += $lineTax;
+//
+//            $clean = [
+//                'description'    => $desc,
+//                'sac_code'       => $sac ?: null,
+//                'quantity'       => $qty,
+//
+//                // metal info persist in invoice_items
+//                'metal_type'     => $metal_type ?: null,
+//                'purity'         => $purity ?: null,
+//                'metal_weight'   => $metal_weight ?: null,
+//                'metal_rate'     => $metal_rate ?: null,
+//                'stone_charges'  => $stoneCharges,
+//
+//                // pricing
+//                'rate'           => $price,
+//                'making_charge'  => $making,
+//                'discount'       => $disc,
+//                'tax_percent'    => $taxPct,
+//                'amount'         => $lineAmt,
+//            ];
+//            if ($item_id) {
+//                $clean['item_id'] = $item_id;
+//            }
+//
+//            $cleanRows[] = $clean;
+//        }
+//
+//        // -------- FINAL TOTAL FIELDS --------
+//        $discount_total = (float)($data['discount_total'] ?? 0);
+//        $tcs_percent    = (float)($data['tcs_percent'] ?? 0);
+//        $round_off_in   = (float)($data['round_off'] ?? 0);
+//        $received       = (float)($data['amount_received'] ?? 0);
+//
+//        $tcs_base   = max(0, $subtotal + $taxTotal - $discount_total);
+//        $tcs_amount = round($tcs_base * ($tcs_percent / 100), 2);
+//
+//        $total_before_round = round(
+//            $subtotal + $taxTotal - $discount_total + $charge_total + $tcs_amount,
+//            2
+//        );
+//        $grand_total = round($total_before_round + $round_off_in, 2);
+//        $balance     = round(max(0, $grand_total - $received), 2);
+//
+//        try {
+//            DB::transaction(function () use (
+//                $bid, $r, $data, $prefix, $invoiceDate, $paymentTerms, $dueDate,
+//                $subtotal, $taxTotal, $discount_total, $charge_total, $tcs_percent, $tcs_amount,
+//                $round_off_in, $grand_total, $received, $balance, $cleanRows, $chargesRaw
+//            ) {
+//                $alloc = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $prefix, 3);
+//
+//                /** @var \App\Models\Invoice $invoice */
+//                $invoice = Invoice::create([
+//                    'business_id'     => $bid,
+//                    'client_id'       => $data['client_id'],
+//                    'invoice_date'    => $invoiceDate,
+//
+//                    'invoice_prefix'  => $prefix,
+//                    'invoice_number'  => $alloc['full'],
+//
+//                    'payment_terms'   => $paymentTerms,
+//                    'due_date'        => $dueDate,
+//
+//                    'subtotal'        => $subtotal,
+//                    'tax_amount'      => $taxTotal,
+//                    'discount_total'  => $discount_total,
+//                    'charge_total'    => $charge_total,
+//                    'tcs_percent'     => $tcs_percent,
+//                    'tcs_amount'      => $tcs_amount,
+//                    'round_off'       => $round_off_in,
+//                    'total'           => $grand_total,
+//                    'received_amount' => $received,
+//                    'balance'         => $balance,
+//
+//                    'payment_method'  => $data['payment_method'] ?? null,
+//                    'notes'           => $data['notes'] ?? null,
+//                    'terms'           => $data['terms'] ?? null,
+//
+//                    'items_json'      => $r->input('items_json'),
+//                    'charges_json'    => !empty($chargesRaw) ? json_encode($chargesRaw) : null,
+//
+//                    'amount_in_words' => '',
+//                ]);
+//
+//                // line items
+//                foreach ($cleanRows as $row) {
+//                    $row['invoice_id'] = $invoice->id;
+//                    InvoiceItem::create($row);
+//                }
+//
+//                // charges detail table (if model exists)
+//                if (class_exists(InvoiceCharge::class) && !empty($chargesRaw)) {
+//                    foreach ($chargesRaw as $c) {
+//                        InvoiceCharge::create([
+//                            'invoice_id' => $invoice->id,
+//                            'charge_id'  => $c['id'] ?? null,
+//                            'name'       => $c['name'],
+//                            'amount'     => $c['amount'],
+//                        ]);
+//                    }
+//                }
+//
+//                // ⭐ INVENTORY UPDATE: StockService se movement banega
+//                $invoice->load('items.item');
+//                app(StockService::class)->recordSale($invoice);
+//            });
+//        } catch (\Throwable $e) {
+//            report($e);
+//            return back()
+//                ->withErrors(['invoice' => 'Invoice save करते समय error आया: '.$e->getMessage()])
+//                ->withInput();
+//        }
+//
+//        return redirect()
+//            ->route('invoices.index')
+//            ->with('success', 'Invoice created successfully.');
+//    }
 
 
     public function store(Request $r)
@@ -2021,9 +2347,9 @@ class InvoiceController extends Controller
             'terms'           => ['nullable','string','max:2000'],
 
             'discount_total'  => ['nullable','numeric','min:0'],
-            'charge_total'    => ['nullable','numeric','min:0'], // ignored; recompute
+            'charge_total'    => ['nullable','numeric','min:0'],
             'tcs_percent'     => ['nullable','numeric','min:0','max:100'],
-            'round_off'       => ['nullable','numeric'], // +/- allowed
+            'round_off'       => ['nullable','numeric'],
             'amount_received' => ['nullable','numeric','min:0'],
             'payment_method'  => ['nullable','string','max:50'],
 
@@ -2031,7 +2357,7 @@ class InvoiceController extends Controller
             'charges_json'    => ['nullable','string'],
         ]);
 
-        // FY prefix compute helper
+        // FY prefix compute helper (same as your code)
         $computePrefix = function (string $date, string $base = 'INV'): string {
             $ts = strtotime($date);
             $y  = (int)date('Y', $ts);
@@ -2105,9 +2431,9 @@ class InvoiceController extends Controller
             $stoneCharges  = (float)($row['stone_charges'] ?? 0);
 
             // price/making/discount/tax
-            $price   = (float)($row['price'] ?? 0);           // metal value per unit
-            $making  = (float)($row['making_charge'] ?? 0);   // per unit making
-            $disc    = (float)($row['discount'] ?? 0);        // line discount
+            $price   = (float)($row['price'] ?? 0);
+            $making  = (float)($row['making_charge'] ?? 0);
+            $disc    = (float)($row['discount'] ?? 0);
             $taxPct  = (float)($row['tax_percent'] ?? 0);
             $item_id = $row['item_id'] ?? null;
 
@@ -2121,10 +2447,6 @@ class InvoiceController extends Controller
                     ->withInput();
             }
 
-            // JS logic:
-            // basePerUnit = price + making_charge + stone_charges
-            // base        = max(0, qty * basePerUnit - discount)
-            // tax         = base * (tax_percent/100)
             $basePerUnit = $price + $making + $stoneCharges;
             $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
             $lineTax     = $lineBase * ($taxPct / 100);
@@ -2137,15 +2459,11 @@ class InvoiceController extends Controller
                 'description'    => $desc,
                 'sac_code'       => $sac ?: null,
                 'quantity'       => $qty,
-
-                // metal info persist in invoice_items
                 'metal_type'     => $metal_type ?: null,
                 'purity'         => $purity ?: null,
                 'metal_weight'   => $metal_weight ?: null,
                 'metal_rate'     => $metal_rate ?: null,
                 'stone_charges'  => $stoneCharges,
-
-                // pricing
                 'rate'           => $price,
                 'making_charge'  => $making,
                 'discount'       => $disc,
@@ -2159,7 +2477,6 @@ class InvoiceController extends Controller
             $cleanRows[] = $clean;
         }
 
-        // -------- FINAL TOTAL FIELDS --------
         $discount_total = (float)($data['discount_total'] ?? 0);
         $tcs_percent    = (float)($data['tcs_percent'] ?? 0);
         $round_off_in   = (float)($data['round_off'] ?? 0);
@@ -2175,11 +2492,15 @@ class InvoiceController extends Controller
         $grand_total = round($total_before_round + $round_off_in, 2);
         $balance     = round(max(0, $grand_total - $received), 2);
 
+        // yaha invoice ko bahar use karne ke liye
+        $invoice = null;
+
         try {
             DB::transaction(function () use (
                 $bid, $r, $data, $prefix, $invoiceDate, $paymentTerms, $dueDate,
                 $subtotal, $taxTotal, $discount_total, $charge_total, $tcs_percent, $tcs_amount,
-                $round_off_in, $grand_total, $received, $balance, $cleanRows, $chargesRaw
+                $round_off_in, $grand_total, $received, $balance, $cleanRows, $chargesRaw,
+                &$invoice   // <-- important: reference
             ) {
                 $alloc = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $prefix, 3);
 
@@ -2234,7 +2555,7 @@ class InvoiceController extends Controller
                     }
                 }
 
-                // ⭐ INVENTORY UPDATE: StockService se movement banega
+                // inventory update
                 $invoice->load('items.item');
                 app(StockService::class)->recordSale($invoice);
             });
@@ -2245,6 +2566,27 @@ class InvoiceController extends Controller
                 ->withInput();
         }
 
+        // ✅ Ab transaction commit ho chuka, invoice mil gaya hai
+        //    ab PDF generate karke storage/public me save karenge
+        try {
+            $pdf       = $this->buildInvoicePdf($invoice);
+            $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+            $fileName  = 'invoices/Invoice-'.$safeNumber.'.pdf';
+
+            // storage/app/public/invoices/...
+            Storage::disk('public')->put($fileName, $pdf->output());
+
+            // url ya relative path jo bhi tum use karna chaho
+            $invoice->update([
+                'pdf_url' => Storage::disk('public')->url($fileName),
+                // agar sirf path chahiye to:
+                // 'pdf_url' => $fileName,
+            ]);
+        } catch (\Throwable $e) {
+            // agar yaha error aata hai to bhi invoice bana rahe, bas pdf_url na ho
+            report($e);
+        }
+
         return redirect()
             ->route('invoices.index')
             ->with('success', 'Invoice created successfully.');
@@ -2252,8 +2594,234 @@ class InvoiceController extends Controller
 
 
 
+//    public function update(Request $r, Invoice $invoice)
+//    {
+//        // 1) Basic validation
+//        $data = $r->validate([
+//            'client_id'       => ['required','exists:clients,id'],
+//            'invoice_date'    => ['required','date'],
+//            'invoice_prefix'  => ['nullable','string','max:100'],
+//
+//            'payment_terms'   => ['nullable','integer','min:0','max:365'],
+//            'due_date'        => ['nullable','date'],
+//            'notes'           => ['nullable','string','max:2000'],
+//            'terms'           => ['nullable','string','max:2000'],
+//
+//            'discount_total'  => ['nullable','numeric','min:0'],
+//            'charge_total'    => ['nullable','numeric','min:0'], // ignored; recompute
+//            'tcs_percent'     => ['nullable','numeric','min:0','max:100'],
+//            'round_off'       => ['nullable','numeric'], // +/- allowed
+//            'amount_received' => ['nullable','numeric','min:0'],
+//            'payment_method'  => ['nullable','string','max:50'],
+//
+//            'items_json'      => ['required','string'],  // [{ item_id?, description, sac, qty, price, making_charge, stone_charges, discount, tax_percent, amount }]
+//            'charges_json'    => ['nullable','string'],  // [{ id?, name, amount }]
+//        ]);
+//
+//        $invoiceDate  = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
+//
+//        // prefix ko keep/change kar sakte ho
+//        $prefix       = trim($data['invoice_prefix'] ?? $invoice->invoice_prefix ?? '');
+//        if ($prefix === '') {
+//            $prefix = $invoice->invoice_prefix ?? 'INV/';
+//        }
+//
+//        $paymentTerms = (int)($data['payment_terms'] ?? 0);
+//        $dueDate      = $data['due_date'] ?? \Carbon\Carbon::parse($invoiceDate)->addDays($paymentTerms)->toDateString();
+//
+//        // 2) Decode rows
+//        $rows = json_decode($data['items_json'], true);
+//        if (!is_array($rows) || count($rows) < 1) {
+//            return back()
+//                ->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])
+//                ->withInput();
+//        }
+//
+//        // 3) Decode charges and recompute total
+//        $chargesRaw = [];
+//        if (filled($data['charges_json'] ?? '')) {
+//            $decoded = json_decode($data['charges_json'], true);
+//            if (is_array($decoded)) {
+//                foreach ($decoded as $c) {
+//                    $name   = trim(Arr::get($c, 'name', ''));
+//                    $amount = (float)Arr::get($c, 'amount', 0);
+//                    if ($name !== '' && $amount >= 0) {
+//                        $chargesRaw[] = [
+//                            'id'     => Arr::get($c, 'id'),
+//                            'name'   => $name,
+//                            'amount' => round($amount, 2),
+//                        ];
+//                    }
+//                }
+//            }
+//        }
+//        $charge_total = round(array_sum(array_map(fn($c) => (float)$c['amount'], $chargesRaw)), 2);
+//
+//        // 4) Recompute totals (authoritative, JS ke hisaab se)
+//        $subtotal  = 0.0;
+//        $taxTotal  = 0.0;
+//        $cleanRows = [];
+//
+//        foreach ($rows as $i => $row) {
+//            $desc    = trim($row['description'] ?? '');
+//            $sac     = trim($row['sac'] ?? '');
+//
+//            // qty & amounts
+//            $qty     = (float)($row['qty'] ?? 0);
+//            $price   = (float)($row['price'] ?? 0);            // metal price (or full price per unit)
+//            $making  = (float)($row['making_charge'] ?? 0);    // making per unit
+//            $stone   = (float)($row['stone_charges'] ?? 0);    // stone per unit
+//            $disc    = (float)($row['discount'] ?? 0);         // discount total (line level)
+//            $taxPct  = (float)($row['tax_percent'] ?? 0);
+//            $item_id = $row['item_id'] ?? null;
+//
+//            // jewellery extras (DB me preserve karne ke liye)
+//            $metal_type   = $row['metal_type']   ?? null;
+//            $purity       = $row['purity']       ?? null;
+//            $metal_weight = (float)($row['metal_weight'] ?? 0);
+//            $metal_rate   = (float)($row['metal_rate'] ?? 0);
+//
+//            if ($desc === '' || $qty <= 0 || $price < 0 || $making < 0 || $stone < 0 || $disc < 0 || $taxPct < 0) {
+//                return back()
+//                    ->withErrors(['items' => "Row ".($i+1)." invalid है."])
+//                    ->withInput();
+//            }
+//
+//            // ✅ JS jaisa calculation:
+//            // basePerUnit = price + making_charge + stone_charges
+//            // base = max(0, qty * basePerUnit - discount)
+//            $basePerUnit = max(0, $price + $making + $stone);
+//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
+//            $lineTax     = $lineBase * ($taxPct / 100);
+//            $lineAmt     = round($lineBase + $lineTax, 2);
+//
+//            $subtotal += $lineBase;
+//            $taxTotal += $lineTax;
+//
+//            $clean = [
+//                'description'    => $desc,
+//                'sac_code'       => $sac ?: null,
+//                'quantity'       => $qty,
+//                'rate'           => $price,
+//                'making_charge'  => $making,
+//                'stone_charges'  => $stone,
+//                'discount'       => $disc,
+//                'tax_percent'    => $taxPct,
+//                'amount'         => $lineAmt,
+//
+//                // jewellery fields persist
+//                'metal_type'     => $metal_type ?: null,
+//                'purity'         => $purity ?: null,
+//                'metal_weight'   => $metal_weight,
+//                'metal_rate'     => $metal_rate,
+//            ];
+//            if ($item_id) {
+//                $clean['item_id'] = $item_id;
+//            }
+//            $cleanRows[] = $clean;
+//        }
+//
+//        $discount_total = (float)($data['discount_total'] ?? 0);
+//        $tcs_percent    = (float)($data['tcs_percent'] ?? 0);
+//        $round_off_in   = (float)($data['round_off'] ?? 0);
+//        $received       = (float)($data['amount_received'] ?? 0);
+//
+//        $tcs_base   = max(0, $subtotal + $taxTotal - $discount_total);
+//        $tcs_amount = round($tcs_base * ($tcs_percent / 100), 2);
+//
+//        $total_before_round = round($subtotal + $taxTotal - $discount_total + $charge_total + $tcs_amount, 2);
+//        $grand_total        = round($total_before_round + $round_off_in, 2);
+//        $balance            = round(max(0, $grand_total - $received), 2);
+//
+//        // 5) Persist with StockService-based adjustments
+//        try {
+//            DB::transaction(function () use (
+//                $invoice, $data, $invoiceDate, $paymentTerms, $dueDate,
+//                $prefix, $subtotal, $taxTotal, $discount_total, $charge_total,
+//                $tcs_percent, $tcs_amount, $round_off_in, $grand_total,
+//                $received, $balance, $cleanRows, $chargesRaw, $r
+//            ) {
+//                /** @var StockService $stock */
+//                $stock = app(StockService::class);
+//
+//                // ⭐ 1) Purane movements rollback (old items ke hisaab se)
+//                $invoice->load('items.item');
+//                $stock->rollbackReference($invoice);
+//
+//                // ⭐ 2) Header + totals update
+//                $invoice->update([
+//                    'client_id'       => $data['client_id'],
+//                    'invoice_date'    => $invoiceDate,
+//                    'invoice_prefix'  => $prefix, // number stays same
+//                    'payment_terms'   => $paymentTerms,
+//                    'due_date'        => $dueDate,
+//
+//                    'subtotal'        => $subtotal,
+//                    'tax_amount'      => $taxTotal,
+//                    'discount_total'  => $discount_total,
+//                    'charge_total'    => $charge_total,
+//                    'tcs_percent'     => $tcs_percent,
+//                    'tcs_amount'      => $tcs_amount,
+//                    'round_off'       => $round_off_in,
+//                    'total'           => $grand_total,
+//                    'received_amount' => $received,
+//                    'balance'         => $balance,
+//
+//                    'payment_method'  => $data['payment_method'] ?? null,
+//                    'notes'           => $data['notes'] ?? null,
+//                    'terms'           => $data['terms'] ?? null,
+//
+//                    // front-end ka raw JSON store, jisme saare jewellery fields bhi hain
+//                    'items_json'      => $r->input('items_json'),
+//                    'charges_json'    => !empty($chargesRaw) ? json_encode($chargesRaw) : null,
+//                ]);
+//
+//                // ⭐ 3) Purane items delete + naye create
+//                if (method_exists($invoice, 'items')) {
+//                    $invoice->items()->delete();
+//                    foreach ($cleanRows as $row) {
+//                        $row['invoice_id'] = $invoice->id;
+//                        InvoiceItem::create($row);
+//                    }
+//                }
+//
+//                // ⭐ 4) Charges replace (agar model/table hai)
+//                if (class_exists(InvoiceCharge::class)) {
+//                    InvoiceCharge::where('invoice_id', $invoice->id)->delete();
+//
+//                    foreach ($chargesRaw as $c) {
+//                        InvoiceCharge::create([
+//                            'invoice_id' => $invoice->id,
+//                            'charge_id'  => $c['id'] ?? null,
+//                            'name'       => $c['name'],
+//                            'amount'     => $c['amount'],
+//                        ]);
+//                    }
+//                }
+//
+//                // ⭐ 5) Naye items ke basis pe fresh stock movements
+//                $invoice->load('items.item');
+//                $stock->recordSale($invoice);
+//            });
+//        } catch (\Throwable $e) {
+//            report($e);
+//            return back()
+//                ->withErrors(['invoice' => 'Invoice update करते समय error आया: '.$e->getMessage()])
+//                ->withInput();
+//        }
+//
+//        return redirect()
+//            ->route('invoices.index')
+//            ->with('success', 'Invoice updated successfully.');
+//    }
+
+
+
     public function update(Request $r, Invoice $invoice)
     {
+        // Purana pdf path/url safe rakh lo (baad me delete ke kaam aayega)
+        $oldPdfPath = $invoice->pdf_url;
+
         // 1) Basic validation
         $data = $r->validate([
             'client_id'       => ['required','exists:clients,id'],
@@ -2272,8 +2840,8 @@ class InvoiceController extends Controller
             'amount_received' => ['nullable','numeric','min:0'],
             'payment_method'  => ['nullable','string','max:50'],
 
-            'items_json'      => ['required','string'],  // [{ item_id?, description, sac, qty, price, making_charge, stone_charges, discount, tax_percent, amount }]
-            'charges_json'    => ['nullable','string'],  // [{ id?, name, amount }]
+            'items_json'      => ['required','string'],
+            'charges_json'    => ['nullable','string'],
         ]);
 
         $invoiceDate  = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
@@ -2333,7 +2901,7 @@ class InvoiceController extends Controller
             $taxPct  = (float)($row['tax_percent'] ?? 0);
             $item_id = $row['item_id'] ?? null;
 
-            // jewellery extras (DB me preserve karne ke liye)
+            // jewellery extras
             $metal_type   = $row['metal_type']   ?? null;
             $purity       = $row['purity']       ?? null;
             $metal_weight = (float)($row['metal_weight'] ?? 0);
@@ -2345,9 +2913,7 @@ class InvoiceController extends Controller
                     ->withInput();
             }
 
-            // ✅ JS jaisa calculation:
-            // basePerUnit = price + making_charge + stone_charges
-            // base = max(0, qty * basePerUnit - discount)
+            // JS jaisa calculation
             $basePerUnit = max(0, $price + $making + $stone);
             $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
             $lineTax     = $lineBase * ($taxPct / 100);
@@ -2402,11 +2968,11 @@ class InvoiceController extends Controller
                 /** @var StockService $stock */
                 $stock = app(StockService::class);
 
-                // ⭐ 1) Purane movements rollback (old items ke hisaab se)
+                // 1) Purane movements rollback
                 $invoice->load('items.item');
                 $stock->rollbackReference($invoice);
 
-                // ⭐ 2) Header + totals update
+                // 2) Header + totals update
                 $invoice->update([
                     'client_id'       => $data['client_id'],
                     'invoice_date'    => $invoiceDate,
@@ -2429,12 +2995,11 @@ class InvoiceController extends Controller
                     'notes'           => $data['notes'] ?? null,
                     'terms'           => $data['terms'] ?? null,
 
-                    // front-end ka raw JSON store, jisme saare jewellery fields bhi hain
                     'items_json'      => $r->input('items_json'),
                     'charges_json'    => !empty($chargesRaw) ? json_encode($chargesRaw) : null,
                 ]);
 
-                // ⭐ 3) Purane items delete + naye create
+                // 3) Purane items delete + naye create
                 if (method_exists($invoice, 'items')) {
                     $invoice->items()->delete();
                     foreach ($cleanRows as $row) {
@@ -2443,7 +3008,7 @@ class InvoiceController extends Controller
                     }
                 }
 
-                // ⭐ 4) Charges replace (agar model/table hai)
+                // 4) Charges replace
                 if (class_exists(InvoiceCharge::class)) {
                     InvoiceCharge::where('invoice_id', $invoice->id)->delete();
 
@@ -2457,7 +3022,7 @@ class InvoiceController extends Controller
                     }
                 }
 
-                // ⭐ 5) Naye items ke basis pe fresh stock movements
+                // 5) Fresh stock movements
                 $invoice->load('items.item');
                 $stock->recordSale($invoice);
             });
@@ -2466,6 +3031,38 @@ class InvoiceController extends Controller
             return back()
                 ->withErrors(['invoice' => 'Invoice update करते समय error आया: '.$e->getMessage()])
                 ->withInput();
+        }
+
+        // ✅ 6) Ab naya PDF generate karo, save karo, aur purane ko delete karo
+        try {
+            // fresh invoice instance (latest relations ke liye)
+            $invoice = $invoice->fresh();
+
+            // same helper jo store() / download() me use ho raha hai
+            $pdf = $this->buildInvoicePdf($invoice);
+
+            $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+            $fileName   = 'invoices/Invoice-'.$safeNumber.'.pdf';
+
+            // storage/app/public/invoices/...
+            Storage::disk('public')->put($fileName, $pdf->output());
+
+            // pdf_url me relative path save kar rahe hain
+            $invoice->update([
+                'pdf_url' => $fileName,
+            ]);
+
+            // Purana pdf agar hai, to delete kar do (agar same file nahi hai to)
+            if (!empty($oldPdfPath)) {
+                $old = $this->normalizePdfPath($oldPdfPath);
+
+                if ($old && $old !== $fileName && Storage::disk('public')->exists($old)) {
+                    Storage::disk('public')->delete($old);
+                }
+            }
+        } catch (\Throwable $e) {
+            // PDF fail ho jaye to bhi invoice update ho chuka rahe
+            report($e);
         }
 
         return redirect()
@@ -2478,5 +3075,319 @@ class InvoiceController extends Controller
         return Excel::download(new InvoicesExport($r->all()), 'invoices-report.xlsx');
     }
 
+    public function send(Invoice $invoice)
+    {
+        // 1) Client ka mobile nikaalo
+        $invoice->loadMissing('client', 'business');
+
+        $client = $invoice->client;
+        if (!$client || empty($client->mobile)) {
+            return back()->withErrors([
+                'whatsapp' => 'Client ke mobile number ke bina WhatsApp par invoice nahi bhej sakte.',
+            ]);
+        }
+
+        // mobile ko normalize karo (sirf digits)
+        $rawMobile = preg_replace('/\D+/', '', $client->mobile);
+
+        // Agar 10 digit hai to Indian number मान के "91" prefix
+        if (strlen($rawMobile) === 10) {
+            $number = '91' . $rawMobile;
+        } else {
+            // Agar already 91... se start ho raha ho to waise hi rehne do
+            if (str_starts_with($rawMobile, '91')) {
+                $number = $rawMobile;
+            } else {
+                // fallback – phir bhi 91 prefix
+                $number = '91' . $rawMobile;
+            }
+        }
+
+        // 2) Ensure PDF exists: agar pdf_url hai & file exist karti hai to use,
+        //    warna naya generate karke save & pdf_url update
+        $path = null;
+
+        if (!empty($invoice->pdf_url)) {
+            $maybePath = $this->normalizePdfPath($invoice->pdf_url);
+
+            if ($maybePath && Storage::disk('public')->exists($maybePath)) {
+                $path = $maybePath;
+            }
+        }
+
+        if (!$path) {
+            // fresh relations ke sath PDF build karo
+            $invoice = $invoice->fresh(['client','items','business']);
+
+            $pdf = $this->buildInvoicePdf($invoice);
+
+            $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+            $path       = 'invoices/Invoice-'.$safeNumber.'.pdf';
+
+            Storage::disk('public')->put($path, $pdf->output());
+
+            $invoice->update([
+                'pdf_url' => $path, // relative path store
+            ]);
+        }
+
+        // 3) Public URL nikaalo (jo WhatsApp API ko jayega)
+        $fileUrl = Storage::disk('public')->url($path);
+
+        // 4) WhatsAPI webhook call karo
+        //    Tumne example diya:
+        //    https://webhook.whatapi.in/webhook/68eb74c51b9845c02d38aa93?number=917753800444&otp=1235
+        //    Yaha hum file URL aur caption bhejenge
+        $apiBase = 'https://webhook.whatapi.in/webhook/68eb74c51b9845c02d38aa93';
+
+        try {
+            $response = Http::timeout(20)->get($apiBase, [
+                'number'  => $number,
+                // yaha API ka actual expected param naam tumhare docs ke mutabik change ho sakta hai
+                // maine example ke liye 'file' use kiya hai
+                'file'    => $fileUrl,
+                // extra param, tum chaiye to hata sakte ho
+                'caption' => 'Your invoice '.$invoice->invoice_number.' from '.($invoice->business->name ?? 'Our Business'),
+            ]);
+
+            if (!$response->successful()) {
+                return back()->withErrors([
+                    'whatsapp' => 'WhatsApp API se error aaya: '.$response->status().' - '.$response->body(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors([
+                'whatsapp' => 'WhatsApp par invoice bhejte waqt error aaya: '.$e->getMessage(),
+            ]);
+        }
+
+        return back()->with('success', 'Invoice WhatsApp par send kar diya gaya hai.');
+    }
+
+
+
+//    protected function buildInvoicePdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
+//    {
+//        // relations
+//        $invoice->load(['client','items','business']);
+//
+//        $biz    = $invoice->business;
+//        $client = $invoice->client;
+//        $items  = $invoice->items ?? collect();
+//
+//        // charges: try relation if it exists, else fallback to charges_json
+//        if (method_exists($invoice, 'additionalCharges')) {
+//            $charges = $invoice->additionalCharges()->get(['name','amount']);
+//        } else {
+//            $arr = [];
+//            if (!empty($invoice->charges_json)) {
+//                $decoded = json_decode($invoice->charges_json, true);
+//                if (is_array($decoded)) {
+//                    foreach ($decoded as $c) {
+//                        $arr[] = (object)[
+//                            'name'   => (string)($c['name'] ?? ''),
+//                            'amount' => (float) ($c['amount'] ?? 0),
+//                        ];
+//                    }
+//                }
+//            }
+//            $charges = collect($arr);
+//        }
+//
+//        // --- totals (server-side recompute, same as store() & JS) ---
+//        $subtotal = 0.0;
+//        $taxTotal = 0.0;
+//
+//        foreach ($items as $it) {
+//            $qty    = (float) ($it->quantity ?? 0);
+//            $rate   = (float) ($it->rate ?? 0);             // metal value per unit
+//            $mk     = (float) ($it->making_charge ?? 0);    // making per unit
+//            $stone  = (float) ($it->stone_charges ?? 0);    // stone per unit
+//            $disc   = (float) ($it->discount ?? 0);         // line discount
+//            $tp     = (float) ($it->tax_percent ?? 0);
+//
+//            $basePerUnit = $rate + $mk + $stone;
+//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
+//            $lineTax     = $lineBase * ($tp / 100);
+//
+//            $subtotal += $lineBase;
+//            $taxTotal += $lineTax;
+//        }
+//
+//        $discountTotal = (float) ($invoice->discount_total ?? 0.0);
+//        $chargesTotal  = (float) $charges->reduce(
+//            fn($s, $r) => $s + (float) ($r->amount ?? 0),
+//            0.0
+//        );
+//        $tcsPercent    = (float) ($invoice->tcs_percent ?? 0.0);
+//        $received      = (float) ($invoice->received_amount ?? 0.0);
+//        $roundOff      = (float) ($invoice->round_off ?? 0.0);
+//
+//        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
+//        $tcsAmount = $tcsPercent > 0
+//            ? round($tcsBase * ($tcsPercent / 100), 2)
+//            : 0.0;
+//
+//        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
+//        $grandTotal       = (float) ($totalBeforeRound + $roundOff);
+//        $balance          = max(0, $grandTotal - $received);
+//
+//        // data URIs
+//        [$logoDataUri, $signDataUri] = [
+//            $this->imageDataUri($biz?->logo),
+//            $this->imageDataUri($biz?->signature),
+//        ];
+//
+//        $vm = compact(
+//            'invoice','biz','client','items','charges',
+//            'logoDataUri','signDataUri',
+//            'subtotal','taxTotal','discountTotal','chargesTotal','tcsPercent','tcsAmount',
+//            'roundOff','grandTotal','received','balance'
+//        );
+//
+//        // rename keys to what blade expects
+//        $vm['inv']            = $invoice;
+//        $vm['logo']           = $logoDataUri;
+//        $vm['sign']           = $signDataUri;
+//        $vm['tax_total']      = $taxTotal;
+//        $vm['discount_total'] = $discountTotal;
+//        $vm['charges_total']  = $chargesTotal;
+//        $vm['tcs_percent']    = $tcsPercent;
+//        $vm['tcs_amount']     = $tcsAmount;
+//        $vm['grand_total']    = $grandTotal;
+//
+//        // Yahi view tum already use कर रहे हो
+//        return Pdf::loadView('invoices.pdf', $vm)->setPaper('a4');
+//    }
+
+
+
+
+    protected function buildInvoicePdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    {
+        // relations
+        $invoice->load(['client','items','business']);
+
+        $biz    = $invoice->business;
+        $client = $invoice->client;
+        $items  = $invoice->items ?? collect();
+
+        // charges: try relation if it exists, else fallback to charges_json
+        if (method_exists($invoice, 'additionalCharges')) {
+            $charges = $invoice->additionalCharges()->get(['name','amount']);
+        } else {
+            $arr = [];
+            if (!empty($invoice->charges_json)) {
+                $decoded = json_decode($invoice->charges_json, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $c) {
+                        $arr[] = (object)[
+                            'name'   => (string)($c['name'] ?? ''),
+                            'amount' => (float) ($c['amount'] ?? 0),
+                        ];
+                    }
+                }
+            }
+            $charges = collect($arr);
+        }
+
+        // --- totals (server-side recompute, same as store() & JS) ---
+        $subtotal = 0.0;
+        $taxTotal = 0.0;
+
+        foreach ($items as $it) {
+            $qty    = (float) ($it->quantity ?? 0);
+            $rate   = (float) ($it->rate ?? 0);             // metal value per unit
+            $mk     = (float) ($it->making_charge ?? 0);    // making per unit
+            $stone  = (float) ($it->stone_charges ?? 0);    // stone per unit
+            $disc   = (float) ($it->discount ?? 0);         // line discount
+            $tp     = (float) ($it->tax_percent ?? 0);
+
+            $basePerUnit = $rate + $mk + $stone;
+            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
+            $lineTax     = $lineBase * ($tp / 100);
+
+            $subtotal += $lineBase;
+            $taxTotal += $lineTax;
+        }
+
+        $discountTotal = (float) ($invoice->discount_total ?? 0.0);
+        $chargesTotal  = (float) $charges->reduce(
+            fn($s, $r) => $s + (float) ($r->amount ?? 0),
+            0.0
+        );
+        $tcsPercent    = (float) ($invoice->tcs_percent ?? 0.0);
+        $received      = (float) ($invoice->received_amount ?? 0.0);
+        $roundOff      = (float) ($invoice->round_off ?? 0.0);
+
+        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
+        $tcsAmount = $tcsPercent > 0
+            ? round($tcsBase * ($tcsPercent / 100), 2)
+            : 0.0;
+
+        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
+        $grandTotal       = (float) ($totalBeforeRound + $roundOff);
+        $balance          = max(0, $grandTotal - $received);
+
+        // data URIs (logo, sign)
+        [$logoDataUri, $signDataUri] = [
+            $this->imageDataUri($biz?->logo),
+            $this->imageDataUri($biz?->signature),
+        ];
+
+        // ✅ letter-head ko bhi data URI me convert kar lo (nullable allowed)
+        $letterHeadDataUri = $this->imageDataUri($biz?->letter_head);
+        // yahan `letter_head` ko aapke actual column name se replace kar sakte ho
+
+        $vm = compact(
+            'invoice','biz','client','items','charges',
+            'logoDataUri','signDataUri',
+            'subtotal','taxTotal','discountTotal','chargesTotal','tcsPercent','tcsAmount',
+            'roundOff','grandTotal','received','balance'
+        );
+
+        // rename keys to what blade expects
+        $vm['inv']            = $invoice;
+        $vm['logo']           = $logoDataUri;
+        $vm['sign']           = $signDataUri;
+        $vm['tax_total']      = $taxTotal;
+        $vm['discount_total'] = $discountTotal;
+        $vm['charges_total']  = $chargesTotal;
+        $vm['tcs_percent']    = $tcsPercent;
+        $vm['tcs_amount']     = $tcsAmount;
+        $vm['grand_total']    = $grandTotal;
+
+        // ✅ naya variable: letter-head
+        $vm['letter_head']    = $letterHeadDataUri; // null bhi ho sakta hai, कोई दिक्कत नहीं
+
+        // Same view
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', $vm)->setPaper('a4');
+    }
+
+
+    protected function normalizePdfPath(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        // Full URL hai to path part nikal lo
+        if (strpos($value, 'http://') === 0 || strpos($value, 'https://') === 0) {
+            $path = parse_url($value, PHP_URL_PATH) ?: '';
+            $value = ltrim($path, '/');
+        }
+
+        // Agar "storage/..." se start ho raha ho to uske baad ka part lo
+        if (strpos($value, 'storage/') === 0) {
+            $value = substr($value, strlen('storage/'));
+        }
+
+        // Last me ensure no leading slash
+        return ltrim($value, '/');
+    }
 
 }

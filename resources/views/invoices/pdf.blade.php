@@ -12,10 +12,37 @@
 <head>
     <meta charset="utf-8">
     <title>Invoice {{ $inv->invoice_number }}</title>
+{{--    <style>--}}
+{{--        * { box-sizing: border-box; }--}}
+{{--        body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111; }--}}
+{{--        .wrap { width: 100%; }--}}
+{{--        .text-right { text-align: right; }--}}
+{{--        .text-center { text-align: center; }--}}
+{{--        .muted { color:#555; }--}}
+{{--        h1,h2,h3,h4 { margin: 0 0 6px 0; }--}}
+{{--        table { width:100%; border-collapse: collapse; }--}}
+{{--        th, td { padding: 8px; border:1px solid #ddd; }--}}
+{{--        thead th { background:#f2f2f2; }--}}
+{{--        .no-border td, .no-border th { border:0; }--}}
+{{--        .totals td { padding:6px 8px; }--}}
+{{--        .mb-10{ margin-bottom:10px; } .mb-6{ margin-bottom:6px; } .mt-10{ margin-top:10px; }--}}
+{{--        .brand { display:flex; align-items:center; gap:10px; }--}}
+{{--        .brand-logo { height: 50px; width:auto; }--}}
+{{--        .sign-img { height: 50px; width:auto; }--}}
+{{--        .small-text { font-size: 10px; }--}}
+{{--    </style>--}}
     <style>
         * { box-sizing: border-box; }
         body { font-family: DejaVu Sans, Arial, sans-serif; font-size: 12px; color: #111; }
+
         .wrap { width: 100%; }
+
+        /* ✅ Agar body par has-letterhead class hogi,
+           to content thoda neeche se start hoga */
+        .has-letterhead .wrap {
+            padding-top: 160px;  /* yaha value adjust kar sakte ho 140–200 ke beech */
+        }
+
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .muted { color:#555; }
@@ -30,10 +57,29 @@
         .brand-logo { height: 50px; width:auto; }
         .sign-img { height: 50px; width:auto; }
         .small-text { font-size: 10px; }
+
+        /* Letter-head background image */
+        .bg-letterhead {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
     </style>
+
+
 </head>
-<body>
+<body class="{{ !empty($letter_head) ? 'has-letterhead' : '' }}">
+{{-- Agar letter-head hai to usko full-page background bana do --}}
+@if(!empty($letter_head))
+    <img src="{{ $letter_head }}" alt="Letterhead" class="bg-letterhead">
+@endif
+
 <div class="wrap">
+    {{-- yahi se aapka pura existing invoice content --}}
+
 
     {{-- Header: Logo + Business info + Invoice meta --}}
     <table class="no-border" style="margin-bottom:8px;">

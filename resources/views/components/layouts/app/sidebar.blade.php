@@ -20,16 +20,25 @@
             @role('super admin')
             <form action="{{ route('business.switch') }}" method="POST">
                 @csrf
-                <select name="business_id" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                <select name="business_id"
+                        onchange="this.form.submit()"
+                        class="text-sm border rounded px-2 py-1
+                   bg-white text-gray-900
+                   dark:bg-neutral-800 dark:text-white dark:border-neutral-600
+                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
                     @foreach(auth()->user()->businesses as $b)
-                        <option value="{{ $b->id }}" @selected(session('active_business_id')==$b->id)>{{ $b->name }}</option>
+                        <option value="{{ $b->id }}" @selected(session('active_business_id')==$b->id)">
+                        {{ $b->name }}
+                        </option>
                     @endforeach
                 </select>
             </form>
+
             @endcan
 
 
-        @can('show businesses')
+            @can('show businesses')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('businesses.index')" :current="request()->routeIs('businesses.index')" wire:navigate>{{ __('Businesses') }}</flux:navlist.item>
@@ -38,6 +47,11 @@
             @endcan
 
             @can('show users')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="user" :href="route('api-keys.index')" :current="request()->routeIs('api-keys*')" wire:navigate>{{ __('Api Key') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="user" :href="route('users.index')" :current="request()->routeIs('users.index')" wire:navigate>{{ __('Users') }}</flux:navlist.item>

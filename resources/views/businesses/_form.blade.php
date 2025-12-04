@@ -70,13 +70,28 @@
         <div>
             <label class="block text-sm font-medium mb-1">Signature</label>
             <input type="file" name="signature" accept="image/*" class="mt-1 w-full border rounded px-3 py-2">
-            @error('logo') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-            @if($isEdit && $business->logo)
+            @error('signature') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+            @if($isEdit && $business->signature)
                 <div class="mt-3 flex items-center gap-4">
-                    <img src="{{ asset('storage/'.$business->signature) }}" class="w-14 h-14 rounded object-cover" alt="logo">
+                    <img src="{{ asset('storage/'.$business->signature) }}" class="w-14 h-14 rounded object-cover" alt="signature">
                     <label class="inline-flex items-center gap-2 text-sm">
-                        <input type="checkbox" name="remove_sgnature" value="1" class="rounded border-gray-300">
+                        <input type="checkbox" name="remove_signature" value="1" class="rounded border-gray-300">
                         Remove current signature
+                    </label>
+                </div>
+            @endif
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">Letter Head</label>
+            <input type="file" name="letter_head" accept="image/*" class="mt-1 w-full border rounded px-3 py-2">
+            @error('letter_head') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+            @if($isEdit && $business->letter_head)
+                <div class="mt-3 flex items-center gap-4">
+                    <img src="{{ asset('storage/'.$business->letter_head) }}" class="w-14 h-14 rounded object-cover" alt="letter_head">
+                    <label class="inline-flex items-center gap-2 text-sm">
+                        <input type="checkbox" name="remove_letter_head" value="1" class="rounded border-gray-300">
+                        Remove current letter_head
                     </label>
                 </div>
             @endif

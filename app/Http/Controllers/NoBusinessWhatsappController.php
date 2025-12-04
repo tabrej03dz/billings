@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\ApiKey;
 use App\Models\Invoice;
 use App\Models\InvoiceSend;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class NoBusinessWhatsappController extends Controller
 {
@@ -34,7 +37,7 @@ class NoBusinessWhatsappController extends Controller
             'secret'   => ['nullable', 'string', 'max:255'],
         ]);
 
-        ApiKey::updateOrCreate(
+        $apiKey = ApiKey::updateOrCreate(
             [
                 'user_id'     => $user->id,
                 'business_id' => null,
@@ -44,6 +47,7 @@ class NoBusinessWhatsappController extends Controller
                 'business_id' => null,
             ]
         );
+
 
         return redirect()
             ->route('no-business.whatsapp')
@@ -103,13 +107,125 @@ class NoBusinessWhatsappController extends Controller
 //        return back()->with('success', 'PDF sent successfully on WhatsApp!');
 //    }
 
+//    public function sendInvoiceWhatsapp(Request $request)
+//    {
+//        $user = $request->user();
+//
+//        // 1) API config lao (user-level, no business)
+//        $apiKey = ApiKey::where('user_id', $user->id)
+//            ->whereNull('business_id')
+//            ->latest('id')
+//            ->first();
+//
+//        if (!$apiKey) {
+//            return back()->withErrors([
+//                'api' => 'Please set your WhatsApp API first from the right side form.',
+//            ])->withInput();
+//        }
+//
+//        // 2) Input validate
+//        $data = $request->validate([
+//            'phone' => ['required', 'string', 'max:20'],
+//            'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5 MB
+//        ]);
+//
+//        // 3) Phone clean (sirf digits)
+//        $phone = preg_replace('/\D+/', '', $data['phone']);
+//
+//        // 4) PDF ko store karo (public disk)
+//        $path   = $request->file('pdf')->store('no-business-pdfs', 'public');
+//        $pdfUrl = asset('storage/' . $path);
+//        $pdfUrl = 'https://post.realvictorygroups.com/assets/logo1.png';
+//
+//        // 5) WhatsApp message text
+//        $message = 'Your document from Real Victory Groups';
+//
+//        /**
+//         * 6) whatapi.in base URL
+//         * Database me sirf itna store karo:
+//         * https://webhook.whatapi.in/webhook/6878c6bae3591ae351d0aae6
+//         */
+//        $baseUrl = $apiKey->base_url;
+////        $baseUrl = 'https://webhook.whatapi.in/webhook/68886786de405dae96e96a73';
+//
+//        // Agar kisi ne galti se query ke sath save kar diya ho to usko strip kar do
+//        $baseUrl = strtok($baseUrl, '?');
+//
+//        // 7) Final endpoint build karo (sample):
+//        // https://webhook.whatapi.in/webhook/XXXX?number=91XXXXXXXXXX&image=MEDIA_URL&text=hi
+//        $query = [
+//            'number' => $phone,
+//            'file'  => $pdfUrl,   // whatapi pe agar 'document' ya 'file' param chahiye ho to yaha change kar lena
+//            'text'   => $message,
+//        ];
+//
+//        $endpoint = $baseUrl . '?' . http_build_query($query);
+//
+//        // 8) WhatsApp API call (GET webhook)
+//        $response = null;
+//        $success  = false;
+//        $status   = null;
+//        $body     = null;
+//
+//        try {
+//            $client = Http::timeout(20);
+//
+//            // local / development pe SSL verify off (curl error 60 fix)
+//            if (app()->environment('local', 'development')) {
+//                $client = $client->withoutVerifying();
+//            }
+//
+//            $response = $client->get($endpoint);
+//
+//            $status   = $response->status();
+//            $body     = $response->body();
+//            $success  = $response->successful();
+//        } catch (\Throwable $e) {
+//            $body    = $e->getMessage();
+//            $status  = null;
+//            $success = false;
+//        }
+//
+//        // 9) Log: kisne kya send kiya
+//        InvoiceSend::create([
+//            'business_id'         => null,
+//            'user_id'             => $user->id,
+//            'invoice_id'          => null,
+//            'channel'             => 'whatsapp',
+//            'recipient_phone'     => $phone,
+//            'recipient_email'     => null,
+//            'file_url'            => $pdfUrl,
+//            'status'              => $success ? 'success' : 'failed',
+//            'response_code'       => $status,
+//            'provider_message_id' => null,
+//            'error_message'       => $success ? null : \Illuminate\Support\Str::limit($body ?? '', 500),
+//            'meta'                => [
+//                'endpoint' => $endpoint,
+//                'pdf_path' => $path,
+//                'pdf_url'  => $pdfUrl,
+//            ],
+//            'sent_at'             => now(),
+//        ]);
+//
+//        if (!$success) {
+//            return back()->withErrors([
+//                'whatsapp' => 'WhatsApp API error: ' . ($body ?? 'Unknown error'),
+//            ])->withInput();
+//        }
+//
+//        return back()->with('success', 'PDF WhatsApp par send ho gaya!');
+//    }
+
+
+
     public function sendInvoiceWhatsapp(Request $request)
     {
         $user = $request->user();
 
+
         // 1) API config lao (user-level, no business)
         $apiKey = ApiKey::where('user_id', $user->id)
-            ->whereNull('business_id')
+//            ->whereNull('business_id')
             ->latest('id')
             ->first();
 
@@ -122,19 +238,53 @@ class NoBusinessWhatsappController extends Controller
         // 2) Input validate
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:20'],
-            'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5 MB
+            'pdf'   => ['nullable', 'file', 'mimes:pdf', 'max:5120'],             // 5 MB
+            'excel' => ['nullable', 'file', 'mimes:xls,xlsx', 'max:5120'],        // 5 MB
         ]);
+
+        // Ensure: at least 1 file
+        if (!$request->hasFile('pdf') && !$request->hasFile('excel')) {
+            return back()->withErrors([
+                'file' => 'Please upload either a PDF or Excel file.',
+            ])->withInput();
+        }
 
         // 3) Phone clean (sirf digits)
         $phone = preg_replace('/\D+/', '', $data['phone']);
 
-        // 4) PDF ko store karo (public disk)
-        $path   = $request->file('pdf')->store('no-business-pdfs', 'public');
-        $pdfUrl = asset('storage/' . $path);
-        $pdfUrl = 'https://post.realvictorygroups.com/assets/logo1.png';
+        // 4) File process:
+        //    - Agar Excel hai: usko store karo, Excel -> PDF convert karo
+        //    - Agar sirf PDF hai: PDF ko hi store karke bhejo
+        $storedPdfRelativePath = null;   // public disk relative path
+        $originalStoredPath    = null;   // log ke liye (Excel/PDF jo aya)
+
+        if ($request->hasFile('excel')) {
+
+            // 4.a) Excel store karo
+            $excelPath = $request->file('excel')->store('no-business-excels', 'public');
+            $originalStoredPath = $excelPath;
+
+            // 4.b) Excel -> PDF convert
+            $absoluteExcelPath = Storage::disk('public')->path($excelPath);
+
+            $storedPdfRelativePath = $this->convertExcelToPdf($absoluteExcelPath);
+            // e.g. returns something like "no-business-pdfs/invoice-1733222323.pdf"
+
+        } else {
+            // 4.c) Simple PDF upload
+            $pdfPath = $request->file('pdf')->store('no-business-pdfs', 'public');
+            $originalStoredPath = $pdfPath;
+            $storedPdfRelativePath = $pdfPath;
+        }
+
+        // 4.d) Public URL banao
+        $pdfUrl = asset('storage/' . $storedPdfRelativePath);
+
+        // NOTE: pehle tum yaha logo hard-code kar rahe the, wo hata diya:
+        // $pdfUrl = 'https://post.realvictorygroups.com/assets/logo1.png';
 
         // 5) WhatsApp message text
-        $message = 'Your document from Real Victory Groups';
+        $message = 'Your invoice from Real Victory Groups';
 
         /**
          * 6) whatapi.in base URL
@@ -142,16 +292,15 @@ class NoBusinessWhatsappController extends Controller
          * https://webhook.whatapi.in/webhook/6878c6bae3591ae351d0aae6
          */
         $baseUrl = $apiKey->base_url;
-//        $baseUrl = 'https://webhook.whatapi.in/webhook/68886786de405dae96e96a73';
 
         // Agar kisi ne galti se query ke sath save kar diya ho to usko strip kar do
         $baseUrl = strtok($baseUrl, '?');
 
-        // 7) Final endpoint build karo (sample):
-        // https://webhook.whatapi.in/webhook/XXXX?number=91XXXXXXXXXX&image=MEDIA_URL&text=hi
+        // 7) Final endpoint build karo
+        // whatapi spec ke hisab se param ka naam 'file' rakha hai (document send)
         $query = [
             'number' => $phone,
-            'file'  => $pdfUrl,   // whatapi pe agar 'document' ya 'file' param chahiye ho to yaha change kar lena
+            'file'   => $pdfUrl,
             'text'   => $message,
         ];
 
@@ -194,11 +343,12 @@ class NoBusinessWhatsappController extends Controller
             'status'              => $success ? 'success' : 'failed',
             'response_code'       => $status,
             'provider_message_id' => null,
-            'error_message'       => $success ? null : \Illuminate\Support\Str::limit($body ?? '', 500),
+            'error_message'       => $success ? null : Str::limit($body ?? '', 500),
             'meta'                => [
-                'endpoint' => $endpoint,
-                'pdf_path' => $path,
-                'pdf_url'  => $pdfUrl,
+                'endpoint'     => $endpoint,
+                'source_path'  => $originalStoredPath,      // Excel ya PDF
+                'pdf_path'     => $storedPdfRelativePath,   // final PDF
+                'pdf_url'      => $pdfUrl,
             ],
             'sent_at'             => now(),
         ]);
@@ -209,8 +359,41 @@ class NoBusinessWhatsappController extends Controller
             ])->withInput();
         }
 
-        return back()->with('success', 'PDF WhatsApp par send ho gaya!');
+        return back()->with('success', 'Invoice WhatsApp par send ho gaya!');
     }
 
+
+
+
+
+    protected function convertExcelToPdf(string $absoluteExcelPath): string
+    {
+        // 1) Excel read karo
+        $spreadsheet = IOFactory::load($absoluteExcelPath);
+        $sheet       = $spreadsheet->getActiveSheet();
+        $rows        = $sheet->toArray(null, true, true, true); // array of rows
+
+        // 2) Yaha tum apna mapping kar sakte ho
+        // Example: header row + items nikal lo
+        $headerRow = $rows[1] ?? [];
+        $dataRows  = array_slice($rows, 1); // row 2 se aage
+
+        // 3) View render karo (invoice style)
+        $html = view('no-business.invoice-from-excel', [
+            'header' => $headerRow,
+            'rows'   => $dataRows,
+        ])->render();
+
+        // 4) PDF generate karo
+        $pdf = Pdf::loadHTML($html)->setPaper('a4', 'portrait');
+
+        // 5) Storage path decide karo
+        $fileName = 'invoice-' . time() . '-' . uniqid() . '.pdf';
+        $relativePath = 'no-business-pdfs/' . $fileName;
+
+        Storage::disk('public')->put($relativePath, $pdf->output());
+
+        return $relativePath;
+    }
 
 }

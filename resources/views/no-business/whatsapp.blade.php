@@ -96,7 +96,7 @@
                     {{-- PDF INPUT --}}
                     <div class="space-y-1">
                         <label for="pdf" class="block text-xs font-medium text-slate-700">
-                            PDF File <span class="text-red-500">*</span>
+                            PDF File
                         </label>
 
                         {{-- Ye pura box clickable hoga --}}
@@ -126,6 +126,41 @@
                         />
                     </div>
 
+                    {{-- EXCEL INPUT --}}
+                    <div class="space-y-1">
+                        <label for="excel" class="block text-xs font-medium text-slate-700">
+                            Excel File (Invoice Data)
+                        </label>
+
+                        <label for="excel"
+                               class="flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/80 px-3 py-3 cursor-pointer">
+                            <div
+                                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm border border-emerald-200">
+                                <i class="fas fa-file-excel text-[15px] text-emerald-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-[11px] sm:text-xs text-slate-700">
+                                    Choose Excel file (max 5 MB)
+                                </p>
+                                <p class="text-[10px] text-slate-400">
+                                    Allowed: .xls, .xlsx
+                                </p>
+                            </div>
+                        </label>
+
+                        <input
+                            id="excel"
+                            type="file"
+                            name="excel"
+                            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            class="hidden"
+                        />
+                    </div>
+
+                    <p class="text-[10px] text-slate-500">
+                        <b>Note:</b> Aap PDF ya Excel me se <b>koi ek</b> upload kar sakte hain.
+                        Agar Excel upload karenge to system usko invoice jaisi PDF me convert karke WhatsApp par bhejega.
+                    </p>
 
                     {{-- PHONE INPUT --}}
                     <div class="space-y-1">
@@ -148,7 +183,7 @@
                         <button type="submit"
                                 class="inline-flex items-center justify-center w-full md:w-auto px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 shadow-md shadow-indigo-500/30 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-100">
                             <i class="fas fa-paper-plane mr-2 text-xs"></i>
-                            Send PDF on WhatsApp
+                            Send Invoice on WhatsApp
                         </button>
 
                         @if(!($apiKey ?? false))
@@ -159,6 +194,7 @@
                         @endif
                     </div>
                 </form>
+
             </div>
 
             {{-- RIGHT: API SETTINGS --}}

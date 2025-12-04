@@ -17,7 +17,7 @@
         <!-- Logo -->
         <a href="#top" class="flex items-center gap-2">
             <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-emerald-400 to-cyan-500 flex items-center justify-center text-xl font-bold">
-                MV
+                <img src="{{asset('asset/img/logo.png')}}" alt="" style="border-radius: 2px;">
             </div>
             <div>
                 <div class="font-semibold text-lg">MyVictory Billing</div>

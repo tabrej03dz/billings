@@ -9,9 +9,7 @@ class Business extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'name', 'slug', 'logo', 'email', 'mobile', 'gstin', 'address', 'signature', 'terms'
-    ];
+    protected $guarded = ['id'];
 
     public function users()
     {
