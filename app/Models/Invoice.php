@@ -52,4 +52,47 @@ class Invoice extends Model
 //            app(StockService::class)->rollbackReference($invoice);
 //        });
 //    }
+
+
+    public function applyJewelleryGST()
+    {
+        // Default jewellery GST
+        $totalGstPercent = 3; // 3%
+
+        // reset
+        $this->cgst_percent = 0;
+        $this->cgst_amount  = 0;
+        $this->sgst_percent = 0;
+        $this->sgst_amount  = 0;
+        $this->igst_percent = 0;
+        $this->igst_amount  = 0;
+
+        $taxable = (float) ($this->taxable_amount ?? $this->sub_total ?? 0);
+
+        if ($taxable <= 0) {
+            return;
+        }
+
+        // Same state = CGST + SGST
+        if ($this->is_same_state) {
+            $this->cgst_percent = 1.5;
+            $this->sgst_percent = 1.5;
+
+            $this->cgst_amount = round($taxable * 1.5 / 100, 2);
+            $this->sgst_amount = round($taxable * 1.5 / 100, 2);
+        }
+        // Different state = IGST
+        else {
+            $this->igst_percent = 3;
+            $this->igst_amount  = round($taxable * 3 / 100, 2);
+        }
+
+        // Final value
+        $this->final_value =
+            $taxable
+            + $this->cgst_amount
+            + $this->sgst_amount
+            + $this->igst_amount
+            - ($this->less_amount ?? 0);
+    }
 }
