@@ -19,6 +19,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -96,6 +97,115 @@ class InvoiceController extends Controller
 
 
 
+//    public function create(Request $request)
+//    {
+//        $today = now()->toDateString();
+//
+//        // Active business resolve
+//        $bid = $request->user()->current_business_id ?? session('active_business_id');
+//        if (!$bid) {
+//            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
+//        }
+//
+//        // Business (terms ke liye)
+//        $business = Business::find($bid);
+//
+//        // Invoice base prefix
+//        $base = optional(
+//                $request->user()->businesses()->where('businesses.id', $bid)->first()
+//            )->invoice_base_prefix ?? 'RV/SL';
+//
+//        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
+//
+//        // Clients
+//        $clients = Client::where('business_id', $bid)
+//            ->orderBy('name')
+//            ->get(['id', 'name', 'mobile']);
+//
+//        // Items (metal + stone info included)
+//        $items = Item::where('business_id', $bid)
+//            ->where('is_active', true)
+//            ->orderBy('name')
+//            ->get([
+//                'id',
+//                'name',
+//                'sku',
+//                'price',
+//                'tax_rate',
+//                'description',
+//                'making_charge',
+//                'sac',
+//                'metal_type',
+//                'purity',
+//                'gross_weight',
+//                'metal_weight',
+//                'stone_charges',
+//            ]);
+//
+//        // Metal rates for today
+//        $metalRates = MetalRate::where('business_id', $bid)
+//            ->whereDate('rate_date', $today)
+//            ->where('is_active', true)
+//            ->get([
+//                'metal_type',
+//                'purity',
+//                'rate_per_gram',
+//            ]);
+//
+//        // JSON payloads
+//        $clientsJson = $clients->map(fn($c) => [
+//            'id'     => $c->id,
+//            'name'   => $c->name,
+//            'mobile' => $c->mobile,
+//        ])->values()->toJson();
+//
+//        $itemsJson = $items->map(fn($i) => [
+//            'id'            => $i->id,
+//            'name'          => $i->name,
+//            'sku'           => $i->sku,
+//            'price'         => (float) $i->price,
+//            'making_charge' => (float) $i->making_charge,
+//            'tax_rate'      => (float) $i->tax_rate,
+//            'description'   => $i->description,
+//            'sac'           => $i->sac,
+//            'metal_type'    => $i->metal_type,
+//            'purity'        => $i->purity,
+//            'gross_weight'  => (float) $i->gross_weight,
+//            'metal_weight'  => (float) $i->metal_weight,
+//            'stone_charges' => (float) $i->stone_charges,
+//        ])->values()->toJson();
+//
+//        $metalRatesJson = $metalRates->map(fn($r) => [
+//            'metal_type'    => $r->metal_type,
+//            'purity'        => $r->purity,
+//            'rate_per_gram' => (float) $r->rate_per_gram,
+//        ])->values()->toJson();
+//
+//        // Additional charges
+//        $charges = AdditionalCharge::orderBy('name')->get(['id','name','amount']);
+//        $chargesJson = $charges->map(fn($a) => [
+//            'id'     => $a->id,
+//            'name'   => $a->name,
+//            'amount' => (float) $a->amount,
+//        ])->values()->toJson();
+//
+//        // Preview invoice number
+//        $preview = \App\Services\InvoiceNumber::peek((int) $bid, $today, $suggestedPrefix, 3);
+//
+//        return view('invoices.create', [
+//            'today'            => $today,
+//            'clientsJson'      => $clientsJson,
+//            'itemsJson'        => $itemsJson,
+//            'chargesJson'      => $chargesJson,
+//            'metalRatesJson'   => $metalRatesJson,
+//            'suggestedPrefix'  => $suggestedPrefix,
+//            'basePrefix'       => $base,
+//            'initialInvoiceNo' => $preview['full'] ?? 'Auto',
+//            'defaultTerms'     => $business?->terms,
+//        ]);
+//    }
+
+
     public function create(Request $request)
     {
         $today = now()->toDateString();
@@ -106,10 +216,9 @@ class InvoiceController extends Controller
             $bid = $request->user()->businesses()->pluck('businesses.id')->first();
         }
 
-        // Business (terms ke liye)
         $business = Business::find($bid);
 
-        // Invoice base prefix
+        // base prefix
         $base = optional(
                 $request->user()->businesses()->where('businesses.id', $bid)->first()
             )->invoice_base_prefix ?? 'RV/SL';
@@ -121,88 +230,47 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'mobile']);
 
-        // Items (metal + stone info included)
+        // Items (NEW breakup fields)
         $items = Item::where('business_id', $bid)
             ->where('is_active', true)
             ->orderBy('name')
             ->get([
-                'id',
-                'name',
-                'sku',
-                'price',
-                'tax_rate',
-                'description',
-                'making_charge',
-                'sac',
-                'metal_type',
-                'purity',
-                'gross_weight',
-                'metal_weight',
-                'stone_charges',
+                'id','name','sku','description','tax_rate','making_charge','sac',
+
+                'gold_weight','gold_purity',
+                'silver_weight','silver_purity',
+                'stone_weight','stone_charges',
+                'diamond_weight','diamond_charges',
             ]);
 
-        // Metal rates for today
+        // Metal rates (today)
         $metalRates = MetalRate::where('business_id', $bid)
             ->whereDate('rate_date', $today)
             ->where('is_active', true)
-            ->get([
-                'metal_type',
-                'purity',
-                'rate_per_gram',
-            ]);
+            ->get(['metal_type','purity','rate_per_gram']);
 
-        // JSON payloads
-        $clientsJson = $clients->map(fn($c) => [
-            'id'     => $c->id,
-            'name'   => $c->name,
-            'mobile' => $c->mobile,
-        ])->values()->toJson();
-
-        $itemsJson = $items->map(fn($i) => [
-            'id'            => $i->id,
-            'name'          => $i->name,
-            'sku'           => $i->sku,
-            'price'         => (float) $i->price,
-            'making_charge' => (float) $i->making_charge,
-            'tax_rate'      => (float) $i->tax_rate,
-            'description'   => $i->description,
-            'sac'           => $i->sac,
-            'metal_type'    => $i->metal_type,
-            'purity'        => $i->purity,
-            'gross_weight'  => (float) $i->gross_weight,
-            'metal_weight'  => (float) $i->metal_weight,
-            'stone_charges' => (float) $i->stone_charges,
-        ])->values()->toJson();
-
-        $metalRatesJson = $metalRates->map(fn($r) => [
-            'metal_type'    => $r->metal_type,
-            'purity'        => $r->purity,
-            'rate_per_gram' => (float) $r->rate_per_gram,
-        ])->values()->toJson();
-
-        // Additional charges
+        // Charges
         $charges = AdditionalCharge::orderBy('name')->get(['id','name','amount']);
-        $chargesJson = $charges->map(fn($a) => [
-            'id'     => $a->id,
-            'name'   => $a->name,
-            'amount' => (float) $a->amount,
-        ])->values()->toJson();
 
         // Preview invoice number
-        $preview = \App\Services\InvoiceNumber::peek((int) $bid, $today, $suggestedPrefix, 3);
+        $preview = \App\Services\InvoiceNumber::peek((int)$bid, $today, $suggestedPrefix, 3);
 
-        return view('invoices.create', [
+        return view('invoices.create1', [
             'today'            => $today,
-            'clientsJson'      => $clientsJson,
-            'itemsJson'        => $itemsJson,
-            'chargesJson'      => $chargesJson,
-            'metalRatesJson'   => $metalRatesJson,
+            'clientsJson'      => $clients->values()->toJson(),
+            'itemsJson'        => $items->values()->toJson(),
+            'chargesJson'      => $charges->values()->toJson(),
+            'metalRatesJson'   => $metalRates->values()->toJson(),
             'suggestedPrefix'  => $suggestedPrefix,
             'basePrefix'       => $base,
             'initialInvoiceNo' => $preview['full'] ?? 'Auto',
             'defaultTerms'     => $business?->terms,
         ]);
     }
+
+
+
+
 
 
 
@@ -280,8 +348,9 @@ class InvoiceController extends Controller
         // -----------------------
         // Additional charges master
         // -----------------------
-        $charges = \App\Models\AdditionalCharge::orderBy('name')
-            ->get(['id', 'name', 'amount']);
+//        $charges = \App\Models\AdditionalCharge::orderBy('name')
+//            ->get(['id', 'name', 'amount']);
+        $charges = AdditionalCharge::where('business_id', $bid)->orderBy('name')->get(['id','name','amount']);
 
         $chargesJson = $charges->map(fn($a) => [
             'id'     => (int) $a->id,
@@ -515,41 +584,61 @@ class InvoiceController extends Controller
 
 
 
-    public function previewNumber(Request $r)
+//    public function previewNumber(Request $r)
+//    {
+//        $bid = $r->user()->current_business_id ?? session('active_business_id');
+//        if (!$bid) {
+//            return response()->json(['ok'=>false,'message'=>'No active business.'], 422);
+//        }
+//
+//        $date   = $r->input('invoice_date');
+//        $prefix = $r->input('invoice_prefix');
+//
+//        if (!$date) {
+//            return response()->json(['ok'=>false,'message'=>'invoice_date required'], 422);
+//        }
+//
+//        // prefix optional → fallback to basePrefix+FY
+//        if (!$prefix) {
+//            $base   = optional(
+//                    $r->user()->businesses()->where('businesses.id',$bid)->first()
+//                )->invoice_base_prefix ?? 'RV/SL';
+//            $prefix = InvoiceNumber::previewPrefix($date, $base);
+//        }
+//
+//        try {
+//            $peek = InvoiceNumber::peek((int)$bid, $date, $prefix, 3);
+//            return response()->json([
+//                'ok'     => true,
+//                'number' => $peek['full'],
+//                'prefix' => $peek['prefix'],
+//                'seq'    => $peek['seq'],
+//            ]);
+//        } catch (\Throwable $e) {
+//            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 422);
+//        }
+//    }
+
+
+    public function previewNumber(Request $request)
     {
-        $bid = $r->user()->current_business_id ?? session('active_business_id');
+        $request->validate([
+            'invoice_date'   => ['required','date'],
+            'invoice_prefix' => ['required','string'],
+        ]);
+
+        $bid = $request->user()->current_business_id ?? session('active_business_id');
         if (!$bid) {
-            return response()->json(['ok'=>false,'message'=>'No active business.'], 422);
+            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
         }
 
-        $date   = $r->input('invoice_date');
-        $prefix = $r->input('invoice_prefix');
+        $peek = \App\Services\InvoiceNumber::peek((int)$bid, $request->invoice_date, $request->invoice_prefix, 3);
 
-        if (!$date) {
-            return response()->json(['ok'=>false,'message'=>'invoice_date required'], 422);
-        }
-
-        // prefix optional → fallback to basePrefix+FY
-        if (!$prefix) {
-            $base   = optional(
-                    $r->user()->businesses()->where('businesses.id',$bid)->first()
-                )->invoice_base_prefix ?? 'RV/SL';
-            $prefix = InvoiceNumber::previewPrefix($date, $base);
-        }
-
-        try {
-            $peek = InvoiceNumber::peek((int)$bid, $date, $prefix, 3);
-            return response()->json([
-                'ok'     => true,
-                'number' => $peek['full'],
-                'prefix' => $peek['prefix'],
-                'seq'    => $peek['seq'],
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 422);
-        }
+        return response()->json([
+            'ok'     => true,
+            'number' => $peek['full'] ?? null,
+        ]);
     }
-
 
 
     public function show(Invoice $invoice)

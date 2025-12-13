@@ -13,6 +13,13 @@ class Invoice extends Model
 
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'reverse_charge' => 'boolean',
+        'charges_json'   => 'array',   // if you store extra charges as json
+        'items_json'     => 'array',   // if you store items as json (optional)
+        'invoice_date'   => 'date',
+    ];
+
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -94,5 +101,10 @@ class Invoice extends Model
             + $this->sgst_amount
             + $this->igst_amount
             - ($this->less_amount ?? 0);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(InvoicePayment::class);
     }
 }

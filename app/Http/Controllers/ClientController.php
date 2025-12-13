@@ -115,37 +115,110 @@ class ClientController extends Controller
 
 
 
+//    public function quickStore(Request $request)
+//    {
+//        $bid = $request->user()->current_business_id ?? session('active_business_id');
+//
+//        $data = $request->validate([
+//            'name'    => ['required','string','max:255'],
+//            'mobile'  => ['required','string','max:20',
+//                Rule::unique('clients','mobile')->where(fn($q)=>$q->where('business_id',$bid))
+//            ],
+//            'gstin'   => ['nullable','string','max:50',
+//                Rule::unique('clients','gstin')->where(fn($q)=>$q->where('business_id',$bid))
+//            ],
+//            'pan'     => ['nullable','string','max:50',
+//                Rule::unique('clients','pan')->where(fn($q)=>$q->where('business_id',$bid))
+//            ],
+//            'state'   => ['nullable','string','max:100'],
+//            'address' => ['nullable','string','max:1000'],
+//        ]);
+//
+//        $data['business_id'] = $bid;
+//        $client = \App\Models\Client::create($data);
+//
+//        return response()->json([
+//            'ok' => true,
+//            'client' => [
+//                'id' => $client->id,
+//                'name' => $client->name,
+//                'mobile' => $client->mobile,
+//            ]
+//        ]);
+//    }
+
     public function quickStore(Request $request)
     {
-        $bid = $request->user()->current_business_id ?? session('active_business_id');
+        // ✅ Business resolve (fallback added)
+        $bid = $request->user()->current_business_id
+            ?? session('active_business_id')
+            ?? $request->user()->businesses()->pluck('businesses.id')->first();
 
-        $data = $request->validate([
-            'name'    => ['required','string','max:255'],
-            'mobile'  => ['required','string','max:20',
-                Rule::unique('clients','mobile')->where(fn($q)=>$q->where('business_id',$bid))
-            ],
-            'gstin'   => ['nullable','string','max:50',
-                Rule::unique('clients','gstin')->where(fn($q)=>$q->where('business_id',$bid))
-            ],
-            'pan'     => ['nullable','string','max:50',
-                Rule::unique('clients','pan')->where(fn($q)=>$q->where('business_id',$bid))
-            ],
-            'state'   => ['nullable','string','max:100'],
-            'address' => ['nullable','string','max:1000'],
+        if (!$bid) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Active business not found.'
+            ], 422);
+        }
+
+        // ✅ Normalize inputs (avoid duplicates by formatting)
+        $request->merge([
+            'mobile'  => $request->mobile ? preg_replace('/\s+/', '', $request->mobile) : null,
+            'gstin'   => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
+            'pan'     => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
+            'state'   => $request->state ? trim($request->state) : null,
+            'address' => $request->address ? trim($request->address) : null,
+            'name'    => $request->name ? trim($request->name) : null,
         ]);
 
+        // ✅ Convert empty string to null for nullable fields
+        foreach (['gstin','pan','state','address'] as $f) {
+            if ($request->has($f) && $request->input($f) === '') {
+                $request->merge([$f => null]);
+            }
+        }
+
+        try {
+            $data = $request->validate([
+                'name'    => ['required','string','max:255'],
+                'mobile'  => [
+                    'required','string','max:20',
+                    Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
+                ],
+                'gstin'   => [
+                    'nullable','string','max:50',
+                    Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
+                ],
+                'pan'     => [
+                    'nullable','string','max:50',
+                    Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
+                ],
+                'state'   => ['nullable','string','max:100'],
+                'address' => ['nullable','string','max:1000'],
+            ]);
+        } catch (ValidationException $e) {
+            // ✅ return validation errors as JSON for modal
+            return response()->json([
+                'ok' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
         $data['business_id'] = $bid;
+
         $client = \App\Models\Client::create($data);
 
         return response()->json([
             'ok' => true,
             'client' => [
-                'id' => $client->id,
-                'name' => $client->name,
+                'id'     => $client->id,
+                'name'   => $client->name,
                 'mobile' => $client->mobile,
             ]
         ]);
     }
+
 
     // App\Http\Controllers\ClientController.php
 

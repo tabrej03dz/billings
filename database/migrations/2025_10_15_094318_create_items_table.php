@@ -33,6 +33,9 @@ return new class extends Migration
             $table->decimal('metal_weight', 12, 3)->nullable();
             $table->decimal('stone_weight', 12, 3)->nullable();
             $table->decimal('stone_charges', 12, 2)->nullable();
+
+
+
             $table->timestamps();
         });
     }
