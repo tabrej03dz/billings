@@ -10,6 +10,7 @@ class InvoicePayment extends Model
 
     public function invoice()
     {
-        return $this->belongsTo(Invoice::class);
+        return $this->belongsTo(\App\Models\Invoice::class);
     }
+
 }

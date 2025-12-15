@@ -1,4 +1,4 @@
-<x-layouts.app :title="__('Create Sales Invoice')">
+<x-layouts.app :title="__('Edit Sales Invoice')">
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
 
         {{-- errors --}}
@@ -14,17 +14,20 @@
         <script type="application/json" id="clients-json">{!! $clientsJson !!}</script>
         <script type="application/json" id="items-json">{!! $itemsJson !!}</script>
         <script type="application/json" id="metal-rates-json">{!! $metalRatesJson !!}</script>
+        <script type="application/json" id="prefill-items-json">{!! $prefillItemsJson !!}</script>
+        <script type="application/json" id="prefill-payment-json">{!! $prefillPaymentJson !!}</script>
 
         <div class="flex items-center justify-between">
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Create Sales Invoice</h1>
+            <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Edit Sales Invoice</h1>
             <button @click="$refs.form.requestSubmit()"
                     class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                Save
+                Update
             </button>
         </div>
 
-        <form x-ref="form" method="POST" action="{{ route('invoices.store') }}" @submit.prevent="beforeSubmit">
+        <form x-ref="form" method="POST" action="{{ route('invoices.update', $invoice->id) }}" @submit.prevent="beforeSubmit">
             @csrf
+            @method('PUT')
 
             {{-- TOP PANELS --}}
             <div class="grid lg:grid-cols-4 gap-4">
@@ -38,12 +41,18 @@
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
 
                     <div class="flex gap-2">
-                        <select name="client_id" x-model="clientId" required
+                        {{-- ✅ CLIENT SELECT (100% preselect fix) --}}
+                        <select x-ref="clientSelect"
+                                name="client_id"
+                                x-model="clientId"
+                                required
                                 class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                             <option value="">-- Select Client --</option>
+
                             <template x-for="c in clients" :key="c.id">
-                                <option :value="c.id"
+                                <option :value="String(c.id)"
+                                        :selected="String(c.id) === String(clientId)"
                                         x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
                             </template>
                         </select>
@@ -136,7 +145,6 @@
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
                                           bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -172,6 +180,7 @@
                                 <td class="px-3 py-2">
                                     <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700
                                                    bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
+                                            :value="row.item_id"
                                             @change="pickItem(i, $event.target.value)">
                                         <option value="">-- Select Item --</option>
                                         <template x-for="it in itemsData" :key="it.id">
@@ -190,7 +199,6 @@
                                                   bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                {{-- ✅ QUANTITY --}}
                                 <td class="px-3 py-2 text-center">
                                     <input type="number" min="1" step="1"
                                            x-model.number="row.quantity" @input="calc()"
@@ -208,16 +216,12 @@
                                     <input type="number" step="0.01" min="0" x-model.number="row.gold_rate" @input="calc()"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
                                                   bg-white dark:bg-neutral-900 text-xs">
-                                    <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                         x-text="row.gold_purity ? ('Purity: ' + row.gold_purity) : ''"></div>
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0" x-model.number="row.silver_rate" @input="calc()"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
                                                   bg-white dark:bg-neutral-900 text-xs">
-                                    <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                         x-text="row.silver_purity ? ('Purity: ' + row.silver_purity) : ''"></div>
                                 </td>
 
                                 <td class="px-3 py-2">
@@ -290,10 +294,10 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and Conditions</label>
                         <textarea name="terms" rows="4"
                                   class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                                         bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $defaultTerms) }}</textarea>
+                                         bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $invoice->terms ?? $defaultTerms) }}</textarea>
                     </div>
 
-                    {{-- Payment Adjustments --}}
+                    {{-- Payment --}}
                     <div class="space-y-2">
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">Cash</span>
@@ -352,7 +356,6 @@
 
                 {{-- Right totals --}}
                 <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 space-y-2">
-
                     <div class="flex justify-between font-semibold">
                         <span class="text-sm text-gray-800 dark:text-neutral-100">Balance Amount</span>
                         <span class="text-sm" x-text="money(balanceAmount())"></span>
@@ -390,7 +393,7 @@
             <div class="text-right">
                 <button @click="$refs.form.requestSubmit()"
                         class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                    Save
+                    Update
                 </button>
             </div>
         </form>
@@ -399,59 +402,97 @@
 
     <script>
         function invoiceForm(){
-            const CLIENTS     = JSON.parse(document.getElementById('clients-json')?.textContent || '[]');
-            const ITEMS       = JSON.parse(document.getElementById('items-json')?.textContent || '[]');
-            const METAL_RATES = JSON.parse(document.getElementById('metal-rates-json')?.textContent || '[]');
+            const CLIENTS      = JSON.parse(document.getElementById('clients-json')?.textContent || '[]');
+            const ITEMS        = JSON.parse(document.getElementById('items-json')?.textContent || '[]');
+            const METAL_RATES  = JSON.parse(document.getElementById('metal-rates-json')?.textContent || '[]');
+            const PREFILL      = JSON.parse(document.getElementById('prefill-items-json')?.textContent || '[]');
+            const PREFILL_PAY  = JSON.parse(document.getElementById('prefill-payment-json')?.textContent || '{}');
 
             return {
                 clients: CLIENTS,
                 itemsData: ITEMS,
                 metalRates: METAL_RATES,
 
-                clientId: '',
+                // ✅ IMPORTANT: string
+                clientId: String(@js($invoice->client_id ?? '')),
+
                 party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' },
 
                 hdr: {
-                    date: '{{ $today }}',
-                    transport_mode: 'By Hand',
-                    gst_no: @js($businessGstin ?? ''),
-                    reverse_charge: false,
+                    date: @js($invoice->invoice_date),
+                    transport_mode: @js($invoice->transport_mode ?? 'By Hand'),
+                    gst_no: @js($invoice->gst_no ?? ''),
+                    reverse_charge: @js((bool)$invoice->reverse_charge),
                 },
 
                 basePrefix: @js($basePrefix),
                 computedPrefix: @js($suggestedPrefix),
-                invoiceNo: @js($initialInvoiceNo),
+                invoiceNo: @js($invoice->invoice_number),
 
                 pay: {
-                    cash: 0, upi: 0, card: 0, cheque: 0,
-                    credit_excess: 0, advance: 0,
-                    online_mode:'', online_ref:'', upi_id:'',
-                    card_last4:'', card_ref:'',
-                    cheque_no:'', bank_name:''
+                    cash: Number(PREFILL_PAY.cash ?? 0),
+                    upi: Number(PREFILL_PAY.upi ?? 0),
+                    card: Number(PREFILL_PAY.card ?? 0),
+                    cheque: Number(PREFILL_PAY.cheque ?? 0),
+
+                    credit_excess: Number(PREFILL_PAY.credit_excess ?? 0),
+                    advance: Number(PREFILL_PAY.advance ?? 0),
+
+                    online_mode: PREFILL_PAY.online_mode ?? '',
+                    online_ref: PREFILL_PAY.online_ref ?? '',
+                    upi_id: PREFILL_PAY.upi_id ?? '',
+
+                    card_last4: PREFILL_PAY.card_last4 ?? '',
+                    card_ref: PREFILL_PAY.card_ref ?? '',
+
+                    cheque_no: PREFILL_PAY.cheque_no ?? '',
+                    bank_name: PREFILL_PAY.bank_name ?? ''
                 },
 
-                items: [{
-                    _k: Date.now(),
-                    item_id: null,
-                    description: '',
-                    hsn: '',
-                    quantity: 1, // ✅ NEW
-                    making_rate: 0,
-                    gold_purity: null,
-                    silver_purity: null,
-                    gold_rate: 0,
-                    silver_rate: 0,
-                    silver_wt: 0,
-                    gold_wt: 0,
-                    gemstone_wt: 0,
-                    diamond_wt: 0,
-                    tax_percent: 0,
-                }],
+                items: (Array.isArray(PREFILL) && PREFILL.length ? PREFILL : [{
+                    item_id:null,description:'',hsn:'',quantity:1,
+                    making_rate:0,gold_purity:null,silver_purity:null,
+                    gold_rate:0,silver_rate:0,silver_wt:0,gold_wt:0,
+                    gemstone_wt:0,diamond_wt:0,tax_percent:0
+                }]).map((r, idx) => ({
+                    _k: Date.now()+idx+Math.random(),
+                    item_id: r.item_id ?? null,
+                    description: r.description ?? '',
+                    hsn: r.hsn ?? '',
+                    quantity: Number(r.quantity ?? 1) || 1,
+                    making_rate: Number(r.making_rate ?? 0),
+                    gold_purity: r.gold_purity ?? null,
+                    silver_purity: r.silver_purity ?? null,
+                    gold_rate: Number(r.gold_rate ?? 0),
+                    silver_rate: Number(r.silver_rate ?? 0),
+                    silver_wt: Number(r.silver_wt ?? 0),
+                    gold_wt: Number(r.gold_wt ?? 0),
+                    gemstone_wt: Number(r.gemstone_wt ?? 0),
+                    diamond_wt: Number(r.diamond_wt ?? 0),
+                    tax_percent: Number(r.tax_percent ?? 0),
+                })),
 
                 init(){
-                    this.$watch('clientId', () => this.syncParty());
-                    this.syncParty();
-                    this.calc();
+                    // ✅ force select after render
+                    this.$watch('clientId', () => {
+                        this.syncParty();
+                        this.forceClientSelect();
+                    });
+
+                    this.$nextTick(() => {
+                        this.clientId = String(this.clientId || '');
+                        this.forceClientSelect();
+                        this.syncParty();
+                        this.calc();
+                    });
+                },
+
+                forceClientSelect(){
+                    this.$nextTick(() => {
+                        if (this.$refs.clientSelect) {
+                            this.$refs.clientSelect.value = String(this.clientId || '');
+                        }
+                    });
                 },
 
                 syncParty(){
@@ -491,7 +532,9 @@
                         if(!rp) return false;
                         const rpBase = rp.split('(')[0].trim();
                         const rpFirst = rp.split(' ')[0].trim();
-                        const rpParen = (rp.match(/\(([^)]+)\)/)||[])[1] ? String((rp.match(/\(([^)]+)\)/)||[])[1]).trim() : '';
+                        const rpParen = (rp.match(/\(([^)]+)\)/)||[])[1]
+                            ? String((rp.match(/\(([^)]+)\)/)||[])[1]).trim()
+                            : '';
                         return uniq.includes(rp) || uniq.includes(rpBase) || uniq.includes(rpFirst) || (rpParen && uniq.includes(rpParen));
                     });
 
@@ -501,28 +544,29 @@
                 pickItem(i, id){
                     const it = this.itemsData.find(x => String(x.id) === String(id));
                     if(!it) return;
+
                     const r = this.items[i];
 
                     r.item_id     = it.id;
                     r.description = it.description || it.name || '';
-                    r.hsn         = it.sac || it.hsn || '';
+                    r.hsn         = it.sac || it.hsn || r.hsn || '';
 
-                    r.quantity  = Number(it.quantity ?? 1) || 1; // ✅ NEW
+                    r.quantity    = Math.max(1, Number(r.quantity ?? 1));
 
-                    r.gold_wt   = Number(it.gold_weight ?? it.gold_wt ?? 0);
-                    r.silver_wt = Number(it.silver_weight ?? it.silver_wt ?? 0);
+                    r.gold_wt     = Number(it.gold_weight ?? it.gold_wt ?? r.gold_wt ?? 0);
+                    r.silver_wt   = Number(it.silver_weight ?? it.silver_wt ?? r.silver_wt ?? 0);
 
-                    r.gold_purity   = (it.gold_purity ?? it.purity ?? '').toString().trim() || null;
-                    r.silver_purity = (it.silver_purity ?? '').toString().trim() || null;
+                    r.gold_purity   = (it.gold_purity ?? it.purity ?? '').toString().trim() || r.gold_purity || null;
+                    r.silver_purity = (it.silver_purity ?? '').toString().trim() || r.silver_purity || null;
 
-                    r.gemstone_wt = Number(it.stone_weight ?? it.gemstone_wt ?? 0);
-                    r.diamond_wt  = Number(it.diamond_weight ?? it.diamond_wt ?? 0);
+                    r.gemstone_wt  = Number(it.stone_weight ?? it.gemstone_wt ?? r.gemstone_wt ?? 0);
+                    r.diamond_wt   = Number(it.diamond_weight ?? it.diamond_wt ?? r.diamond_wt ?? 0);
 
-                    r.making_rate = Number(it.making_charge ?? it.making_rate ?? 0);
-                    r.tax_percent = Number(it.tax_rate ?? 0);
+                    r.making_rate  = Number(it.making_charge ?? it.making_rate ?? r.making_rate ?? 0);
+                    r.tax_percent  = Number(it.tax_rate ?? r.tax_percent ?? 0);
 
-                    r.gold_rate   = this.findMetalRate('gold', r.gold_purity);
-                    r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
+                    if (!Number(r.gold_rate||0))   r.gold_rate   = this.findMetalRate('gold', r.gold_purity);
+                    if (!Number(r.silver_rate||0)) r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
 
                     this.calc();
                 },
@@ -533,7 +577,7 @@
                         item_id: null,
                         description: '',
                         hsn: '',
-                        quantity: 1, // ✅ NEW
+                        quantity: 1,
                         making_rate: 0,
                         gold_purity: null,
                         silver_purity: null,
@@ -550,12 +594,11 @@
 
                 remove(i){ this.items.splice(i,1); this.calc(); },
 
-                // ✅ base = (gold+silver+making) * qty
                 lineBase(r){
-                    const qty      = Math.max(1, Number(r.quantity || 1));
-                    const goldAmt  = Number(r.gold_wt||0)   * Number(r.gold_rate||0);
-                    const silvAmt  = Number(r.silver_wt||0) * Number(r.silver_rate||0);
-                    const making   = Number(r.making_rate||0);
+                    const qty     = Math.max(1, Number(r.quantity || 1));
+                    const goldAmt = Number(r.gold_wt||0)   * Number(r.gold_rate||0);
+                    const silvAmt = Number(r.silver_wt||0) * Number(r.silver_rate||0);
+                    const making  = Number(r.making_rate||0);
                     return Math.max(0, Number(((goldAmt + silvAmt + making) * qty).toFixed(2)));
                 },
 
@@ -605,8 +648,7 @@
                         item_id: r.item_id ?? null,
                         description: r.description || '',
                         hsn: r.hsn || '',
-
-                        quantity: Math.max(1, Number(r.quantity ?? 1)), // ✅ NEW
+                        quantity: Math.max(1, Number(r.quantity ?? 1)),
 
                         making_rate: Number(r.making_rate||0),
 
@@ -637,7 +679,7 @@
 
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
 
-                openClientModal(){ /* if needed */ },
+                openClientModal(){},
             }
         }
     </script>

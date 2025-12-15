@@ -1,0 +1,330 @@
+@php
+    $b = $biz ?? $inv->business;
+    $c = $client ?? $inv->client;
+
+    $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
+    $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
+    $dmy  = fn($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d-m-Y') : '';
+
+    // totals directly from invoices table (controller passed)
+    $less    = (float)($less_amount ?? 0);
+    $balance = (float)($balance ?? 0);
+
+    $cgst = (float)($cgst_amount ?? 0);
+    $sgst = (float)($sgst_amount ?? 0);
+    $igst = (float)($igst_amount ?? 0);
+
+    $totalValue = (float)($grand_total ?? 0);
+
+    // footer
+    $addr = $b->address ?? '';
+@endphp
+
+    <!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice {{ $inv->invoice_number }}</title>
+
+    <style>
+        /* ✅ page ko full bleed (background edge-to-edge) */
+        @page { margin: 0; }
+
+        *{ box-sizing:border-box; }
+
+        body{
+            font-family: DejaVu Sans, Arial, sans-serif;
+            font-size:10px;
+            color:#111;
+            margin:0;
+            padding:0;
+        }
+
+        /* ✅ content spacing yaha se control hoga */
+        .page{
+            padding: 50mm 16px 12mm 16px;  /* top right bottom left */
+        }
+
+        /* ✅ full page background letterhead */
+        .bg-letterhead{
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+        }
+        .bg-letterhead img{
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* full cover */
+        }
+
+        /* watermark */
+        .wm{
+            position:fixed;
+            left:50%; top:56%;
+            transform:translate(-50%,-50%);
+            font-size:320px;
+            font-weight:700;
+            color:rgba(200,0,0,0.10);
+            z-index:-2;
+            line-height:1;
+        }
+
+        table{ width:100%; border-collapse:collapse; }
+        .no-border td,.no-border th{ border:0!important; }
+        .b1{ border:1px solid #111; }
+        .tbl th,.tbl td{ border:1px solid #111; padding:5px 4px; font-size:9.5px; }
+        .tbl th{ background:#f2f2f2; font-weight:700; text-align:center; }
+
+        .center{ text-align:center; }
+        .right{ text-align:right; }
+        .bold{ font-weight:700; }
+        .muted{ color:#333; }
+        .tiny{ font-size:9px; }
+
+        .headbox{
+            background:#d9413a; color:#fff; padding:8px 10px 7px 10px;
+            font-weight:700; letter-spacing:1px;
+        }
+        .headbox .sub{ font-size:9px; font-weight:600; margin-top:3px; letter-spacing:.5px; }
+        .tag{ display:inline-block; border:1px solid #111; padding:2px 10px; font-size:9px; font-weight:700; margin-top:5px; }
+
+        .totals td{ border:1px solid #111; padding:5px; font-size:9.5px; }
+        .totals .label{ width:70%; }
+        .totals .val{ width:30%; text-align:right; font-weight:700; }
+
+        .pill{ display:inline-block; padding:3px 12px; border-radius:20px; border:1px solid #111; font-size:9.5px; font-weight:700; }
+
+        .footerline{ margin-top:8px; border-top:1px solid #111; padding-top:6px; font-size:9.5px; }
+    </style>
+
+</head>
+
+<body>
+
+{{-- ✅ Background letterhead full page --}}
+@if(!empty($letter_head))
+    <div class="bg-letterhead">
+        <img src="{{ $letter_head }}" alt="Letterhead">
+    </div>
+@endif
+
+<div class="wm">K</div>
+
+<div class="page">
+
+    {{-- TOP HEADER --}}
+    <table class="no-border" style="margin-bottom:6px;">
+        <tr class="no-border">
+            <td class="no-border" style="width:25%; vertical-align:top;">
+                @if(!empty($logo))
+                    <img src="{{ $logo }}" style="height:42px; width:auto;" alt="Logo">
+                @endif
+                <div class="tiny muted" style="margin-top:2px;">Hallmark Jewellery</div>
+            </td>
+
+            <td class="no-border center" style="width:50%; vertical-align:top;">
+                <div class="headbox">
+                    <div style="font-size:18px;">{{ strtoupper($b->name ?? 'KAPOOR JEWELLERS') }}</div>
+                    <div class="sub">"IN GOD WE TRUST"</div>
+                </div>
+                <div class="tag">TAX INVOICE</div>
+            </td>
+
+            <td class="no-border right" style="width:25%; vertical-align:top;">
+                <div class="bold">Certified Diamond</div>
+                <div class="tiny muted">Jewellery</div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- PARTY + META --}}
+    <table class="no-border" style="margin-bottom:8px;">
+        <tr class="no-border">
+            <td class="no-border" style="width:58%; vertical-align:top; padding-right:8px;">
+                <table class="b1" style="font-size:9.5px;">
+                    <tr>
+                        <td style="padding:4px; width:14%;" class="bold">Name:</td>
+                        <td style="padding:4px; width:36%;">{{ $c->name ?? '-' }}</td>
+                        <td style="padding:4px; width:14%;" class="bold">State:</td>
+                        <td style="padding:4px; width:36%;">{{ $c->state ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px;" class="bold">Add:</td>
+                        <td style="padding:4px;">{{ $c->address ?? '-' }}</td>
+                        <td style="padding:4px;" class="bold">Code:</td>
+                        <td style="padding:4px;">{{ $c->state_code ?? ($c->code ?? '-') }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px;" class="bold">Ph:</td>
+                        <td style="padding:4px;">{{ $c->mobile ?? '-' }}</td>
+                        <td style="padding:4px;" class="bold">GSTIN:</td>
+                        <td style="padding:4px;">{{ $c->gstin ?: 'Unregistered' }}</td>
+                    </tr>
+                </table>
+            </td>
+
+            <td class="no-border" style="width:42%; vertical-align:top;">
+                <table class="b1" style="font-size:9.5px;">
+                    <tr><td style="padding:4px;" class="bold">Date:</td><td style="padding:4px;" class="right">{{ $dmy($inv->invoice_date) }}</td></tr>
+                    <tr><td style="padding:4px;" class="bold">Bill No.</td><td style="padding:4px;" class="right">{{ $inv->invoice_number }}</td></tr>
+                    <tr><td style="padding:4px;" class="bold">GST No.</td><td style="padding:4px;" class="right">{{ $inv->gst_no ?? ($b->gstin ?? '-') }}</td></tr>
+                    <tr><td style="padding:4px;" class="bold">Transport Mode:</td><td style="padding:4px;" class="right">{{ $inv->transport_mode ?? 'By Hand' }}</td></tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    {{-- ITEMS TABLE (Amount = BASE ONLY) --}}
+    <table class="tbl">
+        <thead>
+        <tr>
+            <th style="width:4%;">S.No.</th>
+            <th style="width:18%;">Description</th>
+            <th style="width:7%;">HSN</th>
+            <th style="width:8%;">Making</th>
+            <th style="width:9%;">Gold Rate</th>
+            <th style="width:9%;">Silver Rate</th>
+            <th style="width:8%;">Silver Wt</th>
+            <th style="width:8%;">Gold Wt</th>
+            <th style="width:9%;">Gem Wt(Ct)</th>
+            <th style="width:9%;">Dia Wt(Ct)</th>
+            <th style="width:12%;">Amount</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        @php
+            $sumBase = 0;
+            $sumSilver = 0; $sumGold=0; $sumGem=0; $sumDia=0;
+        @endphp
+
+        @foreach(($items ?? []) as $i => $it)
+            @php
+                $qty = (float)($it->quantity ?? 1);
+                $qty = $qty > 0 ? $qty : 1;
+
+                $goldWt   = (float)($it->gold_wt ?? 0);
+                $silverWt = (float)($it->silver_wt ?? 0);
+
+                if(!$goldWt && ($it->metal_type ?? '') === 'gold')  $goldWt = (float)($it->metal_weight ?? 0);
+                if(!$silverWt && ($it->metal_type ?? '') === 'silver') $silverWt = (float)($it->metal_weight ?? 0);
+
+                $goldRate   = (float)($it->gold_rate ?? 0);
+                $silverRate = (float)($it->silver_rate ?? 0);
+
+                $metalPerUnit = ($goldWt*$goldRate) + ($silverWt*$silverRate);
+                if($metalPerUnit <= 0){
+                    $metalPerUnit = (float)($it->rate ?? 0);
+                }
+
+                $making = (float)($it->making_charge ?? $it->making_rate ?? 0);
+                $stone  = (float)($it->stone_charges ?? 0);
+                $disc   = (float)($it->discount ?? 0);
+
+                $lineBase = max(0, ($qty * ($metalPerUnit + $making + $stone)) - $disc);
+
+                $sumBase += $lineBase;
+
+                $sumSilver += $silverWt;
+                $sumGold   += $goldWt;
+                $sumGem    += (float)($it->gemstone_wt_ct ?? 0);
+                $sumDia    += (float)($it->diamond_wt_ct ?? 0);
+            @endphp
+
+            <tr class="center">
+                <td>{{ $i+1 }}</td>
+                <td style="text-align:left;">{{ $it->description ?? '' }}</td>
+                <td>{{ $it->hsn_code ?? $it->sac_code ?? '' }}</td>
+
+                <td class="right">{{ $fmt0($it->making_rate ?? $it->making_charge ?? 0) }}</td>
+                <td class="right">{{ $fmt0($goldRate) }}</td>
+                <td class="right">{{ $fmt0($silverRate) }}</td>
+                <td class="right">{{ $fmt2($silverWt) }}</td>
+                <td class="right">{{ $fmt2($goldWt) }}</td>
+                <td class="right">{{ $fmt2($it->gemstone_wt_ct ?? 0) }}</td>
+                <td class="right">{{ $fmt2($it->diamond_wt_ct ?? 0) }}</td>
+
+                <td class="right bold">{{ $fmt0($lineBase) }}</td>
+            </tr>
+        @endforeach
+
+        <tr>
+            <td colspan="6" class="right bold">Total Wt./Amount</td>
+            <td class="right bold">{{ $fmt2($sumSilver) }}</td>
+            <td class="right bold">{{ $fmt2($sumGold) }}</td>
+            <td class="right bold">{{ $fmt2($sumGem) }}</td>
+            <td class="right bold">{{ $fmt2($sumDia) }}</td>
+            <td class="right bold">{{ $fmt0($sumBase) }}</td>
+        </tr>
+        </tbody>
+    </table>
+
+    {{-- reverse charge + totals --}}
+    <table class="no-border" style="margin-top:8px;">
+        <tr class="no-border">
+            <td class="no-border" style="width:58%; vertical-align:top; padding-right:8px;">
+                <div class="b1" style="padding:6px; font-size:9.5px;">
+                    <span class="bold">Reverse Charge (Y/N)</span>
+                    <span style="float:right;">{{ !empty($inv->reverse_charge) ? 'Y' : 'N' }}</span>
+                </div>
+
+                <div class="tiny muted" style="margin-top:10px;">
+                    <div class="bold" style="margin-bottom:4px; color:#111;">Payment Adjustment:</div>
+                    <div>Payment Through Credit/Debit Card no.: ____________________________</div>
+                    <div>Payment Through Online/CHE Received : {{ $inv->payment_method ?? $inv->payment_mode ?? '' }}</div>
+                    <div>Payment Through Cash : ____________________________</div>
+                </div>
+            </td>
+
+            <td class="no-border" style="width:42%; vertical-align:top;">
+                <table class="totals">
+                    <tr><td class="label">Less :</td><td class="val">{{ $fmt0($less) }}</td></tr>
+                    <tr><td class="label bold">Balance Amount :</td><td class="val">{{ $fmt0($balance) }}</td></tr>
+                    <tr><td class="label">CGST :</td><td class="val">{{ $fmt0($cgst) }}</td></tr>
+                    <tr><td class="label">SGST :</td><td class="val">{{ $fmt0($sgst) }}</td></tr>
+                    <tr><td class="label">IGST :</td><td class="val">{{ $fmt0($igst) }}</td></tr>
+                    <tr><td class="label bold">Total Value :</td><td class="val">{{ $fmt0($totalValue) }}</td></tr>
+                </table>
+
+                <table class="no-border" style="margin-top:6px; font-size:9.5px;">
+                    <tr class="no-border">
+                        <td class="no-border" style="width:50%;">Advance:</td>
+                        <td class="no-border right" style="width:50%;">{{ $fmt0(0) }}</td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    {{-- policy + praise --}}
+    <div class="tiny muted" style="margin-top:8px;">
+        <div class="bold" style="color:#111; margin-bottom:3px;">Exchange/Return Policy</div>
+        <div>• In Exchange or Return original invoice should be return by the customers is compulsory.</div>
+        <div>• Any Gems Stone, Labour Charges and GST are non-refundable under any circumstances.</div>
+        <div>• Every piece of jewellery is delicate please handle with care, we are not responsible for damage.</div>
+        <div>• All disputes are subject to local jurisdiction only.</div>
+    </div>
+
+    <div class="center bold" style="margin-top:10px; font-size:14px;">
+        PRAISE THE LORD
+    </div>
+
+    {{-- footer --}}
+    @if($b->name != 'KAPOOR JEWELLERS')
+    <div class="footerline center">
+        <div class="bold">
+            {{ $addr }}
+            @if(!empty($b->mobile)) , {{ $b->mobile }} @endif
+            @if(!empty($b->email)) , E-mail : {{ $b->email }} @endif
+        </div>
+        <div style="margin-top:6px;">
+            <span class="pill">TUESDAY CLOSED</span>
+        </div>
+    </div>
+    @endif
+
+</div>
+</body>
+</html>
