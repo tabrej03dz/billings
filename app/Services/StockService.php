@@ -121,4 +121,46 @@ class StockService
             $item->refreshStockQty();
         });
     }
+
+
+
+    public function recordOpening(Item $item, int $qty, ?string $note = null): void
+    {
+        if ($qty <= 0) {
+            $item->refreshStockQty();
+            return;
+        }
+
+        $this->createMovement(
+            itemId: $item->id,
+            businessId: $item->business_id,
+            qtyChange: $qty,
+            type: 'opening',
+            reference: null,
+            note: $note ?? 'Opening stock from item create'
+        );
+
+        $item->refreshStockQty();
+    }
+
+    public function setStockTo(Item $item, int $newQty, ?string $note = null): void
+    {
+        $item->refreshStockQty(); // ensure current correct
+        $current = (int)($item->stock_qty ?? 0);
+
+        $diff = $newQty - $current;
+        if ($diff === 0) return;
+
+        $this->createMovement(
+            itemId: $item->id,
+            businessId: $item->business_id,
+            qtyChange: $diff, // + or -
+            type: 'adjustment',
+            reference: null,
+            note: $note ?? "Stock set from {$current} to {$newQty}"
+        );
+
+        $item->refreshStockQty();
+    }
+
 }

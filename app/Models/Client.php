@@ -13,7 +13,7 @@ class Client extends Model
 
     use BelongsToBusiness;
 
-    protected $fillable = ['business_id','name','address','gstin','pan','mobile','state'];
+    protected $guarded = ['id'];
 
     public function invoices()
     {

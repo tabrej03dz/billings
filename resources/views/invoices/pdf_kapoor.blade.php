@@ -8,7 +8,7 @@
 
     // totals directly from invoices table (controller passed)
     $less    = (float)($less_amount ?? 0);
-    $balance = (float)($balance ?? 0);
+    $balance = (float)($balance_amount ?? $balance ?? 0);
 
     $cgst = (float)($cgst_amount ?? 0);
     $sgst = (float)($sgst_amount ?? 0);
@@ -18,6 +18,34 @@
 
     // footer
     $addr = $b->address ?? '';
+
+    // ✅ Payment row (invoice_payments)
+    // Controller se $payRow pass ho to best
+    $pay = $payRow
+        ?? ($payment ?? null)
+        ?? ($inv->payment ?? null)
+        ?? ($inv->invoicePayment ?? null)
+        ?? ($inv->paymentRow ?? null)
+        ?? null;
+
+    // amounts (safe defaults)
+    $cashAmt   = (float)($pay->cash_amount ?? 0);
+    $onlineAmt = (float)($pay->online_amount ?? 0);   // UPI/Online total
+    $cardAmt   = (float)($pay->card_amount ?? 0);
+    $chequeAmt = (float)($pay->cheque_amount ?? 0);
+
+    $creditExcess = (float)($pay->credit_sales_excess_amount ?? 0);
+    $advanceAmt   = (float)($pay->advance_amount ?? 0);
+    $receivedTot  = (float)($pay->received_total ?? ($cashAmt + $onlineAmt + $cardAmt + $chequeAmt + $creditExcess + $advanceAmt));
+
+    $onlineMode = (string)($pay->online_mode ?? '');
+    $upiId      = (string)($pay->upi_id ?? '');
+    $onlineRef  = (string)($pay->online_ref ?? '');
+    $cardLast4  = (string)($pay->card_last4 ?? '');
+    $cardRef    = (string)($pay->card_ref ?? '');
+    $chequeNo   = (string)($pay->cheque_no ?? '');
+    $bankName   = (string)($pay->bank_name ?? '');
+
 @endphp
 
     <!doctype html>
@@ -27,9 +55,7 @@
     <title>Invoice {{ $inv->invoice_number }}</title>
 
     <style>
-        /* ✅ page ko full bleed (background edge-to-edge) */
         @page { margin: 0; }
-
         *{ box-sizing:border-box; }
 
         body{
@@ -40,12 +66,10 @@
             padding:0;
         }
 
-        /* ✅ content spacing yaha se control hoga */
         .page{
-            padding: 50mm 16px 12mm 16px;  /* top right bottom left */
+            padding: 50mm 50px 12mm 50px;  /* top right bottom left */
         }
 
-        /* ✅ full page background letterhead */
         .bg-letterhead{
             position: fixed;
             top: 0; left: 0;
@@ -56,10 +80,9 @@
         .bg-letterhead img{
             width: 100%;
             height: 100%;
-            object-fit: cover; /* full cover */
+            object-fit: cover;
         }
 
-        /* watermark */
         .wm{
             position:fixed;
             left:50%; top:56%;
@@ -95,15 +118,27 @@
         .totals .val{ width:30%; text-align:right; font-weight:700; }
 
         .pill{ display:inline-block; padding:3px 12px; border-radius:20px; border:1px solid #111; font-size:9.5px; font-weight:700; }
-
         .footerline{ margin-top:8px; border-top:1px solid #111; padding-top:6px; font-size:9.5px; }
-    </style>
 
+        /* ✅ payment table */
+        .paytbl td{
+            border:1px solid #111;
+            padding:5px 6px;
+            font-size:9.5px;
+        }
+        .paytbl .k{ width:55%; }
+        .paytbl .v{ width:45%; text-align:right; font-weight:700; }
+        .paynote{
+            border:1px solid #111;
+            padding:6px;
+            font-size:9px;
+            margin-top:6px;
+        }
+    </style>
 </head>
 
 <body>
 
-{{-- ✅ Background letterhead full page --}}
 @if(!empty($letter_head))
     <div class="bg-letterhead">
         <img src="{{ $letter_head }}" alt="Letterhead">
@@ -261,23 +296,45 @@
         </tbody>
     </table>
 
-    {{-- reverse charge + totals --}}
+    {{-- reverse charge + totals + payment breakup --}}
     <table class="no-border" style="margin-top:8px;">
         <tr class="no-border">
+
+            {{-- LEFT --}}
             <td class="no-border" style="width:58%; vertical-align:top; padding-right:8px;">
                 <div class="b1" style="padding:6px; font-size:9.5px;">
                     <span class="bold">Reverse Charge (Y/N)</span>
                     <span style="float:right;">{{ !empty($inv->reverse_charge) ? 'Y' : 'N' }}</span>
                 </div>
 
-                <div class="tiny muted" style="margin-top:10px;">
-                    <div class="bold" style="margin-bottom:4px; color:#111;">Payment Adjustment:</div>
-                    <div>Payment Through Credit/Debit Card no.: ____________________________</div>
-                    <div>Payment Through Online/CHE Received : {{ $inv->payment_method ?? $inv->payment_mode ?? '' }}</div>
-                    <div>Payment Through Cash : ____________________________</div>
+                {{-- ✅ Payment Breakup --}}
+                <div style="margin-top:8px;" class="bold">Payment Breakup:</div>
+
+                <table class="paytbl" style="margin-top:4px;">
+                    <tr><td class="k">Cash</td><td class="v">{{ $fmt0($cashAmt) }}</td></tr>
+                    <tr>
+                        <td class="k">UPI / Online</td>
+                        <td class="v">{{ $fmt0($onlineAmt) }}</td>
+                    </tr>
+                    <tr><td class="k">Card</td><td class="v">{{ $fmt0($cardAmt) }}</td></tr>
+                    <tr><td class="k">Cheque</td><td class="v">{{ $fmt0($chequeAmt) }}</td></tr>
+                    <tr><td class="k">Credit Sales Excess</td><td class="v">{{ $fmt0($creditExcess) }}</td></tr>
+                    <tr><td class="k">Advance</td><td class="v">{{ $fmt0($advanceAmt) }}</td></tr>
+                    <tr><td class="k bold">Total Received</td><td class="v">{{ $fmt0($receivedTot) }}</td></tr>
+                </table>
+
+                {{-- ✅ Refs / Details --}}
+                <div class="paynote">
+                    <div class="bold" style="margin-bottom:4px;">Payment Details:</div>
+                    <div>Online Mode: {{ $onlineMode ?: '-' }}</div>
+                    <div>UPI ID: {{ $upiId ?: '-' }}</div>
+                    <div>Online Ref: {{ $onlineRef ?: '-' }}</div>
+                    <div>Card Last4: {{ $cardLast4 ?: '-' }} {{ $cardRef ? " (Ref: $cardRef)" : '' }}</div>
+                    <div>Cheque No: {{ $chequeNo ?: '-' }} {{ $bankName ? " (Bank: $bankName)" : '' }}</div>
                 </div>
             </td>
 
+            {{-- RIGHT --}}
             <td class="no-border" style="width:42%; vertical-align:top;">
                 <table class="totals">
                     <tr><td class="label">Less :</td><td class="val">{{ $fmt0($less) }}</td></tr>
@@ -290,39 +347,41 @@
 
                 <table class="no-border" style="margin-top:6px; font-size:9.5px;">
                     <tr class="no-border">
-                        <td class="no-border" style="width:50%;">Advance:</td>
-                        <td class="no-border right" style="width:50%;">{{ $fmt0(0) }}</td>
+                        <td class="no-border" style="width:50%;">Advance (Shown Above):</td>
+                        <td class="no-border right" style="width:50%;">{{ $fmt0($advanceAmt) }}</td>
                     </tr>
                 </table>
             </td>
+
         </tr>
     </table>
 
-    {{-- policy + praise --}}
-    <div class="tiny muted" style="margin-top:8px;">
-        <div class="bold" style="color:#111; margin-bottom:3px;">Exchange/Return Policy</div>
-        <div>• In Exchange or Return original invoice should be return by the customers is compulsory.</div>
-        <div>• Any Gems Stone, Labour Charges and GST are non-refundable under any circumstances.</div>
-        <div>• Every piece of jewellery is delicate please handle with care, we are not responsible for damage.</div>
-        <div>• All disputes are subject to local jurisdiction only.</div>
-    </div>
+    {{-- ✅ TERMS (business.terms) --}}
+    @if(!empty($b->terms))
+        <div class="tiny" style="margin-top:10px;">
+            <div class="bold" style="color:#111; margin-bottom:3px;">Terms & Conditions</div>
+            <div style="white-space: pre-line;">
+                {!! nl2br(e($b->terms)) !!}
+            </div>
+        </div>
+    @endif
 
     <div class="center bold" style="margin-top:10px; font-size:14px;">
         PRAISE THE LORD
     </div>
 
     {{-- footer --}}
-    @if($b->name != 'KAPOOR JEWELLERS')
-    <div class="footerline center">
-        <div class="bold">
-            {{ $addr }}
-            @if(!empty($b->mobile)) , {{ $b->mobile }} @endif
-            @if(!empty($b->email)) , E-mail : {{ $b->email }} @endif
+    @if(($b->name ?? '') != 'KAPOOR JEWELLERS')
+        <div class="footerline center">
+            <div class="bold">
+                {{ $addr }}
+                @if(!empty($b->mobile)) , {{ $b->mobile }} @endif
+                @if(!empty($b->email)) , E-mail : {{ $b->email }} @endif
+            </div>
+            <div style="margin-top:6px;">
+                <span class="pill">TUESDAY CLOSED</span>
+            </div>
         </div>
-        <div style="margin-top:6px;">
-            <span class="pill">TUESDAY CLOSED</span>
-        </div>
-    </div>
     @endif
 
 </div>

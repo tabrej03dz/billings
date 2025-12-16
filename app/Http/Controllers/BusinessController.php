@@ -158,7 +158,15 @@ class BusinessController extends Controller
             'terms' => ['nullable', 'string', 'max:1000'],
             'logo'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'signature'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'state'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
         ]);
+
+        // ✅ Split state_code & state_name
+        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+            [$stateCode, $stateName] = explode(',', $data['state'], 2);
+            $data['state_code'] = $stateCode;   // 09
+            $data['state']      = $stateName;   // Uttar Pradesh
+        }
 
         // Auto-generate slug if not provided
         $data['slug'] = $data['slug'] ?: Str::slug($data['name']);
@@ -225,7 +233,15 @@ class BusinessController extends Controller
             'remove_logo' => ['nullable','boolean'],
             'signature'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_signature' => ['nullable','boolean'],
+            'state'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
         ]);
+
+        // ✅ Split state_code & state_name
+        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+            [$stateCode, $stateName] = explode(',', $data['state'], 2);
+            $data['state_code'] = $stateCode;   // 09
+            $data['state']      = $stateName;   // Uttar Pradesh
+        }
 
         // Slug fallback
         $data['slug'] = $data['slug'] ?: Str::slug($data['name']);

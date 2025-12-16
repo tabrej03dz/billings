@@ -80,7 +80,7 @@
 
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">State Code</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state_code || party.code || '-'"></div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state_code || '-'"></div>
                         </div>
 
                         <div class="col-span-2">
@@ -190,7 +190,6 @@
                                                   bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                {{-- ✅ QUANTITY --}}
                                 <td class="px-3 py-2 text-center">
                                     <input type="number" min="1" step="1"
                                            x-model.number="row.quantity" @input="calc()"
@@ -352,7 +351,6 @@
 
                 {{-- Right totals --}}
                 <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 space-y-2">
-
                     <div class="flex justify-between font-semibold">
                         <span class="text-sm text-gray-800 dark:text-neutral-100">Balance Amount</span>
                         <span class="text-sm" x-text="money(balanceAmount())"></span>
@@ -394,7 +392,6 @@
                 </button>
             </div>
         </form>
-
     </div>
 
     <script>
@@ -402,6 +399,10 @@
             const CLIENTS     = JSON.parse(document.getElementById('clients-json')?.textContent || '[]');
             const ITEMS       = JSON.parse(document.getElementById('items-json')?.textContent || '[]');
             const METAL_RATES = JSON.parse(document.getElementById('metal-rates-json')?.textContent || '[]');
+
+            // ✅ Business state_code from blade (GSTIN ignore!)
+            const BIZ_STATE_CODE = @js($businessStateCode ?? '');
+            const BIZ_GSTIN      = @js($businessGstin ?? '');
 
             return {
                 clients: CLIENTS,
@@ -412,9 +413,9 @@
                 party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' },
 
                 hdr: {
-                    date: '{{ $today }}',
+                    date: @js($today),
                     transport_mode: 'By Hand',
-                    gst_no: @js($businessGstin ?? ''),
+                    gst_no: BIZ_GSTIN, // show only
                     reverse_charge: false,
                 },
 
@@ -435,7 +436,7 @@
                     item_id: null,
                     description: '',
                     hsn: '',
-                    quantity: 1, // ✅ NEW
+                    quantity: 1,
                     making_rate: 0,
                     gold_purity: null,
                     silver_purity: null,
@@ -456,17 +457,32 @@
 
                 syncParty(){
                     const c = this.clients.find(x => String(x.id) === String(this.clientId));
-                    this.party = c ? {...c} : { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' };
+                    this.party = c ? {
+                        name: c.name ?? '',
+                        mobile: c.mobile ?? '',
+                        address: c.address ?? '',
+                        state: c.state ?? '',
+                        state_code: c.state_code ?? '',
+                        gstin: c.gstin ?? '',
+                    } : { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' };
+
                     this.calc();
                 },
 
-                keyState(v){ return String(v||'').toLowerCase().replace(/\s+/g,'').trim(); },
+                keyCode(v){
+                    // "09" => "9", "9" => "9"
+                    return String(v ?? '').trim().replace(/^0+/, '');
+                },
 
+                // ✅ GST LOGIC: ONLY STATE CODE (GSTIN ignore)
                 isIntra(){
-                    const bizState   = this.keyState(@js($businessState ?? ''));
-                    const partyState = this.keyState(this.party.state || '');
-                    if(!bizState || !partyState) return true;
-                    return bizState === partyState;
+                    const bizCode   = this.keyCode(BIZ_STATE_CODE);
+                    const partyCode = this.keyCode(this.party.state_code ?? '');
+
+                    // if any missing -> InterState (IGST)
+                    if (!bizCode || !partyCode) return false;
+
+                    return bizCode === partyCode;
                 },
 
                 findMetalRate(type, purity){
@@ -507,7 +523,7 @@
                     r.description = it.description || it.name || '';
                     r.hsn         = it.sac || it.hsn || '';
 
-                    r.quantity  = Number(it.quantity ?? 1) || 1; // ✅ NEW
+                    r.quantity  = Number(it.quantity ?? 1) || 1;
 
                     r.gold_wt   = Number(it.gold_weight ?? it.gold_wt ?? 0);
                     r.silver_wt = Number(it.silver_weight ?? it.silver_wt ?? 0);
@@ -533,7 +549,7 @@
                         item_id: null,
                         description: '',
                         hsn: '',
-                        quantity: 1, // ✅ NEW
+                        quantity: 1,
                         making_rate: 0,
                         gold_purity: null,
                         silver_purity: null,
@@ -550,7 +566,6 @@
 
                 remove(i){ this.items.splice(i,1); this.calc(); },
 
-                // ✅ base = (gold+silver+making) * qty
                 lineBase(r){
                     const qty      = Math.max(1, Number(r.quantity || 1));
                     const goldAmt  = Number(r.gold_wt||0)   * Number(r.gold_rate||0);
@@ -605,8 +620,7 @@
                         item_id: r.item_id ?? null,
                         description: r.description || '',
                         hsn: r.hsn || '',
-
-                        quantity: Math.max(1, Number(r.quantity ?? 1)), // ✅ NEW
+                        quantity: Math.max(1, Number(r.quantity ?? 1)),
 
                         making_rate: Number(r.making_rate||0),
 

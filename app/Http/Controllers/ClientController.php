@@ -55,9 +55,18 @@ class ClientController extends Controller
                 'nullable','string','max:50',
                 Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
             ],
-            'state'   => ['nullable','string','max:100'],
+            'state'  => ['nullable','string','max:100'],
             'address' => ['nullable','string','max:1000'],
         ]);
+
+        $data['state_code'] = null;
+
+        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+            [$code, $name] = explode(',', $data['state'], 2);
+
+            $data['state_code'] = trim($code); // "09"
+            $data['state']      = trim($name); // "Uttar Pradesh"
+        }
 
         // BelongsToBusiness trait creation time pe business_id auto set kar dega;
         // phir bhi explicit set karna chahte ho to:
@@ -101,6 +110,12 @@ class ClientController extends Controller
             'state'   => ['nullable','string','max:100'],
             'address' => ['nullable','string','max:1000'],
         ]);
+        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+            [$code, $name] = explode(',', $data['state'], 2);
+
+            $data['state_code'] = trim($code); // "09"
+            $data['state']      = trim($name); // "Uttar Pradesh"
+        }
 
         $client->update($data);
 

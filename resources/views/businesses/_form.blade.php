@@ -2,6 +2,51 @@
 
 @php
     $isEdit = filled($business?->id);
+
+
+    $states = [
+        ['code'=>'01','name'=>'Jammu and Kashmir'],
+        ['code'=>'02','name'=>'Himachal Pradesh'],
+        ['code'=>'03','name'=>'Punjab'],
+        ['code'=>'04','name'=>'Chandigarh'],
+        ['code'=>'05','name'=>'Uttarakhand'],
+        ['code'=>'06','name'=>'Haryana'],
+        ['code'=>'07','name'=>'Delhi'],
+        ['code'=>'08','name'=>'Rajasthan'],
+        ['code'=>'09','name'=>'Uttar Pradesh'],
+        ['code'=>'10','name'=>'Bihar'],
+        ['code'=>'11','name'=>'Sikkim'],
+        ['code'=>'12','name'=>'Arunachal Pradesh'],
+        ['code'=>'13','name'=>'Nagaland'],
+        ['code'=>'14','name'=>'Manipur'],
+        ['code'=>'15','name'=>'Mizoram'],
+        ['code'=>'16','name'=>'Tripura'],
+        ['code'=>'17','name'=>'Meghalaya'],
+        ['code'=>'18','name'=>'Assam'],
+        ['code'=>'19','name'=>'West Bengal'],
+        ['code'=>'20','name'=>'Jharkhand'],
+        ['code'=>'21','name'=>'Odisha'],
+        ['code'=>'22','name'=>'Chhattisgarh'],
+        ['code'=>'23','name'=>'Madhya Pradesh'],
+        ['code'=>'24','name'=>'Gujarat'],
+        ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
+        ['code'=>'27','name'=>'Maharashtra'],
+        ['code'=>'29','name'=>'Karnataka'],
+        ['code'=>'30','name'=>'Goa'],
+        ['code'=>'31','name'=>'Lakshadweep'],
+        ['code'=>'32','name'=>'Kerala'],
+        ['code'=>'33','name'=>'Tamil Nadu'],
+        ['code'=>'34','name'=>'Puducherry'],
+        ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
+        ['code'=>'36','name'=>'Telangana'],
+        ['code'=>'37','name'=>'Andhra Pradesh'],
+        ['code'=>'38','name'=>'Ladakh'],
+    ];
+
+ $selectedState = old('state');
+    if (!$selectedState && !empty($business?->state_code) && !empty($business?->state)) {
+        $selectedState = $business->state_code . ',' . $business->state; // "09,Uttar Pradesh"
+    }
 @endphp
 
 <div class="space-y-6">
@@ -41,6 +86,34 @@
             <input type="text" name="gstin" value="{{ old('gstin', $business->gstin ?? '') }}"
                    class="mt-1 w-full border rounded px-3 py-2">
             @error('gstin') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+        <div>
+            <label class="block text-sm font-medium mb-1">
+                State (GST Code) <span class="text-red-600">*</span>
+            </label>
+
+            <select
+                name="state"
+                class="mt-1 w-full border rounded px-3 py-2 bg-gray-900 text-white border-gray-600
+           focus:border-blue-500 focus:ring-blue-500"
+                required
+            >
+                <option value="" class="bg-gray-900 text-white">-- Select State --</option>
+
+                @foreach($states as $st)
+                    @php $value = $st['code'].','.$st['name']; @endphp
+
+                    <option value="{{ $value }}"
+                            class="bg-gray-900 text-white"
+                        {{ $selectedState === $value ? 'selected' : '' }}>
+                        {{ $st['name'] }} ({{ $st['code'] }})
+                    </option>
+                @endforeach
+            </select>
+
+            @error('state')
+            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="md:col-span-2">
@@ -97,6 +170,7 @@
             @endif
         </div>
     </div>
+
 
     <div class="grid md:grid-cols-2 gap-4">
         <div class="md:col-span-2">

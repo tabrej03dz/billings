@@ -1,5 +1,5 @@
 <x-layouts.app :title="__('Edit Sales Invoice')">
-    <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
+    <div x-data="invoiceFormEdit()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
 
         {{-- errors --}}
         @if ($errors->any())
@@ -34,32 +34,28 @@
 
                 {{-- LEFT: Bill To --}}
                 <div class="lg:col-span-2 p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100">Bill To</div>
-                    </div>
+                    <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100 mb-2">Bill To</div>
 
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
 
                     <div class="flex gap-2">
-                        {{-- ✅ CLIENT SELECT (100% preselect fix) --}}
                         <select x-ref="clientSelect"
                                 name="client_id"
                                 x-model="clientId"
+                                @change="syncParty()"
                                 required
                                 class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                                       bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                   bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                             <option value="">-- Select Client --</option>
-
                             <template x-for="c in clients" :key="c.id">
                                 <option :value="String(c.id)"
-                                        :selected="String(c.id) === String(clientId)"
                                         x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
                             </template>
                         </select>
 
                         <button type="button"
                                 class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700
-                                       bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
+                                   bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
                                 @click="openClientModal()">
                             + New
                         </button>
@@ -69,32 +65,27 @@
                     <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">Name</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.name || '-'"></div>
+                            <div class="font-semibold" x-text="party.name || '-'"></div>
                         </div>
 
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">Phone</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.mobile || '-'"></div>
+                            <div class="font-semibold" x-text="party.mobile || '-'"></div>
                         </div>
 
                         <div class="col-span-2">
-                            <div class="text-gray-500 dark:text-neutral-400">Add</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.address || '-'"></div>
+                            <div class="text-gray-500 dark:text-neutral-400">Address</div>
+                            <div class="font-semibold" x-text="party.address || '-'"></div>
                         </div>
 
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">State</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state || '-'"></div>
+                            <div class="font-semibold" x-text="party.state || '-'"></div>
                         </div>
 
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">State Code</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state_code || party.code || '-'"></div>
-                        </div>
-
-                        <div class="col-span-2">
-                            <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
+                            <div class="font-semibold" x-text="party.state_code || '-'"></div>
                         </div>
 
                         <div class="col-span-2">
@@ -112,23 +103,27 @@
 
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Date</label>
-                            <input type="date" name="invoice_date" x-model="hdr.date" required
+                            {{-- ✅ DATE FIX: must be YYYY-MM-DD --}}
+                            <input type="date"
+                                   name="invoice_date"
+                                   x-model="hdr.date"
+                                   required
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                      bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
 
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Bill No.</label>
                             <input :value="invoiceNo" readonly
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                                      bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
                         </div>
 
                         <div class="md:col-span-2">
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Invoice Prefix</label>
                             <input :value="computedPrefix" readonly
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                                      bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
                             <input type="hidden" name="invoice_prefix" :value="computedPrefix">
                         </div>
 
@@ -136,20 +131,21 @@
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">GST No.</label>
                             <input type="text" name="gst_no" x-model="hdr.gst_no"
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                      bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
 
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Transport Mode</label>
                             <input type="text" name="transport_mode" x-model="hdr.transport_mode" placeholder="By Hand"
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                      bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
+
                     </div>
                 </div>
             </div>
 
-            {{-- TABLE --}}
+            {{-- ITEMS TABLE --}}
             <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm border-separate border-spacing-0">
@@ -157,112 +153,96 @@
                         <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
                             <th>S.No.</th>
                             <th>Description</th>
-                            <th>HSN CODE</th>
+                            <th>HSN</th>
                             <th class="text-center">Qty</th>
-                            <th>Making Rate</th>
-                            <th>Gold Rate (₹/g)</th>
-                            <th>Silver Rate (₹/g)</th>
-                            <th>Silver Wt.(Gm)</th>
-                            <th>Gold Wt.(Gm)</th>
-                            <th>Gem Stone Wt.(Ct.)</th>
-                            <th>Diamond Wt.(Ct.)</th>
+                            <th>Making</th>
+                            <th>Gold Rate</th>
+                            <th>Silver Rate</th>
+                            <th>Silver Wt</th>
+                            <th>Gold Wt</th>
+                            <th>Gem Ct</th>
+                            <th>Dia Ct</th>
                             <th>Tax %</th>
                             <th>Amount</th>
                             <th></th>
                         </tr>
                         </thead>
 
-                        <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">
-                        <template x-for="(row, i) in items" :key="row._k">
+                        <tbody class="divide-y divide-gray-200 dark:divide-neutral-700">
+                        <template x-for="(row, i) in lines" :key="row._k">
                             <tr>
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
                                 <td class="px-3 py-2">
-                                    <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700
-                                                   bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                            :value="row.item_id"
-                                            @change="pickItem(i, $event.target.value)">
+                                    <select class="w-full border rounded px-2 py-1 mb-1 text-xs"
+                                            x-model="row.item_id"
+                                            @change="pickItem(i, row.item_id)">
                                         <option value="">-- Select Item --</option>
                                         <template x-for="it in itemsData" :key="it.id">
-                                            <option :value="it.id" x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>
+                                            <option :value="String(it.id)"
+                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>
                                         </template>
                                     </select>
 
-                                    <input type="text" x-model="row.description" required
-                                           class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs">
+                                    <input type="text" x-model="row.description" class="w-full border rounded px-2 py-1 text-xs" required>
                                 </td>
 
                                 <td class="px-3 py-2">
-                                    <input x-model="row.hsn"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                    <input x-model="row.hsn" class="w-24 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2 text-center">
-                                    <input type="number" min="1" step="1"
-                                           x-model.number="row.quantity" @input="calc()"
-                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs text-center">
+                                    <input type="number" min="1" step="1" x-model.number="row.quantity" @input="calc()"
+                                           class="w-20 border rounded px-2 py-1 text-xs text-center">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0" x-model.number="row.making_rate" @input="calc()"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-24 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0" x-model.number="row.gold_rate" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-24 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0" x-model.number="row.silver_rate" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-24 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.001" min="0" x-model.number="row.silver_wt" @input="calc()"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-20 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.001" min="0" x-model.number="row.gold_wt" @input="calc()"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-20 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.001" min="0" x-model.number="row.gemstone_wt" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-20 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.001" min="0" x-model.number="row.diamond_wt" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-20 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0" max="100" x-model.number="row.tax_percent" @input="calc()"
-                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-16 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input readonly :value="lineAmount(row).toFixed(2)"
-                                           class="w-28 bg-gray-50 dark:bg-neutral-800 border rounded px-2 py-1
-                                                  border-gray-300 dark:border-neutral-700 text-xs">
+                                           class="w-28 bg-gray-50 border rounded px-2 py-1 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2 text-right">
-                                    <button type="button" @click="remove(i)"
-                                            class="text-red-600 hover:underline text-lg leading-none">×</button>
+                                    <button type="button" @click="remove(i)" class="text-red-600 text-lg leading-none">×</button>
                                 </td>
                             </tr>
                         </template>
@@ -285,95 +265,94 @@
                 {{-- Left --}}
                 <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 space-y-3">
                     <div class="flex items-center gap-2">
-                        <input type="checkbox" x-model="hdr.reverse_charge" class="rounded border-gray-300 dark:border-neutral-700">
-                        <span class="text-sm text-gray-800 dark:text-neutral-100">Reverse Charge (Y/N)</span>
+                        <input type="checkbox" x-model="hdr.reverse_charge" class="rounded">
+                        <span class="text-sm">Reverse Charge (Y/N)</span>
                     </div>
                     <input type="hidden" name="reverse_charge" :value="hdr.reverse_charge ? 1 : 0">
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and Conditions</label>
-                        <textarea name="terms" rows="4"
-                                  class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                                         bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $invoice->terms ?? $defaultTerms) }}</textarea>
+                        <label class="block text-sm font-medium">Terms</label>
+                        <textarea name="terms" rows="4" class="w-full border rounded px-3 py-2">{{ old('terms', $invoice->terms ?? $defaultTerms) }}</textarea>
                     </div>
 
                     {{-- Payment --}}
                     <div class="space-y-2">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-gray-600 dark:text-neutral-300">Cash</span>
+                        <div class="flex justify-between gap-3">
+                            <span>Cash</span>
                             <input type="number" step="0.01" min="0" name="pay_cash" x-model.number="pay.cash" @input="calc()"
-                                   class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
+                                   class="w-56 border rounded px-2 py-1 text-right">
                         </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-gray-600 dark:text-neutral-300">UPI / Online</span>
+                        <div class="flex justify-between gap-3">
+                            <span>UPI / Online</span>
                             <input type="number" step="0.01" min="0" name="pay_upi" x-model.number="pay.upi" @input="calc()"
-                                   class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
+                                   class="w-56 border rounded px-2 py-1 text-right">
                         </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-gray-600 dark:text-neutral-300">Card</span>
+                        <div class="flex justify-between gap-3">
+                            <span>Card</span>
                             <input type="number" step="0.01" min="0" name="pay_card" x-model.number="pay.card" @input="calc()"
-                                   class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
+                                   class="w-56 border rounded px-2 py-1 text-right">
                         </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-gray-600 dark:text-neutral-300">Cheque</span>
+                        <div class="flex justify-between gap-3">
+                            <span>Cheque</span>
                             <input type="number" step="0.01" min="0" name="pay_cheque" x-model.number="pay.cheque" @input="calc()"
-                                   class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
+                                   class="w-56 border rounded px-2 py-1 text-right">
                         </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-gray-600 dark:text-neutral-300">Credit Sales/Excess Amt.</span>
+                        <div class="flex justify-between gap-3">
+                            <span>Credit Excess</span>
                             <input type="number" step="0.01" min="0" name="credit_sales_excess" x-model.number="pay.credit_excess" @input="calc()"
-                                   class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
+                                   class="w-56 border rounded px-2 py-1 text-right">
                         </div>
 
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="text-gray-600 dark:text-neutral-300">Advance</span>
+                        <div class="flex justify-between gap-3">
+                            <span>Advance</span>
                             <input type="number" step="0.01" min="0" name="advance_amount" x-model.number="pay.advance" @input="calc()"
-                                   class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
+                                   class="w-56 border rounded px-2 py-1 text-right">
                         </div>
 
                         <div class="grid md:grid-cols-2 gap-2 pt-2">
-                            <input type="text" name="online_mode" x-model="pay.online_mode" placeholder="online mode (upi/bank/neft...)"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
-                            <input type="text" name="online_ref" x-model="pay.online_ref" placeholder="UTR/Txn Ref"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
+                            <input type="text" name="online_mode" x-model="pay.online_mode" placeholder="Online mode"
+                                   class="w-full border rounded px-2 py-1">
+                            <input type="text" name="online_ref" x-model="pay.online_ref" placeholder="UTR/Txn"
+                                   class="w-full border rounded px-2 py-1">
                             <input type="text" name="upi_id" x-model="pay.upi_id" placeholder="UPI ID"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
+                                   class="w-full border rounded px-2 py-1">
                             <input type="text" name="card_last4" x-model="pay.card_last4" placeholder="Card last4"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
-                            <input type="text" name="card_ref" x-model="pay.card_ref" placeholder="Card Ref"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
-                            <input type="text" name="cheque_no" x-model="pay.cheque_no" placeholder="Cheque No"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
-                            <input type="text" name="bank_name" x-model="pay.bank_name" placeholder="Bank Name"
-                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm">
+                                   class="w-full border rounded px-2 py-1">
+                            <input type="text" name="card_ref" x-model="pay.card_ref" placeholder="Card ref"
+                                   class="w-full border rounded px-2 py-1">
+                            <input type="text" name="cheque_no" x-model="pay.cheque_no" placeholder="Cheque no"
+                                   class="w-full border rounded px-2 py-1">
+                            <input type="text" name="bank_name" x-model="pay.bank_name" placeholder="Bank name"
+                                   class="w-full border rounded px-2 py-1">
                         </div>
                     </div>
                 </div>
 
                 {{-- Right totals --}}
                 <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 space-y-2">
-                    <div class="flex justify-between font-semibold">
-                        <span class="text-sm text-gray-800 dark:text-neutral-100">Balance Amount</span>
-                        <span class="text-sm" x-text="money(balanceAmount())"></span>
+
+                <div class="flex justify-between font-semibold">
+                        <span>Balance Amount</span>
+                        <span x-text="money(balanceAmount())"></span>
                     </div>
 
                     <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-neutral-300">CGST</span>
-                        <span class="text-sm" x-text="money(cgst())"></span>
+                        <span>CGST</span>
+                        <span x-text="money(cgst())"></span>
                     </div>
 
                     <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-neutral-300">SGST</span>
-                        <span class="text-sm" x-text="money(sgst())"></span>
+                        <span>SGST</span>
+                        <span x-text="money(sgst())"></span>
                     </div>
 
                     <div class="flex justify-between">
-                        <span class="text-sm text-gray-600 dark:text-neutral-300">IGST</span>
-                        <span class="text-sm" x-text="money(igst())"></span>
+                        <span>IGST</span>
+                        <span x-text="money(igst())"></span>
                     </div>
 
                     <div class="flex justify-between font-semibold text-lg pt-3">
@@ -381,51 +360,52 @@
                         <span x-text="money(grandTotal())"></span>
                     </div>
 
+                    {{-- send to backend --}}
                     <input type="hidden" name="cgst_amount" :value="cgst()">
                     <input type="hidden" name="sgst_amount" :value="sgst()">
                     <input type="hidden" name="igst_amount" :value="igst()">
                 </div>
+
             </div>
 
             {{-- Hidden JSON --}}
             <input type="hidden" id="items_json" name="items_json">
 
             <div class="text-right">
-                <button @click="$refs.form.requestSubmit()"
+                <button type="submit"
                         class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
                     Update
                 </button>
             </div>
-        </form>
 
+        </form>
     </div>
 
     <script>
-        function invoiceForm(){
+        function invoiceFormEdit(){
+
             const CLIENTS      = JSON.parse(document.getElementById('clients-json')?.textContent || '[]');
             const ITEMS        = JSON.parse(document.getElementById('items-json')?.textContent || '[]');
-            const METAL_RATES  = JSON.parse(document.getElementById('metal-rates-json')?.textContent || '[]');
             const PREFILL      = JSON.parse(document.getElementById('prefill-items-json')?.textContent || '[]');
             const PREFILL_PAY  = JSON.parse(document.getElementById('prefill-payment-json')?.textContent || '{}');
+
+            const BIZ_STATE_CODE = @js($businessStateCode ?? '');
 
             return {
                 clients: CLIENTS,
                 itemsData: ITEMS,
-                metalRates: METAL_RATES,
 
-                // ✅ IMPORTANT: string
                 clientId: String(@js($invoice->client_id ?? '')),
-
-                party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' },
+                party: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
 
                 hdr: {
-                    date: @js($invoice->invoice_date),
-                    transport_mode: @js($invoice->transport_mode ?? 'By Hand'),
+                    // ✅ DATE FIX (server already sends correct format too)
+                    date: @js(\Carbon\Carbon::parse($invoice->invoice_date)->format('Y-m-d')),
                     gst_no: @js($invoice->gst_no ?? ''),
+                    transport_mode: @js($invoice->transport_mode ?? 'By Hand'),
                     reverse_charge: @js((bool)$invoice->reverse_charge),
                 },
 
-                basePrefix: @js($basePrefix),
                 computedPrefix: @js($suggestedPrefix),
                 invoiceNo: @js($invoice->invoice_number),
 
@@ -434,7 +414,6 @@
                     upi: Number(PREFILL_PAY.upi ?? 0),
                     card: Number(PREFILL_PAY.card ?? 0),
                     cheque: Number(PREFILL_PAY.cheque ?? 0),
-
                     credit_excess: Number(PREFILL_PAY.credit_excess ?? 0),
                     advance: Number(PREFILL_PAY.advance ?? 0),
 
@@ -449,38 +428,28 @@
                     bank_name: PREFILL_PAY.bank_name ?? ''
                 },
 
-                items: (Array.isArray(PREFILL) && PREFILL.length ? PREFILL : [{
-                    item_id:null,description:'',hsn:'',quantity:1,
-                    making_rate:0,gold_purity:null,silver_purity:null,
-                    gold_rate:0,silver_rate:0,silver_wt:0,gold_wt:0,
-                    gemstone_wt:0,diamond_wt:0,tax_percent:0
+                lines: (Array.isArray(PREFILL) && PREFILL.length ? PREFILL : [{
+                    item_id:null, description:'', hsn:'', quantity:1,
+                    making_rate:0, gold_rate:0, silver_rate:0,
+                    gold_wt:0, silver_wt:0, gemstone_wt:0, diamond_wt:0, tax_percent:0
                 }]).map((r, idx) => ({
                     _k: Date.now()+idx+Math.random(),
-                    item_id: r.item_id ?? null,
+                    item_id: r.item_id ? String(r.item_id) : null,
                     description: r.description ?? '',
-                    hsn: r.hsn ?? '',
+                    hsn: (r.hsn ?? r.hsn_code ?? r.sac_code ?? ''),
                     quantity: Number(r.quantity ?? 1) || 1,
                     making_rate: Number(r.making_rate ?? 0),
-                    gold_purity: r.gold_purity ?? null,
-                    silver_purity: r.silver_purity ?? null,
                     gold_rate: Number(r.gold_rate ?? 0),
                     silver_rate: Number(r.silver_rate ?? 0),
-                    silver_wt: Number(r.silver_wt ?? 0),
                     gold_wt: Number(r.gold_wt ?? 0),
-                    gemstone_wt: Number(r.gemstone_wt ?? 0),
-                    diamond_wt: Number(r.diamond_wt ?? 0),
+                    silver_wt: Number(r.silver_wt ?? 0),
+                    gemstone_wt: Number(r.gemstone_wt ?? r.gemstone_wt_ct ?? 0),
+                    diamond_wt: Number(r.diamond_wt ?? r.diamond_wt_ct ?? 0),
                     tax_percent: Number(r.tax_percent ?? 0),
                 })),
 
                 init(){
-                    // ✅ force select after render
-                    this.$watch('clientId', () => {
-                        this.syncParty();
-                        this.forceClientSelect();
-                    });
-
                     this.$nextTick(() => {
-                        this.clientId = String(this.clientId || '');
                         this.forceClientSelect();
                         this.syncParty();
                         this.calc();
@@ -497,103 +466,26 @@
 
                 syncParty(){
                     const c = this.clients.find(x => String(x.id) === String(this.clientId));
-                    this.party = c ? {...c} : { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' };
+                    this.party = c ? {...c} : { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' };
                     this.calc();
                 },
 
-                keyState(v){ return String(v||'').toLowerCase().replace(/\s+/g,'').trim(); },
+                keyCode(v){
+                    let s = String(v || '').trim();
+                    s = s.replace(/\D+/g,'');
+                    s = s.replace(/^0+/,'');
+                    return s;
+                },
 
+                // ✅ ONLY STATE CODE CHECK
                 isIntra(){
-                    const bizState   = this.keyState(@js($businessState ?? ''));
-                    const partyState = this.keyState(this.party.state || '');
-                    if(!bizState || !partyState) return true;
-                    return bizState === partyState;
+                    const biz   = this.keyCode(BIZ_STATE_CODE);
+                    const party = this.keyCode(this.party.state_code || this.party.code || '');
+                    if(!biz || !party) return false; // missing => IGST
+                    return biz === party;
                 },
 
-                findMetalRate(type, purity){
-                    const t = String(type||'').toLowerCase().trim();
-                    const pRaw = String(purity||'').trim();
-                    if(!t) return 0;
-
-                    const candidates = [];
-                    if(pRaw){
-                        candidates.push(pRaw);
-                        candidates.push(pRaw.split('(')[0].trim());
-                        candidates.push(pRaw.split(' ')[0].trim());
-                        const m = pRaw.match(/\(([^)]+)\)/);
-                        if(m && m[1]) candidates.push(String(m[1]).trim());
-                    }
-                    const uniq = [...new Set(candidates.filter(Boolean))];
-
-                    const rec = this.metalRates.find(r => {
-                        const rt = String(r.metal_type||'').toLowerCase().trim();
-                        if(rt !== t) return false;
-                        const rp = String(r.purity||'').trim();
-                        if(!rp) return false;
-                        const rpBase = rp.split('(')[0].trim();
-                        const rpFirst = rp.split(' ')[0].trim();
-                        const rpParen = (rp.match(/\(([^)]+)\)/)||[])[1]
-                            ? String((rp.match(/\(([^)]+)\)/)||[])[1]).trim()
-                            : '';
-                        return uniq.includes(rp) || uniq.includes(rpBase) || uniq.includes(rpFirst) || (rpParen && uniq.includes(rpParen));
-                    });
-
-                    return rec ? Number(rec.rate_per_gram || rec.rate || 0) : 0;
-                },
-
-                pickItem(i, id){
-                    const it = this.itemsData.find(x => String(x.id) === String(id));
-                    if(!it) return;
-
-                    const r = this.items[i];
-
-                    r.item_id     = it.id;
-                    r.description = it.description || it.name || '';
-                    r.hsn         = it.sac || it.hsn || r.hsn || '';
-
-                    r.quantity    = Math.max(1, Number(r.quantity ?? 1));
-
-                    r.gold_wt     = Number(it.gold_weight ?? it.gold_wt ?? r.gold_wt ?? 0);
-                    r.silver_wt   = Number(it.silver_weight ?? it.silver_wt ?? r.silver_wt ?? 0);
-
-                    r.gold_purity   = (it.gold_purity ?? it.purity ?? '').toString().trim() || r.gold_purity || null;
-                    r.silver_purity = (it.silver_purity ?? '').toString().trim() || r.silver_purity || null;
-
-                    r.gemstone_wt  = Number(it.stone_weight ?? it.gemstone_wt ?? r.gemstone_wt ?? 0);
-                    r.diamond_wt   = Number(it.diamond_weight ?? it.diamond_wt ?? r.diamond_wt ?? 0);
-
-                    r.making_rate  = Number(it.making_charge ?? it.making_rate ?? r.making_rate ?? 0);
-                    r.tax_percent  = Number(it.tax_rate ?? r.tax_percent ?? 0);
-
-                    if (!Number(r.gold_rate||0))   r.gold_rate   = this.findMetalRate('gold', r.gold_purity);
-                    if (!Number(r.silver_rate||0)) r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
-
-                    this.calc();
-                },
-
-                add(){
-                    this.items.push({
-                        _k: Date.now()+Math.random(),
-                        item_id: null,
-                        description: '',
-                        hsn: '',
-                        quantity: 1,
-                        making_rate: 0,
-                        gold_purity: null,
-                        silver_purity: null,
-                        gold_rate: 0,
-                        silver_rate: 0,
-                        silver_wt: 0,
-                        gold_wt: 0,
-                        gemstone_wt: 0,
-                        diamond_wt: 0,
-                        tax_percent: 0,
-                    });
-                    this.calc();
-                },
-
-                remove(i){ this.items.splice(i,1); this.calc(); },
-
+                // calc
                 lineBase(r){
                     const qty     = Math.max(1, Number(r.quantity || 1));
                     const goldAmt = Number(r.gold_wt||0)   * Number(r.gold_rate||0);
@@ -613,11 +505,11 @@
                 },
 
                 subtotal(){
-                    return Number(this.items.reduce((s,r)=> s + this.lineBase(r), 0).toFixed(2));
+                    return Number(this.lines.reduce((s,r)=> s + this.lineBase(r), 0).toFixed(2));
                 },
 
                 taxTotal(){
-                    return Number(this.items.reduce((s,r)=> s + this.lineTax(r), 0).toFixed(2));
+                    return Number(this.lines.reduce((s,r)=> s + this.lineTax(r), 0).toFixed(2));
                 },
 
                 cgst(){ return this.isIntra() ? Number((this.taxTotal()/2).toFixed(2)) : 0; },
@@ -643,17 +535,56 @@
 
                 calc(){ this.grandTotal(); },
 
+                add(){
+                    this.lines.push({
+                        _k: Date.now()+Math.random(),
+                        item_id: null,
+                        description: '',
+                        hsn: '',
+                        quantity: 1,
+                        making_rate: 0,
+                        gold_rate: 0,
+                        silver_rate: 0,
+                        gold_wt: 0,
+                        silver_wt: 0,
+                        gemstone_wt: 0,
+                        diamond_wt: 0,
+                        tax_percent: 0,
+                    });
+                    this.calc();
+                },
+
+                remove(i){ this.lines.splice(i,1); this.calc(); },
+
+                pickItem(i, id){
+                    const it = this.itemsData.find(x => String(x.id) === String(id));
+                    if(!it) return;
+
+                    const r = this.lines[i];
+
+                    r.item_id     = String(it.id);
+                    r.description = it.description || it.name || '';
+                    r.hsn         = it.sac || r.hsn || '';
+
+                    r.quantity    = Math.max(1, Number(r.quantity ?? 1));
+
+                    r.gold_wt     = Number(it.gold_weight ?? r.gold_wt ?? 0);
+                    r.silver_wt   = Number(it.silver_weight ?? r.silver_wt ?? 0);
+
+                    r.making_rate = Number(it.making_charge ?? r.making_rate ?? 0);
+                    r.tax_percent = Number(it.tax_rate ?? r.tax_percent ?? 0);
+
+                    this.calc();
+                },
+
                 beforeSubmit(){
-                    const payload = this.items.map(r => ({
+                    const payload = this.lines.map(r => ({
                         item_id: r.item_id ?? null,
                         description: r.description || '',
                         hsn: r.hsn || '',
                         quantity: Math.max(1, Number(r.quantity ?? 1)),
 
                         making_rate: Number(r.making_rate||0),
-
-                        gold_purity: r.gold_purity || null,
-                        silver_purity: r.silver_purity || null,
                         gold_rate: Number(r.gold_rate||0),
                         silver_rate: Number(r.silver_rate||0),
 
@@ -678,7 +609,6 @@
                 },
 
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
-
                 openClientModal(){},
             }
         }
