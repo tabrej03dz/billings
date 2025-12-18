@@ -2318,7 +2318,42 @@ class InvoiceController extends Controller
 
 
 
-    protected function simplePdfBuild(\App\Models\Invoice $invoice): \Barryvdh\DomPDF\PDF
+//    protected function simplePdfBuild(\App\Models\Invoice $invoice): \Barryvdh\DomPDF\PDF
+//    {
+//        $invoice->load(['client','items','business']);
+//
+//        $inv    = $invoice;
+//        $biz    = $invoice->business;
+//        $client = $invoice->client;
+//        $items  = $invoice->items ?? collect();
+//
+//        // ✅ payment row
+//        $payRow = InvoicePayment::where('invoice_id', $invoice->id)->latest()->first();
+//
+//        // totals (same as your buildInvoicePdf)
+//        $less_amount   = (float)($inv->less_amount ?? 0);
+//        $balance       = (float)($inv->balance ?? 0);
+//        $grand_total   = (float)($inv->total ?? 0);
+//        $cgst_amount   = (float)($inv->cgst_amount ?? 0);
+//        $sgst_amount   = (float)($inv->sgst_amount ?? 0);
+//        $igst_amount   = (float)($inv->igst_amount ?? 0);
+//
+//        $logoDataUri = $this->imageDataUri($biz?->logo);
+//
+//        $vm = compact(
+//            'inv','invoice','biz','client','items',
+//            'logoDataUri',
+//            'less_amount','balance','grand_total',
+//            'cgst_amount','sgst_amount','igst_amount',
+//            'payRow'
+//        );
+//
+//        $vm['logo'] = $logoDataUri;
+//
+//        return \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
+//    }
+
+    protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
     {
         $invoice->load(['client','items','business']);
 
@@ -2327,31 +2362,72 @@ class InvoiceController extends Controller
         $client = $invoice->client;
         $items  = $invoice->items ?? collect();
 
-        // ✅ payment row
-        $payRow = InvoicePayment::where('invoice_id', $invoice->id)->latest()->first();
+        // ✅ payment row (same logic)
+        $payRow = InvoicePayment::where('invoice_id', $inv->id)
+            ->latest('id')
+            ->first();
 
-        // totals (same as your buildInvoicePdf)
-        $less_amount   = (float)($inv->less_amount ?? 0);
-        $balance       = (float)($inv->balance ?? 0);
-        $grand_total   = (float)($inv->total ?? 0);
-        $cgst_amount   = (float)($inv->cgst_amount ?? 0);
-        $sgst_amount   = (float)($inv->sgst_amount ?? 0);
-        $igst_amount   = (float)($inv->igst_amount ?? 0);
+        // ✅ charges (same logic)
+        if (method_exists($invoice, 'additionalCharges')) {
+            $charges = $invoice->additionalCharges()->get(['name','amount']);
+        } else {
+            $arr = [];
+            if (!empty($invoice->charges_json)) {
+                $decoded = json_decode($invoice->charges_json, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $c) {
+                        $arr[] = (object)[
+                            'name'   => (string)($c['name'] ?? ''),
+                            'amount' => (float)($c['amount'] ?? 0),
+                        ];
+                    }
+                }
+            }
+            $charges = collect($arr);
+        }
 
+        // ✅ totals (same as buildInvoicePdf)
+        $subtotal       = (float)($inv->subtotal ?? 0);
+        $tax_total      = (float)($inv->tax_amount ?? 0);
+        $discount_total = (float)($inv->discount_total ?? 0);
+        $charges_total  = (float)($inv->charge_total ?? 0);
+        $tcs_percent    = (float)($inv->tcs_percent ?? 0);
+        $tcs_amount     = (float)($inv->tcs_amount ?? 0);
+        $round_off      = (float)($inv->round_off ?? 0);
+        $less_amount    = (float)($inv->less_amount ?? 0);
+        $received       = (float)($inv->received_amount ?? 0);
+        $grand_total    = (float)($inv->total ?? 0);
+        $balance        = (float)($inv->balance ?? 0);
+        $cgst_amount    = (float)($inv->cgst_amount ?? 0);
+        $sgst_amount    = (float)($inv->sgst_amount ?? 0);
+        $igst_amount    = (float)($inv->igst_amount ?? 0);
+
+        // ✅ data URIs (simple pdf me bhi logo/sign aa sakta hai)
         $logoDataUri = $this->imageDataUri($biz?->logo);
+        $signDataUri = $this->imageDataUri($biz?->signature);
 
         $vm = compact(
-            'inv','invoice','biz','client','items',
-            'logoDataUri',
-            'less_amount','balance','grand_total',
+            'inv','invoice','biz','client','items','charges',
+            'logoDataUri','signDataUri',
+            'subtotal','tax_total','discount_total','charges_total',
+            'tcs_percent','tcs_amount','round_off','less_amount',
+            'grand_total','received','balance',
             'cgst_amount','sgst_amount','igst_amount',
             'payRow'
         );
 
+        // aliases
         $vm['logo'] = $logoDataUri;
+        $vm['sign'] = $signDataUri;
 
-        return \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
+        // ❌ letter_head deliberately NOT passed
+        // $vm['letter_head'] = null;
+
+        return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
     }
+
+
+
     protected function normalizePdfPath(?string $value): ?string
     {
         if (!$value) {
