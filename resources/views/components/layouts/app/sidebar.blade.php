@@ -18,24 +18,36 @@
             </flux:navlist>
 
             @role('super admin')
-            <form action="{{ route('business.switch') }}" method="POST">
+            @php
+                $user = auth()->user();
+
+                // ✅ active business id priority: session -> user column -> first attached business
+                $activeBusinessId =
+                    session('active_business_id')
+                    ?? ($user->current_business_id ?? null)
+                    ?? optional($user->businesses->first())->id;
+            @endphp
+
+            <form action="{{ route('business.switch') }}" method="POST" class="inline-block">
                 @csrf
+
                 <select name="business_id"
                         onchange="this.form.submit()"
-                        class="text-sm border rounded px-2 py-1
-                   bg-white text-gray-900
-                   dark:bg-neutral-800 dark:text-white dark:border-neutral-600
-                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        class="text-sm border rounded px-2 py-1 bg-white text-gray-900
+                       dark:bg-neutral-800 dark:text-white dark:border-neutral-600
+                       focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
 
-                    @foreach(auth()->user()->businesses as $b)
-                        <option value="{{ $b->id }}" @selected(session('active_business_id')==$b->id)">
-                        {{ $b->name }}
+                    @forelse($user->businesses as $b)
+                        <option value="{{ $b->id }}" @selected((string)$activeBusinessId === (string)$b->id)>
+                            {{ $b->name }}
                         </option>
-                    @endforeach
+                    @empty
+                        <option value="">No business attached</option>
+                    @endforelse
                 </select>
             </form>
+            @endrole
 
-            @endcan
 
 
             @can('show businesses')
