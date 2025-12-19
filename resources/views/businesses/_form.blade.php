@@ -68,6 +68,14 @@
         </div>
 
         <div>
+            <label class="block text-sm font-medium mb-1">Invoice Base Prefix</label>
+            <input type="text" name="invoice_base_prefix" value="{{ old('invoice_base_prefix', $business->invoice_base_prefix ?? '') }}"
+                   placeholder="RV/SL"
+                   class="mt-1 w-full border rounded px-3 py-2">
+            @error('invoice_base_prefix') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div>
             <label class="block text-sm font-medium mb-1">Email <span class="text-red-600">*</span></label>
             <input type="email" name="email" value="{{ old('email', $business->email ?? '') }}"
                    class="mt-1 w-full border rounded px-3 py-2" required>
@@ -115,6 +123,39 @@
             <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
             @enderror
         </div>
+
+
+        @php
+            $currentTemplate = old('pdf_template_id', $business->pdf_template_id ?? 'pdf_simple');
+        @endphp
+
+        <div>
+            <label class="block text-sm font-medium mb-1">
+                Bill Template <span class="text-red-600">*</span>
+            </label>
+
+            <select name="pdf_template_id" required
+                    class="mt-1 w-full border rounded px-3 py-2 bg-gray-900 text-white border-gray-600
+             focus:border-blue-500 focus:ring-blue-500">
+
+                <option value="" class="bg-gray-900 text-white">-- Select template --</option>
+
+                <option value="pdf_simple" class="bg-gray-900 text-white"
+                    {{ $currentTemplate === 'pdf_simple' ? 'selected' : '' }}>
+                    Simple Format
+                </option>
+
+                <option value="pdf_rvg_format" class="bg-gray-900 text-white"
+                    {{ $currentTemplate === 'pdf_rvg_format' ? 'selected' : '' }}>
+                    RVG Format
+                </option>
+            </select>
+
+            @error('pdf_template_id')
+            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
 
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">Address</label>

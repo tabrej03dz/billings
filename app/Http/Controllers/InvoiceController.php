@@ -36,13 +36,6 @@ class InvoiceController extends Controller
         $this->stock = $stock;
     }
 
-
-//    public function index(Request $r)
-//    {
-//        $invoices = Invoice::with('client')->latest()->paginate(15);
-//        return view('invoices.index', compact('invoices'));
-//    }
-
     public function index(Request $r)
     {
         $query = Invoice::with('client')->latest();
@@ -94,181 +87,6 @@ class InvoiceController extends Controller
         return view('invoices.index', compact('invoices'));
     }
 
-
-
-
-
-//    public function create(Request $request)
-//    {
-//        $today = now()->toDateString();
-//
-//        // Active business resolve
-//        $bid = $request->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-//        }
-//
-//        // Business (terms ke liye)
-//        $business = Business::find($bid);
-//
-//        // Invoice base prefix
-//        $base = optional(
-//                $request->user()->businesses()->where('businesses.id', $bid)->first()
-//            )->invoice_base_prefix ?? 'RV/SL';
-//
-//        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
-//
-//        // Clients
-//        $clients = Client::where('business_id', $bid)
-//            ->orderBy('name')
-//            ->get(['id', 'name', 'mobile']);
-//
-//        // Items (metal + stone info included)
-//        $items = Item::where('business_id', $bid)
-//            ->where('is_active', true)
-//            ->orderBy('name')
-//            ->get([
-//                'id',
-//                'name',
-//                'sku',
-//                'price',
-//                'tax_rate',
-//                'description',
-//                'making_charge',
-//                'sac',
-//                'metal_type',
-//                'purity',
-//                'gross_weight',
-//                'metal_weight',
-//                'stone_charges',
-//            ]);
-//
-//        // Metal rates for today
-//        $metalRates = MetalRate::where('business_id', $bid)
-//            ->whereDate('rate_date', $today)
-//            ->where('is_active', true)
-//            ->get([
-//                'metal_type',
-//                'purity',
-//                'rate_per_gram',
-//            ]);
-//
-//        // JSON payloads
-//        $clientsJson = $clients->map(fn($c) => [
-//            'id'     => $c->id,
-//            'name'   => $c->name,
-//            'mobile' => $c->mobile,
-//        ])->values()->toJson();
-//
-//        $itemsJson = $items->map(fn($i) => [
-//            'id'            => $i->id,
-//            'name'          => $i->name,
-//            'sku'           => $i->sku,
-//            'price'         => (float) $i->price,
-//            'making_charge' => (float) $i->making_charge,
-//            'tax_rate'      => (float) $i->tax_rate,
-//            'description'   => $i->description,
-//            'sac'           => $i->sac,
-//            'metal_type'    => $i->metal_type,
-//            'purity'        => $i->purity,
-//            'gross_weight'  => (float) $i->gross_weight,
-//            'metal_weight'  => (float) $i->metal_weight,
-//            'stone_charges' => (float) $i->stone_charges,
-//        ])->values()->toJson();
-//
-//        $metalRatesJson = $metalRates->map(fn($r) => [
-//            'metal_type'    => $r->metal_type,
-//            'purity'        => $r->purity,
-//            'rate_per_gram' => (float) $r->rate_per_gram,
-//        ])->values()->toJson();
-//
-//        // Additional charges
-//        $charges = AdditionalCharge::orderBy('name')->get(['id','name','amount']);
-//        $chargesJson = $charges->map(fn($a) => [
-//            'id'     => $a->id,
-//            'name'   => $a->name,
-//            'amount' => (float) $a->amount,
-//        ])->values()->toJson();
-//
-//        // Preview invoice number
-//        $preview = \App\Services\InvoiceNumber::peek((int) $bid, $today, $suggestedPrefix, 3);
-//
-//        return view('invoices.create', [
-//            'today'            => $today,
-//            'clientsJson'      => $clientsJson,
-//            'itemsJson'        => $itemsJson,
-//            'chargesJson'      => $chargesJson,
-//            'metalRatesJson'   => $metalRatesJson,
-//            'suggestedPrefix'  => $suggestedPrefix,
-//            'basePrefix'       => $base,
-//            'initialInvoiceNo' => $preview['full'] ?? 'Auto',
-//            'defaultTerms'     => $business?->terms,
-//        ]);
-//    }
-
-
-//    public function create(Request $request)
-//    {
-//        $today = now()->toDateString();
-//
-//        // Active business resolve
-//        $bid = $request->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-//        }
-//
-//        $business = Business::find($bid);
-//
-//        // base prefix
-//        $base = optional(
-//                $request->user()->businesses()->where('businesses.id', $bid)->first()
-//            )->invoice_base_prefix ?? 'RV/SL';
-//
-//        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
-//
-//        // Clients
-//        $clients = Client::where('business_id', $bid)
-//            ->orderBy('name')
-//            ->get(['id', 'name', 'mobile']);
-//
-//        // Items (NEW breakup fields)
-//        $items = Item::where('business_id', $bid)
-//            ->where('is_active', true)
-//            ->orderBy('name')
-//            ->get([
-//                'id','name','sku','description','tax_rate','making_charge','sac',
-//
-//                'gold_weight','gold_purity',
-//                'silver_weight','silver_purity',
-//                'stone_weight','stone_charges',
-//                'diamond_weight','diamond_charges',
-//            ]);
-//
-//        // Metal rates (today)
-//        $metalRates = MetalRate::where('business_id', $bid)
-//            ->whereDate('rate_date', $today)
-//            ->where('is_active', true)
-//            ->get(['metal_type','purity','rate_per_gram']);
-//
-//        // Charges
-//        $charges = AdditionalCharge::orderBy('name')->get(['id','name','amount']);
-//
-//        // Preview invoice number
-//        $preview = \App\Services\InvoiceNumber::peek((int)$bid, $today, $suggestedPrefix, 3);
-//
-//        return view('invoices.create_kapoor_style', [
-//            'today'            => $today,
-//            'clientsJson'      => $clients->values()->toJson(),
-//            'itemsJson'        => $items->values()->toJson(),
-//            'chargesJson'      => $charges->values()->toJson(),
-//            'metalRatesJson'   => $metalRates->values()->toJson(),
-//            'suggestedPrefix'  => $suggestedPrefix,
-//            'basePrefix'       => $base,
-//            'initialInvoiceNo' => $preview['full'] ?? 'Auto',
-//            'defaultTerms'     => $business?->terms,
-//        ]);
-//    }
-
     public function create(Request $request)
     {
         $today = now()->toDateString();
@@ -298,11 +116,12 @@ class InvoiceController extends Controller
             ->where('is_active', true)
             ->orderBy('name')
             ->get([
-                'id','name','sku','description','tax_rate','making_charge','sac',
+                'id','name', 'type', 'sku','description','tax_rate','making_charge','sac',
                 'gold_weight','gold_purity',
                 'silver_weight','silver_purity',
                 'stone_weight','stone_charges',
                 'diamond_weight','diamond_charges',
+                'price'
             ]);
 
         // Metal rates
@@ -329,107 +148,6 @@ class InvoiceController extends Controller
             'businessGstin'      => $business->gstin, // (UI field me show ke liye ok, GST logic me use nahi hoga)
         ]);
     }
-
-
-
-
-//    public function edit(Request $request, \App\Models\Invoice $invoice)
-//    {
-//        $today = now()->toDateString();
-//
-//        // Active business resolve
-//        $bid = $request->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-//        }
-//
-//        // Security: invoice belongs to business
-//        abort_unless((int)$invoice->business_id === (int)$bid, 403);
-//
-//        $business = \App\Models\Business::find($bid);
-//
-//        // base prefix
-//        $base = optional(
-//                $request->user()->businesses()->where('businesses.id', $bid)->first()
-//            )->invoice_base_prefix ?? 'RV/SL';
-//
-//        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($invoice->invoice_date, $base);
-//
-//        // Clients
-//        $clients = \App\Models\Client::where('business_id', $bid)
-//            ->orderBy('name')
-//            ->get(['id', 'name', 'mobile','address','state','state_code','gstin']);
-//
-//        // Items master
-//        $items = \App\Models\Item::where('business_id', $bid)
-//            ->where('is_active', true)
-//            ->orderBy('name')
-//            ->get([
-//                'id','name','sku','description','tax_rate','making_charge','sac',
-//                'gold_weight','gold_purity',
-//                'silver_weight','silver_purity',
-//                'stone_weight','stone_charges',
-//                'diamond_weight','diamond_charges',
-//            ]);
-//
-//        // Metal rates
-//        $metalRates = \App\Models\MetalRate::where('business_id', $bid)
-//            ->whereDate('rate_date', $today)
-//            ->where('is_active', true)
-//            ->get(['metal_type','purity','rate_per_gram']);
-//
-//        // ✅ Prefill items: invoice->items_json (string) ya relation
-//        $prefillItems = [];
-//        if (!empty($invoice->items_json)) {
-//            $prefillItems = json_decode($invoice->items_json, true) ?: [];
-//        }
-//
-//        // ✅ Prefill payment from invoice_payments (latest)
-//        $payment = \App\Models\InvoicePayment::where('business_id', $bid)
-//            ->where('invoice_id', $invoice->id)
-//            ->latest('id')
-//            ->first();
-//
-//        $paymentPrefill = [
-//            'cash'          => (float)($payment->cash_amount ?? 0),
-//            'upi'           => (float)($payment->online_amount ?? 0),
-//            'card'          => (float)($payment->card_amount ?? 0),
-//            'cheque'        => (float)($payment->cheque_amount ?? 0),
-//            'credit_excess' => (float)($payment->credit_sales_excess_amount ?? 0),
-//            'advance'       => (float)($payment->advance_amount ?? 0),
-//
-//            'online_mode'   => (string)($payment->online_mode ?? ''),
-//            'online_ref'    => (string)($payment->online_ref ?? ''),
-//            'upi_id'        => (string)($payment->upi_id ?? ''),
-//
-//            'card_last4'    => (string)($payment->card_last4 ?? ''),
-//            'card_ref'      => (string)($payment->card_ref ?? ''),
-//
-//            'cheque_no'     => (string)($payment->cheque_no ?? ''),
-//            'bank_name'     => (string)($payment->bank_name ?? ''),
-//
-//            'notes'         => (string)($payment->notes ?? ''),
-//        ];
-//
-//        return view('invoices.edit_kapoor_style', [
-//            'today'             => $today,
-//            'invoice'           => $invoice,
-//
-//            'clientsJson'       => $clients->values()->toJson(),
-//            'itemsJson'         => $items->values()->toJson(),
-//            'metalRatesJson'    => $metalRates->values()->toJson(),
-//
-//            'prefillItemsJson'  => collect($prefillItems)->values()->toJson(),
-//            'prefillPaymentJson'=> collect($paymentPrefill)->toJson(), // ✅ CHANGE HERE
-//
-//            'suggestedPrefix'   => $suggestedPrefix,
-//            'basePrefix'        => $base,
-//            'initialInvoiceNo'  => $invoice->invoice_number,
-//            'defaultTerms'      => $business?->terms,
-//            'businessState'     => $business?->state,
-//        ]);
-//    }
-
 
     public function edit(Request $request, \App\Models\Invoice $invoice)
     {
@@ -534,14 +252,6 @@ class InvoiceController extends Controller
     }
 
 
-
-
-
-
-
-
-
-
     public function destroy(Invoice $invoice)
     {
         $invoice->delete();
@@ -554,18 +264,18 @@ class InvoiceController extends Controller
     public function download(Invoice $invoice)
     {
         // 1) Check if invoice already has pdf_url saved
-//        if (!empty($invoice->pdf_url)) {
-//
-//            // normalize path (handles full URLs, storage/... etc.)
-//            $path = $this->normalizePdfPath($invoice->pdf_url);
-//
-//            // agar file storage/public me exist karta hai -> directly download
-//            if ($path && Storage::disk('public')->exists($path)) {
-//                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-//
-//                return Storage::disk('public')->download($path, 'Invoice-' . $safeNumber . '.pdf');
-//            }
-//        }
+        //        if (!empty($invoice->pdf_url)) {
+        //
+        //            // normalize path (handles full URLs, storage/... etc.)
+        //            $path = $this->normalizePdfPath($invoice->pdf_url);
+        //
+        //            // agar file storage/public me exist karta hai -> directly download
+        //            if ($path && Storage::disk('public')->exists($path)) {
+        //                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+        //
+        //                return Storage::disk('public')->download($path, 'Invoice-' . $safeNumber . '.pdf');
+        //            }
+        //        }
 
         // 2) Otherwise — generate fresh PDF (fallback)
         $pdf = $this->simplePdfBuild($invoice);
@@ -604,46 +314,6 @@ class InvoiceController extends Controller
         return null;
     }
 
-
-
-
-
-//    public function previewNumber(Request $r)
-//    {
-//        $bid = $r->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            return response()->json(['ok'=>false,'message'=>'No active business.'], 422);
-//        }
-//
-//        $date   = $r->input('invoice_date');
-//        $prefix = $r->input('invoice_prefix');
-//
-//        if (!$date) {
-//            return response()->json(['ok'=>false,'message'=>'invoice_date required'], 422);
-//        }
-//
-//        // prefix optional → fallback to basePrefix+FY
-//        if (!$prefix) {
-//            $base   = optional(
-//                    $r->user()->businesses()->where('businesses.id',$bid)->first()
-//                )->invoice_base_prefix ?? 'RV/SL';
-//            $prefix = InvoiceNumber::previewPrefix($date, $base);
-//        }
-//
-//        try {
-//            $peek = InvoiceNumber::peek((int)$bid, $date, $prefix, 3);
-//            return response()->json([
-//                'ok'     => true,
-//                'number' => $peek['full'],
-//                'prefix' => $peek['prefix'],
-//                'seq'    => $peek['seq'],
-//            ]);
-//        } catch (\Throwable $e) {
-//            return response()->json(['ok'=>false,'message'=>$e->getMessage()], 422);
-//        }
-//    }
-
-
     public function previewNumber(Request $request)
     {
         $request->validate([
@@ -668,21 +338,21 @@ class InvoiceController extends Controller
     public function show(Invoice $invoice)
     {
         // 1) Agar invoice ke paas pdf_url hai, to pehle wahi try karte hain
-//        if (!empty($invoice->pdf_url)) {
-//            $path = $this->normalizePdfPath($invoice->pdf_url);
-//
-//            if ($path && Storage::disk('public')->exists($path)) {
-//                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-//
-//                return response()->file(
-//                    Storage::disk('public')->path($path),
-//                    [
-//                        'Content-Type'        => 'application/pdf',
-//                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
-//                    ]
-//                );
-//            }
-//        }
+        //        if (!empty($invoice->pdf_url)) {
+        //            $path = $this->normalizePdfPath($invoice->pdf_url);
+        //
+        //            if ($path && Storage::disk('public')->exists($path)) {
+        //                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+        //
+        //                return response()->file(
+        //                    Storage::disk('public')->path($path),
+        //                    [
+        //                        'Content-Type'        => 'application/pdf',
+        //                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+        //                    ]
+        //                );
+        //            }
+        //        }
 
         // 2) Yaha tak aa gaye matlab:
         //    - ya to pdf_url empty hai
@@ -693,7 +363,7 @@ class InvoiceController extends Controller
         $invoice = $invoice->fresh(['client','items','business']);
 
         $pdf = $this->simplePdfBuild($invoice);
-//        $pdf = $this->buildInvoicePdf($invoice);
+        //        $pdf = $this->buildInvoicePdf($invoice);
 
         $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
         $fileName   = 'invoices/Invoice-'.$safeNumber.'.pdf';
@@ -715,11 +385,7 @@ class InvoiceController extends Controller
         );
     }
 
-
-
-
-
-//    public function store(Request $r)
+//    public function store(Request $r, StockService $stock)
 //    {
 //        $bid = $r->user()->current_business_id ?? session('active_business_id');
 //        if (!$bid) {
@@ -734,7 +400,7 @@ class InvoiceController extends Controller
 //
 //            'transport_mode' => ['nullable','string','max:255'],
 //            'gst_no'         => ['nullable','string','max:50'],
-//            'reverse_charge' => ['nullable'], // checkbox may send "1" / null
+//            'reverse_charge' => ['nullable'],
 //
 //            'notes'          => ['nullable','string','max:2000'],
 //            'terms'          => ['nullable','string','max:2000'],
@@ -802,19 +468,25 @@ class InvoiceController extends Controller
 //            $qty = (int)($row['quantity'] ?? 1);
 //            $qty = $qty < 1 ? 1 : $qty;
 //
-//            $taxPct   = (float)($row['tax_percent'] ?? 0);
+//            $taxPct = (float)($row['tax_percent'] ?? 0);
 //
-//            $goldWt    = (float)($row['gold_wt'] ?? 0);
-//            $silverWt  = (float)($row['silver_wt'] ?? 0);
-//            $goldRate  = (float)($row['gold_rate'] ?? 0);
-//            $silverRate= (float)($row['silver_rate'] ?? 0);
-//            $making    = (float)($row['making_rate'] ?? 0);
+//            $goldWt     = (float)($row['gold_wt'] ?? 0);
+//            $silverWt   = (float)($row['silver_wt'] ?? 0);
+//            $goldRate   = (float)($row['gold_rate'] ?? 0);
+//            $silverRate = (float)($row['silver_rate'] ?? 0);
+//            $making     = (float)($row['making_rate'] ?? 0);
 //
-//            $gemCt     = (float)($row['gemstone_wt'] ?? 0);
-//            $diaCt     = (float)($row['diamond_wt'] ?? 0);
+//            $gemCt = (float)($row['gemstone_wt'] ?? 0);
+//            $diaCt = (float)($row['diamond_wt'] ?? 0);
 //
 //            if ($desc === '' || $taxPct < 0 || $taxPct > 100 || $goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $making < 0) {
 //                return back()->withErrors(['items' => "Row ".($i+1)." invalid है."])->withInput();
+//            }
+//
+//            // ✅ IMPORTANT: item_id must be present for stock
+//            $itemId = $row['item_id'] ?? null;
+//            if (empty($itemId)) {
+//                return back()->withErrors(['items' => "Row ".($i+1)." में Item select नहीं है, इसलिए stock कट नहीं हो सकता."])->withInput();
 //            }
 //
 //            // ✅ base = (gold+silver+making) * qty
@@ -827,11 +499,11 @@ class InvoiceController extends Controller
 //            $lineTax  = round($taxable * ($taxPct / 100), 2);
 //            $lineAmt  = round($taxable + $lineTax, 2);
 //
-//            $subtotal += $lineBase;   // base before discount
+//            $subtotal += $lineBase;
 //            $taxTotal += $lineTax;
 //
 //            $cleanRows[] = [
-//                'item_id'          => $row['item_id'] ?? null,
+//                'item_id'          => $itemId,
 //                'description'      => $desc,
 //
 //                'hsn_code'         => $hsn ?: null,
@@ -855,7 +527,7 @@ class InvoiceController extends Controller
 //
 //                'rate'             => $lineBase,
 //                'amount'           => $lineAmt,
-//                'tax_amount'       => $lineTax, // helpful if your table has it (optional)
+//                'tax_amount'       => $lineTax,
 //            ];
 //        }
 //
@@ -890,7 +562,8 @@ class InvoiceController extends Controller
 //                $bid, $data, $invoiceDate, $prefix,
 //                $subtotal, $taxTotal, $grandTotal, $receivedTotal, $balance,
 //                $cash, $online, $card, $cheque, $credit, $advance,
-//                $pay, $cleanRows, $normCode, &$invoice
+//                $pay, $cleanRows, $normCode, &$invoice,
+//                $stock
 //            ) {
 //                // ✅ Load business & client to decide GST (STATE CODE ONLY)
 //                $biz    = Business::findOrFail($bid);
@@ -899,13 +572,11 @@ class InvoiceController extends Controller
 //                $bizCode   = $normCode($biz->state_code ?? '');
 //                $partyCode = $normCode($client->state_code ?? '');
 //
-//                // rule: only state_code
 //                $isIntra = false;
 //                if ($bizCode !== '' && $partyCode !== '') {
 //                    $isIntra = ($bizCode === $partyCode);
 //                } else {
-//                    // agar code missing hai => inter-state treat (IGST)
-//                    $isIntra = false;
+//                    $isIntra = false; // missing => IGST
 //                }
 //
 //                $cgst = $isIntra ? round($taxTotal / 2, 2) : 0;
@@ -926,7 +597,6 @@ class InvoiceController extends Controller
 //                    'subtotal'        => $subtotal,
 //                    'tax_amount'      => $taxTotal,
 //
-//                    // ✅ SAVE GST SPLIT (server-side)
 //                    'cgst_amount'     => $cgst,
 //                    'sgst_amount'     => $sgst,
 //                    'igst_amount'     => $igst,
@@ -939,7 +609,6 @@ class InvoiceController extends Controller
 //                    'transport_mode'  => $data['transport_mode'] ?? null,
 //                    'reverse_charge'  => !empty($data['reverse_charge']) ? 1 : 0,
 //
-//                    // ✅ place of supply (optional but useful)
 //                    'place_of_supply_state' => $client->state ?? null,
 //                    'place_of_supply_code'  => $client->state_code ?? null,
 //
@@ -953,7 +622,8 @@ class InvoiceController extends Controller
 //                foreach ($cleanRows as $row) {
 //                    InvoiceItem::create([
 //                        'invoice_id'       => $invoice->id,
-//                        'item_id'          => $row['item_id'] ?? null,
+//                        'item_id'          => $row['item_id'],
+//
 //                        'description'      => $row['description'] ?? '',
 //
 //                        'sac_code'         => $row['sac_code'] ?? null,
@@ -977,9 +647,6 @@ class InvoiceController extends Controller
 //
 //                        'rate'             => (float)($row['rate'] ?? 0),
 //                        'amount'           => (float)($row['amount'] ?? 0),
-//
-//                        // if column exists in invoice_items
-//                        // 'tax_amount'     => (float)($row['tax_amount'] ?? 0),
 //                    ]);
 //                }
 //
@@ -1014,9 +681,13 @@ class InvoiceController extends Controller
 //                    'meta'    => null,
 //                    'paid_at' => $receivedTotal > 0 ? now() : null,
 //                ]);
+//
+//                // ✅ STOCK CUT (sale movements)
+//                $invoice->load(['items']); // items relation must exist
+//                $stock->recordSale($invoice);
 //            });
 //
-//            // ✅ PDF generate + save + update pdf_url (after transaction is fine)
+//            // ✅ PDF generate + save + update pdf_url (after transaction)
 //            $pdf = $this->buildInvoicePdf($invoice);
 //
 //            $dir = "invoices/{$bid}/" . now()->format('Y-m');
@@ -1025,7 +696,6 @@ class InvoiceController extends Controller
 //            $path = $dir . "/" . $filename;
 //
 //            Storage::disk('public')->put($path, $pdf->output());
-//
 //            $invoice->update(['pdf_url' => $path]);
 //
 //        } catch (\Throwable $e) {
@@ -1033,7 +703,7 @@ class InvoiceController extends Controller
 //            return back()->withErrors(['invoice' => 'Invoice save करते समय error आया: '.$e->getMessage()])->withInput();
 //        }
 //
-//        return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
+//        return redirect()->route('invoices.index')->with('success', 'Invoice created successfully (stock updated).');
 //    }
 
 
@@ -1097,7 +767,7 @@ class InvoiceController extends Controller
             return "{$base}/{$fy}/";
         };
 
-        $invoiceDate = Carbon::parse($data['invoice_date'])->toDateString();
+        $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
         $prefix      = trim($data['invoice_prefix'] ?? '');
         if ($prefix === '') $prefix = $computePrefix($invoiceDate, 'INV');
 
@@ -1122,6 +792,76 @@ class InvoiceController extends Controller
 
             $taxPct = (float)($row['tax_percent'] ?? 0);
 
+            // ✅ item type (product/service)
+            $itemType = strtolower(trim((string)($row['item_type'] ?? 'product')));
+            if (!in_array($itemType, ['product','service'], true)) {
+                $itemType = 'product';
+            }
+
+            // ✅ item_id required (both types) because invoice item relation needs it
+            $itemId = $row['item_id'] ?? null;
+            if (empty($itemId)) {
+                return back()->withErrors(['items' => "Row ".($i+1)." में Item select नहीं है."])->withInput();
+            }
+
+            if ($desc === '' || $taxPct < 0 || $taxPct > 100) {
+                return back()->withErrors(['items' => "Row ".($i+1)." invalid है."])->withInput();
+            }
+
+            $discount = (float)($row['discount'] ?? 0);
+            if ($discount < 0) $discount = 0;
+
+            // ✅ SERVICE base = service_rate * qty  (NO metal rates)
+            if ($itemType === 'service') {
+
+                $serviceRate = (float)($row['service_rate'] ?? 0);
+                if ($serviceRate < 0) {
+                    return back()->withErrors(['items' => "Row ".($i+1)." service rate invalid है."])->withInput();
+                }
+
+                $lineBase = round(($serviceRate * $qty), 2);
+                $taxable  = max(0, round($lineBase - $discount, 2));
+                $lineTax  = round($taxable * ($taxPct / 100), 2);
+                $lineAmt  = round($taxable + $lineTax, 2);
+
+                $subtotal += $lineBase;
+                $taxTotal += $lineTax;
+
+                $cleanRows[] = [
+                    'item_id'          => $itemId,
+                    'item_type'        => 'service',
+
+                    'description'      => $desc,
+                    'hsn_code'         => null,
+                    'sac_code'         => $hsn ?: ($row['sac'] ?? null), // aapke UI me HSN/SAC same field hai
+
+                    'quantity'         => $qty,
+
+                    // product fields zero
+                    'gold_wt'          => 0,
+                    'silver_wt'        => 0,
+                    'gold_rate'        => 0,
+                    'silver_rate'      => 0,
+                    'gemstone_wt_ct'   => 0,
+                    'diamond_wt_ct'    => 0,
+                    'making_rate'      => 0,
+
+                    // ✅ service
+                    'service_rate'     => round($serviceRate, 2),
+
+                    'discount'         => round($discount, 2),
+                    'tax_percent'      => round($taxPct, 2),
+
+                    // store computed
+                    'rate'             => $lineBase,     // base
+                    'tax_amount'       => $lineTax,
+                    'amount'           => $lineAmt,
+                ];
+
+                continue;
+            }
+
+            // ✅ PRODUCT base = (gold+silver+making) * qty
             $goldWt     = (float)($row['gold_wt'] ?? 0);
             $silverWt   = (float)($row['silver_wt'] ?? 0);
             $goldRate   = (float)($row['gold_rate'] ?? 0);
@@ -1131,22 +871,11 @@ class InvoiceController extends Controller
             $gemCt = (float)($row['gemstone_wt'] ?? 0);
             $diaCt = (float)($row['diamond_wt'] ?? 0);
 
-            if ($desc === '' || $taxPct < 0 || $taxPct > 100 || $goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $making < 0) {
+            if ($goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $making < 0) {
                 return back()->withErrors(['items' => "Row ".($i+1)." invalid है."])->withInput();
             }
 
-            // ✅ IMPORTANT: item_id must be present for stock
-            $itemId = $row['item_id'] ?? null;
-            if (empty($itemId)) {
-                return back()->withErrors(['items' => "Row ".($i+1)." में Item select नहीं है, इसलिए stock कट नहीं हो सकता."])->withInput();
-            }
-
-            // ✅ base = (gold+silver+making) * qty
             $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $making) * $qty, 2);
-
-            $discount = (float)($row['discount'] ?? 0);
-            if ($discount < 0) $discount = 0;
-
             $taxable  = max(0, round($lineBase - $discount, 2));
             $lineTax  = round($taxable * ($taxPct / 100), 2);
             $lineAmt  = round($taxable + $lineTax, 2);
@@ -1156,6 +885,8 @@ class InvoiceController extends Controller
 
             $cleanRows[] = [
                 'item_id'          => $itemId,
+                'item_type'        => 'product',
+
                 'description'      => $desc,
 
                 'hsn_code'         => $hsn ?: null,
@@ -1165,7 +896,6 @@ class InvoiceController extends Controller
 
                 'gold_wt'          => $goldWt,
                 'silver_wt'        => $silverWt,
-
                 'gold_rate'        => $goldRate,
                 'silver_rate'      => $silverRate,
 
@@ -1173,13 +903,14 @@ class InvoiceController extends Controller
                 'diamond_wt_ct'    => $diaCt,
 
                 'making_rate'      => $making,
+                'service_rate'     => 0,
 
                 'discount'         => round($discount, 2),
                 'tax_percent'      => round($taxPct, 2),
 
                 'rate'             => $lineBase,
-                'amount'           => $lineAmt,
                 'tax_amount'       => $lineTax,
+                'amount'           => $lineAmt,
             ];
         }
 
@@ -1217,25 +948,18 @@ class InvoiceController extends Controller
                 $pay, $cleanRows, $normCode, &$invoice,
                 $stock
             ) {
-                // ✅ Load business & client to decide GST (STATE CODE ONLY)
                 $biz    = Business::findOrFail($bid);
                 $client = Client::where('business_id', $bid)->findOrFail($data['client_id']);
 
                 $bizCode   = $normCode($biz->state_code ?? '');
                 $partyCode = $normCode($client->state_code ?? '');
 
-                $isIntra = false;
-                if ($bizCode !== '' && $partyCode !== '') {
-                    $isIntra = ($bizCode === $partyCode);
-                } else {
-                    $isIntra = false; // missing => IGST
-                }
+                $isIntra = ($bizCode !== '' && $partyCode !== '') ? ($bizCode === $partyCode) : false;
 
                 $cgst = $isIntra ? round($taxTotal / 2, 2) : 0;
                 $sgst = $isIntra ? round($taxTotal / 2, 2) : 0;
                 $igst = $isIntra ? 0 : round($taxTotal, 2);
 
-                // allocate invoice number
                 $alloc = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $prefix, 3);
 
                 $invoice = Invoice::create([
@@ -1275,6 +999,8 @@ class InvoiceController extends Controller
                     InvoiceItem::create([
                         'invoice_id'       => $invoice->id,
                         'item_id'          => $row['item_id'],
+                        // ✅ store item_type (if column exists)
+                        'item_type'        => $row['item_type'] ?? null,
 
                         'description'      => $row['description'] ?? '',
 
@@ -1285,7 +1011,6 @@ class InvoiceController extends Controller
 
                         'gold_wt'          => (float)($row['gold_wt'] ?? 0),
                         'silver_wt'        => (float)($row['silver_wt'] ?? 0),
-
                         'gold_rate'        => (float)($row['gold_rate'] ?? 0),
                         'silver_rate'      => (float)($row['silver_rate'] ?? 0),
 
@@ -1294,11 +1019,15 @@ class InvoiceController extends Controller
 
                         'making_rate'      => (float)($row['making_rate'] ?? 0),
 
+                        // ✅ service
+                        'service_rate'     => (float)($row['service_rate'] ?? 0),
+
                         'discount'         => (float)($row['discount'] ?? 0),
                         'tax_percent'      => (float)($row['tax_percent'] ?? 0),
 
                         'rate'             => (float)($row['rate'] ?? 0),
                         'amount'           => (float)($row['amount'] ?? 0),
+                        'tax_amount'       => (float)($row['tax_amount'] ?? 0),
                     ]);
                 }
 
@@ -1334,12 +1063,16 @@ class InvoiceController extends Controller
                     'paid_at' => $receivedTotal > 0 ? now() : null,
                 ]);
 
-                // ✅ STOCK CUT (sale movements)
-                $invoice->load(['items']); // items relation must exist
+                // ✅ STOCK CUT: ONLY PRODUCT rows
+                $invoice->load(['items']); // relation
+
+                // ✅ अगर आपका StockService invoice->items से ही कट करता है,
+                // तो invoice_items table में item_type जरूर होना चाहिए या clean check लगाएं
+                // BEST: recordSale के अंदर service ignore करना
                 $stock->recordSale($invoice);
             });
 
-            // ✅ PDF generate + save + update pdf_url (after transaction)
+            // ✅ PDF generate + save + update pdf_url
             $pdf = $this->buildInvoicePdf($invoice);
 
             $dir = "invoices/{$bid}/" . now()->format('Y-m');
@@ -1357,263 +1090,6 @@ class InvoiceController extends Controller
 
         return redirect()->route('invoices.index')->with('success', 'Invoice created successfully (stock updated).');
     }
-
-
-
-
-//    public function update(Request $r, Invoice $invoice)
-//    {
-//        // Purana pdf path/url safe rakh lo (baad me delete ke kaam aayega)
-//        $oldPdfPath = $invoice->pdf_url;
-//
-//        // 1) Basic validation
-//        $data = $r->validate([
-//            'client_id'       => ['required','exists:clients,id'],
-//            'invoice_date'    => ['required','date'],
-//            'invoice_prefix'  => ['nullable','string','max:100'],
-//
-//            'payment_terms'   => ['nullable','integer','min:0','max:365'],
-//            'due_date'        => ['nullable','date'],
-//            'notes'           => ['nullable','string','max:2000'],
-//            'terms'           => ['nullable','string','max:2000'],
-//
-//            'discount_total'  => ['nullable','numeric','min:0'],
-//            'charge_total'    => ['nullable','numeric','min:0'], // ignored; recompute
-//            'tcs_percent'     => ['nullable','numeric','min:0','max:100'],
-//            'round_off'       => ['nullable','numeric'], // +/- allowed
-//            'amount_received' => ['nullable','numeric','min:0'],
-//            'payment_method'  => ['nullable','string','max:50'],
-//
-//            'items_json'      => ['required','string'],
-//            'charges_json'    => ['nullable','string'],
-//        ]);
-//
-//        $invoiceDate  = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
-//
-//        // prefix ko keep/change kar sakte ho
-//        $prefix       = trim($data['invoice_prefix'] ?? $invoice->invoice_prefix ?? '');
-//        if ($prefix === '') {
-//            $prefix = $invoice->invoice_prefix ?? 'INV/';
-//        }
-//
-//        $paymentTerms = (int)($data['payment_terms'] ?? 0);
-//        $dueDate      = $data['due_date'] ?? \Carbon\Carbon::parse($invoiceDate)->addDays($paymentTerms)->toDateString();
-//
-//        // 2) Decode rows
-//        $rows = json_decode($data['items_json'], true);
-//        if (!is_array($rows) || count($rows) < 1) {
-//            return back()
-//                ->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])
-//                ->withInput();
-//        }
-//
-//        // 3) Decode charges and recompute total
-//        $chargesRaw = [];
-//        if (filled($data['charges_json'] ?? '')) {
-//            $decoded = json_decode($data['charges_json'], true);
-//            if (is_array($decoded)) {
-//                foreach ($decoded as $c) {
-//                    $name   = trim(Arr::get($c, 'name', ''));
-//                    $amount = (float)Arr::get($c, 'amount', 0);
-//                    if ($name !== '' && $amount >= 0) {
-//                        $chargesRaw[] = [
-//                            'id'     => Arr::get($c, 'id'),
-//                            'name'   => $name,
-//                            'amount' => round($amount, 2),
-//                        ];
-//                    }
-//                }
-//            }
-//        }
-//        $charge_total = round(array_sum(array_map(fn($c) => (float)$c['amount'], $chargesRaw)), 2);
-//
-//        // 4) Recompute totals (authoritative, JS ke hisaab se)
-//        $subtotal  = 0.0;
-//        $taxTotal  = 0.0;
-//        $cleanRows = [];
-//
-//        foreach ($rows as $i => $row) {
-//            $desc    = trim($row['description'] ?? '');
-//            $sac     = trim($row['sac'] ?? '');
-//
-//            // qty & amounts
-//            $qty     = (float)($row['qty'] ?? 0);
-//            $price   = (float)($row['price'] ?? 0);            // metal price (or full price per unit)
-//            $making  = (float)($row['making_charge'] ?? 0);    // making per unit
-//            $stone   = (float)($row['stone_charges'] ?? 0);    // stone per unit
-//            $disc    = (float)($row['discount'] ?? 0);         // discount total (line level)
-//            $taxPct  = (float)($row['tax_percent'] ?? 0);
-//            $item_id = $row['item_id'] ?? null;
-//
-//            // jewellery extras
-//            $metal_type   = $row['metal_type']   ?? null;
-//            $purity       = $row['purity']       ?? null;
-//            $metal_weight = (float)($row['metal_weight'] ?? 0);
-//            $metal_rate   = (float)($row['metal_rate'] ?? 0);
-//
-//            if ($desc === '' || $qty <= 0 || $price < 0 || $making < 0 || $stone < 0 || $disc < 0 || $taxPct < 0) {
-//                return back()
-//                    ->withErrors(['items' => "Row ".($i+1)." invalid है."])
-//                    ->withInput();
-//            }
-//
-//            // JS jaisa calculation
-//            $basePerUnit = max(0, $price + $making + $stone);
-//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
-//            $lineTax     = $lineBase * ($taxPct / 100);
-//            $lineAmt     = round($lineBase + $lineTax, 2);
-//
-//            $subtotal += $lineBase;
-//            $taxTotal += $lineTax;
-//
-//            $clean = [
-//                'description'    => $desc,
-//                'sac_code'       => $sac ?: null,
-//                'quantity'       => $qty,
-//                'rate'           => $price,
-//                'making_charge'  => $making,
-//                'stone_charges'  => $stone,
-//                'discount'       => $disc,
-//                'tax_percent'    => $taxPct,
-//                'amount'         => $lineAmt,
-//
-//                // jewellery fields persist
-//                'metal_type'     => $metal_type ?: null,
-//                'purity'         => $purity ?: null,
-//                'metal_weight'   => $metal_weight,
-//                'metal_rate'     => $metal_rate,
-//            ];
-//            if ($item_id) {
-//                $clean['item_id'] = $item_id;
-//            }
-//            $cleanRows[] = $clean;
-//        }
-//
-//        $discount_total = (float)($data['discount_total'] ?? 0);
-//        $tcs_percent    = (float)($data['tcs_percent'] ?? 0);
-//        $round_off_in   = (float)($data['round_off'] ?? 0);
-//        $received       = (float)($data['amount_received'] ?? 0);
-//
-//        $tcs_base   = max(0, $subtotal + $taxTotal - $discount_total);
-//        $tcs_amount = round($tcs_base * ($tcs_percent / 100), 2);
-//
-//        $total_before_round = round($subtotal + $taxTotal - $discount_total + $charge_total + $tcs_amount, 2);
-//        $grand_total        = round($total_before_round + $round_off_in, 2);
-//        $balance            = round(max(0, $grand_total - $received), 2);
-//
-//        // 5) Persist with StockService-based adjustments
-//        try {
-//            DB::transaction(function () use (
-//                $invoice, $data, $invoiceDate, $paymentTerms, $dueDate,
-//                $prefix, $subtotal, $taxTotal, $discount_total, $charge_total,
-//                $tcs_percent, $tcs_amount, $round_off_in, $grand_total,
-//                $received, $balance, $cleanRows, $chargesRaw, $r
-//            ) {
-//                /** @var StockService $stock */
-//                $stock = app(StockService::class);
-//
-//                // 1) Purane movements rollback
-//                $invoice->load('items.item');
-//                $stock->rollbackReference($invoice);
-//
-//                // 2) Header + totals update
-//                $invoice->update([
-//                    'client_id'       => $data['client_id'],
-//                    'invoice_date'    => $invoiceDate,
-//                    'invoice_prefix'  => $prefix, // number stays same
-//                    'payment_terms'   => $paymentTerms,
-//                    'due_date'        => $dueDate,
-//
-//                    'subtotal'        => $subtotal,
-//                    'tax_amount'      => $taxTotal,
-//                    'discount_total'  => $discount_total,
-//                    'charge_total'    => $charge_total,
-//                    'tcs_percent'     => $tcs_percent,
-//                    'tcs_amount'      => $tcs_amount,
-//                    'round_off'       => $round_off_in,
-//                    'total'           => $grand_total,
-//                    'received_amount' => $received,
-//                    'balance'         => $balance,
-//
-//                    'payment_method'  => $data['payment_method'] ?? null,
-//                    'notes'           => $data['notes'] ?? null,
-//                    'terms'           => $data['terms'] ?? null,
-//
-//                    'items_json'      => $r->input('items_json'),
-//                    'charges_json'    => !empty($chargesRaw) ? json_encode($chargesRaw) : null,
-//                ]);
-//
-//                // 3) Purane items delete + naye create
-//                if (method_exists($invoice, 'items')) {
-//                    $invoice->items()->delete();
-//                    foreach ($cleanRows as $row) {
-//                        $row['invoice_id'] = $invoice->id;
-//                        InvoiceItem::create($row);
-//                    }
-//                }
-//
-//                // 4) Charges replace
-//                if (class_exists(InvoiceCharge::class)) {
-//                    InvoiceCharge::where('invoice_id', $invoice->id)->delete();
-//
-//                    foreach ($chargesRaw as $c) {
-//                        InvoiceCharge::create([
-//                            'invoice_id' => $invoice->id,
-//                            'charge_id'  => $c['id'] ?? null,
-//                            'name'       => $c['name'],
-//                            'amount'     => $c['amount'],
-//                        ]);
-//                    }
-//                }
-//
-//                // 5) Fresh stock movements
-//                $invoice->load('items.item');
-//                $stock->recordSale($invoice);
-//            });
-//        } catch (\Throwable $e) {
-//            report($e);
-//            return back()
-//                ->withErrors(['invoice' => 'Invoice update करते समय error आया: '.$e->getMessage()])
-//                ->withInput();
-//        }
-//
-//        // ✅ 6) Ab naya PDF generate karo, save karo, aur purane ko delete karo
-//        try {
-//            // fresh invoice instance (latest relations ke liye)
-//            $invoice = $invoice->fresh();
-//
-//            // same helper jo store() / download() me use ho raha hai
-//            $pdf = $this->buildInvoicePdf($invoice);
-//
-//            $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-//            $fileName   = 'invoices/Invoice-'.$safeNumber.'.pdf';
-//
-//            // storage/app/public/invoices/...
-//            Storage::disk('public')->put($fileName, $pdf->output());
-//
-//            // pdf_url me relative path save kar rahe hain
-//            $invoice->update([
-//                'pdf_url' => $fileName,
-//            ]);
-//
-//            // Purana pdf agar hai, to delete kar do (agar same file nahi hai to)
-//            if (!empty($oldPdfPath)) {
-//                $old = $this->normalizePdfPath($oldPdfPath);
-//
-//                if ($old && $old !== $fileName && Storage::disk('public')->exists($old)) {
-//                    Storage::disk('public')->delete($old);
-//                }
-//            }
-//        } catch (\Throwable $e) {
-//            // PDF fail ho jaye to bhi invoice update ho chuka rahe
-//            report($e);
-//        }
-//
-//        return redirect()
-//            ->route('invoices.index')
-//            ->with('success', 'Invoice updated successfully.');
-//    }
-
 
 
     public function update(Request $r, \App\Models\Invoice $invoice)
@@ -2039,209 +1515,6 @@ class InvoiceController extends Controller
         return back()->with('success', 'Invoice WhatsApp par send kar diya gaya hai.');
     }
 
-
-
-//    protected function buildInvoicePdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
-//    {
-//        // relations
-//        $invoice->load(['client','items','business']);
-//
-//        $biz    = $invoice->business;
-//        $client = $invoice->client;
-//        $items  = $invoice->items ?? collect();
-//
-//        // charges: try relation if it exists, else fallback to charges_json
-//        if (method_exists($invoice, 'additionalCharges')) {
-//            $charges = $invoice->additionalCharges()->get(['name','amount']);
-//        } else {
-//            $arr = [];
-//            if (!empty($invoice->charges_json)) {
-//                $decoded = json_decode($invoice->charges_json, true);
-//                if (is_array($decoded)) {
-//                    foreach ($decoded as $c) {
-//                        $arr[] = (object)[
-//                            'name'   => (string)($c['name'] ?? ''),
-//                            'amount' => (float) ($c['amount'] ?? 0),
-//                        ];
-//                    }
-//                }
-//            }
-//            $charges = collect($arr);
-//        }
-//
-//        // --- totals (server-side recompute, same as store() & JS) ---
-//        $subtotal = 0.0;
-//        $taxTotal = 0.0;
-//
-//        foreach ($items as $it) {
-//            $qty    = (float) ($it->quantity ?? 0);
-//            $rate   = (float) ($it->rate ?? 0);             // metal value per unit
-//            $mk     = (float) ($it->making_charge ?? 0);    // making per unit
-//            $stone  = (float) ($it->stone_charges ?? 0);    // stone per unit
-//            $disc   = (float) ($it->discount ?? 0);         // line discount
-//            $tp     = (float) ($it->tax_percent ?? 0);
-//
-//            $basePerUnit = $rate + $mk + $stone;
-//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
-//            $lineTax     = $lineBase * ($tp / 100);
-//
-//            $subtotal += $lineBase;
-//            $taxTotal += $lineTax;
-//        }
-//
-//        $discountTotal = (float) ($invoice->discount_total ?? 0.0);
-//        $chargesTotal  = (float) $charges->reduce(
-//            fn($s, $r) => $s + (float) ($r->amount ?? 0),
-//            0.0
-//        );
-//        $tcsPercent    = (float) ($invoice->tcs_percent ?? 0.0);
-//        $received      = (float) ($invoice->received_amount ?? 0.0);
-//        $roundOff      = (float) ($invoice->round_off ?? 0.0);
-//
-//        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
-//        $tcsAmount = $tcsPercent > 0
-//            ? round($tcsBase * ($tcsPercent / 100), 2)
-//            : 0.0;
-//
-//        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
-//        $grandTotal       = (float) ($totalBeforeRound + $roundOff);
-//        $balance          = max(0, $grandTotal - $received);
-//
-//        // data URIs
-//        [$logoDataUri, $signDataUri] = [
-//            $this->imageDataUri($biz?->logo),
-//            $this->imageDataUri($biz?->signature),
-//        ];
-//
-//        $vm = compact(
-//            'invoice','biz','client','items','charges',
-//            'logoDataUri','signDataUri',
-//            'subtotal','taxTotal','discountTotal','chargesTotal','tcsPercent','tcsAmount',
-//            'roundOff','grandTotal','received','balance'
-//        );
-//
-//        // rename keys to what blade expects
-//        $vm['inv']            = $invoice;
-//        $vm['logo']           = $logoDataUri;
-//        $vm['sign']           = $signDataUri;
-//        $vm['tax_total']      = $taxTotal;
-//        $vm['discount_total'] = $discountTotal;
-//        $vm['charges_total']  = $chargesTotal;
-//        $vm['tcs_percent']    = $tcsPercent;
-//        $vm['tcs_amount']     = $tcsAmount;
-//        $vm['grand_total']    = $grandTotal;
-//
-//        // Yahi view tum already use कर रहे हो
-//        return Pdf::loadView('invoices.pdf', $vm)->setPaper('a4');
-//    }
-
-
-
-
-//    protected function buildInvoicePdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
-//    {
-//        // relations
-//        $invoice->load(['client','items','business']);
-//
-//        $biz    = $invoice->business;
-//        $client = $invoice->client;
-//        $items  = $invoice->items ?? collect();
-//
-//        // charges: try relation if it exists, else fallback to charges_json
-//        if (method_exists($invoice, 'additionalCharges')) {
-//            $charges = $invoice->additionalCharges()->get(['name','amount']);
-//        } else {
-//            $arr = [];
-//            if (!empty($invoice->charges_json)) {
-//                $decoded = json_decode($invoice->charges_json, true);
-//                if (is_array($decoded)) {
-//                    foreach ($decoded as $c) {
-//                        $arr[] = (object)[
-//                            'name'   => (string)($c['name'] ?? ''),
-//                            'amount' => (float) ($c['amount'] ?? 0),
-//                        ];
-//                    }
-//                }
-//            }
-//            $charges = collect($arr);
-//        }
-//
-//        // --- totals (server-side recompute, same as store() & JS) ---
-//        $subtotal = 0.0;
-//        $taxTotal = 0.0;
-//
-//        foreach ($items as $it) {
-//            $qty    = (float) ($it->quantity ?? 0);
-//            $rate   = (float) ($it->rate ?? 0);             // metal value per unit
-//            $mk     = (float) ($it->making_charge ?? 0);    // making per unit
-//            $stone  = (float) ($it->stone_charges ?? 0);    // stone per unit
-//            $disc   = (float) ($it->discount ?? 0);         // line discount
-//            $tp     = (float) ($it->tax_percent ?? 0);
-//
-//            $basePerUnit = $rate + $mk + $stone;
-//            $lineBase    = max(0, ($qty * $basePerUnit) - $disc);
-//            $lineTax     = $lineBase * ($tp / 100);
-//
-//            $subtotal += $lineBase;
-//            $taxTotal += $lineTax;
-//        }
-//
-//        $discountTotal = (float) ($invoice->discount_total ?? 0.0);
-//        $chargesTotal  = (float) $charges->reduce(
-//            fn($s, $r) => $s + (float) ($r->amount ?? 0),
-//            0.0
-//        );
-//        $tcsPercent    = (float) ($invoice->tcs_percent ?? 0.0);
-//        $received      = (float) ($invoice->received_amount ?? 0.0);
-//        $roundOff      = (float) ($invoice->round_off ?? 0.0);
-//
-//        $tcsBase   = max(0, $subtotal + $taxTotal - $discountTotal);
-//        $tcsAmount = $tcsPercent > 0
-//            ? round($tcsBase * ($tcsPercent / 100), 2)
-//            : 0.0;
-//
-//        $totalBeforeRound = $subtotal + $taxTotal - $discountTotal + $chargesTotal + $tcsAmount;
-//        $grandTotal       = (float) ($totalBeforeRound + $roundOff);
-//        $balance          = max(0, $grandTotal - $received);
-//
-//        // data URIs (logo, sign)
-//        [$logoDataUri, $signDataUri] = [
-//            $this->imageDataUri($biz?->logo),
-//            $this->imageDataUri($biz?->signature),
-//        ];
-//
-//        // ✅ letter-head ko bhi data URI me convert kar lo (nullable allowed)
-//        $letterHeadDataUri = $this->imageDataUri($biz?->letter_head);
-//        // yahan `letter_head` ko aapke actual column name se replace kar sakte ho
-//
-//        $vm = compact(
-//            'invoice','biz','client','items','charges',
-//            'logoDataUri','signDataUri',
-//            'subtotal','taxTotal','discountTotal','chargesTotal','tcsPercent','tcsAmount',
-//            'roundOff','grandTotal','received','balance'
-//        );
-//
-//        // rename keys to what blade expects
-//        $vm['inv']            = $invoice;
-//        $vm['logo']           = $logoDataUri;
-//        $vm['sign']           = $signDataUri;
-//        $vm['tax_total']      = $taxTotal;
-//        $vm['discount_total'] = $discountTotal;
-//        $vm['charges_total']  = $chargesTotal;
-//        $vm['tcs_percent']    = $tcsPercent;
-//        $vm['tcs_amount']     = $tcsAmount;
-//        $vm['grand_total']    = $grandTotal;
-//
-//        // ✅ naya variable: letter-head
-//        $vm['letter_head']    = $letterHeadDataUri; // null bhi ho sakta hai, कोई दिक्कत नहीं
-//
-//        // Same view
-////        return \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf', $vm)->setPaper('a4');
-//        return \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf_kapoor', $vm)
-//            ->setPaper('a4');
-//    }
-
-
     protected function buildInvoicePdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
     {
         $invoice->load(['client','items','business']);
@@ -2317,42 +1590,6 @@ class InvoiceController extends Controller
     }
 
 
-
-//    protected function simplePdfBuild(\App\Models\Invoice $invoice): \Barryvdh\DomPDF\PDF
-//    {
-//        $invoice->load(['client','items','business']);
-//
-//        $inv    = $invoice;
-//        $biz    = $invoice->business;
-//        $client = $invoice->client;
-//        $items  = $invoice->items ?? collect();
-//
-//        // ✅ payment row
-//        $payRow = InvoicePayment::where('invoice_id', $invoice->id)->latest()->first();
-//
-//        // totals (same as your buildInvoicePdf)
-//        $less_amount   = (float)($inv->less_amount ?? 0);
-//        $balance       = (float)($inv->balance ?? 0);
-//        $grand_total   = (float)($inv->total ?? 0);
-//        $cgst_amount   = (float)($inv->cgst_amount ?? 0);
-//        $sgst_amount   = (float)($inv->sgst_amount ?? 0);
-//        $igst_amount   = (float)($inv->igst_amount ?? 0);
-//
-//        $logoDataUri = $this->imageDataUri($biz?->logo);
-//
-//        $vm = compact(
-//            'inv','invoice','biz','client','items',
-//            'logoDataUri',
-//            'less_amount','balance','grand_total',
-//            'cgst_amount','sgst_amount','igst_amount',
-//            'payRow'
-//        );
-//
-//        $vm['logo'] = $logoDataUri;
-//
-//        return \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
-//    }
-
     protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
     {
         $invoice->load(['client','items','business']);
@@ -2423,7 +1660,11 @@ class InvoiceController extends Controller
         // ❌ letter_head deliberately NOT passed
         // $vm['letter_head'] = null;
 
-        return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
+//        return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
+        $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
+
+        return Pdf::loadView($view, $vm)
+            ->setPaper('a4');
     }
 
 

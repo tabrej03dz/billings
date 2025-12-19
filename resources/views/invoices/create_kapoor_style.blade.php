@@ -1,4 +1,10 @@
+{{-- ==========================================
+   FILE: resources/views/invoices/create_kapoor_style.blade.php
+   NOTE: SERVICE => amount items.price * qty (NO metal rates)
+========================================== --}}
+
 <x-layouts.app :title="__('Create Sales Invoice')">
+
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
 
         {{-- errors --}}
@@ -36,21 +42,17 @@
                     </div>
 
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
-
                     <div class="flex gap-2">
                         <select name="client_id" x-model="clientId" required
-                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                                       bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                             <option value="">-- Select Client --</option>
                             <template x-for="c in clients" :key="c.id">
-                                <option :value="c.id"
-                                        x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
+                                <option :value="c.id" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
                             </template>
                         </select>
 
                         <button type="button"
-                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700
-                                       bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
+                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
                                 @click="openClientModal()">
                             + New
                         </button>
@@ -62,36 +64,29 @@
                             <div class="text-gray-500 dark:text-neutral-400">Name</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.name || '-'"></div>
                         </div>
-
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">Phone</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.mobile || '-'"></div>
                         </div>
-
                         <div class="col-span-2">
                             <div class="text-gray-500 dark:text-neutral-400">Add</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.address || '-'"></div>
                         </div>
-
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">State</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state || '-'"></div>
                         </div>
-
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">State Code</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state_code || '-'"></div>
                         </div>
-
                         <div class="col-span-2">
                             <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
                         </div>
-
                         <div class="col-span-2">
                             <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
-                            <div class="font-semibold"
-                                 :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
+                            <div class="font-semibold" :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
                                  x-text="isIntra() ? 'Intra State (CGST+SGST)' : 'Inter State (IGST)'"></div>
                         </div>
                     </div>
@@ -100,48 +95,37 @@
                 {{-- RIGHT: Invoice meta --}}
                 <div class="lg:col-span-2 p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                     <div class="grid md:grid-cols-2 gap-3">
-
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Date</label>
                             <input type="date" name="invoice_date" x-model="hdr.date" required
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
-
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Bill No.</label>
                             <input :value="invoiceNo" readonly
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
                         </div>
-
                         <div class="md:col-span-2">
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Invoice Prefix</label>
                             <input :value="computedPrefix" readonly
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
                             <input type="hidden" name="invoice_prefix" :value="computedPrefix">
                         </div>
-
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">GST No.</label>
                             <input type="text" name="gst_no" x-model="hdr.gst_no"
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
-
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Transport Mode</label>
                             <input type="text" name="transport_mode" x-model="hdr.transport_mode" placeholder="By Hand"
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                          bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            {{-- TABLE --}}
+            {{-- ================= TABLE ================= --}}
             <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm border-separate border-spacing-0">
@@ -149,15 +133,21 @@
                         <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
                             <th>S.No.</th>
                             <th>Description</th>
-                            <th>HSN CODE</th>
+                            <th>HSN / SAC</th>
                             <th class="text-center">Qty</th>
-                            <th>Making Rate</th>
-                            <th>Gold Rate (₹/g)</th>
-                            <th>Silver Rate (₹/g)</th>
-                            <th>Silver Wt.(Gm)</th>
-                            <th>Gold Wt.(Gm)</th>
-                            <th>Gem Stone Wt.(Ct.)</th>
-                            <th>Diamond Wt.(Ct.)</th>
+
+                            {{-- Product-only columns --}}
+                            <th x-show="hasProduct()">Making Rate</th>
+                            <th x-show="hasProduct()">Gold Rate (₹/g)</th>
+                            <th x-show="hasProduct()">Silver Rate (₹/g)</th>
+                            <th x-show="hasProduct()">Silver Wt.(Gm)</th>
+                            <th x-show="hasProduct()">Gold Wt.(Gm)</th>
+                            <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
+                            <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
+
+                            {{-- Service-only column --}}
+                            <th x-show="hasService()">Service Rate (₹)</th>
+
                             <th>Tax %</th>
                             <th>Amount</th>
                             <th></th>
@@ -170,8 +160,7 @@
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
                                 <td class="px-3 py-2">
-                                    <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700
-                                                   bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
+                                    <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
                                             @change="pickItem(i, $event.target.value)">
                                         <option value="">-- Select Item --</option>
                                         <template x-for="it in itemsData" :key="it.id">
@@ -180,79 +169,90 @@
                                     </select>
 
                                     <input type="text" x-model="row.description" required
-                                           class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs">
+                                           class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs">
+                                    <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
+                                         x-show="row.item_type"
+                                         x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input x-model="row.hsn"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2 text-center">
                                     <input type="number" min="1" step="1"
                                            x-model.number="row.quantity" @input="calc()"
-                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs text-center">
+                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
                                 </td>
 
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.01" min="0" x-model.number="row.making_rate" @input="calc()"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                {{-- Product-only cells --}}
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.01" min="0"
+                                           x-model.number="row.making_rate" @input="calc()"
+                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.01" min="0" x-model.number="row.gold_rate" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.01" min="0"
+                                           x-model.number="row.gold_rate" @input="calc()"
+                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                     <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
                                          x-text="row.gold_purity ? ('Purity: ' + row.gold_purity) : ''"></div>
                                 </td>
 
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.01" min="0" x-model.number="row.silver_rate" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.01" min="0"
+                                           x-model.number="row.silver_rate" @input="calc()"
+                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                     <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
                                          x-text="row.silver_purity ? ('Purity: ' + row.silver_purity) : ''"></div>
                                 </td>
 
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.001" min="0" x-model.number="row.silver_wt" @input="calc()"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.001" min="0"
+                                           x-model.number="row.silver_wt" @input="calc()"
+                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                </td>
+
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.001" min="0"
+                                           x-model.number="row.gold_wt" @input="calc()"
+                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                </td>
+
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.001" min="0"
+                                           x-model.number="row.gemstone_wt" @input="calc()"
+                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                </td>
+
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.001" min="0"
+                                           x-model.number="row.diamond_wt" @input="calc()"
+                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                </td>
+
+                                {{-- Service-only cell --}}
+                                <td class="px-3 py-2" x-show="row.item_type === 'service'">
+                                    {{-- ✅ Service amount item.price se aayega, user edit allow/deny as you want --}}
+                                    <input type="number" step="0.01" min="0"
+                                           x-model.number="row.service_rate" @input="calc()"
+                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400">
+                                        (Service = Item Price)
+                                    </div>
                                 </td>
 
                                 <td class="px-3 py-2">
-                                    <input type="number" step="0.001" min="0" x-model.number="row.gold_wt" @input="calc()"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
-                                </td>
-
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.001" min="0" x-model.number="row.gemstone_wt" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
-                                </td>
-
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.001" min="0" x-model.number="row.diamond_wt" @input="calc()"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
-                                </td>
-
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.01" min="0" max="100" x-model.number="row.tax_percent" @input="calc()"
-                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                  bg-white dark:bg-neutral-900 text-xs">
+                                    <input type="number" step="0.01" min="0" max="100"
+                                           x-model.number="row.tax_percent" @input="calc()"
+                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2">
                                     <input readonly :value="lineAmount(row).toFixed(2)"
-                                           class="w-28 bg-gray-50 dark:bg-neutral-800 border rounded px-2 py-1
-                                                  border-gray-300 dark:border-neutral-700 text-xs">
+                                           class="w-28 bg-gray-50 dark:bg-neutral-800 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 text-xs">
                                 </td>
 
                                 <td class="px-3 py-2 text-right">
@@ -263,20 +263,20 @@
                         </template>
 
                         <tr>
-                            <td colspan="14" class="px-3 py-2">
+                            <td colspan="30" class="px-3 py-2">
                                 <button type="button" @click="add()" class="text-blue-600 hover:underline text-sm">
                                     + Add Item
                                 </button>
                             </td>
                         </tr>
+
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {{-- BOTTOM --}}
+            {{-- ================= BOTTOM ================= --}}
             <div class="grid lg:grid-cols-2 gap-4">
-
                 {{-- Left --}}
                 <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 space-y-3">
                     <div class="flex items-center gap-2">
@@ -288,45 +288,45 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and Conditions</label>
                         <textarea name="terms" rows="4"
-                                  class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                                         bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $defaultTerms) }}</textarea>
+                                  class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $defaultTerms) }}</textarea>
                     </div>
 
-                    {{-- Payment Adjustments --}}
+                    {{-- Payments --}}
                     <div class="space-y-2">
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">Cash</span>
-                            <input type="number" step="0.01" min="0" name="pay_cash" x-model.number="pay.cash" @input="calc()"
+                            <input type="number" step="0.01" min="0" name="pay_cash"
+                                   x-model.number="pay.cash" @input="calc()"
                                    class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
                         </div>
-
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">UPI / Online</span>
-                            <input type="number" step="0.01" min="0" name="pay_upi" x-model.number="pay.upi" @input="calc()"
+                            <input type="number" step="0.01" min="0" name="pay_upi"
+                                   x-model.number="pay.upi" @input="calc()"
                                    class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
                         </div>
-
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">Card</span>
-                            <input type="number" step="0.01" min="0" name="pay_card" x-model.number="pay.card" @input="calc()"
+                            <input type="number" step="0.01" min="0" name="pay_card"
+                                   x-model.number="pay.card" @input="calc()"
                                    class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
                         </div>
-
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">Cheque</span>
-                            <input type="number" step="0.01" min="0" name="pay_cheque" x-model.number="pay.cheque" @input="calc()"
+                            <input type="number" step="0.01" min="0" name="pay_cheque"
+                                   x-model.number="pay.cheque" @input="calc()"
                                    class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
                         </div>
-
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">Credit Sales/Excess Amt.</span>
-                            <input type="number" step="0.01" min="0" name="credit_sales_excess" x-model.number="pay.credit_excess" @input="calc()"
+                            <input type="number" step="0.01" min="0" name="credit_sales_excess"
+                                   x-model.number="pay.credit_excess" @input="calc()"
                                    class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
                         </div>
-
                         <div class="flex items-center justify-between gap-3">
                             <span class="text-gray-600 dark:text-neutral-300">Advance</span>
-                            <input type="number" step="0.01" min="0" name="advance_amount" x-model.number="pay.advance" @input="calc()"
+                            <input type="number" step="0.01" min="0" name="advance_amount"
+                                   x-model.number="pay.advance" @input="calc()"
                                    class="w-56 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm text-right">
                         </div>
 
@@ -355,22 +355,18 @@
                         <span class="text-sm text-gray-800 dark:text-neutral-100">Balance Amount</span>
                         <span class="text-sm" x-text="money(balanceAmount())"></span>
                     </div>
-
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-600 dark:text-neutral-300">CGST</span>
                         <span class="text-sm" x-text="money(cgst())"></span>
                     </div>
-
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-600 dark:text-neutral-300">SGST</span>
                         <span class="text-sm" x-text="money(sgst())"></span>
                     </div>
-
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-600 dark:text-neutral-300">IGST</span>
                         <span class="text-sm" x-text="money(igst())"></span>
                     </div>
-
                     <div class="flex justify-between font-semibold text-lg pt-3">
                         <span>Total Value</span>
                         <span x-text="money(grandTotal())"></span>
@@ -396,13 +392,12 @@
 
     <script>
         function invoiceForm(){
-            const CLIENTS     = JSON.parse(document.getElementById('clients-json')?.textContent || '[]');
-            const ITEMS       = JSON.parse(document.getElementById('items-json')?.textContent || '[]');
+            const CLIENTS = JSON.parse(document.getElementById('clients-json')?.textContent || '[]');
+            const ITEMS = JSON.parse(document.getElementById('items-json')?.textContent || '[]');
             const METAL_RATES = JSON.parse(document.getElementById('metal-rates-json')?.textContent || '[]');
 
-            // ✅ Business state_code from blade (GSTIN ignore!)
             const BIZ_STATE_CODE = @js($businessStateCode ?? '');
-            const BIZ_GSTIN      = @js($businessGstin ?? '');
+            const BIZ_GSTIN = @js($businessGstin ?? '');
 
             return {
                 clients: CLIENTS,
@@ -415,7 +410,7 @@
                 hdr: {
                     date: @js($today),
                     transport_mode: 'By Hand',
-                    gst_no: BIZ_GSTIN, // show only
+                    gst_no: BIZ_GSTIN,
                     reverse_charge: false,
                 },
 
@@ -424,33 +419,44 @@
                 invoiceNo: @js($initialInvoiceNo),
 
                 pay: {
-                    cash: 0, upi: 0, card: 0, cheque: 0,
-                    credit_excess: 0, advance: 0,
-                    online_mode:'', online_ref:'', upi_id:'',
-                    card_last4:'', card_ref:'',
-                    cheque_no:'', bank_name:''
+                    cash: 0, upi: 0, card: 0, cheque: 0, credit_excess: 0, advance: 0,
+                    online_mode:'', online_ref:'', upi_id:'', card_last4:'', card_ref:'', cheque_no:'', bank_name:''
                 },
 
-                items: [{
-                    _k: Date.now(),
-                    item_id: null,
-                    description: '',
-                    hsn: '',
-                    quantity: 1,
-                    making_rate: 0,
-                    gold_purity: null,
-                    silver_purity: null,
-                    gold_rate: 0,
-                    silver_rate: 0,
-                    silver_wt: 0,
-                    gold_wt: 0,
-                    gemstone_wt: 0,
-                    diamond_wt: 0,
-                    tax_percent: 0,
-                }],
+                // ✅ IMPORTANT FIX: empty array
+                items: [],
+
+                blankRow(){
+                    return {
+                        _k: Date.now()+Math.random(),
+                        item_id: null,
+                        item_type: null,
+
+                        description: '',
+                        hsn: '',
+                        quantity: 1,
+
+                        making_rate: 0,
+                        gold_purity: null,
+                        silver_purity: null,
+                        gold_rate: 0,
+                        silver_rate: 0,
+                        silver_wt: 0,
+                        gold_wt: 0,
+                        gemstone_wt: 0,
+                        diamond_wt: 0,
+
+                        service_rate: 0,
+                        tax_percent: 0,
+                    }
+                },
 
                 init(){
                     this.$watch('clientId', () => this.syncParty());
+
+                    // ✅ IMPORTANT FIX: first row yaha push hoga
+                    if (!this.items.length) this.items.push(this.blankRow());
+
                     this.syncParty();
                     this.calc();
                 },
@@ -469,21 +475,17 @@
                     this.calc();
                 },
 
-                keyCode(v){
-                    // "09" => "9", "9" => "9"
-                    return String(v ?? '').trim().replace(/^0+/, '');
-                },
+                keyCode(v){ return String(v ?? '').trim().replace(/^0+/, ''); },
 
-                // ✅ GST LOGIC: ONLY STATE CODE (GSTIN ignore)
                 isIntra(){
-                    const bizCode   = this.keyCode(BIZ_STATE_CODE);
+                    const bizCode = this.keyCode(BIZ_STATE_CODE);
                     const partyCode = this.keyCode(this.party.state_code ?? '');
-
-                    // if any missing -> InterState (IGST)
                     if (!bizCode || !partyCode) return false;
-
                     return bizCode === partyCode;
                 },
+
+                hasProduct(){ return this.items.some(r => r.item_type === 'product'); },
+                hasService(){ return this.items.some(r => r.item_type === 'service'); },
 
                 findMetalRate(type, purity){
                     const t = String(type||'').toLowerCase().trim();
@@ -517,25 +519,50 @@
                 pickItem(i, id){
                     const it = this.itemsData.find(x => String(x.id) === String(id));
                     if(!it) return;
+
                     const r = this.items[i];
 
-                    r.item_id     = it.id;
+                    r.item_id   = it.id;
+                    r.item_type = (it.type || '').toLowerCase().trim() || 'product';
+
                     r.description = it.description || it.name || '';
-                    r.hsn         = it.sac || it.hsn || '';
+                    r.tax_percent = Number(it.tax_rate ?? 0);
 
-                    r.quantity  = Number(it.quantity ?? 1) || 1;
+                    // ✅ SERVICE => items.price
+                    if (r.item_type === 'service') {
+                        r.hsn = it.sac || '';
+                        r.quantity = Math.max(1, Number(r.quantity || 1));
+                        r.service_rate = Number(it.price ?? 0);
 
-                    r.gold_wt   = Number(it.gold_weight ?? it.gold_wt ?? 0);
+                        r.making_rate = 0;
+                        r.gold_purity = null;
+                        r.silver_purity = null;
+                        r.gold_rate = 0;
+                        r.silver_rate = 0;
+                        r.gold_wt = 0;
+                        r.silver_wt = 0;
+                        r.gemstone_wt = 0;
+                        r.diamond_wt = 0;
+
+                        this.calc();
+                        return;
+                    }
+
+                    // ✅ PRODUCT
+                    r.hsn = it.hsn || it.sac || '';
+                    r.quantity = Number(it.quantity ?? 1) || 1;
+                    r.service_rate = 0;
+
+                    r.gold_wt = Number(it.gold_weight ?? it.gold_wt ?? 0);
                     r.silver_wt = Number(it.silver_weight ?? it.silver_wt ?? 0);
 
-                    r.gold_purity   = (it.gold_purity ?? it.purity ?? '').toString().trim() || null;
+                    r.gold_purity = (it.gold_purity ?? it.purity ?? '').toString().trim() || null;
                     r.silver_purity = (it.silver_purity ?? '').toString().trim() || null;
 
                     r.gemstone_wt = Number(it.stone_weight ?? it.gemstone_wt ?? 0);
                     r.diamond_wt  = Number(it.diamond_weight ?? it.diamond_wt ?? 0);
 
                     r.making_rate = Number(it.making_charge ?? it.making_rate ?? 0);
-                    r.tax_percent = Number(it.tax_rate ?? 0);
 
                     r.gold_rate   = this.findMetalRate('gold', r.gold_purity);
                     r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
@@ -544,39 +571,31 @@
                 },
 
                 add(){
-                    this.items.push({
-                        _k: Date.now()+Math.random(),
-                        item_id: null,
-                        description: '',
-                        hsn: '',
-                        quantity: 1,
-                        making_rate: 0,
-                        gold_purity: null,
-                        silver_purity: null,
-                        gold_rate: 0,
-                        silver_rate: 0,
-                        silver_wt: 0,
-                        gold_wt: 0,
-                        gemstone_wt: 0,
-                        diamond_wt: 0,
-                        tax_percent: 0,
-                    });
+                    this.items.push(this.blankRow());
                     this.calc();
                 },
 
-                remove(i){ this.items.splice(i,1); this.calc(); },
+                remove(i){
+                    this.items.splice(i,1);
+                    if(!this.items.length) this.items.push(this.blankRow());
+                    this.calc();
+                },
 
                 lineBase(r){
-                    const qty      = Math.max(1, Number(r.quantity || 1));
-                    const goldAmt  = Number(r.gold_wt||0)   * Number(r.gold_rate||0);
-                    const silvAmt  = Number(r.silver_wt||0) * Number(r.silver_rate||0);
-                    const making   = Number(r.making_rate||0);
+                    const qty = Math.max(1, Number(r.quantity || 1));
+                    if (r.item_type === 'service') {
+                        const rate = Number(r.service_rate || 0);
+                        return Math.max(0, Number((rate * qty).toFixed(2)));
+                    }
+                    const goldAmt = Number(r.gold_wt||0) * Number(r.gold_rate||0);
+                    const silvAmt = Number(r.silver_wt||0) * Number(r.silver_rate||0);
+                    const making  = Number(r.making_rate||0);
                     return Math.max(0, Number(((goldAmt + silvAmt + making) * qty).toFixed(2)));
                 },
 
                 lineTax(r){
                     const base = this.lineBase(r);
-                    const pct  = Number(r.tax_percent||0);
+                    const pct = Number(r.tax_percent||0);
                     return Number((base * (pct/100)).toFixed(2));
                 },
 
@@ -600,39 +619,27 @@
                     return Number((this.subtotal() + this.taxTotal()).toFixed(2));
                 },
 
-                balanceAmount(){
-                    const received =
-                        Number(this.pay.cash||0) +
-                        Number(this.pay.upi||0) +
-                        Number(this.pay.card||0) +
-                        Number(this.pay.cheque||0);
-
-                    const advance = Number(this.pay.advance||0);
-                    const credit  = Number(this.pay.credit_excess||0);
-
-                    return Math.max(0, Number((this.grandTotal() - received - advance - credit).toFixed(2)));
-                },
-
                 calc(){ this.grandTotal(); },
 
                 beforeSubmit(){
                     const payload = this.items.map(r => ({
                         item_id: r.item_id ?? null,
+                        item_type: r.item_type ?? null,
                         description: r.description || '',
                         hsn: r.hsn || '',
                         quantity: Math.max(1, Number(r.quantity ?? 1)),
 
                         making_rate: Number(r.making_rate||0),
-
                         gold_purity: r.gold_purity || null,
                         silver_purity: r.silver_purity || null,
                         gold_rate: Number(r.gold_rate||0),
                         silver_rate: Number(r.silver_rate||0),
-
                         silver_wt: Number(r.silver_wt||0),
                         gold_wt: Number(r.gold_wt||0),
                         gemstone_wt: Number(r.gemstone_wt||0),
                         diamond_wt: Number(r.diamond_wt||0),
+
+                        service_rate: Number(r.service_rate||0),
 
                         tax_percent: Number(r.tax_percent||0),
 
@@ -650,9 +657,10 @@
                 },
 
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
-
-                openClientModal(){ /* if needed */ },
+                openClientModal(){},
             }
         }
     </script>
+
+
 </x-layouts.app>
