@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-white dark:bg-zinc-800 ">

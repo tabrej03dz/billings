@@ -116,6 +116,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('update/{client}', 'update')->name('update');
         Route::delete('destroy/{client}', 'destroy')->name('destroy');
         Route::get('show/{client}', 'show')->name('show');
+
     });
 
     Route::prefix('items')->name('items.')->controller(\App\Http\Controllers\ItemController::class)->group(function(){
@@ -124,6 +125,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('store', 'store')->name('store');
         Route::put('update/{item}', 'update')->name('update');
         Route::delete('destroy/{item}', 'destroy')->name('destroy');
+        Route::post('store/ajax', 'storeAjax')->name('store.ajax');
     });
 
     Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('item.create');

@@ -129,39 +129,6 @@ class ClientController extends Controller
     }
 
 
-
-//    public function quickStore(Request $request)
-//    {
-//        $bid = $request->user()->current_business_id ?? session('active_business_id');
-//
-//        $data = $request->validate([
-//            'name'    => ['required','string','max:255'],
-//            'mobile'  => ['required','string','max:20',
-//                Rule::unique('clients','mobile')->where(fn($q)=>$q->where('business_id',$bid))
-//            ],
-//            'gstin'   => ['nullable','string','max:50',
-//                Rule::unique('clients','gstin')->where(fn($q)=>$q->where('business_id',$bid))
-//            ],
-//            'pan'     => ['nullable','string','max:50',
-//                Rule::unique('clients','pan')->where(fn($q)=>$q->where('business_id',$bid))
-//            ],
-//            'state'   => ['nullable','string','max:100'],
-//            'address' => ['nullable','string','max:1000'],
-//        ]);
-//
-//        $data['business_id'] = $bid;
-//        $client = \App\Models\Client::create($data);
-//
-//        return response()->json([
-//            'ok' => true,
-//            'client' => [
-//                'id' => $client->id,
-//                'name' => $client->name,
-//                'mobile' => $client->mobile,
-//            ]
-//        ]);
-//    }
-
     public function quickStore(Request $request)
     {
         // ✅ Business resolve (fallback added)

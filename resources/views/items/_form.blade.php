@@ -5,6 +5,19 @@
     $currentType = old('type', $item->type ?? ''); // ✅ default blank so all hidden on create
 @endphp
 
+<style>
+    /* ✅ Fix dropdown option visibility on dark themes */
+    select.rv-select{
+        background:#fff !important;
+        color:#0f172a !important; /* slate-900 */
+    }
+    select.rv-select option{
+        background:#fff !important;
+        color:#0f172a !important;
+    }
+</style>
+
+
 <div class="space-y-6">
 
     {{-- ================= BASIC DETAILS ================= --}}
@@ -31,7 +44,7 @@
 
             <div>
                 <label class="block text-sm font-medium mb-1">Category</label>
-                <select name="category_id" class="mt-1 w-full border rounded px-3 py-2">
+                <select name="category_id" class="rv-select mt-1 w-full border rounded px-3 py-2">
                     <option value="">— None —</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}"
@@ -46,7 +59,7 @@
             <div>
                 <label class="block text-sm font-medium mb-1">Type <span class="text-red-600">*</span></label>
 
-                <select id="typeSelect" name="type" required class="mt-1 w-full border rounded px-3 py-2">
+                <select id="typeSelect" name="type" required class="rv-select mt-1 w-full border rounded px-3 py-2">
                     <option value="">— Select Type —</option>
                     <option value="product" @selected($currentType == 'product')>Product</option>
                     <option value="service" @selected($currentType == 'service')>Service</option>
@@ -129,7 +142,7 @@
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Gold Purity</label>
-                        <select name="gold_purity" class="mt-1 w-full border rounded px-3 py-2">
+                        <select name="gold_purity" class="rv-select mt-1 w-full border rounded px-3 py-2">
                             <option value="">Select Gold Purity</option>
                             <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
                             <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
@@ -151,7 +164,7 @@
 
                     <div>
                         <label class="block text-sm font-medium mb-1">Silver Purity</label>
-                        <select name="silver_purity" class="mt-1 w-full border rounded px-3 py-2">
+                        <select name="silver_purity" class="rv-select mt-1 w-full border rounded px-3 py-2">
                             <option value="">Select Silver Purity</option>
                             <option value="999" @selected(old('silver_purity', $item->silver_purity ?? '') == '999')>Silver 999</option>
                             <option value="925" @selected(old('silver_purity', $item->silver_purity ?? '') == '925')>Silver 925</option>

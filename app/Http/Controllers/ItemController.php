@@ -254,4 +254,66 @@ class ItemController extends Controller
         ]);
     }
 
+
+    public function storeAjax(\Illuminate\Http\Request $r)
+    {
+        $data = $r->validate([
+            'type' => ['required','in:product,service'],
+            'name' => ['required','string','max:255'],
+            'sku'  => ['nullable','string','max:100'],
+            'description' => ['nullable','string','max:500'],
+
+            'tax_rate' => ['nullable','numeric','min:0','max:100'],
+            'hsn' => ['nullable','string','max:50'],
+            'sac' => ['nullable','string','max:50'],
+
+            // service
+            'price' => ['nullable','numeric','min:0'],
+
+            // product
+            'making_charge' => ['nullable','numeric','min:0'],
+            'gold_weight' => ['nullable','numeric','min:0'],
+            'gold_purity' => ['nullable','string','max:50'],
+            'silver_weight' => ['nullable','numeric','min:0'],
+            'silver_purity' => ['nullable','string','max:50'],
+            'stone_weight' => ['nullable','numeric','min:0'],
+            'diamond_weight' => ['nullable','numeric','min:0'],
+        ]);
+
+        $bid = $r->user()->current_business_id ?? session('active_business_id');
+
+        $item = \App\Models\Item::create([
+            'business_id' => $bid,
+            'type' => $data['type'],
+            'name' => $data['name'],
+            'sku'  => $data['sku'] ?? null,
+            'description' => $data['description'] ?? null,
+
+            'tax_rate' => (float)($data['tax_rate'] ?? 0),
+            'hsn' => $data['hsn'] ?? null,
+            'sac' => $data['sac'] ?? null,
+
+            // service price (used in your pickItem for service_rate)
+            'price' => (float)($data['price'] ?? 0),
+
+            // product fields
+            'making_charge' => (float)($data['making_charge'] ?? 0),
+            'gold_weight' => (float)($data['gold_weight'] ?? 0),
+            'gold_purity' => $data['gold_purity'] ?? null,
+            'silver_weight' => (float)($data['silver_weight'] ?? 0),
+            'silver_purity' => $data['silver_purity'] ?? null,
+            'stone_weight' => (float)($data['stone_weight'] ?? 0),
+            'diamond_weight' => (float)($data['diamond_weight'] ?? 0),
+        ]);
+
+        // ✅ return in same shape your itemsJson expects
+        return response()->json([
+            'item' => $item->only([
+                'id','type','name','sku','description','tax_rate','hsn','sac','price',
+                'making_charge','gold_weight','gold_purity','silver_weight','silver_purity',
+                'stone_weight','diamond_weight'
+            ])
+        ]);
+    }
+
 }

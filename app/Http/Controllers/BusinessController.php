@@ -179,14 +179,14 @@ class BusinessController extends Controller
 
         // Handle logo
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo_path')->store('business_logos', 'public');
+            $data['logo'] = $request->file('logo')->store('business_logos', 'public');
         }
         if ($request->hasFile('signature')) {
-            $data['signature'] = $request->file('signature_path')->store('business_signatures', 'public');
+            $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
         }
 
         if ($request->hasFile('letter_head')) {
-            $data['letter_head'] = $request->file('letter_head_path')->store('business_letter_heads', 'public');
+            $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
         }
 
         $business = Business::create($data);
