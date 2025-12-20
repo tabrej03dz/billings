@@ -1,5 +1,4 @@
 <x-layouts.app :title="__('Dashboard')">
-
     <div class="max-w-6xl mx-auto py-8 px-3 sm:px-4 lg:px-6 space-y-6">
 
         {{-- ALERTS --}}
@@ -83,7 +82,7 @@
                 </div>
 
                 <p class="text-[11px] sm:text-xs text-slate-500">
-                    PDF file choose karo, WhatsApp number (country code ke saath) daalo.
+                    PDF file choose karo, WhatsApp number (country code ke saath).
                     Submit ke baad same number par PDF chali jayegi.
                 </p>
 
@@ -127,45 +126,45 @@
                     </div>
 
                     {{-- EXCEL INPUT --}}
-                    <div class="space-y-1">
-                        <label for="excel" class="block text-xs font-medium text-slate-700">
-                            Excel File (Invoice Data)
-                        </label>
+{{--                    <div class="space-y-1">--}}
+{{--                        <label for="excel" class="block text-xs font-medium text-slate-700">--}}
+{{--                            Excel File (Invoice Data)--}}
+{{--                        </label>--}}
 
-                        <label for="excel"
-                               class="flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/80 px-3 py-3 cursor-pointer">
-                            <div
-                                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm border border-emerald-200">
-                                <i class="fas fa-file-excel text-[15px] text-emerald-600"></i>
-                            </div>
-                            <div class="flex-1">
-                                <p class="text-[11px] sm:text-xs text-slate-700">
-                                    Choose Excel file (max 5 MB)
-                                </p>
-                                <p class="text-[10px] text-slate-400">
-                                    Allowed: .xls, .xlsx
-                                </p>
-                            </div>
-                        </label>
+{{--                        <label for="excel"--}}
+{{--                               class="flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/80 px-3 py-3 cursor-pointer">--}}
+{{--                            <div--}}
+{{--                                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm border border-emerald-200">--}}
+{{--                                <i class="fas fa-file-excel text-[15px] text-emerald-600"></i>--}}
+{{--                            </div>--}}
+{{--                            <div class="flex-1">--}}
+{{--                                <p class="text-[11px] sm:text-xs text-slate-700">--}}
+{{--                                    Choose Excel file (max 5 MB)--}}
+{{--                                </p>--}}
+{{--                                <p class="text-[10px] text-slate-400">--}}
+{{--                                    Allowed: .xls, .xlsx--}}
+{{--                                </p>--}}
+{{--                            </div>--}}
+{{--                        </label>--}}
 
-                        <input
-                            id="excel"
-                            type="file"
-                            name="excel"
-                            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            class="hidden"
-                        />
-                    </div>
+{{--                        <input--}}
+{{--                            id="excel"--}}
+{{--                            type="file"--}}
+{{--                            name="excel"--}}
+{{--                            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"--}}
+{{--                            class="hidden"--}}
+{{--                        />--}}
+{{--                    </div>--}}
 
-                    <p class="text-[10px] text-slate-500">
-                        <b>Note:</b> Aap PDF ya Excel me se <b>koi ek</b> upload kar sakte hain.
-                        Agar Excel upload karenge to system usko invoice jaisi PDF me convert karke WhatsApp par bhejega.
-                    </p>
+{{--                    <p class="text-[10px] text-slate-500">--}}
+{{--                        <b>Note:</b> Aap PDF ya Excel me se <b>koi ek</b> upload kar sakte hain.--}}
+{{--                        Agar Excel upload karenge to system usko invoice jaisi PDF me convert karke WhatsApp par bhejega.--}}
+{{--                    </p>--}}
 
                     {{-- PHONE INPUT --}}
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-700">
-                            WhatsApp Number <span class="text-red-500">*</span>
+                            WhatsApp Number <span class="text-red-500"></span>
                         </label>
                         <div class="flex gap-2">
                             <input type="text" name="phone"

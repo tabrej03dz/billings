@@ -60,7 +60,10 @@
                                     @method('DELETE')
                                     <button type="submit" class="text-red-600 hover:underline">Delete</button>
                                 </form>
-                            @endcan
+                                    <a href="{{ route('bank-accounts.destroy', $business->id) }}" class="text-yellow-600 hover:underline">Banks</a>
+
+
+                                @endcan
                         </td>
                     </tr>
                 @empty

@@ -67,13 +67,13 @@ Route::middleware(['auth'])->group(function () {
     Volt::route('settings/password', 'settings.password')->name('settings.password');
     Volt::route('settings/appearance', 'settings.appearance')->name('settings.appearance');
 
-//    Route::prefix('invoices')->name('invoices.')->controller(\App\Http\Controllers\InvoiceController::class)->group(function(){
-//        Route::get('/', 'index')->name('index');
-//        Route::get('create', 'create')->name('create');
-//        Route::post('store', 'store')->name('store');
-//        Route::get('show/{invoice}', 'show')->name('show');
-//        Route::get('download/{invoice}', 'download')->name('download');
-//    });
+    //    Route::prefix('invoices')->name('invoices.')->controller(\App\Http\Controllers\InvoiceController::class)->group(function(){
+    //        Route::get('/', 'index')->name('index');
+    //        Route::get('create', 'create')->name('create');
+    //        Route::post('store', 'store')->name('store');
+    //        Route::get('show/{invoice}', 'show')->name('show');
+    //        Route::get('download/{invoice}', 'download')->name('download');
+    //    });
 
 
     Route::resource('api-keys', \App\Http\Controllers\ApiKeyController::class);
@@ -148,14 +148,14 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('delete/{business}', 'destroy')->name('delete');
     });
 
-//    Route::prefix('categories')->name('categories.')->controller(\App\Http\Controllers\CategoryController::class)->group(function(){
-//        Route::get('/', 'index')->name('index');
-//        Route::get('create', 'create')->name('create');
-//        Route::post('store', 'store')->name('store');
-//        Route::get('edit/{category}', 'edit')->name('edit');
-//        Route::post('update/{category}', 'update')->name('update');
-//        Route::post('delete/{category}', 'delete')->name('delete');
-//    });
+    //    Route::prefix('categories')->name('categories.')->controller(\App\Http\Controllers\CategoryController::class)->group(function(){
+    //        Route::get('/', 'index')->name('index');
+    //        Route::get('create', 'create')->name('create');
+    //        Route::post('store', 'store')->name('store');
+    //        Route::get('edit/{category}', 'edit')->name('edit');
+    //        Route::post('update/{category}', 'update')->name('update');
+    //        Route::post('delete/{category}', 'delete')->name('delete');
+    //    });
 
     Route::resource('categories', CategoryController::class);
 
@@ -197,17 +197,38 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/roles/{role}/permissions/sync', [RoleController::class, 'syncPermissions'])
         ->name('roles.permissions.sync');
 
+    Route::prefix('bank-accounts')->name('bank-accounts.')->controller(\App\Http\Controllers\BankAccountController::class)->group(function(){
+        Route::get('/', 'index')->name('index');
+        // create
+        Route::get('create', 'create')->name('create');
+        Route::get('edit/{bankAccount}', 'edit')->name('edit');
+        Route::post('store', 'store')->name('store');
+
+        // update
+        Route::put('{bankAccount}', 'update')->name('update');
+
+        // delete
+        Route::delete('{bankAccount}', 'destroy')->name('destroy');
+
+        // make default
+        Route::post('{bankAccount}/default', 'makeDefault')->name('default');
+
+        // JSON for invoice dropdown
+        Route::get('json', 'listJson')->name('json');
+    });
+
+
 });
 
 
 
 // routes/web.php
-Route::post('/switch-business', function(\Illuminate\Http\Request $r){
-    $r->validate(['business_id'=>'required|exists:businesses,id']);
-    abort_unless($r->user()->businesses()->where('business_id',$r->business_id)->exists(), 403);
-    session(['active_business_id'=>$r->business_id]);
-    return back()->with('success','Active business changed.');
-})->middleware('auth')->name('business.switch');
+    Route::post('/switch-business', function(\Illuminate\Http\Request $r){
+        $r->validate(['business_id'=>'required|exists:businesses,id']);
+        abort_unless($r->user()->businesses()->where('business_id',$r->business_id)->exists(), 403);
+        session(['active_business_id'=>$r->business_id]);
+        return back()->with('success','Active business changed.');
+    })->middleware('auth')->name('business.switch');
 
 
 require __DIR__.'/auth.php';
