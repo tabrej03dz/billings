@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\HomeController;
@@ -42,13 +43,24 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/no-business/whatsapp', [NoBusinessWhatsappController::class, 'index'])
         ->name('no-business.whatsapp');
 
+    Route::get('/no-business/whatsapp/drop', [NoBusinessWhatsappController::class, 'drop'])
+        ->name('no-business.whatsapp.drop');
+
     Route::post('/no-business/whatsapp/send-pdf', [NoBusinessWhatsappController::class, 'sendInvoiceWhatsapp'])
         ->name('no-business.send-pdf');
+
+    Route::get('/no-business/api-settings', [NoBusinessWhatsappController::class, 'apiSettings'])
+        ->name('no-business.api-settings');
 
     Route::post('/no-business/whatsapp/save-api', [NoBusinessWhatsappController::class, 'saveApi'])
         ->name('no-business.save-api');
 
     Route::get('send-invoice-whatsapp', [\App\Http\Controllers\InvoiceSendController::class, 'index'])->name('send-invoice-whatsapp.index');
+
+
+
+    Route::post('/no-business/send-pdf-dropzone', [NoBusinessWhatsappController::class, 'sendInvoiceWhatsappDropzone'])
+        ->name('no-business.send-pdf-dropzone');
 });
 
 
@@ -197,24 +209,19 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/roles/{role}/permissions/sync', [RoleController::class, 'syncPermissions'])
         ->name('roles.permissions.sync');
 
-    Route::prefix('bank-accounts')->name('bank-accounts.')->controller(\App\Http\Controllers\BankAccountController::class)->group(function(){
-        Route::get('/', 'index')->name('index');
-        // create
-        Route::get('create', 'create')->name('create');
-        Route::get('edit/{bankAccount}', 'edit')->name('edit');
-        Route::post('store', 'store')->name('store');
+    Route::prefix('bank-accounts')->name('bank-accounts.')->middleware(['auth'])->group(function () {
+        Route::get('/index/{business?}', [BankAccountController::class, 'index'])->name('index');
 
-        // update
-        Route::put('{bankAccount}', 'update')->name('update');
+        Route::get('/create/{business?}', [BankAccountController::class, 'create'])->name('create');
+        Route::post('/store/{business?}', [BankAccountController::class, 'store'])->name('store');
 
-        // delete
-        Route::delete('{bankAccount}', 'destroy')->name('destroy');
+        Route::get('/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('edit');
+        Route::put('/{bankAccount}', [BankAccountController::class, 'update'])->name('update');
 
-        // make default
-        Route::post('{bankAccount}/default', 'makeDefault')->name('default');
+        Route::delete('/{bankAccount}', [BankAccountController::class, 'destroy'])->name('destroy');
 
-        // JSON for invoice dropdown
-        Route::get('json', 'listJson')->name('json');
+        // Make default
+        Route::post('/{bankAccount}/default', [BankAccountController::class, 'makeDefault'])->name('default');
     });
 
 

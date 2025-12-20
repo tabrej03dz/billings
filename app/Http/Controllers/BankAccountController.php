@@ -3,168 +3,154 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Models\Business;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class BankAccountController extends Controller
 {
-    private function bid(Request $request): int
+    protected function resolveBusinessId(Request $request, $business = null): int
     {
+        // Priority: URL param -> user current_business_id -> session -> first business
+        if ($business) return (int) $business;
+
         $bid = $request->user()->current_business_id ?? session('active_business_id');
-        abort_unless($bid, 403, 'Active business not selected.');
-        return (int) $bid;
+        if ($bid) return (int) $bid;
+
+        $first = $request->user()->businesses()->pluck('businesses.id')->first();
+        abort_if(!$first, 403, 'No business attached.');
+        return (int) $first;
     }
 
-    public function index(Request $request)
+    public function index(Request $request, $business = null)
     {
-        $bid = $this->bid($request);
+        $bid = $this->resolveBusinessId($request, $business);
 
-        $banks = BankAccount::where('business_id', $bid)
+        $businessRow = Business::select('id','name','slug')->findOrFail($bid);
+
+        $bankAccounts = BankAccount::where('business_id', $bid)
             ->orderByDesc('is_default')
             ->orderByDesc('is_active')
-            ->orderByDesc('id')
-            ->get();
+            ->latest('id')
+            ->paginate(15);
 
-        return view('bank_accounts.index', compact('banks'));
+        return view('bank_accounts.index', compact('bankAccounts', 'businessRow'));
     }
 
-    public function create(Request $request)
+    public function create(Request $request, $business = null)
     {
-        $bid = $this->bid($request);
-        return view('bank_accounts.create');
+        $bid = $this->resolveBusinessId($request, $business);
+        $businessRow = Business::select('id','name','slug')->findOrFail($bid);
+
+        $bankAccount = new BankAccount();
+        return view('bank_accounts.create', compact('bankAccount', 'businessRow'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, $business = null)
     {
-        $bid = $this->bid($request);
+        $bid = $this->resolveBusinessId($request, $business);
 
         $data = $request->validate([
-            'label'          => ['nullable','string','max:120'],
-            'account_holder' => ['nullable','string','max:120'],
-            'account_no'     => ['nullable','string','max:50'],
+            'label'          => ['nullable','string','max:255'],
+            'account_holder' => ['nullable','string','max:255'],
+            'account_no'     => [
+                'nullable','string','max:255',
+                Rule::unique('bank_accounts','account_no')->where(fn($q)=>$q->where('business_id',$bid)),
+            ],
             'ifsc'           => ['nullable','string','max:20'],
             'bank_name'      => ['nullable','string','max:120'],
             'branch'         => ['nullable','string','max:120'],
-            'upi_id'         => ['nullable','string','max:120'],
-            'notes'          => ['nullable','string','max:2000'],
-            'is_default'     => ['nullable'],
+            'upi_id'         => [
+                'nullable','string','max:120',
+                Rule::unique('bank_accounts','upi_id')->where(fn($q)=>$q->where('business_id',$bid)),
+            ],
+            'notes'          => ['nullable','string'],
             'is_active'      => ['nullable'],
+            'is_default'     => ['nullable'],
         ]);
 
-        // ✅ At least one of UPI or Account No should exist
-        if (empty($data['upi_id']) && empty($data['account_no'])) {
-            return back()->withErrors(['upi_id' => 'UPI ID या Account Number में से कम से कम एक भरें.'])
-                ->withInput();
-        }
-
         $data['business_id'] = $bid;
-        $data['is_default'] = !empty($data['is_default']);
-        $data['is_active']  = array_key_exists('is_active', $data) ? !empty($data['is_active']) : true;
+        $data['is_active']   = $request->boolean('is_active', true);
+        $data['is_default']  = $request->boolean('is_default', false);
 
-        DB::transaction(function () use ($bid, &$data) {
-            // ✅ if default set, remove default from others
-            if ($data['is_default']) {
-                BankAccount::where('business_id', $bid)->update(['is_default' => 0]);
+        DB::transaction(function () use ($bid, $data) {
+            // If creating as default, reset other defaults
+            if (!empty($data['is_default'])) {
+                BankAccount::where('business_id', $bid)->update(['is_default' => false]);
             }
             BankAccount::create($data);
         });
 
-        return redirect()->back()->with('success', 'Bank account added.');
+        return redirect()->route('bank-accounts.index', $bid)->with('success', 'Bank account added successfully.');
     }
 
     public function edit(Request $request, BankAccount $bankAccount)
     {
-        $bid = $this->bid($request);
-        abort_unless((int)$bankAccount->business_id === $bid, 403);
+        $bid = (int) $bankAccount->business_id;
+        $businessRow = Business::select('id','name','slug')->findOrFail($bid);
 
-        return view('bank_accounts.edit', compact('bankAccount'));
+        return view('bank_accounts.edit', compact('bankAccount', 'businessRow'));
     }
 
     public function update(Request $request, BankAccount $bankAccount)
     {
-        $bid = $this->bid($request);
-        abort_unless((int)$bankAccount->business_id === $bid, 403);
+        $bid = (int) $bankAccount->business_id;
 
         $data = $request->validate([
-            'label'          => ['nullable','string','max:120'],
-            'account_holder' => ['nullable','string','max:120'],
-            'account_no'     => ['nullable','string','max:50'],
+            'label'          => ['nullable','string','max:255'],
+            'account_holder' => ['nullable','string','max:255'],
+            'account_no'     => [
+                'nullable','string','max:255',
+                Rule::unique('bank_accounts','account_no')
+                    ->where(fn($q)=>$q->where('business_id',$bid))
+                    ->ignore($bankAccount->id),
+            ],
             'ifsc'           => ['nullable','string','max:20'],
             'bank_name'      => ['nullable','string','max:120'],
             'branch'         => ['nullable','string','max:120'],
-            'upi_id'         => ['nullable','string','max:120'],
-            'notes'          => ['nullable','string','max:2000'],
-            'is_default'     => ['nullable'],
+            'upi_id'         => [
+                'nullable','string','max:120',
+                Rule::unique('bank_accounts','upi_id')
+                    ->where(fn($q)=>$q->where('business_id',$bid))
+                    ->ignore($bankAccount->id),
+            ],
+            'notes'          => ['nullable','string'],
             'is_active'      => ['nullable'],
+            'is_default'     => ['nullable'],
         ]);
 
-        if (empty($data['upi_id']) && empty($data['account_no'])) {
-            return back()->withErrors(['upi_id' => 'UPI ID या Account Number में से कम से कम एक भरें.'])
-                ->withInput();
-        }
-
-        $data['is_default'] = !empty($data['is_default']);
-        $data['is_active']  = array_key_exists('is_active', $data) ? !empty($data['is_active']) : true;
+        $data['is_active']  = $request->boolean('is_active', true);
+        $data['is_default'] = $request->boolean('is_default', false);
 
         DB::transaction(function () use ($bid, $bankAccount, $data) {
-            if ($data['is_default']) {
-                BankAccount::where('business_id', $bid)->update(['is_default' => 0]);
+            if (!empty($data['is_default'])) {
+                BankAccount::where('business_id', $bid)->update(['is_default' => false]);
             }
             $bankAccount->update($data);
         });
 
-        return redirect()->back()->with('success', 'Bank account updated.');
+        return redirect()->route('bank-accounts.index', $bid)->with('success', 'Bank account updated successfully.');
     }
 
     public function destroy(Request $request, BankAccount $bankAccount)
     {
-        $bid = $this->bid($request);
-        abort_unless((int)$bankAccount->business_id === $bid, 403);
+        $bid = (int) $bankAccount->business_id;
 
         $bankAccount->delete();
 
-        return redirect()->back()->with('success', 'Bank account removed.');
+        return redirect()->route('bank-accounts.index', $bid)->with('success', 'Bank account deleted successfully.');
     }
 
-    // ✅ Default set (quick action button)
     public function makeDefault(Request $request, BankAccount $bankAccount)
     {
-        $bid = $this->bid($request);
-        abort_unless((int)$bankAccount->business_id === $bid, 403);
+        $bid = (int) $bankAccount->business_id;
 
         DB::transaction(function () use ($bid, $bankAccount) {
-            BankAccount::where('business_id', $bid)->update(['is_default' => 0]);
-            $bankAccount->update(['is_default' => 1, 'is_active' => 1]);
+            BankAccount::where('business_id', $bid)->update(['is_default' => false]);
+            $bankAccount->update(['is_default' => true, 'is_active' => true]);
         });
 
-        return redirect()->back()->with('success', 'Default bank updated.');
-    }
-
-    // ✅ JSON list for invoice dropdown
-    public function listJson(Request $request)
-    {
-        $bid = $this->bid($request);
-
-        $banks = BankAccount::where('business_id', $bid)
-            ->where('is_active', 1)
-            ->orderByDesc('is_default')
-            ->orderByDesc('id')
-            ->get(['id','label','account_holder','account_no','ifsc','upi_id','bank_name']);
-
-        return response()->json([
-            'banks' => $banks->map(function($b){
-                $title = $b->label ?: ($b->bank_name ?: ($b->account_holder ?: 'Bank'));
-                $line  = $b->upi_id ?: $b->account_no;
-                return [
-                    'id' => $b->id,
-                    'title' => $title,
-                    'line' => $line,
-                    'upi_id' => $b->upi_id,
-                    'account_no' => $b->account_no,
-                    'ifsc' => $b->ifsc,
-                    'account_holder' => $b->account_holder,
-                ];
-            })->values()
-        ]);
+        return redirect()->route('bank-accounts.index', $bid)->with('success', 'Default bank set successfully.');
     }
 }

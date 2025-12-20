@@ -1,171 +1,109 @@
-@extends('backend.layout.root', ['title' => 'Bank Accounts'])
+@php
+    $inputClass = "mt-1 w-full rounded-xl border px-3 py-2 text-sm
+        bg-white text-gray-900 border-gray-300
+        placeholder:text-gray-400
+        focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
+        dark:bg-neutral-800 dark:text-white dark:border-neutral-700 dark:placeholder:text-neutral-400";
 
-@section('content')
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+    $labelClass = "text-sm font-semibold text-gray-700 dark:text-neutral-200";
+    $hintClass  = "text-xs text-gray-500 dark:text-neutral-400 mt-1";
+@endphp
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@if($errors->any())
+    <div class="p-3 rounded-xl bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/10 dark:text-red-200 dark:border-red-500/30">
+        <ul class="list-disc ml-5">
+            @foreach($errors->all() as $e) <li>{{ $e }}</li> @endforeach
+        </ul>
+    </div>
+@endif
 
-    <div class="max-w-7xl mx-auto px-3 py-5">
+<div class="grid md:grid-cols-2 gap-5">
 
-        {{-- Flash --}}
-        @if(session('success'))
-            <div class="mb-4 rounded-xl border border-green-200 bg-green-50 text-green-800 px-4 py-3">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if($errors->any())
-            <div class="mb-4 rounded-xl border border-red-200 bg-red-50 text-red-800 px-4 py-3">
-                <ul class="list-disc ml-5">
-                    @foreach($errors->all() as $e) <li>{{ $e }}</li> @endforeach
-                </ul>
-            </div>
-        @endif
-
-        {{-- Header --}}
-        <div class="bg-white rounded-2xl shadow p-4 sm:p-5 mb-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div>
-                <h1 class="text-xl font-extrabold text-slate-900">Business Bank Accounts</h1>
-                <p class="text-sm text-slate-500 mt-1">Invoice “Payment Received In” dropdown yahin se manage hoga.</p>
-            </div>
-
-            <a href="{{ route('bank-accounts.create') }}"
-               class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700">
-                + Add Bank
-            </a>
-        </div>
-
-        {{-- Table --}}
-        <div class="bg-white rounded-2xl shadow overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-slate-50">
-                    <tr class="text-left text-xs font-extrabold text-slate-600">
-                        <th class="px-4 py-3">Label</th>
-                        <th class="px-4 py-3">UPI / Account</th>
-                        <th class="px-4 py-3">Bank</th>
-                        <th class="px-4 py-3">Status</th>
-                        <th class="px-4 py-3 text-right">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                    @forelse($banks as $b)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-4 py-3">
-                                <div class="font-extrabold text-slate-900">
-                                    {{ $b->label ?: ($b->bank_name ?: 'Bank') }}
-                                </div>
-                                <div class="text-xs text-slate-500">
-                                    Holder: {{ $b->account_holder ?: '-' }}
-                                    @if($b->ifsc) • IFSC: {{ $b->ifsc }} @endif
-                                </div>
-
-                                @if($b->is_default)
-                                    <span class="inline-flex mt-2 px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[11px] font-extrabold">
-                                    DEFAULT
-                                </span>
-                                @endif
-                            </td>
-
-                            <td class="px-4 py-3">
-                                <div class="font-bold text-slate-900">
-                                    {{ $b->upi_id ?: ($b->account_no ?: '-') }}
-                                </div>
-                                <div class="text-xs text-slate-500">
-                                    {{ $b->upi_id ? 'UPI' : 'Account No.' }}
-                                </div>
-                            </td>
-
-                            <td class="px-4 py-3">
-                                <div class="font-bold text-slate-900">{{ $b->bank_name ?: '-' }}</div>
-                                <div class="text-xs text-slate-500">{{ $b->branch ?: '' }}</div>
-                            </td>
-
-                            <td class="px-4 py-3">
-                                @if($b->is_active)
-                                    <span class="px-2 py-1 rounded-lg bg-blue-100 text-blue-700 text-[11px] font-extrabold">ACTIVE</span>
-                                @else
-                                    <span class="px-2 py-1 rounded-lg bg-slate-200 text-slate-700 text-[11px] font-extrabold">INACTIVE</span>
-                                @endif
-                            </td>
-
-                            <td class="px-4 py-3">
-                                <div class="flex gap-2 justify-end flex-wrap">
-
-                                    <a href="{{ route('bank-accounts.edit', $b->id) }}"
-                                       class="px-3 py-2 rounded-xl border border-slate-200 font-bold hover:bg-slate-50">
-                                        Edit
-                                    </a>
-
-                                    @if(!$b->is_default)
-                                        <form method="POST" action="{{ route('bank-accounts.default', $b->id) }}"
-                                              class="makeDefaultForm">
-                                            @csrf
-                                            <button type="submit"
-                                                    class="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700">
-                                                Make Default
-                                            </button>
-                                        </form>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('bank-accounts.destroy', $b->id) }}"
-                                          class="deleteForm">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                                class="px-3 py-2 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-4 py-10 text-center text-slate-500">
-                                No bank accounts found. <a class="text-blue-600 font-extrabold" href="{{ route('bank-accounts.create') }}">Add one</a>
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+    <div>
+        <label class="{{ $labelClass }}">Label</label>
+        <input type="text" name="label"
+               value="{{ old('label', $bankAccount->label) }}"
+               placeholder="Main UPI / HDFC Current"
+               class="{{ $inputClass }}">
+        <p class="{{ $hintClass }}">Example: Main UPI / HDFC Current</p>
     </div>
 
-    <script>
-        document.querySelectorAll('.deleteForm').forEach(form => {
-            form.addEventListener('submit', function(e){
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Delete Bank Account?',
-                    text: 'This action cannot be undone.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, delete',
-                    cancelButtonText: 'Cancel',
-                }).then((r) => {
-                    if(r.isConfirmed) form.submit();
-                });
-            });
-        });
+    <div>
+        <label class="{{ $labelClass }}">Account Holder</label>
+        <input type="text" name="account_holder"
+               value="{{ old('account_holder', $bankAccount->account_holder) }}"
+               placeholder="Ravi Pandey / Business Name"
+               class="{{ $inputClass }}">
+    </div>
 
-        document.querySelectorAll('.makeDefaultForm').forEach(form => {
-            form.addEventListener('submit', function(e){
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Set as Default?',
-                    text: 'This will replace existing default bank.',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, set default',
-                    cancelButtonText: 'Cancel',
-                }).then((r) => {
-                    if(r.isConfirmed) form.submit();
-                });
-            });
-        });
-    </script>
-@endsection
+    <div>
+        <label class="{{ $labelClass }}">Account No</label>
+        <input type="text" name="account_no"
+               value="{{ old('account_no', $bankAccount->account_no) }}"
+               placeholder="1234 5678 9012"
+               class="{{ $inputClass }}">
+    </div>
+
+    <div>
+        <label class="{{ $labelClass }}">IFSC</label>
+        <input type="text" name="ifsc"
+               value="{{ old('ifsc', $bankAccount->ifsc) }}"
+               placeholder="HDFC0001234"
+               class="{{ $inputClass }}">
+    </div>
+
+    <div>
+        <label class="{{ $labelClass }}">Bank Name</label>
+        <input type="text" name="bank_name"
+               value="{{ old('bank_name', $bankAccount->bank_name) }}"
+               placeholder="HDFC / SBI / ICICI"
+               class="{{ $inputClass }}">
+    </div>
+
+    <div>
+        <label class="{{ $labelClass }}">Branch</label>
+        <input type="text" name="branch"
+               value="{{ old('branch', $bankAccount->branch) }}"
+               placeholder="Lakhanpur / Panki / Main Branch"
+               class="{{ $inputClass }}">
+    </div>
+
+    <div class="md:col-span-2">
+        <label class="{{ $labelClass }}">UPI ID</label>
+        <input type="text" name="upi_id"
+               value="{{ old('upi_id', $bankAccount->upi_id) }}"
+               placeholder="name@upi"
+               class="{{ $inputClass }}">
+        <p class="{{ $hintClass }}">Example: name@upi</p>
+    </div>
+
+    <div class="md:col-span-2">
+        <label class="{{ $labelClass }}">Notes</label>
+        <textarea name="notes" rows="4"
+                  placeholder="Optional notes..."
+                  class="{{ $inputClass }}">{{ old('notes', $bankAccount->notes) }}</textarea>
+    </div>
+
+    <div class="md:col-span-2 flex flex-wrap gap-8 pt-1">
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200">
+            <input type="checkbox" name="is_active" value="1"
+                   class="rounded border-gray-300 dark:border-neutral-700"
+                {{ old('is_active', $bankAccount->is_active ?? true) ? 'checked' : '' }}>
+            <span>Active</span>
+        </label>
+
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200">
+            <input type="checkbox" name="is_default" value="1"
+                   class="rounded border-gray-300 dark:border-neutral-700"
+                {{ old('is_default', $bankAccount->is_default ?? false) ? 'checked' : '' }}>
+            <span>Make Default</span>
+        </label>
+    </div>
+</div>
+
+<div class="flex items-center justify-end gap-2 pt-5">
+    <button type="submit"
+            class="px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">
+        Save
+    </button>
+</div>
