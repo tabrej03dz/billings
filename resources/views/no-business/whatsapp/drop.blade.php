@@ -70,6 +70,22 @@
         </div>
 
         <style>
+  #phoneInput{
+    color:#0f172a !important;
+    background:#fff !important;
+    caret-color:#0f172a !important;
+    -webkit-text-fill-color:#0f172a !important;
+    opacity:1 !important;
+  }
+  #phoneInput::placeholder{
+    color:#94a3b8 !important;
+    -webkit-text-fill-color:#94a3b8 !important;
+    opacity:1 !important;
+  }
+</style>
+
+        <style>
+
             .dz-message{ margin:0!important; }
             .dropzone{
                 border:2px dashed #cbd5e1!important;
@@ -152,15 +168,18 @@
                 </p>
 
                 {{-- PHONE INPUT (optional) --}}
-{{--                <div class="space-y-1">--}}
-{{--                    <label class="block text-xs font-medium text-slate-700">WhatsApp Number (optional)</label>--}}
-{{--                    <input type="text" id="phoneInput"--}}
-{{--                           placeholder="e.g. 9198XXXXXXXX (optional)"--}}
-{{--                           class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">--}}
-{{--                    <p class="text-[10px] text-slate-400">--}}
-{{--                        Agar blank rakho to PDF file name se number niklega (10 digit => 91 add).--}}
-{{--                    </p>--}}
-{{--                </div>--}}
+               <div class="space-y-1">
+                   <label class="block text-xs font-medium text-slate-700">WhatsApp Number (optional)</label>
+                  <input type="text" id="phoneInput"
+  placeholder="e.g. 9198XXXXXXXX (optional)"
+  class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white
+         text-slate-900 placeholder:text-slate-400
+         focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+
+                   <p class="text-[10px] text-slate-400">
+                       Agar blank rakho to PDF file name se number niklega (10 digit => 91 add).
+                   </p>
+               </div>
 
                 {{-- DROPZONE --}}
                 <div id="pdfDropzone" class="dropzone rounded-xl">
