@@ -69,7 +69,7 @@
             </div>
         </div>
 
-        <style>
+        {{-- <style>
   #phoneInput{
     color:#0f172a !important;
     background:#fff !important;
@@ -82,7 +82,7 @@
     -webkit-text-fill-color:#94a3b8 !important;
     opacity:1 !important;
   }
-</style>
+</style> --}}
 
         <style>
 
