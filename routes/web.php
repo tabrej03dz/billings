@@ -224,6 +224,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{bankAccount}/default', [BankAccountController::class, 'makeDefault'])->name('default');
     });
 
+    Route::prefix('invoice-sends')->name('invoice-sends.')->controller(\App\Http\Controllers\InvoiceSendController::class)->group(function(){
+       Route::get('/', 'index')->name('index');
+    });
+
 
 });
 

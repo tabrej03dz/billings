@@ -153,6 +153,13 @@
                     </flux:navlist.group>
                 </flux:navlist>
             @endcan
+            @can('show invoice sends')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('invoice-sends.index')" :current="request()->routeIs('invoice-sends.index')" wire:navigate>{{ __('Invoice Sends') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+            @endcan
 
 
 
