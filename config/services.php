@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'whatapi' => [
+        'webhook_url' => env('WHATAPI_WEBHOOK_URL'),
+    ],
+
 ];

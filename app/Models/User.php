@@ -67,4 +67,8 @@ class User extends Authenticatable
             ->withPivot('role')
             ->withTimestamps();
     }
+
+    public function api(){
+        return $this->hasOne(ApiKey::class, 'user_id');
+    }
 }

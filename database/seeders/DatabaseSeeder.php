@@ -82,6 +82,9 @@ class DatabaseSeeder extends Seeder
         Permission::create(['name' => 'show metal rates']);
         Permission::create(['name' => 'show purchases']);
         Permission::create(['name' => 'show inventory']);
+        Permission::create(['name' => 'show invoice sends']);
+        Permission::create(['name' => 'show wishes api field']);
+        Permission::create(['name' => 'show birthday records']);
 
 
 

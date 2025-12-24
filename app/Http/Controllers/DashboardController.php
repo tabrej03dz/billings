@@ -8,6 +8,7 @@ use App\Models\MetalRate;
 use App\Models\Purchase;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class DashboardController extends Controller
 {
@@ -85,6 +86,7 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
+//        dd(Hash::make('NVst@050868'));
         $user = $request->user();
 
         if (!$user) {

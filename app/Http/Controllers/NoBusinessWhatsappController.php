@@ -38,6 +38,8 @@ class NoBusinessWhatsappController extends Controller
 
         $data = $request->validate([
             'base_url' => ['required', 'string', 'max:255'],
+            'wishes_api' => ['nullable', 'string', 'max:255'],
+            'wish_at' => ['nullable'],
             'key'      => ['nullable', 'string', 'max:255'],
             'secret'   => ['nullable', 'string', 'max:255'],
         ]);
@@ -604,11 +606,9 @@ class NoBusinessWhatsappController extends Controller
 
     public function apiSettings(Request $request)
     {
-        $user = $request->user();
+        $user = auth()->user();
 
-        $apiKey = ApiKey::where('user_id', $user->id)
-            ->latest('id')
-            ->first();
+        $apiKey = ApiKey::withoutGlobalScopes()->where('user_id', $user->id)->first();
 
         return view('no_business.api_settings', compact('apiKey'));
     }

@@ -18,8 +18,16 @@ class InvoiceSendController extends Controller
         $from    = $request->get('from') ?: $monthStart->toDateString();
         $to      = $request->get('to')   ?: $today->toDateString();
 
+        $authUser = $request->user();
+
         $query = InvoiceSend::with('user')
             ->whereBetween('sent_at', [$from.' 00:00:00', $to.' 23:59:59']);
+
+        // ✅ Role-based visibility
+        // Super admin => all records, others => only own
+        if (! $authUser->hasRole('super admin')) {
+            $query->where('user_id', $authUser->id);
+        }
 
         if ($channel) {
             $query->where('channel', $channel);
@@ -47,4 +55,5 @@ class InvoiceSendController extends Controller
             'channel'
         ));
     }
+
 }

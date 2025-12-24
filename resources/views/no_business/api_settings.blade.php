@@ -2,7 +2,7 @@
     <div class="max-w-4xl mx-auto py-8 px-3 sm:px-4 lg:px-6 space-y-6">
 
         {{-- header --}}
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 shadow-lg shadow-slate-900/40 flex flex-wrap items-center justify-between gap-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 shadow-lg shadow-black/30 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-sky-500 text-white shadow-lg">
                     <i class="fas fa-cog text-sm"></i>
@@ -22,13 +22,13 @@
 
         {{-- alerts --}}
         @if(session('success'))
-            <div class="rounded-xl bg-emerald-50/90 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+            <div class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm text-emerald-200">
                 {{ session('success') }}
             </div>
         @endif
 
         @if($errors->any())
-            <div class="rounded-xl bg-red-50/90 border border-red-200 px-4 py-3 text-sm text-red-800 space-y-1">
+            <div class="rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-3 text-sm text-rose-200 space-y-1">
                 @foreach($errors->all() as $error)
                     <div>• {{ $error }}</div>
                 @endforeach
@@ -36,19 +36,19 @@
         @endif
 
         {{-- form card --}}
-        <div class="bg-white/95 rounded-2xl border border-slate-200 shadow-md shadow-slate-900/5 p-4 sm:p-6 space-y-4">
+        <div class="bg-slate-900/60 backdrop-blur rounded-2xl border border-slate-800 shadow-md shadow-black/30 p-4 sm:p-6 space-y-4">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="font-semibold text-slate-900">Configure WhatsApp Provider</h2>
-                    <p class="text-xs text-slate-500">Aapki settings user level par save hongi (no business).</p>
+                    <h2 class="font-semibold text-white">Configure WhatsApp Provider</h2>
+                    <p class="text-xs text-slate-400">Aapki settings user level par save hongi (no business).</p>
                 </div>
 
                 @if($apiKey ?? false)
-                    <span class="text-[11px] px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="text-[11px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-200 border border-emerald-500/25">
                         Already configured
                     </span>
                 @else
-                    <span class="text-[11px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    <span class="text-[11px] px-2 py-1 rounded-full bg-amber-500/10 text-amber-200 border border-amber-500/25">
                         Not set
                     </span>
                 @endif
@@ -58,27 +58,51 @@
                 @csrf
 
                 <div class="space-y-1">
-                    <label class="block text-xs font-medium text-slate-700">
-                        Base URL <span class="text-red-500">*</span>
+                    <label class="block text-xs font-medium text-slate-200">
+                        Base URL <span class="text-rose-400">*</span>
                     </label>
                     <input type="text" name="base_url"
                            placeholder="https://your-whatsapp-provider.com/api"
-                           class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-950/60 text-slate-100 placeholder:text-slate-500
+                                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            value="{{ old('base_url', $apiKey->base_url ?? '') }}">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                    {{-- Wishes API --}}
+                    <div class="sm:col-span-4 space-y-1">
+                        <label class="block text-xs font-medium text-slate-200">Wishes API</label>
+                        <input type="text" name="wishes_api"
+                               placeholder="https://your-whatsapp-provider.com/api"
+                               class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-950/60 text-slate-100 placeholder:text-slate-500
+                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               value="{{ old('wishes_api', $apiKey->wishes_api ?? '') }}">
+                    </div>
+
+                    {{-- Wishes Time --}}
+                    <div class="sm:col-span-1 space-y-1">
+                        <label class="block text-xs font-medium text-slate-200">Wishes Time</label>
+                        <input type="time" name="wish_at"
+                               class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-950/60 text-slate-100
+                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               value="{{ old('wish_at', $apiKey->wish_at ?? '') }}">
+                    </div>
                 </div>
 
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
-                        <label class="block text-xs font-medium text-slate-700">API Key</label>
+                        <label class="block text-xs font-medium text-slate-200">API Key</label>
                         <input type="text" name="key"
-                               class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-950/60 text-slate-100 placeholder:text-slate-500
+                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                value="{{ old('key', $apiKey->key ?? '') }}">
                     </div>
 
                     <div class="space-y-1">
-                        <label class="block text-xs font-medium text-slate-700">API Secret / Token</label>
+                        <label class="block text-xs font-medium text-slate-200">API Secret / Token</label>
                         <input type="text" name="secret"
-                               class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-950/60 text-slate-100 placeholder:text-slate-500
+                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                value="{{ old('secret', $apiKey->secret ?? '') }}">
                         <p class="text-[10px] text-slate-400">
                             Agar provider sirf ek token deta hai to use yahan daal sakte ho.
@@ -88,26 +112,13 @@
 
                 <div class="flex flex-wrap gap-2 pt-1">
                     <button type="submit"
-                            class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800 focus:ring-offset-1 focus:ring-offset-slate-100">
+                            class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500
+                                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 focus:ring-offset-slate-950">
                         <i class="fas fa-save mr-2 text-xs"></i>
                         Save Settings
                     </button>
-
-{{--                    @if($apiKey ?? false)--}}
-{{--                        <form action="{{ route('no-business.delete-api') }}" method="POST"--}}
-{{--                              onsubmit="return confirm('API Settings delete karni hai?');">--}}
-{{--                            @csrf--}}
-{{--                            @method('DELETE')--}}
-{{--                            <button type="submit"--}}
-{{--                                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100">--}}
-{{--                                <i class="fas fa-trash mr-2 text-xs"></i>--}}
-{{--                                Remove Settings--}}
-{{--                            </button>--}}
-{{--                        </form>--}}
-{{--                    @endif--}}
                 </div>
             </form>
         </div>
-
     </div>
 </x-layouts.app>

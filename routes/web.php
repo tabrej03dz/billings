@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BirthdayRecordController;
+use App\Http\Controllers\BirthdayWishLogController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\HomeController;
@@ -61,6 +63,17 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/no-business/send-pdf-dropzone', [NoBusinessWhatsappController::class, 'sendInvoiceWhatsappDropzone'])
         ->name('no-business.send-pdf-dropzone');
+
+
+
+    Route::resource('birthday-wish-logs', BirthdayWishLogController::class)
+        ->only(['index','show','store','update','destroy']);
+
+    Route::post('birthday-wish-logs/{birthdayWishLog}/success', [BirthdayWishLogController::class, 'markSuccess'])
+        ->name('birthday-wish-logs.success');
+
+    Route::post('birthday-wish-logs/{birthdayWishLog}/failed', [BirthdayWishLogController::class, 'markFailed'])
+        ->name('birthday-wish-logs.failed');
 });
 
 
@@ -227,6 +240,15 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('invoice-sends')->name('invoice-sends.')->controller(\App\Http\Controllers\InvoiceSendController::class)->group(function(){
        Route::get('/', 'index')->name('index');
     });
+
+
+    Route::get('/birthday-records/import', [BirthdayRecordController::class, 'importForm'])
+        ->name('birthday-records.importForm');
+
+    Route::post('/birthday-records/import', [BirthdayRecordController::class, 'import'])
+        ->name('birthday-records.import');
+
+    Route::resource('/birthday-records', BirthdayRecordController::class);
 
 
 });
