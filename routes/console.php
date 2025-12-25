@@ -2,6 +2,7 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -19,3 +20,7 @@ Schedule::command('app:send-birthday-wishes')
     ->everyMinute()
     ->timezone('Asia/Kolkata')
     ->withoutOverlapping();
+
+Schedule::call(function () {
+    Log::info('SCHEDULER HIT at '.now());
+})->everyMinute();
