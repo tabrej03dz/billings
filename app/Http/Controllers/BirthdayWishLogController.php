@@ -8,14 +8,23 @@ use Illuminate\Http\Request;
 
 class BirthdayWishLogController extends Controller
 {
+
     public function index(Request $request)
     {
+        $user = $request->user();
+
         $q = BirthdayWishLog::query()
-            // relations agar banaye ho to uncomment:
-            // ->with(['birthdayRecord', 'business'])
             ->latest('id');
 
-        // ✅ Filters
+        // 🔐 ROLE BASED ACCESS
+        if (!$user->hasRole('super admin')) {
+            $q->whereHas('record', function ($qr) use ($user) {
+                $qr->where('user_id', $user->id);
+            });
+        }
+
+        // ================= FILTERS =================
+
         if ($request->filled('business_id')) {
             $q->where('business_id', $request->business_id);
         }
@@ -25,15 +34,14 @@ class BirthdayWishLogController extends Controller
         }
 
         if ($request->filled('phone')) {
-            $phone = trim($request->phone);
-            $q->where('phone', 'like', "%{$phone}%");
+            $q->where('phone', 'like', '%'.trim($request->phone).'%');
         }
 
         if ($request->filled('status')) {
             $q->where('status', $request->status); // pending/success/failed
         }
 
-        // date filter (wish_date)
+        // 📅 wish_date filter
         $from = $request->filled('from') ? Carbon::parse($request->from)->toDateString() : null;
         $to   = $request->filled('to')   ? Carbon::parse($request->to)->toDateString()   : null;
 
@@ -45,23 +53,18 @@ class BirthdayWishLogController extends Controller
             $q->whereDate('wish_date', '<=', $to);
         }
 
-        // year filter
         if ($request->filled('wish_year')) {
-            $q->where('wish_year', (int) $request->wish_year);
+            $q->where('wish_year', (int)$request->wish_year);
         }
 
-        // per page
-        $perPage = (int) ($request->get('per_page', 50));
-        $perPage = max(1, min(200, $perPage));
+        // pagination
+        $perPage = max(1, min(200, (int)$request->get('per_page', 50)));
 
         $logs = $q->paginate($perPage)->withQueryString();
 
-        // If you want JSON API:
-        // return response()->json($logs);
-
-        // If blade view:
         return view('birthday_wish_logs.index', compact('logs'));
     }
+
 
     /**
      * GET /birthday-wish-logs/{log}

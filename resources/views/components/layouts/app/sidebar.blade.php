@@ -163,7 +163,7 @@
             @can('show birthday records')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">
-                        <flux:navlist.item icon="home" :href="route('birthday-records.index')" :current="request()->routeIs('birthday-records.index')" wire:navigate>{{ __('Invoice Sends') }}</flux:navlist.item>
+                        <flux:navlist.item icon="home" :href="route('birthday-records.index')" :current="request()->routeIs('birthday-records.index')" wire:navigate>{{ __('Birthday Records') }}</flux:navlist.item>
                     </flux:navlist.group>
                 </flux:navlist>
             @endcan
@@ -171,7 +171,7 @@
             @can('show wishes logs')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">
-                        <flux:navlist.item icon="home" :href="route('birthday-wish-logs.index')" :current="request()->routeIs('birthday-wish-logs.index')" wire:navigate>{{ __('Invoice Sends') }}</flux:navlist.item>
+                        <flux:navlist.item icon="home" :href="route('birthday-wish-logs.index')" :current="request()->routeIs('birthday-wish-logs.index')" wire:navigate>{{ __('Wishes logs') }}</flux:navlist.item>
                     </flux:navlist.group>
                 </flux:navlist>
             @endcan

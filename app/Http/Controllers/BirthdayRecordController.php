@@ -15,11 +15,19 @@ class BirthdayRecordController extends Controller
     // ✅ List + Search + Filter
     public function index(Request $request)
     {
+        $user = $request->user();
+
         $q = BirthdayRecord::query();
 
-        // optional: sirf current user ke business ke records
-        // $q->where('business_id', auth()->user()->business_id);
+        // ✅ Role based access
+        if (!$user->hasRole('super_admin')) {
+            // ✅ normal roles: only own created records
+            // (use whichever column you have: created_by OR user_id)
+            $q->where('user_id', $user->id);
+            // or: $q->where('user_id', $user->id);
+        }
 
+        // ✅ Search
         if ($request->filled('search')) {
             $s = trim($request->search);
             $q->where(function($qq) use ($s){
@@ -28,6 +36,7 @@ class BirthdayRecordController extends Controller
             });
         }
 
+        // ✅ DOB filters
         if ($request->filled('dob_from')) {
             $q->whereDate('date_of_birth', '>=', $request->dob_from);
         }
@@ -39,6 +48,7 @@ class BirthdayRecordController extends Controller
 
         return view('birthday_records.index', compact('records'));
     }
+
 
     public function create()
     {
