@@ -8,7 +8,14 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+//Schedule::command('app:send-birthday-wishes')
+//    ->dailyAt('07:00')   // morning 9 baje
+//    ->timezone('Asia/Kolkata')
+//    ->withoutOverlapping();
+
+
+
 Schedule::command('app:send-birthday-wishes')
-    ->dailyAt('07:00')   // morning 9 baje
+    ->everyMinute()
     ->timezone('Asia/Kolkata')
     ->withoutOverlapping();
