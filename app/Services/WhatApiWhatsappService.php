@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatApiWhatsappService
 {
@@ -19,20 +20,24 @@ class WhatApiWhatsappService
 
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
-            'to'      => $to,
-            'message' => $message,
+            'number'      => $to,
             'pdf' => 'https://post.realvictorygroups.com/storage/images/2025-12-20/Jewellery/BrckLBbXfHxGdR8cOA8xj6jKxPJAaR77Dr0waMZM.jpg',
         ];
 
-        $res = Http::timeout(60)
-            ->withoutVerifying()   // 🔴 SSL verification OFF
-            ->acceptJson()
-            ->post($url, $payload);
+        Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
+
+        $res = Http::timeout(60)->withoutVerifying()->acceptJson()->post($url, $payload);
+
+        Log::info('WA WEBHOOK RES', [
+            'status' => $res->status(),
+            'body'   => $res->body(),
+        ]);
 
         return [
-            'ok' => $res->successful(),
+            'ok'     => $res->successful(),
             'status' => $res->status(),
-            'body' => $res->body(),
+            'body'   => $res->body(),
         ];
+
     }
 }
