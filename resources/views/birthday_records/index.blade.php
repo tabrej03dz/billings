@@ -38,39 +38,61 @@
         </div>
 
         {{-- Filters --}}
-        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900">
-            <div>
-                <label class="text-xs text-gray-600 dark:text-gray-400">Search (Name/Phone)</label>
-                <input type="text" name="search" value="{{ request('search') }}"
-                       class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                       placeholder="e.g. Rahul / 9876...">
-            </div>
+            {{-- Filters --}}
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900">
 
-            <div>
-                <label class="text-xs text-gray-600 dark:text-gray-400">DOB From</label>
-                <input type="date" name="dob_from" value="{{ request('dob_from') }}"
-                       class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
+                <div class="md:col-span-2">
+                    <label class="text-xs text-gray-600 dark:text-gray-400">Search (Name/Phone)</label>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="e.g. Rahul / 9876...">
+                </div>
 
-            <div>
-                <label class="text-xs text-gray-600 dark:text-gray-400">DOB To</label>
-                <input type="date" name="dob_to" value="{{ request('dob_to') }}"
-                       class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-            </div>
+                <div>
+                    <label class="text-xs text-gray-600 dark:text-gray-400">Month</label>
+                    <select name="month"
+                            class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All</option>
+                        @foreach(range(1,12) as $m)
+                            <option value="{{ $m }}" @selected((int)request('month') === $m)>
+                                {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div class="flex items-end gap-2">
-                <button type="submit"
-                        class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
-                    Apply
-                </button>
-                <a href="{{ route('birthday-records.index') }}"
-                   class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-800 dark:text-white bg-gray-100 dark:bg-neutral-800 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 border border-gray-200 dark:border-gray-700">
-                    Reset
-                </a>
-            </div>
-        </form>
+                <div>
+                    <label class="text-xs text-gray-600 dark:text-gray-400">Day</label>
+                    <select name="day"
+                            class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">All</option>
+                        @foreach(range(1,31) as $d)
+                            <option value="{{ $d }}" @selected((int)request('day') === $d)>{{ $d }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-        {{-- Table --}}
+                <div>
+                    <label class="text-xs text-gray-600 dark:text-gray-400">Upcoming in days</label>
+                    <input type="number" min="1" max="365" name="upcoming_days" value="{{ request('upcoming_days') }}"
+                           class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="e.g. 30">
+                </div>
+
+
+                <div class="flex items-end gap-2">
+                    <button type="submit"
+                            class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                        Apply
+                    </button>
+                    <a href="{{ route('birthday-records.index') }}"
+                       class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-gray-800 dark:text-white bg-gray-100 dark:bg-neutral-800 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 border border-gray-200 dark:border-gray-700">
+                        Reset
+                    </a>
+                </div>
+            </form>
+
+            {{-- Table --}}
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                 <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
@@ -86,9 +108,29 @@
                 <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
                 @forelse ($records as $r)
                     <tr>
+{{--                        <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">--}}
+{{--                            {{ $r->name ?? '-' }}--}}
+{{--                        </td>--}}
                         <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">
-                            {{ $r->name ?? '-' }}
+                            <div class="flex items-center gap-2">
+                                <span>{{ $r->name ?? '-' }}</span>
+
+                                @php
+                                    $today = \Carbon\Carbon::today();
+                                    $dob = $r->date_of_birth ? \Carbon\Carbon::parse($r->date_of_birth) : null;
+                                    $next = $dob ? $dob->copy()->year($today->year) : null;
+                                    if($next && $next->lt($today)) $next->addYear();
+                                    $daysLeft = $next ? $today->diffInDays($next, false) : null;
+                                @endphp
+
+                                @if($daysLeft !== null && $daysLeft >= 0 && $daysLeft <= 30)
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
+                                        Upcoming {{ $daysLeft }}d
+                                    </span>
+                                @endif
+                            </div>
                         </td>
+
                         <td class="px-6 py-3">
                             {{ $r->phone }}
                         </td>

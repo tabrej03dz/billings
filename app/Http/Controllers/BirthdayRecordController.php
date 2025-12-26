@@ -13,30 +13,167 @@ use Maatwebsite\Excel\Facades\Excel;
 class BirthdayRecordController extends Controller
 {
     // ✅ List + Search + Filter
+//    public function index(Request $request)
+//    {
+//        $user = $request->user();
+//
+//        $q = BirthdayRecord::query();
+//
+//        // ✅ Role based access
+//        if (!$user->hasRole('super admin')) {
+//            // ✅ normal roles: only own created records
+//            // (use whichever column you have: created_by OR user_id)
+//            $q->where('user_id', $user->id);
+//            // or: $q->where('user_id', $user->id);
+//        }
+//
+//        // ✅ Search
+//        if ($request->filled('search')) {
+//            $s = trim($request->search);
+//            $q->where(function($qq) use ($s){
+//                $qq->where('name', 'like', "%{$s}%")
+//                    ->orWhere('phone', 'like', "%{$s}%");
+//            });
+//        }
+//
+//        // ✅ DOB filters
+//        if ($request->filled('dob_from')) {
+//            $q->whereDate('date_of_birth', '>=', $request->dob_from);
+//        }
+//        if ($request->filled('dob_to')) {
+//            $q->whereDate('date_of_birth', '<=', $request->dob_to);
+//        }
+//
+//        $records = $q->latest('id')->paginate(20)->withQueryString();
+//
+//        return view('birthday_records.index', compact('records'));
+//    }
+
+
+//    public function index(Request $request)
+//    {
+//        $user = $request->user();
+//
+//        $q = BirthdayRecord::query()->with('user:id,name');
+//
+//        // ✅ Role based access
+//        if (!$user->hasRole('super admin')) {
+//            $q->where('user_id', $user->id);
+//        }
+//
+//        // ✅ Search
+//        if ($request->filled('search')) {
+//            $s = trim($request->search);
+//            $q->where(function ($qq) use ($s) {
+//                $qq->where('name', 'like', "%{$s}%")
+//                    ->orWhere('phone', 'like', "%{$s}%");
+//            });
+//        }
+//
+//        // ✅ Month filter
+//        if ($request->filled('month')) {
+//            $month = (int) $request->month;
+//            if ($month >= 1 && $month <= 12) {
+//                $q->whereMonth('date_of_birth', $month);
+//            }
+//        }
+//
+//        // ✅ Day filter (1-31)
+//        if ($request->filled('day')) {
+//            $day = (int) $request->day;
+//            if ($day >= 1 && $day <= 31) {
+//                $q->whereDay('date_of_birth', $day);
+//            }
+//        }
+//
+//        // ✅ Existing DOB range filters (aap chaho to keep/remove)
+//        if ($request->filled('dob_from')) {
+//            $q->whereDate('date_of_birth', '>=', $request->dob_from);
+//        }
+//        if ($request->filled('dob_to')) {
+//            $q->whereDate('date_of_birth', '<=', $request->dob_to);
+//        }
+//
+//        // ✅ Upcoming birthdays logic (next N days)
+//        $upcomingOnly = (bool) $request->upcoming_only;
+//        $days = (int) ($request->upcoming_days ?: 30);
+//        $days = max(1, min(365, $days));
+//
+//        if ($upcomingOnly) {
+//            $today = Carbon::today();
+//            $to    = $today->copy()->addDays($days);
+//
+//            // Covers year-end wrapping too
+//            // We compare mm-dd in cyclic way using two ranges when needed
+//            $fromMd = $today->format('m-d');
+//            $toMd   = $to->format('m-d');
+//
+//            if ($fromMd <= $toMd) {
+//                $q->whereRaw("DATE_FORMAT(date_of_birth, '%m-%d') BETWEEN ? AND ?", [$fromMd, $toMd]);
+//            } else {
+//                // wrap: e.g. Dec 26 -> Jan 10
+//                $q->where(function ($w) use ($fromMd, $toMd) {
+//                    $w->whereRaw("DATE_FORMAT(date_of_birth, '%m-%d') >= ?", [$fromMd])
+//                        ->orWhereRaw("DATE_FORMAT(date_of_birth, '%m-%d') <= ?", [$toMd]);
+//                });
+//            }
+//
+//            // ✅ Upcoming first ordering (closest first)
+//            $q->orderByRaw("
+//            CASE
+//              WHEN STR_TO_DATE(CONCAT(YEAR(CURDATE()), '-', DATE_FORMAT(date_of_birth, '%m-%d')), '%Y-%m-%d') >= CURDATE()
+//              THEN STR_TO_DATE(CONCAT(YEAR(CURDATE()), '-', DATE_FORMAT(date_of_birth, '%m-%d')), '%Y-%m-%d')
+//              ELSE STR_TO_DATE(CONCAT(YEAR(CURDATE())+1, '-', DATE_FORMAT(date_of_birth, '%m-%d')), '%Y-%m-%d')
+//            END ASC
+//        ");
+//        } else {
+//            // ✅ Default ordering: month-day wise (Jan -> Dec)
+//            $q->orderByRaw("DATE_FORMAT(date_of_birth, '%m-%d') ASC");
+//        }
+//
+//        $records = $q->paginate(20)->withQueryString();
+//
+//        return view('birthday_records.index', compact('records'));
+//    }
+
+
     public function index(Request $request)
     {
         $user = $request->user();
 
-        $q = BirthdayRecord::query();
+        $q = BirthdayRecord::query()->with('user:id,name');
 
         // ✅ Role based access
         if (!$user->hasRole('super admin')) {
-            // ✅ normal roles: only own created records
-            // (use whichever column you have: created_by OR user_id)
             $q->where('user_id', $user->id);
-            // or: $q->where('user_id', $user->id);
         }
 
         // ✅ Search
         if ($request->filled('search')) {
-            $s = trim($request->search);
-            $q->where(function($qq) use ($s){
+            $s = trim((string) $request->search);
+            $q->where(function ($qq) use ($s) {
                 $qq->where('name', 'like', "%{$s}%")
                     ->orWhere('phone', 'like', "%{$s}%");
             });
         }
 
-        // ✅ DOB filters
+        // ✅ Month filter
+        if ($request->filled('month')) {
+            $month = (int) $request->month;
+            if ($month >= 1 && $month <= 12) {
+                $q->whereMonth('date_of_birth', $month);
+            }
+        }
+
+        // ✅ Day filter (1-31)
+        if ($request->filled('day')) {
+            $day = (int) $request->day;
+            if ($day >= 1 && $day <= 31) {
+                $q->whereDay('date_of_birth', $day);
+            }
+        }
+
+        // ✅ Optional: DOB range filters (as you had)
         if ($request->filled('dob_from')) {
             $q->whereDate('date_of_birth', '>=', $request->dob_from);
         }
@@ -44,11 +181,48 @@ class BirthdayRecordController extends Controller
             $q->whereDate('date_of_birth', '<=', $request->dob_to);
         }
 
-        $records = $q->latest('id')->paginate(20)->withQueryString();
+        /**
+         * ✅ Upcoming filter WITHOUT checkbox:
+         * - If upcoming_days is filled (and > 0), upcoming filter is ON automatically
+         * - Current year only: Today -> min(Today+days, 31 Dec)
+         */
+        $daysInput  = $request->input('upcoming_days');
+        $upcomingOn = $request->filled('upcoming_days') && (int)$daysInput > 0;
+
+        $days = (int) ($daysInput ?: 30);
+        $days = max(1, min(365, $days));
+
+        if ($upcomingOn) {
+            $tz = config('app.timezone', 'Asia/Kolkata');
+
+            $today   = Carbon::now($tz)->startOfDay();
+            $yearEnd = Carbon::create($today->year, 12, 31, 0, 0, 0, $tz);
+
+            $to = $today->copy()->addDays($days);
+            if ($to->gt($yearEnd)) $to = $yearEnd;
+
+            $year = $today->year;
+
+            // ✅ Filter by "current year birthday date" BETWEEN today and $to
+            $q->whereRaw("
+            STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d')
+            BETWEEN ? AND ?
+        ", [$year, $today->toDateString(), $to->toDateString()]);
+
+            // ✅ Order upcoming nearest first
+            $q->orderByRaw("
+            STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d') ASC
+        ", [$year]);
+
+        } else {
+            // ✅ Default order (month-day)
+            $q->orderByRaw("DATE_FORMAT(date_of_birth, '%m-%d') ASC");
+        }
+
+        $records = $q->paginate(20)->withQueryString();
 
         return view('birthday_records.index', compact('records'));
     }
-
 
     public function create()
     {
