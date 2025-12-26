@@ -50,9 +50,12 @@ class SendBirthdayWishes extends Command
                 'status'             => 'pending',
                 'message'            => $message,
             ]);
-
+            $url = $r->user->api->wishes_api;
+            if (!$url){
+                $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
+            }
             try {
-                $resp = $sender->sendBirthdayWish($r->phone, $message, $r->user->api->wishes_api);
+                $resp = $sender->sendBirthdayWish($r->phone, $url);
 
                 $log->update([
                     'status'   => $resp['ok'] ? 'success' : 'failed',

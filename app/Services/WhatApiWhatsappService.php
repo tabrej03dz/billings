@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 class WhatApiWhatsappService
 {
-    public function sendBirthdayWish(string $phone, string $message, $url): array
+    public function sendBirthdayWish(string $phone, $url): array
     {
 //        $url = config('services.whatapi.webhook_url');
 //        $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
