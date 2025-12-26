@@ -591,7 +591,7 @@ class BirthdayRecordController extends Controller
 
         // If 10 digit => add 91 (India)
         if (strlen($to) === 10) $to = '91' . $to;
-
+dd($url);
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
             'number'      => $to,
