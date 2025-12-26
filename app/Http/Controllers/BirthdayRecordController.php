@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApiKey;
 use Illuminate\Http\Request;
 use App\Models\BirthdayRecord;
 use Illuminate\Support\Facades\DB;
@@ -588,8 +589,8 @@ class BirthdayRecordController extends Controller
         $phone = $birthdayRecord->phone;
 
 
-        dd($birthdayRecord);
-            $api = \App\Models\ApiKey::where('user_id', $birthdayRecord->user_id)->first();
+            $api = ApiKey::where('user_id', $birthdayRecord->user_id)->where('business_id', null)->first();
+
 
         $url = $api->wishes_api;
         $to = preg_replace('/\D+/', '', $phone);
