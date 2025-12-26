@@ -21,7 +21,7 @@ class WhatApiWhatsappService
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
             'number'      => $to,
-            'video' => asset('asset/video/birthday wish.mp4'),
+            'Video' => asset('asset/video/birthday wish.mp4'),
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
