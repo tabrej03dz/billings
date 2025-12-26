@@ -588,6 +588,7 @@ class BirthdayRecordController extends Controller
         $phone = $birthdayRecord->phone;
 
 
+        dd($birthdayRecord);
             $api = \App\Models\ApiKey::where('user_id', $birthdayRecord->user_id)->first();
 
         $url = $api->wishes_api;
