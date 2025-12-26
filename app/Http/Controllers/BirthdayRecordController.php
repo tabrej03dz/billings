@@ -586,7 +586,7 @@ class BirthdayRecordController extends Controller
     public function send(BirthdayRecord $birthdayRecord){
 
         $phone = $birthdayRecord->phone;
-        dd($birthdayRecord->user->api);
+        dd($birthdayRecord->user);
         $url = $birthdayRecord->user->api->wishes_api;
         $to = preg_replace('/\D+/', '', $phone);
 
