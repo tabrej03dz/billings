@@ -42,15 +42,15 @@
                            class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
 
-                <div class="md:col-span-3">
-                    <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Business ID (optional)</label>
-                    <input type="number" name="business_id" value="{{ old('business_id') }}"
-                           class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                           placeholder="If multi-business, pass business_id">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Agar aap multi-business use kar rahe ho to business_id fill karo, warna blank.
-                    </p>
-                </div>
+{{--                <div class="md:col-span-3">--}}
+{{--                    <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Business ID (optional)</label>--}}
+{{--                    <input type="number" name="business_id" value="{{ old('business_id') }}"--}}
+{{--                           class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"--}}
+{{--                           placeholder="If multi-business, pass business_id">--}}
+{{--                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">--}}
+{{--                        Agar aap multi-business use kar rahe ho to business_id fill karo, warna blank.--}}
+{{--                    </p>--}}
+{{--                </div>--}}
             </div>
 
             <div class="mt-5 flex items-center gap-2">

@@ -38,10 +38,10 @@
                     </dd>
                 </div>
 
-                <div>
-                    <dt class="text-xs uppercase text-gray-500 dark:text-gray-400">Business ID</dt>
-                    <dd class="text-base font-medium text-gray-900 dark:text-white">{{ $record->business_id ?? '-' }}</dd>
-                </div>
+{{--                <div>--}}
+{{--                    <dt class="text-xs uppercase text-gray-500 dark:text-gray-400">Business ID</dt>--}}
+{{--                    <dd class="text-base font-medium text-gray-900 dark:text-white">{{ $record->business_id ?? '-' }}</dd>--}}
+{{--                </div>--}}
 
                 <div>
                     <dt class="text-xs uppercase text-gray-500 dark:text-gray-400">Added By</dt>
