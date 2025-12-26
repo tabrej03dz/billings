@@ -137,6 +137,93 @@ class BirthdayRecordController extends Controller
 //    }
 
 
+//    public function index(Request $request)
+//    {
+//        $user = $request->user();
+//
+//        $q = BirthdayRecord::query()->with('user:id,name');
+//
+//        // ✅ Role based access
+//        if (!$user->hasRole('super admin')) {
+//            $q->where('user_id', $user->id);
+//        }
+//
+//        // ✅ Search
+//        if ($request->filled('search')) {
+//            $s = trim((string) $request->search);
+//            $q->where(function ($qq) use ($s) {
+//                $qq->where('name', 'like', "%{$s}%")
+//                    ->orWhere('phone', 'like', "%{$s}%");
+//            });
+//        }
+//
+//        // ✅ Month filter
+//        if ($request->filled('month')) {
+//            $month = (int) $request->month;
+//            if ($month >= 1 && $month <= 12) {
+//                $q->whereMonth('date_of_birth', $month);
+//            }
+//        }
+//
+//        // ✅ Day filter (1-31)
+//        if ($request->filled('day')) {
+//            $day = (int) $request->day;
+//            if ($day >= 1 && $day <= 31) {
+//                $q->whereDay('date_of_birth', $day);
+//            }
+//        }
+//
+//        // ✅ Optional: DOB range filters (as you had)
+//        if ($request->filled('dob_from')) {
+//            $q->whereDate('date_of_birth', '>=', $request->dob_from);
+//        }
+//        if ($request->filled('dob_to')) {
+//            $q->whereDate('date_of_birth', '<=', $request->dob_to);
+//        }
+//
+//        /**
+//         * ✅ Upcoming filter WITHOUT checkbox:
+//         * - If upcoming_days is filled (and > 0), upcoming filter is ON automatically
+//         * - Current year only: Today -> min(Today+days, 31 Dec)
+//         */
+//        $daysInput  = $request->input('upcoming_days');
+//        $upcomingOn = $request->filled('upcoming_days') && (int)$daysInput > 0;
+//
+//        $days = (int) ($daysInput ?: 30);
+//        $days = max(1, min(365, $days));
+//
+//        if ($upcomingOn) {
+//            $tz = config('app.timezone', 'Asia/Kolkata');
+//
+//            $today   = Carbon::now($tz)->startOfDay();
+//            $yearEnd = Carbon::create($today->year, 12, 31, 0, 0, 0, $tz);
+//
+//            $to = $today->copy()->addDays($days);
+//            if ($to->gt($yearEnd)) $to = $yearEnd;
+//
+//            $year = $today->year;
+//
+//            // ✅ Filter by "current year birthday date" BETWEEN today and $to
+//            $q->whereRaw("
+//            STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d')
+//            BETWEEN ? AND ?
+//        ", [$year, $today->toDateString(), $to->toDateString()]);
+//
+//            // ✅ Order upcoming nearest first
+//            $q->orderByRaw("
+//            STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d') ASC
+//        ", [$year]);
+//
+//        } else {
+//            // ✅ Default order (month-day)
+//            $q->orderByRaw("DATE_FORMAT(date_of_birth, '%m-%d') ASC");
+//        }
+//
+//        $records = $q->paginate(20)->withQueryString();
+//
+//        return view('birthday_records.index', compact('records'));
+//    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -165,7 +252,7 @@ class BirthdayRecordController extends Controller
             }
         }
 
-        // ✅ Day filter (1-31)
+        // ✅ Day filter
         if ($request->filled('day')) {
             $day = (int) $request->day;
             if ($day >= 1 && $day <= 31) {
@@ -173,7 +260,7 @@ class BirthdayRecordController extends Controller
             }
         }
 
-        // ✅ Optional: DOB range filters (as you had)
+        // ✅ Optional: DOB range filters
         if ($request->filled('dob_from')) {
             $q->whereDate('date_of_birth', '>=', $request->dob_from);
         }
@@ -182,48 +269,61 @@ class BirthdayRecordController extends Controller
         }
 
         /**
-         * ✅ Upcoming filter WITHOUT checkbox:
-         * - If upcoming_days is filled (and > 0), upcoming filter is ON automatically
-         * - Current year only: Today -> min(Today+days, 31 Dec)
+         * ✅ Upcoming badge/order always:
+         * - If upcoming_days filled => that range will be "upcoming"
+         * - Otherwise default upcoming range = 30 days
+         * - Upcoming birthdays will ALWAYS come on top (even if you are not filtering)
+         * - Current year only (today -> 31 Dec)
          */
-        $daysInput  = $request->input('upcoming_days');
-        $upcomingOn = $request->filled('upcoming_days') && (int)$daysInput > 0;
+        $tz = config('app.timezone', 'Asia/Kolkata');
 
-        $days = (int) ($daysInput ?: 30);
+        $today   = Carbon::now($tz)->startOfDay();
+        $yearEnd = Carbon::create($today->year, 12, 31, 0, 0, 0, $tz);
+
+        $daysInput = $request->input('upcoming_days');
+        $days = (int)($daysInput ?: 30);
         $days = max(1, min(365, $days));
 
-        if ($upcomingOn) {
-            $tz = config('app.timezone', 'Asia/Kolkata');
+        $to = $today->copy()->addDays($days);
+        if ($to->gt($yearEnd)) $to = $yearEnd;
 
-            $today   = Carbon::now($tz)->startOfDay();
-            $yearEnd = Carbon::create($today->year, 12, 31, 0, 0, 0, $tz);
+        $year = $today->year;
 
-            $to = $today->copy()->addDays($days);
-            if ($to->gt($yearEnd)) $to = $yearEnd;
+        // ✅ Optional: If you want "only upcoming" filter when days filled
+        // (aap chahe to ye block hata sakte ho)
+        $upcomingOnly = $request->boolean('upcoming_only'); // if you still keep checkbox
+        $upcomingOn   = $request->filled('upcoming_days') && (int)$daysInput > 0;
 
-            $year = $today->year;
-
-            // ✅ Filter by "current year birthday date" BETWEEN today and $to
+        if ($upcomingOnly || $upcomingOn) {
             $q->whereRaw("
             STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d')
             BETWEEN ? AND ?
         ", [$year, $today->toDateString(), $to->toDateString()]);
-
-            // ✅ Order upcoming nearest first
-            $q->orderByRaw("
-            STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d') ASC
-        ", [$year]);
-
-        } else {
-            // ✅ Default order (month-day)
-            $q->orderByRaw("DATE_FORMAT(date_of_birth, '%m-%d') ASC");
         }
+
+        /**
+         * ✅ ORDERING (UPCOMING ON TOP)
+         * 1) First: birthdays between today and $to (range) => top
+         * 2) Then: rest in month-day order
+         */
+        $q->orderByRaw("
+        CASE
+            WHEN STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d')
+                 BETWEEN ? AND ?
+            THEN 0
+            ELSE 1
+        END ASC
+    ", [$year, $today->toDateString(), $to->toDateString()]);
+
+        // inside upcoming: closest first, outside upcoming: month-day order
+        $q->orderByRaw("
+        STR_TO_DATE(CONCAT(?, '-', DATE_FORMAT(date_of_birth,'%m-%d')), '%Y-%m-%d') ASC
+    ", [$year]);
 
         $records = $q->paginate(20)->withQueryString();
 
         return view('birthday_records.index', compact('records'));
     }
-
     public function create()
     {
         return view('birthday_records.create');
