@@ -589,7 +589,9 @@ class BirthdayRecordController extends Controller
         $phone = $birthdayRecord->phone;
 
 
-            $api = ApiKey::where('user_id', $birthdayRecord->user_id)->where('business_id', null)->first();
+        $api = ApiKey::withoutGlobalScope('business')
+            ->where('user_id', $birthdayRecord->user_id)
+            ->first();
 
 
         $url = $api->wishes_api;
