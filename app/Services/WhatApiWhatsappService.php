@@ -10,7 +10,7 @@ class WhatApiWhatsappService
     public function sendBirthdayWish(string $phone, string $message, $url): array
     {
 //        $url = config('services.whatapi.webhook_url');
-//        $url = 'https://webhooks.1automations.com/webhook/6946555ae60589cc861361d7';
+//        $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
 
         // ✅ Basic sanitation (only digits)
         $to = preg_replace('/\D+/', '', $phone);

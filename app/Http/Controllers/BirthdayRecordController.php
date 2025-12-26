@@ -20,7 +20,7 @@ class BirthdayRecordController extends Controller
         $q = BirthdayRecord::query();
 
         // ✅ Role based access
-        if (!$user->hasRole('super_admin')) {
+        if (!$user->hasRole('super admin')) {
             // ✅ normal roles: only own created records
             // (use whichever column you have: created_by OR user_id)
             $q->where('user_id', $user->id);
