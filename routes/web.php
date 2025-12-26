@@ -249,7 +249,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('birthday-records.import');
 
     Route::resource('/birthday-records', BirthdayRecordController::class);
-    Route::get('birthday-records/send', [BirthdayRecordController::class, 'send'])->name('birthday-record.send');
+    Route::get('birthday-records/send/{birthdayRecord}', [BirthdayRecordController::class, 'send'])->name('birthday-records.send');
 
 
 });
