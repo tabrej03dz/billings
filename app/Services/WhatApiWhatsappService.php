@@ -10,7 +10,7 @@ class WhatApiWhatsappService
     public function sendBirthdayWish(string $phone, string $message, $url): array
     {
 //        $url = config('services.whatapi.webhook_url');
-        $url = 'https://webhooks.1automations.com/webhook/6946555ae60589cc861361d7';
+//        $url = 'https://webhooks.1automations.com/webhook/6946555ae60589cc861361d7';
 
         // ✅ Basic sanitation (only digits)
         $to = preg_replace('/\D+/', '', $phone);
@@ -21,7 +21,7 @@ class WhatApiWhatsappService
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
             'number'      => $to,
-            'pdf' => 'https://post.realvictorygroups.com/storage/images/2025-12-20/Jewellery/BrckLBbXfHxGdR8cOA8xj6jKxPJAaR77Dr0waMZM.jpg',
+            'video' => asset('asset/video/birthday wish.mp4'),
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
