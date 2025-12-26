@@ -586,8 +586,11 @@ class BirthdayRecordController extends Controller
     public function send(BirthdayRecord $birthdayRecord){
 
         $phone = $birthdayRecord->phone;
-        dd($birthdayRecord->user()->api);
-        $url = $birthdayRecord->user->api->wishes_api;
+
+
+            $api = \App\Models\ApiKey::where('user_id', $birthdayRecord->user_id)->first();
+
+        $url = $api->wishes_api;
         $to = preg_replace('/\D+/', '', $phone);
 
         // If 10 digit => add 91 (India)
