@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\BirthdayRecord;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -579,5 +581,31 @@ class BirthdayRecordController extends Controller
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    public function send(BirthdayRecord $birthdayRecord){
+
+        $phone = $birthdayRecord->phone;
+        $url = $birthdayRecord->user->api->wishes_api;
+        $to = preg_replace('/\D+/', '', $phone);
+
+        // If 10 digit => add 91 (India)
+        if (strlen($to) === 10) $to = '91' . $to;
+
+        // ✅ Payload (adjust keys if your provider expects different)
+        $payload = [
+            'number'      => $to,
+            'Video' => asset('asset/video/birthday wish.mp4'),
+        ];
+
+        Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
+
+        $res = Http::timeout(60)->withoutVerifying()->acceptJson()->post($url, $payload);
+
+        Log::info('WA WEBHOOK RES', [
+            'status' => $res->status(),
+            'body'   => $res->body(),
+        ]);
+        return back()->with('success', 'Wishes sent successfully');
     }
 }
