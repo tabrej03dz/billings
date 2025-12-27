@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApiKey;
+use App\Models\BirthdayWishLog;
 use Illuminate\Http\Request;
 use App\Models\BirthdayRecord;
 use Illuminate\Support\Facades\DB;
@@ -584,35 +585,132 @@ class BirthdayRecordController extends Controller
         }
     }
 
-    public function send(BirthdayRecord $birthdayRecord){
+//    public function send(BirthdayRecord $birthdayRecord){
+//
+//        $phone = $birthdayRecord->phone;
+//
+//
+//        $api = ApiKey::withoutGlobalScope('business')
+//            ->where('user_id', $birthdayRecord->user_id)
+//            ->first();
+//
+//
+//        $url = $api->wishes_api;
+//        $to = preg_replace('/\D+/', '', $phone);
+//
+//        // If 10 digit => add 91 (India)
+//        if (strlen($to) === 10) $to = '91' . $to;
+//        // ✅ Payload (adjust keys if your provider expects different)
+//        $payload = [
+//            'number'      => $to,
+//            'Video' => asset('asset/video/birthday wish.mp4'),
+//        ];
+//
+//        Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
+//
+//        $res = Http::timeout(60)->acceptJson()->post($url, $payload);
+//
+//        Log::info('WA WEBHOOK RES', [
+//            'status' => $res->status(),
+//            'body'   => $res->body(),
+//        ]);
+//        return back()->with('success', 'Wishes sent successfully');
+//    }
 
-        $phone = $birthdayRecord->phone;
+    public function send(BirthdayRecord $birthdayRecord)
+    {
+        $today = Carbon::now()->timezone(config('app.timezone'));
+        $year  = (int) $today->format('Y');
 
+        // ✅ already sent check (same year)
+        $already = BirthdayWishLog::where('birthday_record_id', $birthdayRecord->id)
+            ->where('wish_year', $year)
+            ->exists();
 
+        if ($already) {
+            return back()->with('error', 'Wishes already sent for this record this year.');
+        }
+
+        // ✅ API key (business scope ignore as you already did)
         $api = ApiKey::withoutGlobalScope('business')
             ->where('user_id', $birthdayRecord->user_id)
             ->first();
 
+        if (!$api || !$api->wishes_api) {
+            // optionally log failed attempt too (up to you)
+            BirthdayWishLog::create([
+                'birthday_record_id' => $birthdayRecord->id,
+                'business_id'        => $birthdayRecord->business_id,
+                'phone'              => $birthdayRecord->phone,
+                'wish_date'          => $today->toDateString(),
+                'wish_year'          => $year,
+                'status'             => 'failed',
+                'message'            => null,
+                'response'           => 'Missing wishes_api URL',
+            ]);
+
+            return back()->with('error', 'Wishes API URL not found for this user.');
+        }
 
         $url = $api->wishes_api;
-        $to = preg_replace('/\D+/', '', $phone);
 
-        // If 10 digit => add 91 (India)
+        // ✅ phone sanitize
+        $to = preg_replace('/\D+/', '', (string) $birthdayRecord->phone);
         if (strlen($to) === 10) $to = '91' . $to;
-        // ✅ Payload (adjust keys if your provider expects different)
+
+        // ✅ optional message (log me store karne ke liye)
+        $name = $birthdayRecord->name ?: 'Dear';
+        $message = "🎉 Happy Birthday {$name}! 🎂\nGod bless you with health, happiness & success.\n\n— Real Victory Groups";
+
+        // ✅ payload
         $payload = [
-            'number'      => $to,
-            'Video' => asset('asset/video/birthday wish.mp4'),
+            'number' => $to,
+            'Video'  => asset('asset/video/birthday wish.mp4'),
+            // if your webhook supports message too, send it:
+            // 'message' => $message,
         ];
 
-        Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
-
-        $res = Http::timeout(60)->acceptJson()->post($url, $payload);
-
-        Log::info('WA WEBHOOK RES', [
-            'status' => $res->status(),
-            'body'   => $res->body(),
+        // ✅ Create pending log first
+        $log = BirthdayWishLog::create([
+            'birthday_record_id' => $birthdayRecord->id,
+            'business_id'        => $birthdayRecord->business_id,
+            'phone'              => $birthdayRecord->phone,
+            'wish_date'          => $today->toDateString(),
+            'wish_year'          => $year,
+            'status'             => 'pending',
+            'message'            => $message,
         ]);
-        return back()->with('success', 'Wishes sent successfully');
+
+        try {
+            Log::info('WA WEBHOOK REQ', ['url' => $url, 'payload' => $payload]);
+
+            $res = Http::timeout(60)->acceptJson()->post($url, $payload);
+
+            Log::info('WA WEBHOOK RES', [
+                'status' => $res->status(),
+                'body'   => $res->body(),
+            ]);
+
+            // ✅ update log with response
+            $log->update([
+                'status'   => $res->successful() ? 'success' : 'failed',
+                'response' => "HTTP {$res->status()} | " . $res->body(),
+            ]);
+
+            return back()->with(
+                $res->successful() ? 'success' : 'error',
+                $res->successful() ? 'Wishes sent successfully' : 'Wishes failed to send'
+            );
+
+        } catch (\Throwable $e) {
+
+            $log->update([
+                'status'   => 'failed',
+                'response' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Exception: ' . $e->getMessage());
+        }
     }
+
 }
