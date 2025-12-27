@@ -603,7 +603,7 @@ class BirthdayRecordController extends Controller
 //        // ✅ Payload (adjust keys if your provider expects different)
 //        $payload = [
 //            'number'      => $to,
-//            'Video' => asset('asset/video/birthday wish.mp4'),
+//            'Video' => asset('asset/video/birthday-wish.mp4'),
 //        ];
 //
 //        Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
@@ -665,7 +665,7 @@ class BirthdayRecordController extends Controller
         // ✅ payload
         $payload = [
             'number' => $to,
-            'Video'  => asset('asset/video/birthday wish.mp4'),
+            'Video'  => asset('asset/video/birthday-wish.mp4'),
             // if your webhook supports message too, send it:
             // 'message' => $message,
         ];
