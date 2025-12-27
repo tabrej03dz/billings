@@ -94,8 +94,8 @@
                     <th class="px-6 py-3">Wish Date</th>
                     <th class="px-6 py-3">Year</th>
                     <th class="px-6 py-3">Phone</th>
-                    <th class="px-6 py-3">Business</th>
-                    <th class="px-6 py-3">Record ID</th>
+{{--                    <th class="px-6 py-3">Business</th>--}}
+{{--                    <th class="px-6 py-3">Record ID</th>--}}
                     <th class="px-6 py-3">Status</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
@@ -116,13 +116,13 @@
                             {{ $log->phone }}
                         </td>
 
-                        <td class="px-6 py-3">
-                            {{ $log->business_id ?? '-' }}
-                        </td>
+{{--                        <td class="px-6 py-3">--}}
+{{--                            {{ $log->business_id ?? '-' }}--}}
+{{--                        </td>--}}
 
-                        <td class="px-6 py-3">
-                            {{ $log->birthday_record_id }}
-                        </td>
+{{--                        <td class="px-6 py-3">--}}
+{{--                            {{ $log->birthday_record_id }}--}}
+{{--                        </td>--}}
 
                         <td class="px-6 py-3">
                             @php

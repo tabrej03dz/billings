@@ -244,10 +244,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/birthday-records/import', [BirthdayRecordController::class, 'importForm'])
         ->name('birthday-records.importForm');
-
     Route::post('/birthday-records/import', [BirthdayRecordController::class, 'import'])
         ->name('birthday-records.import');
-
     Route::resource('/birthday-records', BirthdayRecordController::class);
     Route::get('birthday-records/send/{birthdayRecord}', [BirthdayRecordController::class, 'send'])->name('birthday-records.send');
 

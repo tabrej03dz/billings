@@ -607,7 +607,7 @@ class BirthdayRecordController extends Controller
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
 
-        $res = Http::timeout(60)->withoutVerifying()->acceptJson()->post($url, $payload);
+        $res = Http::timeout(60)->acceptJson()->post($url, $payload);
 
         Log::info('WA WEBHOOK RES', [
             'status' => $res->status(),

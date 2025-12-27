@@ -8,10 +8,10 @@
         @endif
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Wish Log Details</h1>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Log ID: #{{ $log->id }}</p>
-            </div>
+{{--            <div>--}}
+{{--                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Wish Log Details</h1>--}}
+{{--                <p class="text-sm text-gray-500 dark:text-gray-400">Log ID: #{{ $log->id }}</p>--}}
+{{--            </div>--}}
 
             <div class="flex items-center gap-2">
                 <a href="{{ route('birthday-wish-logs.index') }}"
@@ -54,15 +54,15 @@
                         <div class="font-semibold text-gray-900 dark:text-white">{{ $log->phone }}</div>
                     </div>
 
-                    <div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Business ID</div>
-                        <div class="font-semibold text-gray-900 dark:text-white">{{ $log->business_id ?? '-' }}</div>
-                    </div>
+{{--                    <div>--}}
+{{--                        <div class="text-xs text-gray-500 dark:text-gray-400">Business ID</div>--}}
+{{--                        <div class="font-semibold text-gray-900 dark:text-white">{{ $log->business_id ?? '-' }}</div>--}}
+{{--                    </div>--}}
 
-                    <div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">Birthday Record ID</div>
-                        <div class="font-semibold text-gray-900 dark:text-white">{{ $log->birthday_record_id }}</div>
-                    </div>
+{{--                    <div>--}}
+{{--                        <div class="text-xs text-gray-500 dark:text-gray-400">Birthday Record ID</div>--}}
+{{--                        <div class="font-semibold text-gray-900 dark:text-white">{{ $log->birthday_record_id }}</div>--}}
+{{--                    </div>--}}
 
                     <div>
                         <div class="text-xs text-gray-500 dark:text-gray-400">Status</div>
@@ -108,10 +108,10 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900">
-                <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Message</div>
-                <pre class="text-xs whitespace-pre-wrap break-words text-gray-700 dark:text-gray-300">{{ $log->message ?? '-' }}</pre>
-            </div>
+{{--            <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900">--}}
+{{--                <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Message</div>--}}
+{{--                <pre class="text-xs whitespace-pre-wrap break-words text-gray-700 dark:text-gray-300">{{ $log->message ?? '-' }}</pre>--}}
+{{--            </div>--}}
 
             <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900">
                 <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2">Response</div>
