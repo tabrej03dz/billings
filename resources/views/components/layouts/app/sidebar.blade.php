@@ -128,6 +128,13 @@
                 </flux:navlist.group>
             </flux:navlist>
             @endcan
+            @can('show invoices')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('bank-accounts.index')" :current="request()->routeIs('bank-accounts.index')" wire:navigate>{{ __('Banks') }}</flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+            @endcan
 
             @can('show additional charges')
                 <flux:navlist variant="outline">

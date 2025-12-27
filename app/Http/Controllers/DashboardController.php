@@ -86,7 +86,6 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
-//        dd(Hash::make('NVst@050868'));
         $user = $request->user();
 
         if (!$user) {

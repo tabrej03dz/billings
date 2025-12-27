@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToBusiness;
 use Illuminate\Database\Eloquent\Model;
 
 class BankAccount extends Model
 {
+    use BelongsToBusiness;
     protected $guarded = ['id'];
 
     public function business(){
