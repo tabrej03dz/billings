@@ -601,7 +601,7 @@
                             <input x-model="newClient.name" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Client name">
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Mobile *</label>
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Mobile </label>
                             <input x-model="newClient.mobile" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="10 digit mobile">
                         </div>
 
@@ -963,10 +963,22 @@
 
                 async saveClient(){
                     this.newClientError = '';
-                    if(!this.newClient.name || !this.newClient.mobile){
-                        this.newClientError = 'Name and Mobile are required.';
+
+                    // ✅ only Name required
+                    if(!String(this.newClient.name || '').trim()){
+                        this.newClientError = 'Name is required.';
                         return;
                     }
+
+                    // ✅ if mobile filled, basic sanitize/validate (optional)
+                    const mob = String(this.newClient.mobile || '').replace(/\D/g, '');
+                    if(mob && mob.length < 10){
+                        this.newClientError = 'Mobile must be 10 digits (optional).';
+                        return;
+                    }
+                    // keep sanitized (optional)
+                    this.newClient.mobile = mob;
+
                     try{
                         this.savingClient = true;
                         const res = await fetch(@js(route('clients.quick-store')), {
@@ -980,20 +992,24 @@
                             },
                             body: JSON.stringify(this.newClient)
                         });
+
                         const data = await res.json().catch(()=> ({}));
                         if(!res.ok){
                             this.newClientError = data?.message || 'Failed to save client.';
                             return;
                         }
+
                         this.clients.unshift(data.client);
                         this.clientId = data.client.id;
                         this.modals.client = false;
+
                     }catch(e){
                         this.newClientError = 'Network error.';
                     }finally{
                         this.savingClient = false;
                     }
                 },
+
 
                 async saveItem(){
                     this.newItemError = '';
