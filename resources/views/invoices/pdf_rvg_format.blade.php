@@ -31,38 +31,72 @@
     $balanceNow = (float)($balance ?? max(0, $total - $receivedTot));
 
     // amount in words (simple INR words)
-    function inr_words($number){
-        $no = floor($number);
-        if ($no <= 0) return 'Zero Rupees';
-        $words = array(
-            0 => '', 1 => 'One', 2 => 'Two', 3 => 'Three', 4 => 'Four', 5 => 'Five', 6 => 'Six', 7 => 'Seven',
-            8 => 'Eight', 9 => 'Nine', 10 => 'Ten', 11 => 'Eleven', 12 => 'Twelve', 13 => 'Thirteen', 14 => 'Fourteen',
-            15 => 'Fifteen', 16 => 'Sixteen', 17 => 'Seventeen', 18 => 'Eighteen', 19 => 'Nineteen', 20 => 'Twenty',
-            30 => 'Thirty', 40 => 'Forty', 50 => 'Fifty', 60 => 'Sixty', 70 => 'Seventy', 80 => 'Eighty', 90 => 'Ninety'
-        );
-        $digits = array('', 'Hundred', 'Thousand', 'Lakh', 'Crore');
-        $str = array();
-        $i = 0;
-        while($no > 0){
-            $divider = ($i == 1) ? 10 : 100;
-            $n = $no % $divider;
-            $no = (int)($no / $divider);
-            $i += ($divider == 10) ? 1 : 2;
+    function inr_words($amount)
+    {
+        $amount = (float)$amount;
+        $rupees = (int) floor($amount);
+        $paise  = (int) round(($amount - $rupees) * 100);
 
-            if($n){
-                $plural = (($counter = count($str)) && $n > 9) ? '' : '';
-                $hundred = ($counter == 1 && $str[0]) ? ' and ' : '';
-                if($n < 21){
-                    $str[] = $words[$n].' '.$digits[$counter].$plural.' '.$hundred;
-                }else{
-                    $str[] = $words[(int)($n/10)*10].' '.$words[$n%10].' '.$digits[$counter].$plural.' '.$hundred;
-                }
-            }else{
-                $str[] = null;
-            }
+        $ones = [
+            '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+            'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
+        ];
+        $tens = [
+            '', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'
+        ];
+
+        $twoDigits = function($n) use ($ones,$tens){
+            $n = (int)$n;
+            if ($n == 0) return '';
+            if ($n < 20) return $ones[$n];
+            return trim($tens[(int)($n/10)] . ' ' . $ones[$n%10]);
+        };
+
+        $parts = [];
+
+        // Crore
+        if ($rupees >= 10000000) {
+            $cr = (int) floor($rupees / 10000000);
+            $parts[] = $twoDigits($cr) . ' Crore';
+            $rupees = $rupees % 10000000;
         }
-        $result = trim(implode('', array_reverse($str)));
-        return $result.' Rupees';
+
+        // Lakh
+        if ($rupees >= 100000) {
+            $lk = (int) floor($rupees / 100000);
+            $parts[] = $twoDigits($lk) . ' Lakh';
+            $rupees = $rupees % 100000;
+        }
+
+        // Thousand
+        if ($rupees >= 1000) {
+            $th = (int) floor($rupees / 1000);
+            $parts[] = $twoDigits($th) . ' Thousand';
+            $rupees = $rupees % 1000;
+        }
+
+        // Hundred
+        if ($rupees >= 100) {
+            $hd = (int) floor($rupees / 100);
+            $parts[] = $ones[$hd] . ' Hundred';
+            $rupees = $rupees % 100;
+        }
+
+        // Last 1-99
+        if ($rupees > 0) {
+            $parts[] = $twoDigits($rupees);
+        }
+
+        $words = trim(implode(' ', array_filter($parts)));
+        if ($words === '') $words = 'Zero';
+
+        $result = $words . ' Rupees';
+
+        if ($paise > 0) {
+            $result .= ' and ' . $twoDigits($paise) . ' Paise';
+        }
+
+        return $result;
     }
 
     // small helpers from image
@@ -382,7 +416,7 @@
                 <td class="val">₹ {{ $fmt2($taxable) }}</td>
             </tr>
             <tr>
-                <td class="lab">IGST @{{ $fmt0($taxPercent) }}%</td>
+                <td class="lab">IGST {{ $fmt0($taxPercent) }}%</td>
                 <td class="val">₹ {{ $fmt2($calcTax) }}</td>
             </tr>
             <tr class="strong">
