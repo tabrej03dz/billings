@@ -47,6 +47,20 @@
     if (!$selectedState && !empty($business?->state_code) && !empty($business?->state)) {
         $selectedState = $business->state_code . ',' . $business->state; // "09,Uttar Pradesh"
     }
+
+    $businessTypes = [
+        'jewellery'     => 'Jewellery',
+        'retail'        => 'Retail',
+        'wholesale'     => 'Wholesale',
+        'manufacturer'  => 'Manufacturer',
+        'service'       => 'Service Provider',
+        'trading'       => 'Trading',
+        'ecommerce'     => 'E-Commerce',
+        'agency'        => 'Agency',
+        'other'         => 'Other',
+    ];
+
+    $selectedBusinessType = old('type', $business->type ?? '');
 @endphp
 
 <div class="space-y-6">
@@ -95,6 +109,37 @@
                    class="mt-1 w-full border rounded px-3 py-2">
             @error('gstin') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-1">
+                Business Type <span class="text-red-600">*</span>
+            </label>
+
+            <select
+                name="type"
+                required
+                class="mt-1 w-full border rounded px-3 py-2
+               bg-gray-900 text-white border-gray-600
+               focus:border-blue-500 focus:ring-blue-500"
+            >
+                <option value="" class="bg-gray-900 text-white">
+                    -- Select Business Type --
+                </option>
+
+                @foreach($businessTypes as $key => $label)
+                    <option value="{{ $key }}"
+                            class="bg-gray-900 text-white"
+                        {{ $selectedBusinessType === $key ? 'selected' : '' }}>
+                        {{ $label }}
+                    </option>
+                @endforeach
+            </select>
+
+            @error('type')
+            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
         <div>
             <label class="block text-sm font-medium mb-1">
                 State (GST Code) <span class="text-red-600">*</span>

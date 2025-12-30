@@ -28,6 +28,8 @@
                     session('active_business_id')
                     ?? ($user->current_business_id ?? null)
                     ?? optional($user->businesses->first())->id;
+                $business = App\Models\Business::find($activeBusinessId);
+
             @endphp
 
             <form action="{{ route('business.switch') }}" method="POST" class="inline-block">
@@ -89,6 +91,8 @@
                 </flux:navlist>
             @endcan
 
+
+            @if($business->type == 'jewellery')
             @can('show metal rates')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">
@@ -96,6 +100,7 @@
                     </flux:navlist.group>
                 </flux:navlist>
             @endcan
+            @endif
 
             @can('show items')
             <flux:navlist variant="outline">
@@ -131,7 +136,7 @@
             @can('show invoices')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
-                    <flux:navlist.item icon="home" :href="route('bank-accounts.index')" :current="request()->routeIs('bank-accounts.index')" wire:navigate>{{ __('Banks') }}</flux:navlist.item>
+                    <flux:navlist.item icon="home" :href="route('bank-accounts.index')" :current="request()->routeIs('bank-accounts.index')" wire:navigate>{{ __('Banks & Balance') }}</flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
             @endcan

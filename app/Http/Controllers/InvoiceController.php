@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exports\InvoicesExport;
 use App\Models\AdditionalCharge;
+use App\Models\BankAccount;
 use App\Models\Business;
 use App\Models\Invoice;
 use App\Models\Client;
@@ -131,12 +132,16 @@ class InvoiceController extends Controller
             ->get(['metal_type','purity','rate_per_gram']);
 
         $preview = \App\Services\InvoiceNumber::peek($bid, $today, $suggestedPrefix, 3);
+        $banks = BankAccount::where('business_id', 1)
+            ->orderBy('bank_name')
+            ->get(['id','bank_name','account_holder','account_no','ifsc']);
 
         return view('invoices.create_kapoor_style', [
             'today'              => $today,
             'clientsJson'        => $clients->values()->toJson(),
             'itemsJson'          => $items->values()->toJson(),
             'metalRatesJson'     => $metalRates->values()->toJson(),
+            'banksJson' => $banks->values()->toJson(),
             'suggestedPrefix'    => $suggestedPrefix,
             'basePrefix'         => $base,
             'initialInvoiceNo'   => $preview['full'] ?? 'Auto',
@@ -335,47 +340,102 @@ class InvoiceController extends Controller
     }
 
 
+//    public function show(Invoice $invoice)
+//    {
+//        // 1) Agar invoice ke paas pdf_url hai, to pehle wahi try karte hain
+//                if (!empty($invoice->pdf_url)) {
+//                    $path = $this->normalizePdfPath($invoice->pdf_url);
+//
+//                    if ($path && Storage::disk('public')->exists($path)) {
+//                        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//
+//                        return response()->file(
+//                            Storage::disk('public')->path($path),
+//                            [
+//                                'Content-Type'        => 'application/pdf',
+//                                'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+//                            ]
+//                        );
+//                    }
+//                }
+//
+//        // 2) Yaha tak aa gaye matlab:
+//        //    - ya to pdf_url empty hai
+//        //    - ya file missing hai
+//        //    => ab naya PDF generate karke save karein, aur phir dikhayein
+//
+//        // fresh relations ke liye (optional but safe)
+//        $invoice = $invoice->fresh(['client','items','business']);
+//
+//        $pdf = $this->simplePdfBuild($invoice);
+//        //        $pdf = $this->buildInvoicePdf($invoice);
+//
+//        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//        $fileName   = 'invoices/Invoice-'.$safeNumber.'.pdf';
+//
+//        // storage/app/public/invoices/Invoice-XXX.pdf
+//        Storage::disk('public')->put($fileName, $pdf->output());
+//
+//        // pdf_url me relative path save kar rahe hain
+//        $invoice->update([
+//            'pdf_url' => $fileName,
+//        ]);
+//
+//        return response()->file(
+//            Storage::disk('public')->path($fileName),
+//            [
+//                'Content-Type'        => 'application/pdf',
+//                'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+//            ]
+//        );
+//    }
+
     public function show(Invoice $invoice)
     {
-        // 1) Agar invoice ke paas pdf_url hai, to pehle wahi try karte hain
-        //        if (!empty($invoice->pdf_url)) {
-        //            $path = $this->normalizePdfPath($invoice->pdf_url);
-        //
-        //            if ($path && Storage::disk('public')->exists($path)) {
-        //                $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-        //
-        //                return response()->file(
-        //                    Storage::disk('public')->path($path),
-        //                    [
-        //                        'Content-Type'        => 'application/pdf',
-        //                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
-        //                    ]
-        //                );
-        //            }
-        //        }
-
-        // 2) Yaha tak aa gaye matlab:
-        //    - ya to pdf_url empty hai
-        //    - ya file missing hai
-        //    => ab naya PDF generate karke save karein, aur phir dikhayein
-
-        // fresh relations ke liye (optional but safe)
-        $invoice = $invoice->fresh(['client','items','business']);
-
-        $pdf = $this->simplePdfBuild($invoice);
-        //        $pdf = $this->buildInvoicePdf($invoice);
-
+        // invoice number safe for filename
         $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-        $fileName   = 'invoices/Invoice-'.$safeNumber.'.pdf';
 
-        // storage/app/public/invoices/Invoice-XXX.pdf
+        // -------------------------------
+        // 1️⃣ If PDF already saved in DB
+        // -------------------------------
+        if (!empty($invoice->pdf_url)) {
+
+            $path = $this->normalizePdfPath($invoice->pdf_url);
+
+            if ($path && Storage::disk('public')->exists($path)) {
+                return response()->file(
+                    Storage::disk('public')->path($path),
+                    [
+                        'Content-Type'        => 'application/pdf',
+                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+                    ]
+                );
+            }
+        }
+
+        // --------------------------------------------------
+        // 2️⃣ PDF missing (DB empty OR file deleted)
+        //    → Generate + Save + Show
+        // --------------------------------------------------
+
+        // Always use fresh relations for PDF
+        $invoice = $invoice->fresh(['client', 'items', 'business']);
+
+        // Build PDF
+        $pdf = $this->simplePdfBuild($invoice);
+        // OR: $pdf = $this->buildInvoicePdf($invoice);
+
+        $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+        // Save PDF to storage
         Storage::disk('public')->put($fileName, $pdf->output());
 
-        // pdf_url me relative path save kar rahe hain
+        // Save path in DB (only relative path)
         $invoice->update([
             'pdf_url' => $fileName,
         ]);
 
+        // Show PDF
         return response()->file(
             Storage::disk('public')->path($fileName),
             [
@@ -1127,6 +1187,7 @@ class InvoiceController extends Controller
             'igst_percent'   => ['nullable','numeric','min:0'],
 
             'payment_method' => ['nullable','string','max:255'],
+            'bank_account_id' => ['nullable','integer'],
         ]);
 
         $pay = $r->validate([
@@ -1339,6 +1400,7 @@ class InvoiceController extends Controller
 
         try {
             DB::transaction(function () use (
+                $r, // ✅ ADD THIS
                 $bid, $data, $invoiceDate, $prefix,
                 $subtotal, $avgTaxPercent, $taxableAmount, $taxAmount,
                 $discountTotal, $chargeTotal, $tcsPercent, $tcsAmount, $roundOff, $lessAmount,
@@ -1493,9 +1555,30 @@ class InvoiceController extends Controller
                 // stock cut only for product items (BEST: recordSale me service ignore karo)
                 $invoice->load(['items']);
                 $stock->recordSale($invoice);
+
+
+                // ✅ Update Bank balance if payment mode requires bank
+                $bankAccountId = $r->input('bank_account_id');
+
+                $mode = strtolower(trim((string)($data['payment_method'] ?? '')));
+                $bankModes = ['upi','bank','card','cheque']; // jisme aap bank select karwa rahe ho
+
+                if ($bankAccountId && in_array($mode, $bankModes, true) && $receivedTotal > 0) {
+
+                    $bank = \App\Models\BankAccount::where('business_id', $bid)
+                        ->where('id', $bankAccountId)
+                        ->first();
+
+                    if ($bank) {
+                        // ✅ SALES INVOICE => money IN => balance बढ़ेगा
+                        $bank->balance = round(((float)$bank->balance) + $receivedTotal, 2);
+                        $bank->save();
+                    }
+                }
+
             });
 
-            $pdf = $this->buildInvoicePdf($invoice);
+            $pdf = $this->simplePdfBuild($invoice);
 
             $dir = "invoices/{$bid}/" . now()->format('Y-m');
             $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);

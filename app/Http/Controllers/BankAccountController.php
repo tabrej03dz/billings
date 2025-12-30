@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
 use App\Models\Business;
+use App\Models\InvoicePayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -23,21 +24,48 @@ class BankAccountController extends Controller
         return (int) $first;
     }
 
+//    public function index(Request $request, $business = null)
+//    {
+//        $bid = $this->resolveBusinessId($request, $business);
+//
+//        $businessRow = Business::select('id','name','slug')->findOrFail($bid);
+//
+//        $bankAccounts = BankAccount::where('business_id', $bid)
+//            ->orderByDesc('is_default')
+//            ->orderByDesc('is_active')
+//            ->latest('id')
+//            ->paginate(15);
+//
+//        return view('bank_accounts.index', compact('bankAccounts', 'businessRow'));
+//    }
+
     public function index(Request $request, $business = null)
     {
         $bid = $this->resolveBusinessId($request, $business);
 
         $businessRow = Business::select('id','name','slug')->findOrFail($bid);
 
+        // ✅ Bank accounts list
         $bankAccounts = BankAccount::where('business_id', $bid)
             ->orderByDesc('is_default')
             ->orderByDesc('is_active')
             ->latest('id')
             ->paginate(15);
 
-        return view('bank_accounts.index', compact('bankAccounts', 'businessRow'));
-    }
+        // ✅ Total Bank Balance (bank_accounts table ka sum)
+        $totalBankBalance = (float) BankAccount::where('business_id', $bid)->sum('balance');
 
+        // ✅ Cash Balance (invoice_payments table se cash_amount ka sum)
+        // NOTE: abhi cash OUT/expense nahi hai, isliye yeh "cash received" ko cash balance maan raha hai
+        $cashBalance = (float) InvoicePayment::where('business_id', $bid)->sum('cash_amount');
+
+        return view('bank_accounts.index', compact(
+            'bankAccounts',
+            'businessRow',
+            'totalBankBalance',
+            'cashBalance'
+        ));
+    }
     public function create(Request $request, $business = null)
     {
         $bid = $this->resolveBusinessId($request, $business);

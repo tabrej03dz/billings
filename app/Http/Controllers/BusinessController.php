@@ -236,6 +236,7 @@ class BusinessController extends Controller
             'remove_signature' => ['nullable','boolean'],
             'state'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
             'pdf_template_id'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
+            'type' => ['required', 'string', 'max:100'],
         ]);
 
         // ✅ Split state_code & state_name

@@ -5,7 +5,6 @@
 ========================================== --}}
 
 <x-layouts.app :title="__('Create Sales Invoice')">
-
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
 
         {{-- errors --}}
@@ -161,19 +160,53 @@
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
                                 <td class="px-3 py-2">
-                                    <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                            @change="pickItem(i, $event.target.value)">
-                                        <option value="">-- Select Item --</option>
-                                        <template x-for="it in itemsData" :key="it.id">
-                                            <option :value="it.id" x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>
-                                        </template>
-                                    </select>
+{{--                                    <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"--}}
+{{--                                            @change="pickItem(i, $event.target.value)">--}}
+{{--                                        <option value="">-- Select Item --</option>--}}
+{{--                                        <template x-for="it in itemsData" :key="it.id">--}}
+{{--                                            <option :value="it.id" x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>--}}
+{{--                                        </template>--}}
+{{--                                    </select>--}}
 
-                                    <button type="button"
-                                            class="mb-2 px-2 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs hover:bg-gray-50 dark:hover:bg-neutral-800"
-                                            @click="openItemModal(i)">
-                                        + New Item
-                                    </button>
+{{--                                    <button type="button"--}}
+{{--                                            class="mb-2 px-2 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs hover:bg-gray-50 dark:hover:bg-neutral-800"--}}
+{{--                                            @click="openItemModal(i)">--}}
+{{--                                        + New Item--}}
+{{--                                    </button>--}}
+
+                                    <div class="flex items-center gap-2 mb-2">
+
+                                        <!-- Select -->
+                                        <select
+                                            class="flex-1 border rounded px-2 py-1
+               border-gray-300 dark:border-neutral-700
+               bg-white dark:bg-neutral-900
+               text-gray-900 dark:text-neutral-100 text-xs"
+                                            @change="pickItem(i, $event.target.value)"
+                                        >
+                                            <option value="">-- Select Item --</option>
+
+                                            <template x-for="it in itemsData" :key="it.id">
+                                                <option
+                                                    :value="it.id"
+                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name">
+                                                </option>
+                                            </template>
+                                        </select>
+
+                                        <!-- New Item Button -->
+                                        <button
+                                            type="button"
+                                            class="px-3 py-1 rounded border
+               border-gray-300 dark:border-neutral-700
+               text-xs whitespace-nowrap
+               hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                            @click="openItemModal(i)"
+                                        >
+                                            + New
+                                        </button>
+
+                                    </div>
 
                                     <input type="text" x-model="row.description" required
                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs">
@@ -495,6 +528,27 @@
                         </div>
                     </div>
 
+                    <div x-show="payment.mode !== 'cash'" style="display:none;" class="flex items-center justify-between gap-3">
+                        <div class="text-sm text-gray-600 dark:text-neutral-300">
+                            Select Bank
+                        </div>
+
+                        <div class="w-[320px] max-w-full">
+                            <select class="w-full border rounded-lg px-2 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
+                                    x-model="payment.bank_account_id">
+                                <option value="">-- Select Bank Account --</option>
+                                <template x-for="b in banks" :key="b.id">
+                                    <option :value="b.id"
+                                            x-text="(b.bank_name || 'Bank') + ' - ' + (b.account_no ? ('****' + String(b.account_no).slice(-4)) : '')">
+                                    </option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="bank_account_id" :value="payment.mode !== 'cash' ? payment.bank_account_id : ''">
+
+
                     {{-- Balance Amount --}}
                     <div class="flex justify-between pt-1">
                         <span class="text-sm font-semibold text-green-600">Balance Amount</span>
@@ -708,6 +762,7 @@
 
         </form>
     </div>
+    <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
 
     <script>
         function invoiceForm(){
@@ -717,6 +772,8 @@
 
             const BIZ_STATE_CODE = @js($businessStateCode ?? '');
             const BIZ_GSTIN      = @js($businessGstin ?? '');
+            const BANKS = JSON.parse(document.getElementById('banks-json')?.textContent || '[]');
+
 
             return {
                 clients: CLIENTS,
@@ -725,6 +782,11 @@
 
                 clientId: '',
                 party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' },
+
+
+                banks: BANKS,              // ✅ ADD THIS
+                // ...
+                payment: { received:0, mode:'cash', markFullyPaid:false, bank_account_id:'' },
 
                 hdr: {
                     date: @js($today),
@@ -812,6 +874,10 @@
                     if(this.payment.mode === 'card')   this.pay.card = amt;
                     if(this.payment.mode === 'cheque') this.pay.cheque = amt;
                     if(this.payment.mode === 'bank')   this.pay.upi = amt;
+                    if (this.payment.mode === 'cash') {
+                        this.payment.bank_account_id = '';
+                    }
+
 
                     this.calc();
                 },

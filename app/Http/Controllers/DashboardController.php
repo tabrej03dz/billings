@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Business;
 use App\Models\Invoice;
 use App\Models\Item;
 use App\Models\MetalRate;
@@ -102,6 +103,7 @@ class DashboardController extends Controller
         $monthStart = Carbon::now()->startOfMonth();
 
         $bid = auth()->user()->current_business_id ?? session('active_business_id');
+        $business = Business::find($bid);
 
         $invoiceQ  = Invoice::query();
         $purchaseQ = Purchase::query();
@@ -184,7 +186,7 @@ class DashboardController extends Controller
             ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
 
         return view('dashboard', compact(
-            'today',
+            'today', 'business',
             'todaySalesAmount', 'todaySalesCount',
             'monthSalesAmount', 'totalSalesAmount',
             'todayPurchasesAmount', 'monthPurchasesAmount', 'totalPurchasesAmount',
