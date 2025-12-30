@@ -44,7 +44,7 @@ class ClientController extends Controller
         $data = $request->validate([
             'name'    => ['required','string','max:255'],
             'mobile'  => [
-                'required','string','max:20',
+                'nullable','string','max:20',
                 Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id',$bid)),
             ],
             'gstin'   => [
@@ -90,7 +90,7 @@ class ClientController extends Controller
         $data = $request->validate([
             'name'    => ['required','string','max:255'],
             'mobile'  => [
-                'required','string','max:20',
+                'nullable','string','max:20',
                 Rule::unique('clients','mobile')
                     ->ignore($client->id)
                     ->where(fn($q) => $q->where('business_id',$bid)),

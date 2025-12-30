@@ -61,8 +61,8 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium mb-1">Mobile <span class="text-red-600">*</span></label>
-            <input type="text" name="mobile" required
+            <label class="block text-sm font-medium mb-1">Mobile <span class="text-red-600"></span></label>
+            <input type="text" name="mobile"
                    value="{{ old('mobile', $client->mobile ?? '') }}"
                    class="mt-1 w-full border rounded px-3 py-2">
             @error('mobile') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -94,7 +94,7 @@
                 class="mt-1 w-full border rounded px-3 py-2
                bg-gray-900 text-white border-gray-600
                focus:border-blue-500 focus:ring-blue-500"
-                required
+
             >
                 <option value="" class="bg-gray-900 text-white">
                     -- Select State --
