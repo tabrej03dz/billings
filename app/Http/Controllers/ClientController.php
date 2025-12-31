@@ -152,6 +152,7 @@ class ClientController extends Controller
             'state_code'   => $request->state_code ? trim($request->state_code) : null,
             'address' => $request->address ? trim($request->address) : null,
             'name'    => $request->name ? trim($request->name) : null,
+            'pincode'    => $request->pincode ? trim($request->pincode) : null,
         ]);
 
         // ✅ Convert empty string to null for nullable fields
@@ -179,6 +180,7 @@ class ClientController extends Controller
                 'state'   => ['nullable','string','max:100'],
                 'state_code'   => ['nullable','string','max:100'],
                 'address' => ['nullable','string','max:1000'],
+                'pincode' => ['nullable'],
             ]);
         } catch (ValidationException $e) {
             // ✅ return validation errors as JSON for modal
@@ -203,6 +205,7 @@ class ClientController extends Controller
                 'state'      => $client->state,
                 'state_code' => $client->state_code,
                 'gstin'      => $client->gstin,
+                'pincode'      => $client->pincode,
             ]
         ]);
     }

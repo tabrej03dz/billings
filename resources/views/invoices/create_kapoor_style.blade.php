@@ -80,11 +80,15 @@
                             <div class="text-gray-500 dark:text-neutral-400">State Code</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state_code || '-'"></div>
                         </div>
-                        <div class="col-span-2">
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">Pin</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.pincode || '-'"></div>
+                        </div>
+                        <div>
                             <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
                         </div>
-                        <div class="col-span-2">
+                        <div>
                             <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
                             <div class="font-semibold" :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
                                  x-text="isIntra() ? 'Intra State (CGST+SGST)' : 'Inter State (IGST)'"></div>
@@ -629,21 +633,7 @@
                             <input x-model="newClient.mobile" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="10 digit mobile">
                         </div>
 
-                        <div class="md:col-span-2">
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Address</label>
-                            <input x-model="newClient.address" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Full address">
-                        </div>
-
-{{--                        <div>--}}
-{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">State</label>--}}
-{{--                            <input x-model="newClient.state" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Uttar Pradesh">--}}
-{{--                        </div>--}}
-{{--                        <div>--}}
-{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">State Code</label>--}}
-{{--                            <input x-model="newClient.state_code" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="09">--}}
-{{--                        </div>--}}
-
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
                                 State (GST Code)
                             </label>
@@ -671,6 +661,16 @@
                                     Code: <span class="font-semibold" x-text="newClient.state_code || '-'"></span>
                                 </div>
                             </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Pin </label>
+                            <input x-model="newClient.pincode" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="6 digit pin">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Address</label>
+                            <input x-model="newClient.address" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Full address">
                         </div>
 
 
@@ -836,7 +836,7 @@
                 metalRates: METAL_RATES,
 
                 clientId: '',
-                party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' },
+                party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' },
 
                 states: [
                     {code:'01', name:'Jammu and Kashmir'},
@@ -1018,7 +1018,7 @@
 
                 // newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
 
-                newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', state_pick:'' },
+                newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' },
 
 
                 newItem: {
@@ -1038,7 +1038,7 @@
                 openClientModal(){
                     this.newClientError = '';
                     // this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' };
-                    this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', state_pick:'' };
+                    this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' };
                     this.modals.client = true;
                 },
                 closeClientModal(){ this.modals.client = false; },
@@ -1188,7 +1188,8 @@
                         state: c.state ?? '',
                         state_code: c.state_code ?? '',
                         gstin: c.gstin ?? '',
-                    } : { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' };
+                        pincode: c.pincode ?? '',
+                    } : { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' };
 
                     this.calc();
                 },
