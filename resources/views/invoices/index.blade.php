@@ -1,16 +1,66 @@
 <x-layouts.app :title="__('Invoices')">
+    @php
+        $activeType = request('type', $type ?? 'tax'); // tax/proforma
+        $activeType = in_array($activeType, ['tax','proforma'], true) ? $activeType : 'tax';
+    @endphp
+
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Invoices</h1>
-        <a href="{{ route('invoices.create') }}"
-           class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
-            + New
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">
+                Invoices
+            </h1>
+            <div class="text-xs text-gray-500 dark:text-neutral-400">
+                Showing: <span class="font-semibold">{{ strtoupper($activeType) }}</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="{{ route('invoices.create', 'proforma') }}"
+               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+                + Proforma
+            </a>
+
+            <a href="{{ route('invoices.create', 'tax') }}"
+               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                + Tax Invoice
+            </a>
+        </div>
+    </div>
+
+    {{-- ✅ Tabs --}}
+    <div class="mb-4 flex items-center gap-2">
+        <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'tax'])) }}"
+           class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
+           {{ $activeType === 'tax'
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+            Tax Invoices
+            <span class="text-[11px] px-2 py-0.5 rounded-full border
+                {{ $activeType === 'tax' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+                {{ $taxCount ?? '' }}
+            </span>
+        </a>
+
+        <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'proforma'])) }}"
+           class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
+           {{ $activeType === 'proforma'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+            Proforma
+            <span class="text-[11px] px-2 py-0.5 rounded-full border
+                {{ $activeType === 'proforma' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+                {{ $proCount ?? '' }}
+            </span>
         </a>
     </div>
 
-    {{-- Filters --}}
+    {{-- ✅ Filters --}}
     <form method="GET"
           action="{{ route('invoices.index') }}"
           class="mb-4 grid gap-3 md:grid-cols-5 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
+
+        {{-- ✅ keep tab type on filter submit --}}
+        <input type="hidden" name="type" value="{{ $activeType }}">
 
         {{-- Search --}}
         <div class="md:col-span-2">
@@ -20,7 +70,7 @@
             <input type="text" name="search"
                    value="{{ request('search') }}"
                    class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500"
-                   placeholder="Invoice no, client name, email...">
+                   placeholder="Invoice no, client name...">
         </div>
 
         {{-- From date --}}
@@ -58,24 +108,27 @@
         </div>
 
         {{-- Buttons --}}
-        <div class="md:col-span-5 flex items-center justify-end gap-2 pt-1">
-            <a href="{{ route('invoices.index') }}"
+        <div class="md:col-span-5 flex items-center justify-between gap-2 pt-1">
+            <a href="{{ route('invoices.index', ['type' => $activeType]) }}"
                class="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 dark:border-neutral-700 text-xs font-medium text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-800">
                 Reset
             </a>
-            <button type="submit"
-                    class="inline-flex items-center px-4 py-1.5 rounded-md bg-blue-600 text-white text-xs font-medium hover:bg-blue-700">
-                Apply Filters
-            </button>
+
+            <div class="flex items-center gap-2">
+                <a href="{{ route('invoices.export', request()->query()) }}"
+                   class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium">
+                    📄 Download Full Report
+                </a>
+
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                    Apply Filters
+                </button>
+            </div>
         </div>
     </form>
-    <a href="{{ route('invoices.export', request()->query()) }}"
-       class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium">
-        📄 Download Full Report
-    </a>
 
-
-@if(session('success'))
+    @if(session('success'))
         <div class="p-2 mb-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded">
             {{ session('success') }}
         </div>
@@ -85,30 +138,58 @@
         <table class="min-w-full text-sm border-separate border-spacing-0">
             <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
             <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">
-                <th>#</th>
+                <th>Invoice</th>
                 <th>Date</th>
                 <th>Client</th>
                 <th>Total</th>
                 <th>Received</th>
                 <th>Balance</th>
-                <th></th>
+                <th class="text-right">Actions</th>
             </tr>
             </thead>
+
             <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">
             @forelse($invoices as $inv)
                 <tr class="hover:bg-gray-50 dark:hover:bg-neutral-800/60">
-                    <td class="px-4 py-2">{{ $inv->invoice_number }}</td>
-                    <td class="px-4 py-2">{{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}</td>
-                    <td class="px-4 py-2">{{ $inv->client->name }}</td>
-                    <td class="px-4 py-2">₹ {{ number_format($inv->total,2) }}</td>
-                    <td class="px-4 py-2">₹ {{ number_format($inv->received_amount,2) }}</td>
-                    <td class="px-4 py-2">₹ {{ number_format($inv->balance,2) }}</td>
-                    <td class="px-4 py-2 space-x-3">
+                    <td class="px-4 py-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold">{{ $inv->invoice_number }}</span>
+
+                            <span class="text-[10px] px-2 py-0.5 rounded-full border
+                                {{ $inv->invoice_type === 'proforma'
+                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800'
+                                    : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800' }}">
+                                {{ strtoupper($inv->invoice_type) }}
+                            </span>
+                        </div>
+                    </td>
+
+                    <td class="px-4 py-2">
+                        {{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}
+                    </td>
+
+                    <td class="px-4 py-2">
+                        {{ $inv->client->name ?? '-' }}
+                    </td>
+
+                    <td class="px-4 py-2">
+                        ₹ {{ number_format((float)$inv->total, 2) }}
+                    </td>
+
+                    <td class="px-4 py-2">
+                        ₹ {{ number_format((float)$inv->received_amount, 2) }}
+                    </td>
+
+                    <td class="px-4 py-2">
+                        ₹ {{ number_format((float)$inv->balance, 2) }}
+                    </td>
+
+                    <td class="px-4 py-2 text-right space-x-3 whitespace-nowrap">
                         <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>
                         <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
-
-{{--                        <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
+                        <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
                         <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
+
                         <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
                             @csrf @method('DELETE')
                             <button class="text-red-600 hover:underline">Delete</button>
@@ -118,7 +199,7 @@
             @empty
                 <tr>
                     <td colspan="7" class="px-4 py-3 text-center text-gray-500 dark:text-neutral-400">
-                        No invoices.
+                        No invoices found.
                     </td>
                 </tr>
             @endforelse

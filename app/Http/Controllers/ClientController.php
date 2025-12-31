@@ -149,6 +149,7 @@ class ClientController extends Controller
             'gstin'   => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
             'pan'     => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
             'state'   => $request->state ? trim($request->state) : null,
+            'state_code'   => $request->state_code ? trim($request->state_code) : null,
             'address' => $request->address ? trim($request->address) : null,
             'name'    => $request->name ? trim($request->name) : null,
         ]);
@@ -176,6 +177,7 @@ class ClientController extends Controller
                     Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
                 ],
                 'state'   => ['nullable','string','max:100'],
+                'state_code'   => ['nullable','string','max:100'],
                 'address' => ['nullable','string','max:1000'],
             ]);
         } catch (ValidationException $e) {
@@ -194,9 +196,13 @@ class ClientController extends Controller
         return response()->json([
             'ok' => true,
             'client' => [
-                'id'     => $client->id,
-                'name'   => $client->name,
-                'mobile' => $client->mobile,
+                'id'         => $client->id,
+                'name'       => $client->name,
+                'mobile'     => $client->mobile,
+                'address'    => $client->address,
+                'state'      => $client->state,
+                'state_code' => $client->state_code,
+                'gstin'      => $client->gstin,
             ]
         ]);
     }

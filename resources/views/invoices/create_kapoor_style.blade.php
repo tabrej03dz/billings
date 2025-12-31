@@ -29,7 +29,7 @@
             </button>
         </div>
 
-        <form x-ref="form" method="POST" action="{{ route('invoices.store') }}" @submit.prevent="beforeSubmit">
+        <form x-ref="form" method="POST" action="{{ route('invoices.store', $docType) }}" enctype="multipart/form-data" @submit.prevent="beforeSubmit">
             @csrf
 
             {{-- TOP PANELS --}}
@@ -555,6 +555,30 @@
                         <span class="text-sm font-bold text-green-600" x-text="money(balanceAmount())"></span>
                     </div>
 
+                    {{-- ================= SIGNATURE UPLOAD ================= --}}
+                    <div class="pt-2">
+                        <div class="text-sm font-semibold text-gray-900 dark:text-neutral-100 mb-2">
+                            Signature
+                        </div>
+
+                        <div class="grid gap-2">
+                            <input type="file"
+                                   name="signature"
+                                   accept="image/*"
+                                   class="w-full text-sm file:mr-3 file:px-3 file:py-2 file:rounded-lg
+                      file:border-0 file:bg-gray-100 file:text-gray-700
+                      dark:file:bg-neutral-800 dark:file:text-neutral-200
+                      border border-gray-300 dark:border-neutral-700
+                      rounded-lg px-3 py-2 bg-white dark:bg-neutral-900
+                      text-gray-900 dark:text-neutral-100">
+
+                            <div class="text-[11px] text-gray-500 dark:text-neutral-400">
+                                Allowed: JPG/PNG/WebP • Max 2MB (recommended: transparent PNG)
+                            </div>
+                        </div>
+                    </div>
+
+
                     {{-- ✅ Hidden inputs (ONLY ONCE) --}}
                     <input type="hidden" name="charges_json" :value="JSON.stringify(chargesPayload())">
 
@@ -610,14 +634,45 @@
                             <input x-model="newClient.address" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Full address">
                         </div>
 
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">State</label>
-                            <input x-model="newClient.state" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Uttar Pradesh">
+{{--                        <div>--}}
+{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">State</label>--}}
+{{--                            <input x-model="newClient.state" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Uttar Pradesh">--}}
+{{--                        </div>--}}
+{{--                        <div>--}}
+{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">State Code</label>--}}
+{{--                            <input x-model="newClient.state_code" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="09">--}}
+{{--                        </div>--}}
+
+                        <div class="md:col-span-2">
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                State (GST Code)
+                            </label>
+
+                            <select
+                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm
+                                   bg-white dark:bg-neutral-900
+                                   border-gray-300 dark:border-neutral-700
+                                   text-gray-900 dark:text-neutral-100"
+                                x-model="newClient.state_pick"
+                                @change="applyClientState()"
+                            >
+                                <option value="">-- Select State --</option>
+
+                                <template x-for="st in states" :key="st.code">
+                                    <option :value="st.code + ',' + st.name" x-text="st.name + ' (' + st.code + ')'"></option>
+                                </template>
+                            </select>
+
+                            <div class="mt-1 grid grid-cols-2 gap-2 text-[11px] text-gray-500 dark:text-neutral-400">
+                                <div>
+                                    State: <span class="font-semibold" x-text="newClient.state || '-'"></span>
+                                </div>
+                                <div>
+                                    Code: <span class="font-semibold" x-text="newClient.state_code || '-'"></span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">State Code</label>
-                            <input x-model="newClient.state_code" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="09">
-                        </div>
+
 
                         <div class="md:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>
@@ -783,6 +838,46 @@
                 clientId: '',
                 party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'' },
 
+                states: [
+                    {code:'01', name:'Jammu and Kashmir'},
+                    {code:'02', name:'Himachal Pradesh'},
+                    {code:'03', name:'Punjab'},
+                    {code:'04', name:'Chandigarh'},
+                    {code:'05', name:'Uttarakhand'},
+                    {code:'06', name:'Haryana'},
+                    {code:'07', name:'Delhi'},
+                    {code:'08', name:'Rajasthan'},
+                    {code:'09', name:'Uttar Pradesh'},
+                    {code:'10', name:'Bihar'},
+                    {code:'11', name:'Sikkim'},
+                    {code:'12', name:'Arunachal Pradesh'},
+                    {code:'13', name:'Nagaland'},
+                    {code:'14', name:'Manipur'},
+                    {code:'15', name:'Mizoram'},
+                    {code:'16', name:'Tripura'},
+                    {code:'17', name:'Meghalaya'},
+                    {code:'18', name:'Assam'},
+                    {code:'19', name:'West Bengal'},
+                    {code:'20', name:'Jharkhand'},
+                    {code:'21', name:'Odisha'},
+                    {code:'22', name:'Chhattisgarh'},
+                    {code:'23', name:'Madhya Pradesh'},
+                    {code:'24', name:'Gujarat'},
+                    {code:'26', name:'Dadra and Nagar Haveli and Daman and Diu'},
+                    {code:'27', name:'Maharashtra'},
+                    {code:'29', name:'Karnataka'},
+                    {code:'30', name:'Goa'},
+                    {code:'31', name:'Lakshadweep'},
+                    {code:'32', name:'Kerala'},
+                    {code:'33', name:'Tamil Nadu'},
+                    {code:'34', name:'Puducherry'},
+                    {code:'35', name:'Andaman and Nicobar Islands'},
+                    {code:'36', name:'Telangana'},
+                    {code:'37', name:'Andhra Pradesh'},
+                    {code:'38', name:'Ladakh'},
+                ],
+
+
 
                 banks: BANKS,              // ✅ ADD THIS
                 // ...
@@ -921,7 +1016,10 @@
                 newItemError:'',
                 activeRowIndex: null,
 
-                newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
+                // newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
+
+                newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', state_pick:'' },
+
 
                 newItem: {
                     type:'product',
@@ -939,10 +1037,25 @@
 
                 openClientModal(){
                     this.newClientError = '';
-                    this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' };
+                    // this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' };
+                    this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', state_pick:'' };
                     this.modals.client = true;
                 },
                 closeClientModal(){ this.modals.client = false; },
+
+
+                applyClientState(){
+                    const v = String(this.newClient.state_pick || '').trim();
+                    if(!v){
+                        this.newClient.state = '';
+                        this.newClient.state_code = '';
+                        return;
+                    }
+                    const parts = v.split(',');
+                    this.newClient.state_code = (parts[0] || '').trim();
+                    this.newClient.state = (parts.slice(1).join(',') || '').trim();
+                },
+
 
                 openItemModal(rowIndex=null){
                     this.activeRowIndex = rowIndex;

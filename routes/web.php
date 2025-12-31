@@ -104,14 +104,15 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('api-keys', \App\Http\Controllers\ApiKeyController::class);
 
         Route::get('/invoices',              [InvoiceController::class, 'index'])->name('invoices.index');
-        Route::get('/invoices/create',       [InvoiceController::class, 'create'])->name('invoices.create');
-        Route::post('/invoices',             [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::get('/invoices/create/{type?}',       [InvoiceController::class, 'create'])->name('invoices.create');
+        Route::post('/invoices/store/{type}',             [InvoiceController::class, 'store'])->name('invoices.store');
         Route::get('/invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
         Route::get('/invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
         Route::put('/invoices/{invoice}',    [InvoiceController::class, 'update'])->name('invoices.update');
         Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
         Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
+
 
 
 
