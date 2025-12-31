@@ -1,3 +1,5 @@
+{{-- resources/views/invoices/pdf_simple.blade.php --}}
+
 @php
     /** @var \App\Models\Invoice $inv */
     $b = $biz ?? ($inv->business ?? null);
@@ -8,13 +10,21 @@
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
 
-    // invoice totals (controller se aa rahe)
-    $taxable = (float)($subtotal ?? 0);
-    $igst    = (float)($igst_amount ?? $tax_total ?? 0);
-    $total   = (float)($grand_total ?? 0);
-    $received = (float)($received ?? 0);
+    // ========= SOURCE OF TRUTH: totals from controller / DB =========
+    $taxable      = (float)($subtotal ?? ($inv->subtotal ?? 0));
+    $tax_total_db = (float)($tax_total ?? ($inv->tax_amount ?? 0));
 
-    // payment row totals (aapka logic)
+    $cgst_db = (float)($cgst_amount ?? ($inv->cgst_amount ?? 0));
+    $sgst_db = (float)($sgst_amount ?? ($inv->sgst_amount ?? 0));
+    $igst_db = (float)($igst_amount ?? ($inv->igst_amount ?? 0));
+
+    // grand total (total payable) - prefer passed var, else invoice total
+    $grand_db = (float)($grand_total ?? ($inv->total ?? 0));
+
+    // received from invoice (fallback)
+    $received_db = (float)($received ?? ($inv->received_amount ?? 0));
+
+    // payment row totals
     $pay = $payRow ?? null;
     $cashAmt   = (float)($pay->cash_amount ?? 0);
     $onlineAmt = (float)($pay->online_amount ?? 0);
@@ -25,12 +35,31 @@
 
     $receivedTot = (float)($pay->received_total
         ?? ($cashAmt + $onlineAmt + $cardAmt + $chequeAmt + $creditExcess + $advanceAmt)
-        ?? $received
+        ?? $received_db
     );
 
-    $balanceNow = (float)($balance ?? max(0, $total - $receivedTot));
+    // balance
+    $balanceNow = (float)($balance ?? ($inv->balance ?? max(0, $grand_db - $receivedTot)));
 
-    // amount in words (simple INR words)
+    // tax percent label (if available)
+    $taxPercent = (float)($inv->tax_percent ?? 0);
+
+    // Decide IGST vs CGST/SGST
+    $isIGST = $igst_db > 0;
+
+    // final tax amount:
+    // 1) if IGST present -> igst
+    // 2) else if cgst/sgst present -> cgst+sgst
+    // 3) else fallback -> tax_total
+    $finalTax = $isIGST
+        ? $igst_db
+        : (($cgst_db + $sgst_db) > 0 ? ($cgst_db + $sgst_db) : $tax_total_db);
+
+    // final totals
+    $finalTax   = round((float)$finalTax, 2);
+    $finalTotal = round((float)$grand_db, 2);
+
+    // helpers
     function inr_words($amount)
     {
         $amount = (float)$amount;
@@ -41,9 +70,7 @@
             '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
             'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
         ];
-        $tens = [
-            '', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'
-        ];
+        $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
 
         $twoDigits = function($n) use ($ones,$tens){
             $n = (int)$n;
@@ -54,36 +81,27 @@
 
         $parts = [];
 
-        // Crore
-        if ($rupees >= 10000000) {
+        if ($rupees >= 10000000) { // Crore
             $cr = (int) floor($rupees / 10000000);
             $parts[] = $twoDigits($cr) . ' Crore';
             $rupees = $rupees % 10000000;
         }
-
-        // Lakh
-        if ($rupees >= 100000) {
+        if ($rupees >= 100000) { // Lakh
             $lk = (int) floor($rupees / 100000);
             $parts[] = $twoDigits($lk) . ' Lakh';
             $rupees = $rupees % 100000;
         }
-
-        // Thousand
-        if ($rupees >= 1000) {
+        if ($rupees >= 1000) { // Thousand
             $th = (int) floor($rupees / 1000);
             $parts[] = $twoDigits($th) . ' Thousand';
             $rupees = $rupees % 1000;
         }
-
-        // Hundred
-        if ($rupees >= 100) {
+        if ($rupees >= 100) { // Hundred
             $hd = (int) floor($rupees / 100);
             $parts[] = $ones[$hd] . ' Hundred';
             $rupees = $rupees % 100;
         }
-
-        // Last 1-99
-        if ($rupees > 0) {
+        if ($rupees > 0) { // last 1-99
             $parts[] = $twoDigits($rupees);
         }
 
@@ -91,41 +109,35 @@
         if ($words === '') $words = 'Zero';
 
         $result = $words . ' Rupees';
-
-        if ($paise > 0) {
-            $result .= ' and ' . $twoDigits($paise) . ' Paise';
-        }
-
+        if ($paise > 0) $result .= ' and ' . $twoDigits($paise) . ' Paise';
         return $result;
     }
 
-    // small helpers from image
-    $invoiceNo  = $inv->invoice_number ?? $inv->invoice_no ?? '-';
+    // invoice meta
+    $invoiceNo   = $inv->invoice_number ?? $inv->invoice_no ?? '-';
     $invoiceDate = $inv->invoice_date ?? $inv->date ?? null;
 
-    $gstin = $c->gstin ?? $c->gst_number ?? $c->gst ?? '';
-    $pan   = $c->pan ?? $c->pan_number ?? '';
-    $pos   = $c->place_of_supply ?? $c->state ?? '';
+    $gstin  = $c->gstin ?? $c->gst_number ?? $c->gst ?? '';
+    $pan    = $c->pan ?? $c->pan_number ?? '';
+    $pos    = $c->place_of_supply ?? $c->state ?? '';
     $mobile = $c->mobile ?? $c->phone ?? $c->phone1 ?? '';
 
     // business meta
-    $b_addr = trim((string)($b->address ?? ''));
-    $b_city = trim((string)($b->city ?? ''));
-    $b_pin  = trim((string)($b->pin ?? ''));
-    $b_state= trim((string)($b->state ?? ''));
+    $b_addr   = trim((string)($b->address ?? ''));
+    $b_city   = trim((string)($b->city ?? ''));
+    $b_pin    = trim((string)($b->pin ?? ''));
+    $b_state  = trim((string)($b->state ?? ''));
     $b_mobile = $b->mobile ?? $b->phone ?? '';
     $b_email  = $b->email ?? '';
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
-    // item/tax percent (image me 18%)
-    $taxPercent = (float)($inv->tax_percent ?? 18);
 @endphp
 
     <!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Tax Invoice {{ $invoiceNo }}</title>
+    <title>{{ ucfirst($type) }} Invoice {{ $invoiceNo }}</title>
     <style>
         *{ box-sizing:border-box; }
         body{
@@ -135,15 +147,8 @@
             margin:0;
             padding:0;
         }
-        .wrap{
-
-            margin:10px;
-            padding:10px 12px 12px 12px;
-        }
-        .topbar{
-            border-top:4px solid #2b2b2b;
-            margin:-10px -12px 8px -12px;
-        }
+        .wrap{ margin:10px; padding:10px 12px 12px 12px; }
+        .topbar{ border-top:4px solid #2b2b2b; margin:-10px -12px 8px -12px; }
         .muted{ color:#444; }
         .red{ color:#d60000; }
         .bold{ font-weight:700; }
@@ -161,10 +166,7 @@
         }
         .headerRow td{ vertical-align:top; }
 
-        .line-red{
-            border-top:3px solid #d60000;
-            margin:8px 0 6px 0;
-        }
+        .line-red{ border-top:3px solid #d60000; margin:8px 0 6px 0; }
 
         .greybar{
             background:#e9e9e9;
@@ -173,10 +175,7 @@
             font-size:9.5px;
         }
 
-        .billto{
-            font-size:9.5px;
-            margin-bottom:8px;
-        }
+        .billto{ font-size:9.5px; margin-bottom:8px; }
         .billto .name{ font-size:10.5px; font-weight:700; }
 
         .svc{
@@ -184,83 +183,32 @@
             border-bottom:2px solid #d60000;
             margin-top:6px;
         }
-        .svc th, .svc td{
-            padding:6px 6px;
-            font-size:9.5px;
-        }
-        .svc thead th{
-            text-align:left;
-            font-weight:700;
-        }
-        .svc thead th.right,
-        .svc td.right{ text-align:right; }
-        .svc tbody td{
-            border-top:1px solid #cfcfcf;
-            vertical-align:top;
-        }
-        .svc .descSmall{
-            font-size:8.3px;
-            color:#555;
-            margin-top:2px;
-        }
+        .svc th, .svc td{ padding:6px 6px; font-size:9.5px; }
+        .svc thead th{ text-align:left; font-weight:700; }
+        .svc thead th.right, .svc td.right{ text-align:right; }
+        .svc tbody td{ border-top:1px solid #cfcfcf; vertical-align:top; }
+        .svc .descSmall{ font-size:8.3px; color:#555; margin-top:2px; }
 
         .subtotalRow{
             border-top:2px solid #d60000;
             border-bottom:2px solid #d60000;
         }
-        .subtotalRow td{
-            padding:6px 6px;
-            font-size:9.5px;
-            font-weight:700;
-        }
+        .subtotalRow td{ padding:6px 6px; font-size:9.5px; font-weight:700; }
 
-        .bottom{
-            margin-top:10px;
-        }
+        .bottom{ margin-top:10px; }
 
-        .totalsBox{
-            width:52%;
-            margin-left:auto;
-            font-size:9.5px;
-        }
-        .totalsBox td{
-            padding:4px 6px;
-        }
-        .totalsBox .lab{
-            text-align:right;
-            color:#333;
-        }
+        .totalsBox{ width:52%; margin-left:auto; font-size:9.5px; }
+        .totalsBox td{ padding:4px 6px; }
+        .totalsBox .lab{ text-align:right; color:#333; }
         .totalsBox .val{
-            text-align:right;
-            font-weight:700;
-            width:120px;
-            border-bottom:1px solid #666;
+            text-align:right; font-weight:700; width:120px; border-bottom:1px solid #666;
         }
-        .totalsBox .strong .lab,
-        .totalsBox .strong .val{ font-weight:700; }
+        .totalsBox .strong .lab, .totalsBox .strong .val{ font-weight:700; }
 
-        .amountWords{
-            width:52%;
-            margin-left:auto;
-            margin-top:10px;
-            font-size:9.2px;
-        }
-        .signArea{
-            width:52%;
-            margin-left:auto;
-            margin-top:14px;
-            text-align:right;
-            font-size:9px;
-        }
-        .signImg{
-            height:34px;
-            width:auto;
-            margin-bottom:6px;
-        }
-        .auth{
-            font-weight:700;
-            margin-top:6px;
-        }
+        .amountWords{ width:52%; margin-left:auto; margin-top:10px; font-size:9.2px; }
+        .signArea{ width:52%; margin-left:auto; margin-top:14px; text-align:right; font-size:9px; }
+        .signImg{ height:34px; width:auto; margin-bottom:6px; }
+        .auth{ font-weight:700; margin-top:6px; }
     </style>
 </head>
 
@@ -279,7 +227,7 @@
 
             <td style="width:62%;">
                 <div>
-                    <span class="bold" style="font-size:11px;">TAX INVOICE</span>
+                    <span class="bold" style="font-size:11px;">{{ strtoupper($type) }} INVOICE</span>
                     <span class="smalltag">ORIGINAL FOR RECIPIENT</span>
                 </div>
 
@@ -307,7 +255,7 @@
 
     <div class="line-red"></div>
 
-    {{-- GREY BAR (Invoice No + Date) --}}
+    {{-- GREY BAR --}}
     <div class="greybar">
         <table>
             <tr>
@@ -337,12 +285,8 @@
 
     {{-- SERVICES TABLE --}}
     @php
-        // single service style (image जैसा). Multiple items हों तो भी चल जाएगा.
-        $calcTax = $igst > 0 ? $igst : ($taxable * ($taxPercent/100));
-        $calcTax = round($calcTax, 2);
-        $calcTotal = $total > 0 ? $total : ($taxable + $calcTax);
-
-        // If only 1 line, show rate as taxable; else keep per-line rate.
+        // Per-line tax display:
+        // If your items table has tax_amount/line_tax use it; else keep 0 (avoid wrong repeat).
         $single = ($items->count() === 1);
     @endphp
 
@@ -365,15 +309,30 @@
                 $qty  = (float)($it->quantity ?? 1);
                 $qty  = $qty > 0 ? $qty : 1;
 
-                // Your earlier "base amount" logic -> use lineBase if exists, else rate*qty
+                // line base
                 $lineBase = (float)($it->line_base ?? 0);
-                if($lineBase <= 0){
+                if ($lineBase <= 0) {
                     $r = (float)($it->rate ?? 0);
                     $lineBase = $r * $qty;
                 }
 
-                // show like image: rate = taxable (single package)
+                // showRate (same style)
                 $showRate = $single ? $taxable : $lineBase;
+
+                // Per line tax (only if available, else 0 to avoid wrong data)
+                $lineTax = (float)($it->tax_amount ?? $it->line_tax ?? 0);
+
+                $lineTax = ($it->rate * $it->tax_percent)/100;
+                $lineTax = round($lineTax, 2);
+
+                // line total (if stored, use it; else base+tax)
+                $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
+                if ($lineTotal <= 0) $lineTotal = $lineBase + $lineTax;
+                $lineTotal = round($lineTotal, 2);
+
+                // If single line and lineTax empty, show invoice tax in that row (optional)
+                if ($single && $lineTax <= 0) $lineTax = $finalTax;
+                if ($single && $lineTotal <= 0) $lineTotal = $finalTotal;
             @endphp
             <tr>
                 <td>
@@ -381,30 +340,35 @@
                     @if(!empty($it->note))
                         <div class="descSmall">{{ $it->note }}</div>
                     @else
-                        <div class="descSmall">
-                            {{ $it->extra_line ?? '' }}
-                        </div>
+                        <div class="descSmall">{{ $it->extra_line ?? '' }}</div>
                     @endif
                 </td>
                 <td>{{ $sac }}</td>
                 <td>{{ $qty }} {{ $it->unit ?? '' }}</td>
                 <td class="right">{{ $fmt2($showRate) }}</td>
-                <td class="right">{{ $fmt2($calcTax) }}<div class="muted" style="font-size:8px;">({{ $fmt0($taxPercent) }}%)</div></td>
-                <td class="right">{{ $fmt0($calcTotal) }}</td>
+
+                <td class="right">
+                    {{ $fmt2($lineTax) }}
+                    <div class="muted" style="font-size:8px;">
+                        ({{ $it->tax_percent  }}%)
+                    </div>
+                </td>
+
+                <td class="right">{{ $fmt2($lineTotal) }}</td>
             </tr>
         @endforeach
         </tbody>
     </table>
 
-    {{-- SUBTOTAL LINE --}}
+    {{-- SUBTOTAL LINE (show invoice tax/total only once, correct) --}}
     <table class="subtotalRow" style="margin-top:14px;">
         <tr>
             <td style="width:52%;">SUBTOTAL</td>
             <td style="width:10%;">{{ $fmt0($items->count() ?: 1) }}</td>
             <td style="width:10%;"></td>
             <td style="width:10%;"></td>
-            <td style="width:10%;" class="right">₹ {{ $fmt2($calcTax) }}</td>
-            <td style="width:8%;" class="right">₹ {{ $fmt0($calcTotal) }}</td>
+            <td style="width:10%;" class="right">₹ {{ $fmt2($finalTax) }}</td>
+            <td style="width:8%;" class="right">₹ {{ $fmt2($finalTotal) }}</td>
         </tr>
     </table>
 
@@ -415,27 +379,43 @@
                 <td class="lab">Taxable Amount</td>
                 <td class="val">₹ {{ $fmt2($taxable) }}</td>
             </tr>
-            <tr>
-                <td class="lab">IGST {{ $fmt0($taxPercent) }}%</td>
-                <td class="val">₹ {{ $fmt2($calcTax) }}</td>
-            </tr>
+
+            @if($isIGST)
+                <tr>
+{{--                    <td class="lab">IGST {{ $fmt0($taxPercent) }}%</td>--}}
+                    <td class="lab">IGST </td>
+                    <td class="val">₹ {{ $fmt2($igst_db) }}</td>
+                </tr>
+            @else
+                <tr>
+{{--                    <td class="lab">CGST {{ $fmt0($taxPercent/2) }}%</td>--}}
+                    <td class="lab">CGST </td>
+                    <td class="val">₹ {{ $fmt2($cgst_db) }}</td>
+                </tr>
+                <tr>
+{{--                    <td class="lab">SGST {{ $fmt0($taxPercent/2) }}%</td>--}}
+                    <td class="lab">SGST </td>
+                    <td class="val">₹ {{ $fmt2($sgst_db) }}</td>
+                </tr>
+            @endif
+
             <tr class="strong">
                 <td class="lab">Total Amount</td>
-                <td class="val">₹ {{ $fmt0($calcTotal) }}</td>
+                <td class="val">₹ {{ $fmt2($finalTotal) }}</td>
             </tr>
             <tr>
                 <td class="lab">Received Amount</td>
-                <td class="val">₹ {{ $fmt0($receivedTot) }}</td>
+                <td class="val">₹ {{ $fmt2($receivedTot) }}</td>
             </tr>
             <tr class="strong">
                 <td class="lab">Balance</td>
-                <td class="val">₹ {{ $fmt0($balanceNow) }}</td>
+                <td class="val">₹ {{ $fmt2($balanceNow) }}</td>
             </tr>
         </table>
 
         <div class="amountWords">
             <div class="bold muted" style="margin-bottom:3px;">Total Amount (in words)</div>
-            <div class="bold">{{ inr_words($calcTotal) }}</div>
+            <div class="bold">{{ inr_words($finalTotal) }}</div>
         </div>
 
         <div class="signArea">

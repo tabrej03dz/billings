@@ -1403,28 +1403,62 @@
                 },
 
                 // avg tax percent weighted by base
-                avgTaxPercent(){
-                    const baseSum = this.items.reduce((s,r)=> s + this.lineBase(r), 0);
-                    if(baseSum <= 0) return 0;
-                    const weighted = this.items.reduce((s,r)=> s + (this.lineBase(r) * Number(r.tax_percent||0)), 0);
-                    return Number((weighted / baseSum).toFixed(2));
-                },
-
-                // taxable = subtotal + charges - discount
+                // avgTaxPercent(){
+                //     const baseSum = this.items.reduce((s,r)=> s + this.lineBase(r), 0);
+                //     if(baseSum <= 0) return 0;
+                //     const weighted = this.items.reduce((s,r)=> s + (this.lineBase(r) * Number(r.tax_percent||0)), 0);
+                //     return Number((weighted / baseSum).toFixed(2));
+                // },
+                //
+                // // taxable = subtotal + charges - discount
                 taxableAmount(){
                     const val = this.subtotal() + this.chargesTotal() - this.discountAmount();
                     return Number(Math.max(0,val).toFixed(2));
                 },
+                //
+                // // tax on taxable
+                // taxOnTaxable(){
+                //     const pct = this.avgTaxPercent();
+                //     return Number((this.taxableAmount() * (pct/100)).toFixed(2));
+                // },
+                //
+                // cgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
+                // sgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
+                // igst(){ return this.isIntra() ? 0 : Number(this.taxOnTaxable().toFixed(2)); },
 
-                // tax on taxable
+
+                // ✅ avg tax % WITHOUT rounding (only for display/hidden)
+                avgTaxPercentRaw(){
+                    const baseSum = this.items.reduce((s,r)=> s + this.lineBase(r), 0);
+                    if(baseSum <= 0) return 0;
+                    const weighted = this.items.reduce((s,r)=> s + (this.lineBase(r) * Number(r.tax_percent||0)), 0);
+                    return (weighted / baseSum); // NO toFixed here
+                },
+                avgTaxPercent(){
+                    return Number(this.avgTaxPercentRaw().toFixed(2)); // only display
+                },
+
+                // ✅ Total tax = SUM of each line tax (exact slab wise)
+                itemsTaxTotal(){
+                    return Number(this.items.reduce((s,r)=> s + this.lineTax(r), 0).toFixed(2));
+                },
+
+                // ✅ (optional) charges tax using avgTaxRaw (if you want charges taxable)
+                // if you don't want charges taxable, just return 0 here
+                chargesTaxTotal(){
+                    const pct = this.avgTaxPercentRaw();
+                    return Number((this.chargesTotal() * (pct/100)).toFixed(2));
+                },
+
                 taxOnTaxable(){
-                    const pct = this.avgTaxPercent();
-                    return Number((this.taxableAmount() * (pct/100)).toFixed(2));
+                    // ✅ best: slab-wise tax + charges tax
+                    return Number((this.itemsTaxTotal() + this.chargesTaxTotal()).toFixed(2));
                 },
 
                 cgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
                 sgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
                 igst(){ return this.isIntra() ? 0 : Number(this.taxOnTaxable().toFixed(2)); },
+
 
                 totalBeforeRound(){
                     return Number((this.taxableAmount() + this.taxOnTaxable() + this.tcsAmount()).toFixed(2));

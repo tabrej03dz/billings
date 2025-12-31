@@ -52,7 +52,13 @@
             </form>
             @endrole
 
-
+            @can('show invoices')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('invoices.index')" :current="request()->routeIs('invoices.index')" wire:navigate>{{ __('Invoices') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+            @endcan
 
             @can('show businesses')
             <flux:navlist variant="outline">
@@ -126,13 +132,7 @@
             </flux:navlist>
             @endcan
 
-            @can('show invoices')
-            <flux:navlist variant="outline">
-                <flux:navlist.group class="grid">
-                    <flux:navlist.item icon="home" :href="route('invoices.index')" :current="request()->routeIs('invoices.index')" wire:navigate>{{ __('Invoices') }}</flux:navlist.item>
-                </flux:navlist.group>
-            </flux:navlist>
-            @endcan
+
             @can('show invoices')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
