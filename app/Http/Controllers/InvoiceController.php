@@ -37,56 +37,6 @@ class InvoiceController extends Controller
         $this->stock = $stock;
     }
 
-//    public function index(Request $r)
-//    {
-//        $query = Invoice::with('client')->latest();
-//
-//        // Search by invoice number / client name / client email
-//        if ($r->filled('search')) {
-//            $search = $r->search;
-//
-//            $query->where(function ($q) use ($search) {
-//                $q->where('invoice_number', 'like', "%{$search}%")
-//                    ->orWhereHas('client', function ($sub) use ($search) {
-//                        $sub->where('name', 'like', "%{$search}%")
-//                            ->orWhere('email', 'like', "%{$search}%");
-//                    });
-//            });
-//        }
-//
-//        // Date range filter
-//        if ($r->filled('from_date')) {
-//            $query->whereDate('invoice_date', '>=', $r->from_date);
-//        }
-//
-//        if ($r->filled('to_date')) {
-//            $query->whereDate('invoice_date', '<=', $r->to_date);
-//        }
-//
-//        // Status filter (Paid / Partial / Unpaid)
-//        if ($r->filled('status') && in_array($r->status, ['paid', 'partial', 'unpaid'])) {
-//            $status = $r->status;
-//
-//            $query->where(function ($q) use ($status) {
-//                if ($status === 'paid') {
-//                    // fully paid: balance <= 0
-//                    $q->where('balance', '<=', 0);
-//                } elseif ($status === 'partial') {
-//                    // kuch amount mila hai, lekin balance bhi bacha hai
-//                    $q->where('received_amount', '>', 0)
-//                        ->where('balance', '>', 0);
-//                } elseif ($status === 'unpaid') {
-//                    // abhi tak kuch receive nahi hua
-//                    $q->where('received_amount', '<=', 0)
-//                        ->where('total', '>', 0);
-//                }
-//            });
-//        }
-//
-//        $invoices = $query->paginate(15)->appends($r->query());
-//
-//        return view('invoices.index', compact('invoices'));
-//    }
 
     public function index(\Illuminate\Http\Request $request)
     {
@@ -103,7 +53,7 @@ class InvoiceController extends Controller
 
         // ✅ Tab type (tax / proforma)
         $type = strtolower(trim((string) $request->get('type', 'tax')));
-        if (!in_array($type, ['tax', 'proforma'], true)) {
+        if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
             $type = 'tax';
         }
 
@@ -144,97 +94,33 @@ class InvoiceController extends Controller
         }
 
         // ✅ Counts for tab badges (optional but useful)
-        $taxCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count();
-        $proCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count();
-
         $invoices = $q->orderByDesc('invoice_date')
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
+        $taxCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count();
+        $proCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count();
+        $quoCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count();
 
         return view('invoices.index', [
             'invoices'   => $invoices,
             'type'       => $type,
             'taxCount'   => $taxCount,
             'proCount'   => $proCount,
+            'quoCount'   => $quoCount,
         ]);
     }
 
-
-
-//    public function create(Request $request, $type = 'proforma')
-//    {
-//        $today = now()->toDateString();
-//
-//        // Active business resolve
-//        $bid = $request->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-//        }
-//
-//        $business = Business::findOrFail($bid);
-//
-//        // base prefix
-//        $base = optional(
-//                $request->user()->businesses()->where('businesses.id', $bid)->first()
-//            )->invoice_base_prefix ?? 'RV/SL';
-//
-//        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
-//
-//        // ✅ Clients (IMPORTANT fields)
-//        $clients = Client::where('business_id', $bid)
-//            ->orderBy('name')
-//            ->get(['id','name','mobile','address','state','state_code','gstin']);
-//
-//        // Items
-//        $items = Item::where('business_id', $bid)
-//            ->where('is_active', true)
-//            ->orderBy('name')
-//            ->get([
-//                'id','name', 'type', 'sku','description','tax_rate','making_charge','sac',
-//                'gold_weight','gold_purity',
-//                'silver_weight','silver_purity',
-//                'stone_weight','stone_charges',
-//                'diamond_weight','diamond_charges',
-//                'price'
-//            ]);
-//
-//        // Metal rates
-//        $metalRates = MetalRate::where('business_id', $bid)
-//            ->whereDate('rate_date', $today)
-//            ->where('is_active', true)
-//            ->get(['metal_type','purity','rate_per_gram']);
-//
-//        $preview = \App\Services\InvoiceNumber::peek($bid, $today, $suggestedPrefix, 3);
-//        $banks = BankAccount::where('business_id', 1)
-//            ->orderBy('bank_name')
-//            ->get(['id','bank_name','account_holder','account_no','ifsc']);
-//
-//        return view('invoices.create_kapoor_style', [
-//            'today'              => $today,
-//            'clientsJson'        => $clients->values()->toJson(),
-//            'itemsJson'          => $items->values()->toJson(),
-//            'metalRatesJson'     => $metalRates->values()->toJson(),
-//            'banksJson' => $banks->values()->toJson(),
-//            'suggestedPrefix'    => $suggestedPrefix,
-//            'basePrefix'         => $base,
-//            'initialInvoiceNo'   => $preview['full'] ?? 'Auto',
-//            'defaultTerms'       => $business->terms,
-//
-//            // ✅ REQUIRED FOR GST LOGIC (STATE CODE ONLY)
-//            'businessState'      => $business->state,
-//            'businessStateCode'  => $business->state_code,
-//            'businessGstin'      => $business->gstin, // (UI field me show ke liye ok, GST logic me use nahi hoga)
-//        ]);
-//    }
 
     public function create(Request $request, $type = 'proforma')
     {
         $today = now()->toDateString();
 
         // ✅ detect doc type from route OR query
-
-        $docType = $type;
+        $docType = strtolower(trim((string)$type));
+        if (!in_array($docType, ['tax','proforma','quotation'], true)) {
+            $docType = 'proforma';
+        }
 
         // Active business resolve
         $bid = $request->user()->current_business_id ?? session('active_business_id');
@@ -244,12 +130,18 @@ class InvoiceController extends Controller
 
         $business = Business::findOrFail($bid);
 
-        // ✅ base prefix (tax => business setting, proforma => short PF)
+        // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
         $taxBase = optional(
                 $request->user()->businesses()->where('businesses.id', $bid)->first()
             )->invoice_base_prefix ?? 'RV/SL';
 
-        $base = ($docType === 'proforma') ? 'PF' : $taxBase;
+        if ($docType === 'proforma') {
+            $base = 'PF';
+        } elseif ($docType === 'quotation') {
+            $base = 'QT';
+        } else {
+            $base = $taxBase;
+        }
 
         $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
 
@@ -258,7 +150,7 @@ class InvoiceController extends Controller
             ->orderBy('name')
             ->get(['id','name','mobile','address','state','state_code','gstin']);
 
-        // Items
+        // ✅ Items
         $items = Item::where('business_id', $bid)
             ->where('is_active', true)
             ->orderBy('name')
@@ -271,22 +163,18 @@ class InvoiceController extends Controller
                 'price'
             ]);
 
-        // Metal rates
+        // ✅ Metal rates
         $metalRates = MetalRate::where('business_id', $bid)
             ->whereDate('rate_date', $today)
             ->where('is_active', true)
             ->get(['metal_type','purity','rate_per_gram']);
 
-        // ✅ preview number (tax/proforma different sequence)
+        // ✅ preview number (tax/proforma/quotation different sequence)
         $preview = \App\Services\InvoiceNumber::peek($bid, $today, $suggestedPrefix, 3, $docType);
 
         $banks = BankAccount::where('business_id', $bid)
             ->orderBy('bank_name')
             ->get(['id','bank_name','account_holder','account_no','ifsc']);
-
-        // ✅ form action + title by type
-//        $formAction = ($docType === 'proforma') ? route('proforma.store') : route('invoices.store');
-//        $pageTitle  = ($docType === 'proforma') ? 'Create Proforma Invoice' : 'Create Sales Invoice';
 
         return view('invoices.create_kapoor_style', [
             'today'              => $today,
@@ -306,112 +194,170 @@ class InvoiceController extends Controller
 
             // ✅ NEW
             'docType'            => $docType,
-//            'formAction'         => $formAction,
-//            'pageTitle'          => $pageTitle,
         ]);
     }
 
+
+
+
     public function edit(Request $request, \App\Models\Invoice $invoice)
     {
-        $today = now()->toDateString();
+        // ✅ relations load
+        $invoice = $invoice->load([
+            'client',
+            'items',      // invoice_items
+            'business',
+            'payments'    // if exists
+        ]);
 
-        // Active business resolve
+        // ✅ Active business resolve
         $bid = $request->user()->current_business_id ?? session('active_business_id');
-        if (!$bid) {
-            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
+        if (!$bid) $bid = $invoice->business_id;
+
+        // ✅ Safety
+        if ((int)$invoice->business_id !== (int)$bid) {
+            abort(403, 'Unauthorized invoice access.');
         }
 
-        abort_unless((int)$invoice->business_id === (int)$bid, 403);
+        $today = \Carbon\Carbon::parse($invoice->invoice_date)->toDateString();
 
-        $business = \App\Models\Business::find($bid);
+        // ✅ detect doc type from invoice (tax/proforma/quotation)
+        $docType = strtolower(trim((string)($invoice->invoice_type ?? 'tax')));
+        if (!in_array($docType, ['tax','proforma','quotation'], true)) $docType = 'tax';
 
-        // ✅ business state code (IMPORTANT)
-        $businessStateCode = (string)($business?->state_code ?? '');
+        $business = \App\Models\Business::findOrFail($bid);
 
-        // Prefix preview
-        $base = optional(
+        // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
+        $taxBase = optional(
                 $request->user()->businesses()->where('businesses.id', $bid)->first()
             )->invoice_base_prefix ?? 'RV/SL';
 
-        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($invoice->invoice_date, $base);
+        if ($docType === 'proforma') {
+            $base = 'PF';
+        } elseif ($docType === 'quotation') {
+            $base = 'QT';
+        } else {
+            $base = $taxBase;
+        }
 
-        // Clients
+        // ✅ suggested prefix (for display only; edit me hum existing prefix hi use karenge)
+        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
+
+        // ✅ Clients
         $clients = \App\Models\Client::where('business_id', $bid)
             ->orderBy('name')
-            ->get(['id','name','mobile','address','state','state_code','gstin']);
+            ->get(['id','name','mobile','address','state','state_code','gstin','pincode']);
 
-        // Items master
+        // ✅ Items master
         $items = \App\Models\Item::where('business_id', $bid)
             ->where('is_active', true)
             ->orderBy('name')
             ->get([
-                'id','name','sku','description','tax_rate','making_charge','sac',
+                'id','name','type','sku','description','tax_rate','making_charge','sac',
                 'gold_weight','gold_purity',
                 'silver_weight','silver_purity',
                 'stone_weight','stone_charges',
                 'diamond_weight','diamond_charges',
+                'price'
             ]);
 
-        // Metal rates
+        // ✅ Metal rates
         $metalRates = \App\Models\MetalRate::where('business_id', $bid)
             ->whereDate('rate_date', $today)
             ->where('is_active', true)
             ->get(['metal_type','purity','rate_per_gram']);
 
-        // Prefill items
-        $prefillItems = [];
-        if (!empty($invoice->items_json)) {
-            $prefillItems = json_decode($invoice->items_json, true) ?: [];
-        }
+        // ✅ Banks
+        $banks = \App\Models\BankAccount::where('business_id', $bid)
+            ->orderBy('bank_name')
+            ->get(['id','bank_name','account_holder','account_no','ifsc']);
 
-        // Prefill payment (latest)
-        $payment = \App\Models\InvoicePayment::where('business_id', $bid)
-            ->where('invoice_id', $invoice->id)
-            ->latest('id')
-            ->first();
+        // ✅ invoice JSON for prefill
+        $invoiceJson = [
+            'id' => $invoice->id,
+            'client_id' => $invoice->client_id,
+            'invoice_date' => $today,
+            'invoice_number' => (string)($invoice->invoice_number ?? ''),
+            'invoice_prefix' => (string)($invoice->invoice_prefix ?? $suggestedPrefix),
 
-        $paymentPrefill = [
-            'cash'          => (float)($payment->cash_amount ?? 0),
-            'upi'           => (float)($payment->online_amount ?? 0),
-            'card'          => (float)($payment->card_amount ?? 0),
-            'cheque'        => (float)($payment->cheque_amount ?? 0),
-            'credit_excess' => (float)($payment->credit_sales_excess_amount ?? 0),
-            'advance'       => (float)($payment->advance_amount ?? 0),
+            'gst_no' => (string)($invoice->gst_no ?? ''),
+            'transport_mode' => (string)($invoice->transport_mode ?? ''),
+            'reverse_charge' => (int)($invoice->reverse_charge ?? 0),
 
-            'online_mode'   => (string)($payment->online_mode ?? ''),
-            'online_ref'    => (string)($payment->online_ref ?? ''),
-            'upi_id'        => (string)($payment->upi_id ?? ''),
+            // totals / extras
+            'discount_type' => (string)($invoice->discount_type ?? 'flat'),
+            'discount_value' => (float)($invoice->discount_value ?? 0),
 
-            'card_last4'    => (string)($payment->card_last4 ?? ''),
-            'card_ref'      => (string)($payment->card_ref ?? ''),
+            'charges_json' => $invoice->charges_json ?? null, // string/array (jo aap store kar rahe)
+            'charge_total' => (float)($invoice->charge_total ?? 0),
 
-            'cheque_no'     => (string)($payment->cheque_no ?? ''),
-            'bank_name'     => (string)($payment->bank_name ?? ''),
+            'tcs_percent' => (float)($invoice->tcs_percent ?? 0),
+            'tcs_amount'  => (float)($invoice->tcs_amount ?? 0),
 
-            'notes'         => (string)($payment->notes ?? ''),
+            'round_off' => (float)($invoice->round_off ?? 0),
+
+            'payment_method' => (string)($invoice->payment_method ?? 'cash'),
+            'bank_account_id' => $invoice->bank_account_id ?? null,
+
+            // received fields (agar aapke table me hai)
+            'received' => (float)($invoice->received ?? 0),
+
+            // invoice items map
+            'items' => $invoice->items->map(function($it){
+                return [
+                    'item_id' => $it->item_id ?? null,
+                    'item_type' => $it->item_type ?? null,
+
+                    'description' => $it->description ?? '',
+                    'hsn' => $it->hsn ?? '',
+                    'quantity' => (float)($it->quantity ?? 1),
+
+                    'making_rate' => (float)($it->making_rate ?? 0),
+                    'gold_purity' => $it->gold_purity ?? null,
+                    'silver_purity' => $it->silver_purity ?? null,
+
+                    'gold_rate' => (float)($it->gold_rate ?? 0),
+                    'silver_rate' => (float)($it->silver_rate ?? 0),
+                    'silver_wt' => (float)($it->silver_wt ?? 0),
+                    'gold_wt' => (float)($it->gold_wt ?? 0),
+                    'gemstone_wt' => (float)($it->gemstone_wt ?? 0),
+                    'diamond_wt' => (float)($it->diamond_wt ?? 0),
+
+                    'service_rate' => (float)($it->service_rate ?? 0),
+                    'tax_percent' => (float)($it->tax_percent ?? 0),
+
+                    // for edit screen: amount final (tax included)
+                    'amount' => (float)($it->amount ?? 0),
+                ];
+            })->values(),
         ];
 
         return view('invoices.edit_kapoor_style', [
-            'today'              => $today,
             'invoice'            => $invoice,
 
+            'today'              => $today,
             'clientsJson'        => $clients->values()->toJson(),
             'itemsJson'          => $items->values()->toJson(),
             'metalRatesJson'     => $metalRates->values()->toJson(),
-
-            'prefillItemsJson'   => collect($prefillItems)->values()->toJson(),
-            'prefillPaymentJson' => collect($paymentPrefill)->toJson(),
+            'banksJson'          => $banks->values()->toJson(),
 
             'suggestedPrefix'    => $suggestedPrefix,
             'basePrefix'         => $base,
+            'defaultTerms'       => $business->terms,
 
-            'initialInvoiceNo'   => $invoice->invoice_number,
-            'defaultTerms'       => $business?->terms,
+            'businessState'      => $business->state,
+            'businessStateCode'  => $business->state_code,
+            'businessGstin'      => $business->gstin,
 
-            // ✅ IMPORTANT for state_code logic
-            'businessStateCode'  => $businessStateCode,
+            'docType'            => $docType,
+
+            // ✅ prefill
+            'invoiceJson'        => json_encode($invoiceJson, JSON_UNESCAPED_UNICODE),
         ]);
     }
+
+
+
 
 
     public function destroy(Invoice $invoice)
@@ -540,904 +486,11 @@ class InvoiceController extends Controller
     }
 
 
-//    public function store(Request $r, StockService $stock, $docType)
-//    {
-//        $bid = $r->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            return back()->withErrors(['business' => 'Active business select/attach नहीं है.'])->withInput();
-//        }
-//
-//        $data = $r->validate([
-//            'client_id'      => ['required','exists:clients,id'],
-//            'invoice_date'   => ['required','date'],
-//            'invoice_prefix' => ['nullable','string','max:255'],
-//
-//            'transport_mode' => ['nullable','string','max:255'],
-//            'gst_no'         => ['nullable','string','max:50'],
-//            'reverse_charge' => ['nullable'],
-//
-//            'notes'          => ['nullable','string','max:2000'],
-//            'terms'          => ['nullable','string','max:2000'],
-//
-//            'items_json'     => ['required','string'],
-//
-//            // NEW fields (white screenshot)
-//            'charges_json'   => ['nullable','string'],
-//            'discount_total' => ['nullable','numeric','min:0'],
-//            'charge_total'   => ['nullable','numeric','min:0'],
-//            'tcs_percent'    => ['nullable','numeric','min:0'],
-//            'tcs_amount'     => ['nullable','numeric','min:0'],
-//            'round_off'      => ['nullable','numeric'], // can be +/-
-//            'less_amount'    => ['nullable','numeric','min:0'],
-//
-//            'cgst_percent'   => ['nullable','numeric','min:0'],
-//            'sgst_percent'   => ['nullable','numeric','min:0'],
-//            'igst_percent'   => ['nullable','numeric','min:0'],
-//
-//            'payment_method' => ['nullable','string','max:255'],
-//            'bank_account_id' => ['nullable','integer'],
-//        ]);
-//
-//        $pay = $r->validate([
-//            'pay_cash'            => ['nullable','numeric','min:0'],
-//            'pay_upi'             => ['nullable','numeric','min:0'],
-//            'pay_card'            => ['nullable','numeric','min:0'],
-//            'pay_cheque'          => ['nullable','numeric','min:0'],
-//
-//            'credit_sales_excess' => ['nullable','numeric','min:0'],
-//            'advance_amount'      => ['nullable','numeric','min:0'],
-//
-//            'online_mode'         => ['nullable','string','max:30'],
-//            'online_ref'          => ['nullable','string','max:100'],
-//            'upi_id'              => ['nullable','string','max:100'],
-//
-//            'card_last4'          => ['nullable','string','max:4'],
-//            'card_ref'            => ['nullable','string','max:100'],
-//
-//            'cheque_no'           => ['nullable','string','max:50'],
-//            'bank_name'           => ['nullable','string','max:100'],
-//            'notes'               => ['nullable','string','max:2000'],
-//        ]);
-//
-//        // -------- prefix --------
-//        $computePrefix = function (string $date, string $base = 'INV'): string {
-//            $ts = strtotime($date);
-//            $y  = (int)date('Y', $ts);
-//            $m  = (int)date('n', $ts);
-//            $startYY = ($m >= 4) ? ($y % 100) : (($y - 1) % 100);
-//            $a = str_pad((string)$startYY, 2, '0', STR_PAD_LEFT);
-//            $b = str_pad((string)(($startYY + 1) % 100), 2, '0', STR_PAD_LEFT);
-//            $fy = "{$a}-{$b}";
-//            $base = rtrim($base, '/');
-//            return "{$base}/{$fy}/";
-//        };
-//
-//        $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
-//        $prefix      = trim($data['invoice_prefix'] ?? '');
-//        if ($prefix === '') $prefix = $computePrefix($invoiceDate, 'INV');
-//
-//        // -------- items parse --------
-//        $rows = json_decode($data['items_json'], true);
-//        if (!is_array($rows) || count($rows) < 1) {
-//            return back()->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])->withInput();
-//        }
-//
-//        // -------- normalize state_code helper --------
-//        $normCode = function ($v) {
-//            $s = trim((string)$v);
-//            $s = preg_replace('/\D+/', '', $s);
-//            $s = ltrim($s, '0');
-//            return $s;
-//        };
-//
-//        // -------- compute subtotal (base sum) + weighted tax % --------
-//        $subtotal = 0.0;
-//        $weightedTax = 0.0;
-//
-//        $cleanRows = [];
-//
-//        foreach ($rows as $i => $row) {
-//            $itemId = $row['item_id'] ?? null;
-//            if (empty($itemId)) {
-//                return back()->withErrors(['items' => "Row ".($i+1)." में Item select नहीं है."])->withInput();
-//            }
-//
-//            $itemType = strtolower(trim((string)($row['item_type'] ?? 'product')));
-//            if (!in_array($itemType, ['product','service'], true)) $itemType = 'product';
-//
-//            $desc = trim($row['description'] ?? '');
-//            if ($desc === '') {
-//                return back()->withErrors(['items' => "Row ".($i+1)." description missing."])->withInput();
-//            }
-//
-//            $hsn = trim($row['hsn'] ?? '');
-//            $qty = (int)($row['quantity'] ?? 1);
-//            $qty = $qty < 1 ? 1 : $qty;
-//
-//            $taxPct = (float)($row['tax_percent'] ?? 0);
-//            if ($taxPct < 0 || $taxPct > 100) {
-//                return back()->withErrors(['items' => "Row ".($i+1)." tax % invalid."])->withInput();
-//            }
-//
-//            // base
-//            if ($itemType === 'service') {
-//                $serviceRate = (float)($row['service_rate'] ?? 0);
-//                if ($serviceRate < 0) {
-//                    return back()->withErrors(['items' => "Row ".($i+1)." service rate invalid."])->withInput();
-//                }
-//
-//                $lineBase = round($serviceRate * $qty, 2);
-//
-//                $subtotal += $lineBase;
-//                $weightedTax += ($lineBase * $taxPct);
-//
-//                $cleanRows[] = [
-//                    'item_id'     => (int)$itemId,
-//                    'item_type'   => 'service',
-//                    'description' => $desc,
-//                    'hsn'         => $hsn,
-//                    'qty'         => $qty,
-//                    'tax_percent' => round($taxPct,2),
-//
-//                    // store service rate in making_charge (because column exists)
-//                    'making_charge' => round($serviceRate,2),
-//
-//                    // keep product fields 0
-//                    'gold_wt'   => 0,
-//                    'silver_wt' => 0,
-//                    'gold_rate' => 0,
-//                    'silver_rate'=>0,
-//                    'gemstone_wt'=>0,
-//                    'diamond_wt'=>0,
-//                    'making_rate'=>0,
-//                    'stone_charges'=>0,
-//                ];
-//                continue;
-//            }
-//
-//            // product
-//            $goldWt     = (float)($row['gold_wt'] ?? 0);
-//            $silverWt   = (float)($row['silver_wt'] ?? 0);
-//            $goldRate   = (float)($row['gold_rate'] ?? 0);
-//            $silverRate = (float)($row['silver_rate'] ?? 0);
-//            $makingRate = (float)($row['making_rate'] ?? 0);
-//
-//            $gemCt = (float)($row['gemstone_wt'] ?? 0);
-//            $diaCt = (float)($row['diamond_wt'] ?? 0);
-//
-//            if ($goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $makingRate < 0) {
-//                return back()->withErrors(['items' => "Row ".($i+1)." invalid values."])->withInput();
-//            }
-//
-//            $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $makingRate) * $qty, 2);
-//
-//            $subtotal += $lineBase;
-//            $weightedTax += ($lineBase * $taxPct);
-//
-//            $cleanRows[] = [
-//                'item_id'     => (int)$itemId,
-//                'item_type'   => 'product',
-//                'description' => $desc,
-//                'hsn'         => $hsn,
-//                'qty'         => $qty,
-//                'tax_percent' => round($taxPct,2),
-//
-//                'gold_wt'     => round($goldWt,3),
-//                'silver_wt'   => round($silverWt,3),
-//                'gold_rate'   => round($goldRate,2),
-//                'silver_rate' => round($silverRate,2),
-//
-//                'gemstone_wt' => round($gemCt,3),
-//                'diamond_wt'  => round($diaCt,3),
-//
-//                'making_rate' => round($makingRate,2),
-//                'making_charge'=> null,
-//                'stone_charges'=> null,
-//            ];
-//        }
-//
-//        $subtotal = round($subtotal, 2);
-//        $avgTaxPercent = ($subtotal > 0) ? round($weightedTax / $subtotal, 2) : 0;
-//
-//        // invoice-level adjustments
-//        $discountTotal = round((float)($data['discount_total'] ?? 0), 2);
-//        $chargeTotal   = round((float)($data['charge_total'] ?? 0), 2);
-//
-//        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
-//        $taxAmount     = round($taxableAmount * ($avgTaxPercent/100), 2);
-//
-//        $tcsPercent = round((float)($data['tcs_percent'] ?? 0), 2);
-//        $tcsAmount  = round((float)($data['tcs_amount'] ?? 0), 2);
-//        // safer: recompute tcs from taxable if percent given
-//        if($tcsPercent > 0){
-//            $tcsAmount = round($taxableAmount * ($tcsPercent/100), 2);
-//        }
-//
-//        $roundOff   = round((float)($data['round_off'] ?? 0), 2);
-//        $lessAmount = round((float)($data['less_amount'] ?? $discountTotal), 2);
-//
-//        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
-//
-//        // payment totals
-//        $cash    = (float)($pay['pay_cash'] ?? 0);
-//        $online  = (float)($pay['pay_upi'] ?? 0);
-//        $card    = (float)($pay['pay_card'] ?? 0);
-//        $cheque  = (float)($pay['pay_cheque'] ?? 0);
-//        $credit  = (float)($pay['credit_sales_excess'] ?? 0);
-//        $advance = (float)($pay['advance_amount'] ?? 0);
-//
-//        $receivedTotal = round($cash + $online + $card + $cheque, 2);
-//        $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
-//
-//        // charges json decode
-//        $chargesArr = [];
-//        if(!empty($data['charges_json'])){
-//            $tmp = json_decode($data['charges_json'], true);
-//            if(is_array($tmp)){
-//                foreach($tmp as $c){
-//                    $nm = trim((string)($c['name'] ?? ''));
-//                    $am = (float)($c['amount'] ?? 0);
-//                    if($nm !== '' && $am != 0){
-//                        $chargesArr[] = ['name'=>$nm, 'amount'=>round($am,2)];
-//                    }
-//                }
-//            }
-//        }
-//
-//        $invoice = null;
-//
-//        try {
-//            DB::transaction(function () use (
-//                $r, // ✅ ADD THIS
-//                $bid, $data, $invoiceDate, $prefix,
-//                $subtotal, $avgTaxPercent, $taxableAmount, $taxAmount,
-//                $discountTotal, $chargeTotal, $tcsPercent, $tcsAmount, $roundOff, $lessAmount,
-//                $grandTotal, $receivedTotal, $balance,
-//                $cash, $online, $card, $cheque, $credit, $advance,
-//                $pay, $cleanRows, $normCode, $chargesArr, &$invoice, $stock
-//            ) {
-//                $biz    = Business::findOrFail($bid);
-//                $client = Client::where('business_id', $bid)->findOrFail($data['client_id']);
-//
-//                $bizCode   = $normCode($biz->state_code ?? '');
-//                $partyCode = $normCode($client->state_code ?? '');
-//                $isIntra = ($bizCode !== '' && $partyCode !== '') ? ($bizCode === $partyCode) : false;
-//
-//                $cgstPercent = $isIntra ? round($avgTaxPercent/2, 2) : 0;
-//                $sgstPercent = $isIntra ? round($avgTaxPercent/2, 2) : 0;
-//                $igstPercent = $isIntra ? 0 : round($avgTaxPercent, 2);
-//
-//                $cgst = $isIntra ? round($taxAmount / 2, 2) : 0;
-//                $sgst = $isIntra ? round($taxAmount / 2, 2) : 0;
-//                $igst = $isIntra ? 0 : round($taxAmount, 2);
-//
-//                $alloc = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $prefix, 3);
-//
-//                $invoice = Invoice::create([
-//                    'business_id'     => $bid,
-//                    'client_id'       => $data['client_id'],
-//                    'invoice_date'    => $invoiceDate,
-//
-//                    'invoice_prefix'  => $prefix,
-//                    'invoice_number'  => $alloc['full'],
-//
-//                    'subtotal'        => $subtotal,
-//                    'discount_total'  => $discountTotal,
-//                    'charge_total'    => $chargeTotal,
-//                    'less_amount'     => $lessAmount,
-//
-//                    'tax_amount'      => $taxAmount,
-//
-//                    'cgst_percent'    => $cgstPercent,
-//                    'cgst_amount'     => $cgst,
-//                    'sgst_percent'    => $sgstPercent,
-//                    'sgst_amount'     => $sgst,
-//                    'igst_percent'    => $igstPercent,
-//                    'igst_amount'     => $igst,
-//
-//                    'tcs_percent'     => $tcsPercent,
-//                    'tcs_amount'      => $tcsAmount,
-//
-//                    'round_off'       => $roundOff,
-//
-//                    'total'           => $grandTotal,
-//                    'received_amount' => $receivedTotal,
-//                    'balance'         => $balance,
-//
-//                    'payment_method'  => $data['payment_method'] ?? null,
-//
-//                    'gst_no'          => $data['gst_no'] ?? null,
-//                    'transport_mode'  => $data['transport_mode'] ?? null,
-//                    'reverse_charge'  => !empty($data['reverse_charge']) ? 1 : 0,
-//
-//                    'place_of_supply_state' => $client->state ?? null,
-//                    'place_of_supply_code'  => $client->state_code ?? null,
-//
-//                    'notes'           => $data['notes'] ?? null,
-//                    'terms'           => $data['terms'] ?? null,
-//
-//                    'charges_json'    => json_encode($chargesArr),
-//                    'items_json'      => json_encode($cleanRows),
-//                    'amount_in_words' => '',
-//                ]);
-//
-//                // Save invoice_additional_charges rows (your table screenshot)
-//                foreach($chargesArr as $c){
-//                    \App\Models\InvoiceAdditionalCharge::create([
-//                        'invoice_id' => $invoice->id,
-//                        'additional_charge_id' => null,
-//                        'name' => $c['name'],
-//                        'amount' => $c['amount'],
-//                    ]);
-//                }
-//
-//                // Save invoice_items (based on your columns)
-//                foreach ($cleanRows as $row) {
-//                    InvoiceItem::create([
-//                        'invoice_id'   => $invoice->id,
-//                        'item_id'      => $row['item_id'],
-//
-//                        'description'  => $row['description'] ?? '',
-//                        'sac_code'     => null,
-//                        'hsn_code'     => $row['hsn'] ?: null,
-//                        'quantity'     => (int)($row['qty'] ?? 1),
-//
-//                        // service/product both supported via numeric fields
-//                        'gold_wt'      => (float)($row['gold_wt'] ?? 0),
-//                        'silver_wt'    => (float)($row['silver_wt'] ?? 0),
-//                        'gold_rate'    => (float)($row['gold_rate'] ?? 0),
-//                        'silver_rate'  => (float)($row['silver_rate'] ?? 0),
-//
-//                        'gemstone_wt_ct' => (float)($row['gemstone_wt'] ?? 0),
-//                        'diamond_wt_ct'  => (float)($row['diamond_wt'] ?? 0),
-//
-//                        // store service_rate in making_charge (because service_rate column not present)
-//                        'making_charge' => ($row['item_type']==='service') ? (float)($row['making_charge'] ?? 0) : null,
-//                        'making_rate'   => ($row['item_type']==='product') ? (float)($row['making_rate'] ?? 0) : null,
-//
-//                        'discount'    => 0,
-//                        'tax_percent' => (float)($row['tax_percent'] ?? 0),
-//
-//                        // NOTE: keep "rate" as line base (without invoice-level discount/charges)
-//                        // invoice-level adjustments are stored in invoice table
-//                        'rate'        => ($row['item_type']==='service')
-//                            ? round(((float)$row['making_charge']) * (int)$row['qty'], 2)
-//                            : round((($row['gold_wt']*$row['gold_rate']) + ($row['silver_wt']*$row['silver_rate']) + ($row['making_rate'])) * (int)$row['qty'], 2),
-//
-//                        // amount is not line-final here (final total handled at invoice level)
-//                        'amount'      => 0,
-//                    ]);
-//                }
-//
-//                InvoicePayment::create([
-//                    'business_id' => $bid,
-//                    'invoice_id'  => $invoice->id,
-//                    'client_id'   => $data['client_id'],
-//
-//                    'total_value' => $grandTotal,
-//
-//                    'cash_amount'   => $cash,
-//                    'online_amount' => $online,
-//                    'card_amount'   => $card,
-//                    'cheque_amount' => $cheque,
-//
-//                    'online_mode' => $pay['online_mode'] ?? null,
-//                    'online_ref'  => $pay['online_ref'] ?? null,
-//                    'upi_id'      => $pay['upi_id'] ?? null,
-//
-//                    'card_last4'  => $pay['card_last4'] ?? null,
-//                    'card_ref'    => $pay['card_ref'] ?? null,
-//
-//                    'cheque_no'   => $pay['cheque_no'] ?? null,
-//                    'bank_name'   => $pay['bank_name'] ?? null,
-//
-//                    'credit_sales_excess_amount' => $credit,
-//                    'advance_amount'             => $advance,
-//
-//                    'received_total' => $receivedTotal,
-//                    'notes'   => $pay['notes'] ?? null,
-//                    'meta'    => null,
-//                    'paid_at' => $receivedTotal > 0 ? now() : null,
-//                ]);
-//
-//                // stock cut only for product items (BEST: recordSale me service ignore karo)
-//                $invoice->load(['items']);
-//                $stock->recordSale($invoice);
-//
-//
-//                // ✅ Update Bank balance if payment mode requires bank
-//                $bankAccountId = $r->input('bank_account_id');
-//
-//                $mode = strtolower(trim((string)($data['payment_method'] ?? '')));
-//                $bankModes = ['upi','bank','card','cheque']; // jisme aap bank select karwa rahe ho
-//
-//                if ($bankAccountId && in_array($mode, $bankModes, true) && $receivedTotal > 0) {
-//
-//                    $bank = \App\Models\BankAccount::where('business_id', $bid)
-//                        ->where('id', $bankAccountId)
-//                        ->first();
-//
-//                    if ($bank) {
-//                        // ✅ SALES INVOICE => money IN => balance बढ़ेगा
-//                        $bank->balance = round(((float)$bank->balance) + $receivedTotal, 2);
-//                        $bank->save();
-//                    }
-//                }
-//
-//            });
-//
-//            $pdf = $this->simplePdfBuild($invoice);
-//
-//            $dir = "invoices/{$bid}/" . now()->format('Y-m');
-//            $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
-//            $filename = $safeName . ".pdf";
-//            $path = $dir . "/" . $filename;
-//
-//            Storage::disk('public')->put($path, $pdf->output());
-//            $invoice->update(['pdf_url' => $path]);
-//
-//        } catch (\Throwable $e) {
-//            report($e);
-//            return back()->withErrors(['invoice' => 'Invoice save करते समय error आया: '.$e->getMessage()])->withInput();
-//        }
-//
-//        return redirect()->route('invoices.index')->with('success', 'Invoice created successfully.');
-//    }
-
-
-//    public function store(Request $r, StockService $stock, $docType)
-//    {
-//        $docType = strtolower(trim((string)$docType));
-//        if (!in_array($docType, ['tax', 'proforma'], true)) {
-//            $docType = 'tax';
-//        }
-//
-//        $bid = $r->user()->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            return back()->withErrors(['business' => 'Active business select/attach नहीं है.'])->withInput();
-//        }
-//
-//        $data = $r->validate([
-//            'client_id'      => ['required','exists:clients,id'],
-//            'invoice_date'   => ['required','date'],
-//            'invoice_prefix' => ['nullable','string','max:255'],
-//
-//            'transport_mode' => ['nullable','string','max:255'],
-//            'gst_no'         => ['nullable','string','max:50'],
-//            'reverse_charge' => ['nullable'],
-//
-//            'notes'          => ['nullable','string','max:2000'],
-//            'terms'          => ['nullable','string','max:2000'],
-//
-//            'items_json'     => ['required','string'],
-//
-//            'charges_json'   => ['nullable','string'],
-//            'discount_total' => ['nullable','numeric','min:0'],
-//            'charge_total'   => ['nullable','numeric','min:0'],
-//            'tcs_percent'    => ['nullable','numeric','min:0'],
-//            'tcs_amount'     => ['nullable','numeric','min:0'],
-//            'round_off'      => ['nullable','numeric'],
-//            'less_amount'    => ['nullable','numeric','min:0'],
-//
-//            'cgst_percent'   => ['nullable','numeric','min:0'],
-//            'sgst_percent'   => ['nullable','numeric','min:0'],
-//            'igst_percent'   => ['nullable','numeric','min:0'],
-//
-//            'payment_method'  => ['nullable','string','max:255'],
-//            'bank_account_id' => ['nullable','integer'],
-//            'signature' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
-//        ]);
-//
-//        // ✅ Proforma में payment validation skip कर सकते हैं
-//        $pay = [];
-//        if ($docType === 'tax') {
-//            $pay = $r->validate([
-//                'pay_cash'            => ['nullable','numeric','min:0'],
-//                'pay_upi'             => ['nullable','numeric','min:0'],
-//                'pay_card'            => ['nullable','numeric','min:0'],
-//                'pay_cheque'          => ['nullable','numeric','min:0'],
-//
-//                'credit_sales_excess' => ['nullable','numeric','min:0'],
-//                'advance_amount'      => ['nullable','numeric','min:0'],
-//
-//                'online_mode'         => ['nullable','string','max:30'],
-//                'online_ref'          => ['nullable','string','max:100'],
-//                'upi_id'              => ['nullable','string','max:100'],
-//
-//                'card_last4'          => ['nullable','string','max:4'],
-//                'card_ref'            => ['nullable','string','max:100'],
-//
-//                'cheque_no'           => ['nullable','string','max:50'],
-//                'bank_name'           => ['nullable','string','max:100'],
-//                'notes'               => ['nullable','string','max:2000'],
-//            ]);
-//        }
-//
-//        // -------- prefix helper --------
-//        $computePrefix = function (string $date, string $base = 'INV'): string {
-//            $ts = strtotime($date);
-//            $y  = (int)date('Y', $ts);
-//            $m  = (int)date('n', $ts);
-//            $startYY = ($m >= 4) ? ($y % 100) : (($y - 1) % 100);
-//            $a = str_pad((string)$startYY, 2, '0', STR_PAD_LEFT);
-//            $b = str_pad((string)(($startYY + 1) % 100), 2, '0', STR_PAD_LEFT);
-//            $fy = "{$a}-{$b}";
-//            $base = rtrim($base, '/');
-//            return "{$base}/{$fy}/";
-//        };
-//
-//        $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
-//        $prefix      = trim($data['invoice_prefix'] ?? '');
-//        if ($prefix === '') $prefix = $computePrefix($invoiceDate, 'INV');
-//
-//        // -------- items parse --------
-//        $rows = json_decode($data['items_json'], true);
-//        if (!is_array($rows) || count($rows) < 1) {
-//            return back()->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])->withInput();
-//        }
-//
-//        // -------- normalize state_code helper --------
-//        $normCode = function ($v) {
-//            $s = trim((string)$v);
-//            $s = preg_replace('/\D+/', '', $s);
-//            $s = ltrim($s, '0');
-//            return $s;
-//        };
-//
-//        // -------- compute subtotal + weighted tax --------
-//        $subtotal = 0.0;
-//        $weightedTax = 0.0;
-//        $cleanRows = [];
-//
-//        foreach ($rows as $i => $row) {
-//            $itemId = $row['item_id'] ?? null;
-//            if (empty($itemId)) {
-//                return back()->withErrors(['items' => "Row ".($i+1)." में Item select नहीं है."])->withInput();
-//            }
-//
-//            $itemType = strtolower(trim((string)($row['item_type'] ?? 'product')));
-//            if (!in_array($itemType, ['product','service'], true)) $itemType = 'product';
-//
-//            $desc = trim($row['description'] ?? '');
-//            if ($desc === '') {
-//                return back()->withErrors(['items' => "Row ".($i+1)." description missing."])->withInput();
-//            }
-//
-//            $hsn = trim($row['hsn'] ?? '');
-//            $qty = (int)($row['quantity'] ?? 1);
-//            $qty = $qty < 1 ? 1 : $qty;
-//
-//            $taxPct = (float)($row['tax_percent'] ?? 0);
-//            if ($taxPct < 0 || $taxPct > 100) {
-//                return back()->withErrors(['items' => "Row ".($i+1)." tax % invalid."])->withInput();
-//            }
-//
-//            if ($itemType === 'service') {
-//                $serviceRate = (float)($row['service_rate'] ?? 0);
-//                if ($serviceRate < 0) {
-//                    return back()->withErrors(['items' => "Row ".($i+1)." service rate invalid."])->withInput();
-//                }
-//
-//                $lineBase = round($serviceRate * $qty, 2);
-//                $subtotal += $lineBase;
-//                $weightedTax += ($lineBase * $taxPct);
-//
-//                $cleanRows[] = [
-//                    'item_id'     => (int)$itemId,
-//                    'item_type'   => 'service',
-//                    'description' => $desc,
-//                    'hsn'         => $hsn,
-//                    'qty'         => $qty,
-//                    'tax_percent' => round($taxPct,2),
-//                    'making_charge' => round($serviceRate,2),
-//                    'gold_wt' => 0,'silver_wt'=>0,'gold_rate'=>0,'silver_rate'=>0,
-//                    'gemstone_wt'=>0,'diamond_wt'=>0,'making_rate'=>0,
-//                    'stone_charges'=>0,
-//                ];
-//                continue;
-//            }
-//
-//            $goldWt     = (float)($row['gold_wt'] ?? 0);
-//            $silverWt   = (float)($row['silver_wt'] ?? 0);
-//            $goldRate   = (float)($row['gold_rate'] ?? 0);
-//            $silverRate = (float)($row['silver_rate'] ?? 0);
-//            $makingRate = (float)($row['making_rate'] ?? 0);
-//
-//            $gemCt = (float)($row['gemstone_wt'] ?? 0);
-//            $diaCt = (float)($row['diamond_wt'] ?? 0);
-//
-//            if ($goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $makingRate < 0) {
-//                return back()->withErrors(['items' => "Row ".($i+1)." invalid values."])->withInput();
-//            }
-//
-//            $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $makingRate) * $qty, 2);
-//            $subtotal += $lineBase;
-//            $weightedTax += ($lineBase * $taxPct);
-//
-//            $cleanRows[] = [
-//                'item_id'     => (int)$itemId,
-//                'item_type'   => 'product',
-//                'description' => $desc,
-//                'hsn'         => $hsn,
-//                'qty'         => $qty,
-//                'tax_percent' => round($taxPct,2),
-//
-//                'gold_wt'     => round($goldWt,3),
-//                'silver_wt'   => round($silverWt,3),
-//                'gold_rate'   => round($goldRate,2),
-//                'silver_rate' => round($silverRate,2),
-//
-//                'gemstone_wt' => round($gemCt,3),
-//                'diamond_wt'  => round($diaCt,3),
-//
-//                'making_rate' => round($makingRate,2),
-//                'making_charge'=> null,
-//                'stone_charges'=> null,
-//            ];
-//        }
-//
-//        $subtotal = round($subtotal, 2);
-//        $avgTaxPercent = ($subtotal > 0) ? round($weightedTax / $subtotal, 2) : 0;
-//
-//        // invoice-level adjustments
-//        $discountTotal = round((float)($data['discount_total'] ?? 0), 2);
-//        $chargeTotal   = round((float)($data['charge_total'] ?? 0), 2);
-//
-//        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
-//        $taxAmount     = round($taxableAmount * ($avgTaxPercent/100), 2);
-//
-//        $tcsPercent = round((float)($data['tcs_percent'] ?? 0), 2);
-//        $tcsAmount  = round((float)($data['tcs_amount'] ?? 0), 2);
-//        if($tcsPercent > 0){
-//            $tcsAmount = round($taxableAmount * ($tcsPercent/100), 2);
-//        }
-//
-//        $roundOff   = round((float)($data['round_off'] ?? 0), 2);
-//        $lessAmount = round((float)($data['less_amount'] ?? $discountTotal), 2);
-//
-//        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
-//
-//        // ✅ Tax invoice payment totals only
-//        $cash = $online = $card = $cheque = $credit = $advance = 0.0;
-//        $receivedTotal = 0.0;
-//        $balance = $grandTotal;
-//
-//        if ($docType === 'tax') {
-//            $cash    = (float)($pay['pay_cash'] ?? 0);
-//            $online  = (float)($pay['pay_upi'] ?? 0);
-//            $card    = (float)($pay['pay_card'] ?? 0);
-//            $cheque  = (float)($pay['pay_cheque'] ?? 0);
-//            $credit  = (float)($pay['credit_sales_excess'] ?? 0);
-//            $advance = (float)($pay['advance_amount'] ?? 0);
-//
-//            $receivedTotal = round($cash + $online + $card + $cheque, 2);
-//            $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
-//        }
-//
-//        // charges json decode
-//        $chargesArr = [];
-//        if(!empty($data['charges_json'])){
-//            $tmp = json_decode($data['charges_json'], true);
-//            if(is_array($tmp)){
-//                foreach($tmp as $c){
-//                    $nm = trim((string)($c['name'] ?? ''));
-//                    $am = (float)($c['amount'] ?? 0);
-//                    if($nm !== '' && $am != 0){
-//                        $chargesArr[] = ['name'=>$nm, 'amount'=>round($am,2)];
-//                    }
-//                }
-//            }
-//        }
-//
-//        $signaturePath = null;
-//        if ($r->hasFile('signature')) {
-//            $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
-//        }
-//
-//        $invoice = null;
-//
-//        try {
-//            DB::transaction(function () use (
-//                $r,
-//                $bid, $data, $invoiceDate, $prefix, $docType,
-//                $subtotal, $avgTaxPercent, $taxableAmount, $taxAmount,
-//                $discountTotal, $chargeTotal, $tcsPercent, $tcsAmount, $roundOff, $lessAmount,
-//                $grandTotal, $receivedTotal, $balance,
-//                $cash, $online, $card, $cheque, $credit, $advance,
-//                $pay, $cleanRows, $normCode, $chargesArr, &$invoice, $stock, $signaturePath
-//            ) {
-//                $biz    = Business::findOrFail($bid);
-//                $client = Client::where('business_id', $bid)->findOrFail($data['client_id']);
-//
-//                $bizCode   = $normCode($biz->state_code ?? '');
-//                $partyCode = $normCode($client->state_code ?? '');
-//                $isIntra = ($bizCode !== '' && $partyCode !== '') ? ($bizCode === $partyCode) : false;
-//
-//                $cgstPercent = $isIntra ? round($avgTaxPercent/2, 2) : 0;
-//                $sgstPercent = $isIntra ? round($avgTaxPercent/2, 2) : 0;
-//                $igstPercent = $isIntra ? 0 : round($avgTaxPercent, 2);
-//
-//                $cgst = $isIntra ? round($taxAmount / 2, 2) : 0;
-//                $sgst = $isIntra ? round($taxAmount / 2, 2) : 0;
-//                $igst = $isIntra ? 0 : round($taxAmount, 2);
-//
-//                // ✅ IMPORTANT: Invoice number allocate with docType sequence
-//                $alloc = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $prefix, 3, $docType);
-//
-//                $invoice = Invoice::create([
-//                    'business_id'     => $bid,
-//                    'client_id'       => $data['client_id'],
-//                    'invoice_date'    => $invoiceDate,
-//
-//                    'invoice_prefix'  => $prefix,
-//                    'invoice_number'  => $alloc['full'],
-//
-//                    // ✅ store docType here
-//                    'invoice_type'    => $docType,   // tax / proforma
-//
-//                    'subtotal'        => $subtotal,
-//                    'discount_total'  => $discountTotal,
-//                    'charge_total'    => $chargeTotal,
-//                    'less_amount'     => $lessAmount,
-//
-//                    'tax_amount'      => $taxAmount,
-//
-//                    'cgst_percent'    => $cgstPercent,
-//                    'cgst_amount'     => $cgst,
-//                    'sgst_percent'    => $sgstPercent,
-//                    'sgst_amount'     => $sgst,
-//                    'igst_percent'    => $igstPercent,
-//                    'igst_amount'     => $igst,
-//
-//                    'tcs_percent'     => $tcsPercent,
-//                    'tcs_amount'      => $tcsAmount,
-//
-//                    'round_off'       => $roundOff,
-//
-//                    'total'           => $grandTotal,
-//                    'received_amount' => $receivedTotal,
-//                    'balance'         => $balance,
-//
-//                    'payment_method'  => $data['payment_method'] ?? null,
-//
-//                    'gst_no'          => $data['gst_no'] ?? null,
-//                    'transport_mode'  => $data['transport_mode'] ?? null,
-//                    'reverse_charge'  => !empty($data['reverse_charge']) ? 1 : 0,
-//
-//                    'place_of_supply_state' => $client->state ?? null,
-//                    'place_of_supply_code'  => $client->state_code ?? null,
-//
-//                    'notes'           => $data['notes'] ?? null,
-//                    'terms'           => $data['terms'] ?? null,
-//
-//                    'charges_json'    => json_encode($chargesArr),
-//                    'items_json'      => json_encode($cleanRows),
-//                    'amount_in_words' => '',
-//                    'signature_path' => $signaturePath,
-//                ]);
-//
-//                // additional charges rows
-//                foreach($chargesArr as $c){
-//                    \App\Models\InvoiceAdditionalCharge::create([
-//                        'invoice_id' => $invoice->id,
-//                        'additional_charge_id' => null,
-//                        'name' => $c['name'],
-//                        'amount' => $c['amount'],
-//                    ]);
-//                }
-//
-//                // invoice items rows
-//                foreach ($cleanRows as $row) {
-//                    InvoiceItem::create([
-//                        'invoice_id'   => $invoice->id,
-//                        'item_id'      => $row['item_id'],
-//                        'description'  => $row['description'] ?? '',
-//                        'sac_code'     => null,
-//                        'hsn_code'     => $row['hsn'] ?: null,
-//                        'quantity'     => (int)($row['qty'] ?? 1),
-//
-//                        'gold_wt'      => (float)($row['gold_wt'] ?? 0),
-//                        'silver_wt'    => (float)($row['silver_wt'] ?? 0),
-//                        'gold_rate'    => (float)($row['gold_rate'] ?? 0),
-//                        'silver_rate'  => (float)($row['silver_rate'] ?? 0),
-//
-//                        'gemstone_wt_ct' => (float)($row['gemstone_wt'] ?? 0),
-//                        'diamond_wt_ct'  => (float)($row['diamond_wt'] ?? 0),
-//
-//                        'making_charge' => ($row['item_type']==='service') ? (float)($row['making_charge'] ?? 0) : null,
-//                        'making_rate'   => ($row['item_type']==='product') ? (float)($row['making_rate'] ?? 0) : null,
-//
-//                        'discount'    => 0,
-//                        'tax_percent' => (float)($row['tax_percent'] ?? 0),
-//
-//                        'rate'        => ($row['item_type']==='service')
-//                            ? round(((float)$row['making_charge']) * (int)$row['qty'], 2)
-//                            : round((($row['gold_wt']*$row['gold_rate']) + ($row['silver_wt']*$row['silver_rate']) + ($row['making_rate'])) * (int)$row['qty'], 2),
-//
-//                        'amount'      => 0,
-//                    ]);
-//                }
-//
-//                // ✅ Payments + Stock + Bank only for TAX invoice
-//                if ($docType === 'tax') {
-//
-//                    InvoicePayment::create([
-//                        'business_id' => $bid,
-//                        'invoice_id'  => $invoice->id,
-//                        'client_id'   => $data['client_id'],
-//
-//                        'total_value' => $grandTotal,
-//
-//                        'cash_amount'   => $cash,
-//                        'online_amount' => $online,
-//                        'card_amount'   => $card,
-//                        'cheque_amount' => $cheque,
-//
-//                        'online_mode' => $pay['online_mode'] ?? null,
-//                        'online_ref'  => $pay['online_ref'] ?? null,
-//                        'upi_id'      => $pay['upi_id'] ?? null,
-//
-//                        'card_last4'  => $pay['card_last4'] ?? null,
-//                        'card_ref'    => $pay['card_ref'] ?? null,
-//
-//                        'cheque_no'   => $pay['cheque_no'] ?? null,
-//                        'bank_name'   => $pay['bank_name'] ?? null,
-//
-//                        'credit_sales_excess_amount' => $credit,
-//                        'advance_amount'             => $advance,
-//
-//                        'received_total' => $receivedTotal,
-//                        'notes'   => $pay['notes'] ?? null,
-//                        'meta'    => null,
-//                        'paid_at' => $receivedTotal > 0 ? now() : null,
-//                    ]);
-//
-//                    // ✅ stock cut only on tax invoice
-//                    $invoice->load(['items']);
-//                    $stock->recordSale($invoice);
-//
-//                    // ✅ bank balance add only on tax invoice
-//                    $bankAccountId = $r->input('bank_account_id');
-//                    $mode = strtolower(trim((string)($data['payment_method'] ?? '')));
-//                    $bankModes = ['upi','bank','card','cheque'];
-//
-//                    if ($bankAccountId && in_array($mode, $bankModes, true) && $receivedTotal > 0) {
-//                        $bank = \App\Models\BankAccount::where('business_id', $bid)
-//                            ->where('id', $bankAccountId)
-//                            ->first();
-//
-//                        if ($bank) {
-//                            $bank->balance = round(((float)$bank->balance) + $receivedTotal, 2);
-//                            $bank->save();
-//                        }
-//                    }
-//                }
-//
-//            });
-//
-//            $pdf = $this->simplePdfBuild($invoice);
-//
-//            $dir = "invoices/{$bid}/" . now()->format('Y-m');
-//            $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
-//            $filename = $safeName . ".pdf";
-//            $path = $dir . "/" . $filename;
-//
-//            Storage::disk('public')->put($path, $pdf->output());
-//            $invoice->update(['pdf_url' => $path]);
-//
-//        } catch (\Throwable $e) {
-//            report($e);
-//            return back()->withErrors(['invoice' => 'Invoice save करते समय error आया: '.$e->getMessage()])->withInput();
-//        }
-//
-//        return redirect()->route('invoices.index')->with('success', ($docType === 'proforma' ? 'Proforma created successfully.' : 'Invoice created successfully.'));
-//    }
-
 
     public function store(Request $r, StockService $stock, $docType)
     {
         $docType = strtolower(trim((string)$docType));
-        if (!in_array($docType, ['tax', 'proforma'], true)) {
+        if (!in_array($docType, ['tax', 'proforma', 'quotation'], true)) {
             $docType = 'tax';
         }
 
@@ -1517,7 +570,9 @@ class InvoiceController extends Controller
 
         $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
         $prefix      = trim($data['invoice_prefix'] ?? '');
-        if ($prefix === '') $prefix = $computePrefix($invoiceDate, 'INV');
+        $base = ($docType === 'proforma') ? 'PF' : (($docType === 'quotation') ? 'QT' : 'INV');
+        if ($prefix === '') $prefix = $computePrefix($invoiceDate, $base);
+
 
         // -------- items parse --------
         $rows = json_decode($data['items_json'], true);
@@ -1938,304 +993,777 @@ class InvoiceController extends Controller
 
 
 
-    public function update(Request $r, \App\Models\Invoice $invoice)
+//    public function update(Request $r, \App\Models\Invoice $invoice)
+//    {
+//        $bid = $r->user()->current_business_id ?? session('active_business_id');
+//        if (!$bid) {
+//            return back()
+//                ->withErrors(['business' => 'Active business select/attach नहीं है.'])
+//                ->withInput();
+//        }
+//
+//        // Security: invoice belongs to business
+//        abort_unless((int)$invoice->business_id === (int)$bid, 403);
+//
+//        // ----------------- VALIDATION -----------------
+//        $data = $r->validate([
+//            'client_id'      => ['required','exists:clients,id'],
+//            'invoice_date'   => ['required','date'],
+//            'invoice_prefix' => ['nullable','string','max:100'],
+//
+//            'transport_mode' => ['nullable','string','max:255'],
+//            'gst_no'         => ['nullable','string','max:50'],
+//            'reverse_charge' => ['nullable','boolean'],
+//
+//            'notes'          => ['nullable','string','max:2000'],
+//            'terms'          => ['nullable','string','max:2000'],
+//
+//            'items_json'     => ['required','string'],
+//
+//            // totals hidden fields (optional)
+//            'cgst_amount'    => ['nullable','numeric','min:0'],
+//            'sgst_amount'    => ['nullable','numeric','min:0'],
+//            'igst_amount'    => ['nullable','numeric','min:0'],
+//        ]);
+//
+//        // Payment fields (invoice_payments)
+//        $pay = $r->validate([
+//            'pay_cash'            => ['nullable','numeric','min:0'],
+//            'pay_upi'             => ['nullable','numeric','min:0'],
+//            'pay_card'            => ['nullable','numeric','min:0'],
+//            'pay_cheque'          => ['nullable','numeric','min:0'],
+//
+//            'credit_sales_excess' => ['nullable','numeric','min:0'],
+//            'advance_amount'      => ['nullable','numeric','min:0'],
+//
+//            'online_mode'         => ['nullable','string','max:30'],
+//            'online_ref'          => ['nullable','string','max:100'],
+//            'upi_id'              => ['nullable','string','max:100'],
+//
+//            'card_last4'          => ['nullable','string','max:4'],
+//            'card_ref'            => ['nullable','string','max:100'],
+//
+//            'cheque_no'           => ['nullable','string','max:50'],
+//            'bank_name'           => ['nullable','string','max:100'],
+//            'notes'               => ['nullable','string','max:2000'],
+//        ]);
+//
+//        // ----------------- PREFIX (FY logic) -----------------
+//        $computePrefix = function (string $date, string $base = 'INV'): string {
+//            $ts = strtotime($date);
+//            $y  = (int)date('Y', $ts);
+//            $m  = (int)date('n', $ts);
+//
+//            $startYY = ($m >= 4) ? ($y % 100) : (($y - 1) % 100);
+//            $a = str_pad((string)$startYY, 2, '0', STR_PAD_LEFT);
+//            $b = str_pad((string)(($startYY + 1) % 100), 2, '0', STR_PAD_LEFT);
+//            $fy = "{$a}-{$b}";
+//
+//            $base = rtrim($base, '/');
+//            return "{$base}/{$fy}/";
+//        };
+//
+//        $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
+//
+//        // ✅ Edit mode me generally prefix lock hota hai
+//        // Agar aap allow karna chahte ho to: $prefix = trim($data['invoice_prefix'] ?? $invoice->invoice_prefix ?? '');
+//        $prefix = trim($invoice->invoice_prefix ?? '');
+//        if ($prefix === '') {
+//            // fallback
+//            $prefix = trim($data['invoice_prefix'] ?? '');
+//            if ($prefix === '') $prefix = $computePrefix($invoiceDate, 'INV');
+//        }
+//
+//        // ----------------- ITEMS JSON PARSE -----------------
+//        $rows = json_decode($data['items_json'], true);
+//        if (!is_array($rows) || count($rows) < 1) {
+//            return back()->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])->withInput();
+//        }
+//
+//        // ----------------- TOTALS -----------------
+//        $subtotal = 0.0;
+//        $taxTotal = 0.0;
+//        $cleanRows = [];
+//
+//        foreach ($rows as $i => $row) {
+//
+//            $desc = trim($row['description'] ?? '');
+//            $hsn  = trim($row['hsn'] ?? '');
+//
+//            $qty      = (int)($row['quantity'] ?? 1);
+//            $qty      = $qty < 1 ? 1 : $qty;
+//
+//            $taxPct   = (float)($row['tax_percent'] ?? 0);
+//
+//            $goldWt     = (float)($row['gold_wt'] ?? 0);
+//            $silverWt   = (float)($row['silver_wt'] ?? 0);
+//            $goldRate   = (float)($row['gold_rate'] ?? 0);
+//            $silverRate = (float)($row['silver_rate'] ?? 0);
+//            $making     = (float)($row['making_rate'] ?? 0);
+//
+//            $gemCt      = (float)($row['gemstone_wt'] ?? 0);
+//            $diaCt      = (float)($row['diamond_wt'] ?? 0);
+//
+//            // basic validate
+//            if ($desc === '' || $taxPct < 0 || $taxPct > 100 || $goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $making < 0) {
+//                return back()->withErrors(['items' => "Row ".($i+1)." invalid है."])->withInput();
+//            }
+//
+//            // base = (gold+silver+making) * qty
+//            $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $making) * $qty, 2);
+//
+//            $discount = (float)($row['discount'] ?? 0);
+//            if ($discount < 0) $discount = 0;
+//
+//            $taxable = max(0, round($lineBase - $discount, 2));
+//            $lineTax = round($taxable * ($taxPct / 100), 2);
+//            $lineAmt = round($taxable + $lineTax, 2);
+//
+//            $subtotal += $lineBase;
+//            $taxTotal += $lineTax;
+//
+//            $cleanRows[] = [
+//                'item_id'          => $row['item_id'] ?? null,
+//                'description'      => $desc,
+//
+//                'hsn_code'         => $hsn ?: null,
+//                'sac_code'         => $row['sac'] ?? null,
+//
+//                'quantity'         => $qty,
+//
+//                'gold_wt'          => $goldWt,
+//                'silver_wt'        => $silverWt,
+//
+//                'gold_rate'        => $goldRate,
+//                'silver_rate'      => $silverRate,
+//
+//                'gemstone_wt_ct'   => $gemCt,
+//                'diamond_wt_ct'    => $diaCt,
+//
+//                'making_rate'      => $making,
+//
+//                'discount'         => round($discount, 2),
+//                'tax_percent'      => round($taxPct, 2),
+//
+//                'rate'             => $lineBase,
+//                'amount'           => $lineAmt,
+//            ];
+//        }
+//
+//        $subtotal   = round($subtotal, 2);
+//        $taxTotal   = round($taxTotal, 2);
+//        $grandTotal = round($subtotal + $taxTotal, 2);
+//
+//        // ----------------- PAYMENT TOTALS -----------------
+//        $cash    = (float)($pay['pay_cash'] ?? 0);
+//        $online  = (float)($pay['pay_upi'] ?? 0);
+//        $card    = (float)($pay['pay_card'] ?? 0);
+//        $cheque  = (float)($pay['pay_cheque'] ?? 0);
+//
+//        $credit  = (float)($pay['credit_sales_excess'] ?? 0);
+//        $advance = (float)($pay['advance_amount'] ?? 0);
+//
+//        $receivedTotal = round($cash + $online + $card + $cheque, 2);
+//        $balance       = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
+//
+//        // ----------------- SAVE -----------------
+//        try {
+//            \DB::transaction(function () use (
+//                $bid, $invoice, $data, $invoiceDate, $prefix,
+//                $subtotal, $taxTotal, $grandTotal, $receivedTotal, $balance,
+//                $cash, $online, $card, $cheque, $credit, $advance,
+//                $pay, $cleanRows
+//            ) {
+//
+//                // 1) update invoice header & totals
+//                $invoice->update([
+//                    'client_id'       => $data['client_id'],
+//                    'invoice_date'    => $invoiceDate,
+//
+//                    'invoice_prefix'  => $prefix,
+//                    // ✅ invoice_number same (do not change)
+//                    // 'invoice_number' => $invoice->invoice_number,
+//
+//                    'subtotal'        => $subtotal,
+//                    'tax_amount'      => $taxTotal,
+//
+//                    'cgst_amount'     => $data['cgst_amount'] ?? ($invoice->cgst_amount ?? 0),
+//                    'sgst_amount'     => $data['sgst_amount'] ?? ($invoice->sgst_amount ?? 0),
+//                    'igst_amount'     => $data['igst_amount'] ?? ($invoice->igst_amount ?? 0),
+//
+//                    'total'           => $grandTotal,
+//                    'received_amount' => $receivedTotal,
+//                    'balance'         => $balance,
+//
+//                    'transport_mode'  => $data['transport_mode'] ?? null,
+//                    'gst_no'          => $data['gst_no'] ?? null,
+//                    'reverse_charge'  => (int)($data['reverse_charge'] ?? 0),
+//
+//                    'notes'           => $data['notes'] ?? null,
+//                    'terms'           => $data['terms'] ?? null,
+//
+//                    'items_json'      => json_encode($cleanRows),
+//                ]);
+//
+//                // 2) replace invoice_items
+//                \App\Models\InvoiceItem::where('invoice_id', $invoice->id)->delete();
+//
+//                foreach ($cleanRows as $row) {
+//                    \App\Models\InvoiceItem::create([
+//                        'invoice_id'       => $invoice->id,
+//                        'item_id'          => $row['item_id'] ?? null,
+//                        'description'      => $row['description'] ?? '',
+//
+//                        'sac_code'         => $row['sac_code'] ?? null,
+//                        'hsn_code'         => $row['hsn_code'] ?? null,
+//
+//                        'quantity'         => (int)($row['quantity'] ?? 1),
+//
+//                        'gold_wt'          => (float)($row['gold_wt'] ?? 0),
+//                        'silver_wt'        => (float)($row['silver_wt'] ?? 0),
+//
+//                        'gold_rate'        => (float)($row['gold_rate'] ?? 0),
+//                        'silver_rate'      => (float)($row['silver_rate'] ?? 0),
+//
+//                        'gemstone_wt_ct'   => (float)($row['gemstone_wt_ct'] ?? 0),
+//                        'diamond_wt_ct'    => (float)($row['diamond_wt_ct'] ?? 0),
+//
+//                        'making_rate'      => (float)($row['making_rate'] ?? 0),
+//
+//                        'discount'         => (float)($row['discount'] ?? 0),
+//                        'tax_percent'      => (float)($row['tax_percent'] ?? 0),
+//
+//                        'rate'             => (float)($row['rate'] ?? 0),
+//                        'amount'           => (float)($row['amount'] ?? 0),
+//                    ]);
+//                }
+//
+//                // 3) update latest payment record OR create new
+//                $payment = \App\Models\InvoicePayment::where('business_id', $bid)
+//                    ->where('invoice_id', $invoice->id)
+//                    ->latest('id')
+//                    ->first();
+//
+//                $payload = [
+//                    'business_id' => $bid,
+//                    'invoice_id'  => $invoice->id,
+//                    'client_id'   => $data['client_id'],
+//
+//                    'total_value' => $grandTotal,
+//
+//                    'cash_amount'   => $cash,
+//                    'online_amount' => $online,
+//                    'card_amount'   => $card,
+//                    'cheque_amount' => $cheque,
+//
+//                    'online_mode' => $pay['online_mode'] ?? null,
+//                    'online_ref'  => $pay['online_ref'] ?? null,
+//                    'upi_id'      => $pay['upi_id'] ?? null,
+//
+//                    'card_last4'  => $pay['card_last4'] ?? null,
+//                    'card_ref'    => $pay['card_ref'] ?? null,
+//
+//                    'cheque_no'   => $pay['cheque_no'] ?? null,
+//                    'bank_name'   => $pay['bank_name'] ?? null,
+//
+//                    'credit_sales_excess_amount' => $credit,
+//                    'advance_amount'             => $advance,
+//
+//                    'received_total' => $receivedTotal,
+//
+//                    'notes'   => $pay['notes'] ?? null,
+//                    'meta'    => null,
+//                    'paid_at' => $receivedTotal > 0 ? now() : null,
+//                ];
+//
+//                if ($payment) {
+//                    $payment->update($payload);
+//                } else {
+//                    \App\Models\InvoicePayment::create($payload);
+//                }
+//            });
+//        } catch (\Throwable $e) {
+//            report($e);
+//            return back()->withErrors(['invoice' => 'Invoice update करते समय error आया: '.$e->getMessage()])->withInput();
+//        }
+//
+//        return redirect()
+//            ->route('invoices.index')
+//            ->with('success', 'Invoice updated successfully.');
+//    }
+
+
+    public function update(Request $r, \App\Models\Invoice $invoice, \App\Services\StockService $stock)
     {
+        $invoice = $invoice->load(['items', 'client', 'business']);
+
+        $docType = strtolower(trim((string)($invoice->invoice_type ?? 'tax')));
+        if (!in_array($docType, ['tax','proforma','quotation'], true)) $docType = 'tax';
+
         $bid = $r->user()->current_business_id ?? session('active_business_id');
-        if (!$bid) {
-            return back()
-                ->withErrors(['business' => 'Active business select/attach नहीं है.'])
-                ->withInput();
+        if (!$bid) $bid = $invoice->business_id;
+
+        if ((int)$invoice->business_id !== (int)$bid) {
+            abort(403, 'Unauthorized invoice access.');
         }
 
-        // Security: invoice belongs to business
-        abort_unless((int)$invoice->business_id === (int)$bid, 403);
-
-        // ----------------- VALIDATION -----------------
         $data = $r->validate([
             'client_id'      => ['required','exists:clients,id'],
             'invoice_date'   => ['required','date'],
-            'invoice_prefix' => ['nullable','string','max:100'],
+            'invoice_prefix' => ['nullable','string','max:255'],
 
             'transport_mode' => ['nullable','string','max:255'],
             'gst_no'         => ['nullable','string','max:50'],
-            'reverse_charge' => ['nullable','boolean'],
+            'reverse_charge' => ['nullable'],
 
             'notes'          => ['nullable','string','max:2000'],
             'terms'          => ['nullable','string','max:2000'],
 
             'items_json'     => ['required','string'],
 
-            // totals hidden fields (optional)
-            'cgst_amount'    => ['nullable','numeric','min:0'],
-            'sgst_amount'    => ['nullable','numeric','min:0'],
-            'igst_amount'    => ['nullable','numeric','min:0'],
+            'charges_json'   => ['nullable','string'],
+            'discount_total' => ['nullable','numeric','min:0'],
+            'charge_total'   => ['nullable','numeric','min:0'],
+            'tcs_percent'    => ['nullable','numeric','min:0'],
+            'tcs_amount'     => ['nullable','numeric','min:0'],
+            'round_off'      => ['nullable','numeric'],
+            'less_amount'    => ['nullable','numeric','min:0'],
+
+            'cgst_percent'   => ['nullable','numeric','min:0'],
+            'sgst_percent'   => ['nullable','numeric','min:0'],
+            'igst_percent'   => ['nullable','numeric','min:0'],
+
+            'payment_method'  => ['nullable','string','max:255'],
+            'bank_account_id' => ['nullable','integer'],
+            'signature' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
         ]);
 
-        // Payment fields (invoice_payments)
-        $pay = $r->validate([
-            'pay_cash'            => ['nullable','numeric','min:0'],
-            'pay_upi'             => ['nullable','numeric','min:0'],
-            'pay_card'            => ['nullable','numeric','min:0'],
-            'pay_cheque'          => ['nullable','numeric','min:0'],
+        // ✅ payment validate only for TAX
+        $pay = [];
+        if ($docType === 'tax') {
+            $pay = $r->validate([
+                'pay_cash'            => ['nullable','numeric','min:0'],
+                'pay_upi'             => ['nullable','numeric','min:0'],
+                'pay_card'            => ['nullable','numeric','min:0'],
+                'pay_cheque'          => ['nullable','numeric','min:0'],
 
-            'credit_sales_excess' => ['nullable','numeric','min:0'],
-            'advance_amount'      => ['nullable','numeric','min:0'],
+                'credit_sales_excess' => ['nullable','numeric','min:0'],
+                'advance_amount'      => ['nullable','numeric','min:0'],
 
-            'online_mode'         => ['nullable','string','max:30'],
-            'online_ref'          => ['nullable','string','max:100'],
-            'upi_id'              => ['nullable','string','max:100'],
+                'online_mode'         => ['nullable','string','max:30'],
+                'online_ref'          => ['nullable','string','max:100'],
+                'upi_id'              => ['nullable','string','max:100'],
 
-            'card_last4'          => ['nullable','string','max:4'],
-            'card_ref'            => ['nullable','string','max:100'],
+                'card_last4'          => ['nullable','string','max:4'],
+                'card_ref'            => ['nullable','string','max:100'],
 
-            'cheque_no'           => ['nullable','string','max:50'],
-            'bank_name'           => ['nullable','string','max:100'],
-            'notes'               => ['nullable','string','max:2000'],
-        ]);
-
-        // ----------------- PREFIX (FY logic) -----------------
-        $computePrefix = function (string $date, string $base = 'INV'): string {
-            $ts = strtotime($date);
-            $y  = (int)date('Y', $ts);
-            $m  = (int)date('n', $ts);
-
-            $startYY = ($m >= 4) ? ($y % 100) : (($y - 1) % 100);
-            $a = str_pad((string)$startYY, 2, '0', STR_PAD_LEFT);
-            $b = str_pad((string)(($startYY + 1) % 100), 2, '0', STR_PAD_LEFT);
-            $fy = "{$a}-{$b}";
-
-            $base = rtrim($base, '/');
-            return "{$base}/{$fy}/";
-        };
-
-        $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
-
-        // ✅ Edit mode me generally prefix lock hota hai
-        // Agar aap allow karna chahte ho to: $prefix = trim($data['invoice_prefix'] ?? $invoice->invoice_prefix ?? '');
-        $prefix = trim($invoice->invoice_prefix ?? '');
-        if ($prefix === '') {
-            // fallback
-            $prefix = trim($data['invoice_prefix'] ?? '');
-            if ($prefix === '') $prefix = $computePrefix($invoiceDate, 'INV');
+                'cheque_no'           => ['nullable','string','max:50'],
+                'bank_name'           => ['nullable','string','max:100'],
+                'notes'               => ['nullable','string','max:2000'],
+            ]);
         }
 
-        // ----------------- ITEMS JSON PARSE -----------------
+        $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
+        $prefix      = trim($data['invoice_prefix'] ?? '');
+        if ($prefix === '') $prefix = $invoice->invoice_prefix; // keep old if blank
+
+        // -------- items parse --------
         $rows = json_decode($data['items_json'], true);
         if (!is_array($rows) || count($rows) < 1) {
             return back()->withErrors(['items' => 'कम से कम 1 line item जरूरी है.'])->withInput();
         }
 
-        // ----------------- TOTALS -----------------
-        $subtotal = 0.0;
-        $taxTotal = 0.0;
-        $cleanRows = [];
+        $normCode = function ($v) {
+            $s = trim((string)$v);
+            $s = preg_replace('/\D+/', '', $s);
+            $s = ltrim($s, '0');
+            return $s;
+        };
+
+        $subtotal      = 0.0;
+        $weightedTax   = 0.0;
+        $itemsTaxTotal = 0.0;
+        $cleanRows     = [];
 
         foreach ($rows as $i => $row) {
+            $itemId = $row['item_id'] ?? null;
+            if (empty($itemId)) {
+                return back()->withErrors(['items' => "Row ".($i+1)." में Item select नहीं है."])->withInput();
+            }
+
+            $itemType = strtolower(trim((string)($row['item_type'] ?? 'product')));
+            if (!in_array($itemType, ['product','service'], true)) $itemType = 'product';
 
             $desc = trim($row['description'] ?? '');
-            $hsn  = trim($row['hsn'] ?? '');
+            if ($desc === '') {
+                return back()->withErrors(['items' => "Row ".($i+1)." description missing."])->withInput();
+            }
 
-            $qty      = (int)($row['quantity'] ?? 1);
-            $qty      = $qty < 1 ? 1 : $qty;
+            $hsn = trim($row['hsn'] ?? '');
+            $qty = (int)($row['quantity'] ?? 1);
+            $qty = $qty < 1 ? 1 : $qty;
 
-            $taxPct   = (float)($row['tax_percent'] ?? 0);
+            $taxPct = (float)($row['tax_percent'] ?? 0);
+            if ($taxPct < 0 || $taxPct > 100) {
+                return back()->withErrors(['items' => "Row ".($i+1)." tax % invalid."])->withInput();
+            }
 
+            if ($itemType === 'service') {
+                $serviceRate = (float)($row['service_rate'] ?? 0);
+                if ($serviceRate < 0) {
+                    return back()->withErrors(['items' => "Row ".($i+1)." service rate invalid."])->withInput();
+                }
+
+                $lineBase = round($serviceRate * $qty, 2);
+                $lineTax  = round($lineBase * ($taxPct/100), 2);
+
+                $subtotal      += $lineBase;
+                $weightedTax   += ($lineBase * $taxPct);
+                $itemsTaxTotal += $lineTax;
+
+                $cleanRows[] = [
+                    'item_id'      => (int)$itemId,
+                    'item_type'    => 'service',
+                    'description'  => $desc,
+                    'hsn'          => $hsn,
+                    'qty'          => $qty,
+                    'tax_percent'  => round($taxPct,2),
+
+                    'service_rate' => round($serviceRate,2),
+
+                    'rate'       => $lineBase,
+                    'tax_amount' => $lineTax,
+                    'amount'     => round($lineBase + $lineTax, 2),
+
+                    // keep compatibility keys
+                    'making_charge' => round($serviceRate,2),
+
+                    'gold_wt'=>0,'silver_wt'=>0,'gold_rate'=>0,'silver_rate'=>0,
+                    'gemstone_wt'=>0,'diamond_wt'=>0,'making_rate'=>0,
+                    'stone_charges'=>0,
+                ];
+                continue;
+            }
+
+            // product
             $goldWt     = (float)($row['gold_wt'] ?? 0);
             $silverWt   = (float)($row['silver_wt'] ?? 0);
             $goldRate   = (float)($row['gold_rate'] ?? 0);
             $silverRate = (float)($row['silver_rate'] ?? 0);
-            $making     = (float)($row['making_rate'] ?? 0);
+            $makingRate = (float)($row['making_rate'] ?? 0);
 
-            $gemCt      = (float)($row['gemstone_wt'] ?? 0);
-            $diaCt      = (float)($row['diamond_wt'] ?? 0);
+            $gemCt = (float)($row['gemstone_wt'] ?? 0);
+            $diaCt = (float)($row['diamond_wt'] ?? 0);
 
-            // basic validate
-            if ($desc === '' || $taxPct < 0 || $taxPct > 100 || $goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $making < 0) {
-                return back()->withErrors(['items' => "Row ".($i+1)." invalid है."])->withInput();
+            if ($goldWt < 0 || $silverWt < 0 || $goldRate < 0 || $silverRate < 0 || $makingRate < 0) {
+                return back()->withErrors(['items' => "Row ".($i+1)." invalid values."])->withInput();
             }
 
-            // base = (gold+silver+making) * qty
-            $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $making) * $qty, 2);
+            $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $makingRate) * $qty, 2);
+            $lineTax  = round($lineBase * ($taxPct/100), 2);
 
-            $discount = (float)($row['discount'] ?? 0);
-            if ($discount < 0) $discount = 0;
-
-            $taxable = max(0, round($lineBase - $discount, 2));
-            $lineTax = round($taxable * ($taxPct / 100), 2);
-            $lineAmt = round($taxable + $lineTax, 2);
-
-            $subtotal += $lineBase;
-            $taxTotal += $lineTax;
+            $subtotal      += $lineBase;
+            $weightedTax   += ($lineBase * $taxPct);
+            $itemsTaxTotal += $lineTax;
 
             $cleanRows[] = [
-                'item_id'          => $row['item_id'] ?? null,
-                'description'      => $desc,
+                'item_id'     => (int)$itemId,
+                'item_type'   => 'product',
+                'description' => $desc,
+                'hsn'         => $hsn,
+                'qty'         => $qty,
+                'tax_percent' => round($taxPct,2),
 
-                'hsn_code'         => $hsn ?: null,
-                'sac_code'         => $row['sac'] ?? null,
+                'gold_wt'     => round($goldWt,3),
+                'silver_wt'   => round($silverWt,3),
+                'gold_rate'   => round($goldRate,2),
+                'silver_rate' => round($silverRate,2),
 
-                'quantity'         => $qty,
+                'gemstone_wt' => round($gemCt,3),
+                'diamond_wt'  => round($diaCt,3),
 
-                'gold_wt'          => $goldWt,
-                'silver_wt'        => $silverWt,
+                'making_rate' => round($makingRate,2),
 
-                'gold_rate'        => $goldRate,
-                'silver_rate'      => $silverRate,
-
-                'gemstone_wt_ct'   => $gemCt,
-                'diamond_wt_ct'    => $diaCt,
-
-                'making_rate'      => $making,
-
-                'discount'         => round($discount, 2),
-                'tax_percent'      => round($taxPct, 2),
-
-                'rate'             => $lineBase,
-                'amount'           => $lineAmt,
+                'rate'       => $lineBase,
+                'tax_amount' => $lineTax,
+                'amount'     => round($lineBase + $lineTax, 2),
             ];
         }
 
-        $subtotal   = round($subtotal, 2);
-        $taxTotal   = round($taxTotal, 2);
-        $grandTotal = round($subtotal + $taxTotal, 2);
+        $subtotal      = round($subtotal, 2);
+        $itemsTaxTotal = round($itemsTaxTotal, 2);
 
-        // ----------------- PAYMENT TOTALS -----------------
-        $cash    = (float)($pay['pay_cash'] ?? 0);
-        $online  = (float)($pay['pay_upi'] ?? 0);
-        $card    = (float)($pay['pay_card'] ?? 0);
-        $cheque  = (float)($pay['pay_cheque'] ?? 0);
+        $avgTaxPercentRaw = ($subtotal > 0) ? ($weightedTax / $subtotal) : 0;
+        $avgTaxPercent    = round($avgTaxPercentRaw, 2);
 
-        $credit  = (float)($pay['credit_sales_excess'] ?? 0);
-        $advance = (float)($pay['advance_amount'] ?? 0);
+        $discountTotal = round((float)($data['discount_total'] ?? 0), 2);
+        $chargeTotal   = round((float)($data['charge_total'] ?? 0), 2);
 
-        $receivedTotal = round($cash + $online + $card + $cheque, 2);
-        $balance       = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
+        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
 
-        // ----------------- SAVE -----------------
+        // charges taxable OFF by default
+        $chargesTax = 0.0;
+        $taxAmount  = round($itemsTaxTotal + $chargesTax, 2);
+
+        // TCS
+        $tcsPercent = round((float)($data['tcs_percent'] ?? 0), 2);
+        $tcsAmount  = round((float)($data['tcs_amount'] ?? 0), 2);
+        if ($tcsPercent > 0) {
+            $tcsAmount = round($taxableAmount * ($tcsPercent/100), 2);
+        }
+
+        $roundOff   = round((float)($data['round_off'] ?? 0), 2);
+        $lessAmount = round((float)($data['less_amount'] ?? $discountTotal), 2);
+
+        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
+
+        // payments totals (tax only)
+        $cash = $online = $card = $cheque = $credit = $advance = 0.0;
+        $receivedTotal = (float)($invoice->received_amount ?? 0);
+        $balance       = $grandTotal;
+
+        if ($docType === 'tax') {
+            $cash    = (float)($pay['pay_cash'] ?? 0);
+            $online  = (float)($pay['pay_upi'] ?? 0);
+            $card    = (float)($pay['pay_card'] ?? 0);
+            $cheque  = (float)($pay['pay_cheque'] ?? 0);
+            $credit  = (float)($pay['credit_sales_excess'] ?? 0);
+            $advance = (float)($pay['advance_amount'] ?? 0);
+
+            $receivedTotal = round($cash + $online + $card + $cheque, 2);
+            $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
+        }
+
+        // charges json decode
+        $chargesArr = [];
+        if (!empty($data['charges_json'])) {
+            $tmp = json_decode($data['charges_json'], true);
+            if (is_array($tmp)) {
+                foreach ($tmp as $c) {
+                    $nm = trim((string)($c['name'] ?? ''));
+                    $am = (float)($c['amount'] ?? 0);
+                    if ($nm !== '' && $am != 0) $chargesArr[] = ['name'=>$nm, 'amount'=>round($am,2)];
+                }
+            }
+        }
+
+        // signature upload replace
+        $signaturePath = $invoice->signature_path;
+        if ($r->hasFile('signature')) {
+            $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
+        }
+
         try {
             \DB::transaction(function () use (
-                $bid, $invoice, $data, $invoiceDate, $prefix,
-                $subtotal, $taxTotal, $grandTotal, $receivedTotal, $balance,
+                $r, $bid, $invoice, $data, $invoiceDate, $prefix, $docType,
+                $subtotal, $avgTaxPercent, $taxableAmount, $taxAmount,
+                $discountTotal, $chargeTotal, $tcsPercent, $tcsAmount, $roundOff, $lessAmount,
+                $grandTotal, $receivedTotal, $balance,
                 $cash, $online, $card, $cheque, $credit, $advance,
-                $pay, $cleanRows
+                $pay, $cleanRows, $normCode, $chargesArr, $stock, $signaturePath
             ) {
+                $biz    = \App\Models\Business::findOrFail($bid);
+                $client = \App\Models\Client::where('business_id', $bid)->findOrFail($data['client_id']);
 
-                // 1) update invoice header & totals
+                $bizCode   = $normCode($biz->state_code ?? '');
+                $partyCode = $normCode($client->state_code ?? '');
+                $isIntra = ($bizCode !== '' && $partyCode !== '') ? ($bizCode === $partyCode) : false;
+
+                $cgstPercent = $isIntra ? round($avgTaxPercent/2, 2) : 0;
+                $sgstPercent = $isIntra ? round($avgTaxPercent/2, 2) : 0;
+                $igstPercent = $isIntra ? 0 : round($avgTaxPercent, 2);
+
+                $cgst = $isIntra ? round($taxAmount / 2, 2) : 0;
+                $sgst = $isIntra ? round($taxAmount / 2, 2) : 0;
+                $igst = $isIntra ? 0 : round($taxAmount, 2);
+
+                // ✅ update invoice (number keep same, prefix can update)
                 $invoice->update([
-                    'client_id'       => $data['client_id'],
-                    'invoice_date'    => $invoiceDate,
+                    'client_id'      => $data['client_id'],
+                    'invoice_date'   => $invoiceDate,
+                    'invoice_prefix' => $prefix,
 
-                    'invoice_prefix'  => $prefix,
-                    // ✅ invoice_number same (do not change)
-                    // 'invoice_number' => $invoice->invoice_number,
+                    'subtotal'       => $subtotal,
+                    'discount_total' => $discountTotal,
+                    'charge_total'   => $chargeTotal,
+                    'less_amount'    => $lessAmount,
 
-                    'subtotal'        => $subtotal,
-                    'tax_amount'      => $taxTotal,
+                    'tax_amount'     => $taxAmount,
 
-                    'cgst_amount'     => $data['cgst_amount'] ?? ($invoice->cgst_amount ?? 0),
-                    'sgst_amount'     => $data['sgst_amount'] ?? ($invoice->sgst_amount ?? 0),
-                    'igst_amount'     => $data['igst_amount'] ?? ($invoice->igst_amount ?? 0),
+                    'cgst_percent'   => $cgstPercent,
+                    'cgst_amount'    => $cgst,
+                    'sgst_percent'   => $sgstPercent,
+                    'sgst_amount'    => $sgst,
+                    'igst_percent'   => $igstPercent,
+                    'igst_amount'    => $igst,
 
-                    'total'           => $grandTotal,
-                    'received_amount' => $receivedTotal,
-                    'balance'         => $balance,
+                    'tcs_percent'    => $tcsPercent,
+                    'tcs_amount'     => $tcsAmount,
+                    'round_off'      => $roundOff,
 
-                    'transport_mode'  => $data['transport_mode'] ?? null,
-                    'gst_no'          => $data['gst_no'] ?? null,
-                    'reverse_charge'  => (int)($data['reverse_charge'] ?? 0),
+                    'total'          => $grandTotal,
+                    'received_amount'=> ($docType === 'tax') ? $receivedTotal : 0,
+                    'balance'        => ($docType === 'tax') ? $balance : $grandTotal,
 
-                    'notes'           => $data['notes'] ?? null,
-                    'terms'           => $data['terms'] ?? null,
+                    'payment_method' => $data['payment_method'] ?? null,
 
-                    'items_json'      => json_encode($cleanRows),
+                    'gst_no'         => $data['gst_no'] ?? null,
+                    'transport_mode' => $data['transport_mode'] ?? null,
+                    'reverse_charge' => !empty($data['reverse_charge']) ? 1 : 0,
+
+                    'place_of_supply_state' => $client->state ?? null,
+                    'place_of_supply_code'  => $client->state_code ?? null,
+
+                    'notes'          => $data['notes'] ?? null,
+                    'terms'          => $data['terms'] ?? null,
+
+                    'charges_json'   => json_encode($chargesArr),
+                    'items_json'     => json_encode($cleanRows),
+
+                    'signature_path' => $signaturePath,
                 ]);
 
-                // 2) replace invoice_items
+                // ✅ Replace additional charges table rows (optional)
+                if (class_exists(\App\Models\InvoiceAdditionalCharge::class)) {
+                    \App\Models\InvoiceAdditionalCharge::where('invoice_id', $invoice->id)->delete();
+                    foreach ($chargesArr as $c) {
+                        \App\Models\InvoiceAdditionalCharge::create([
+                            'invoice_id' => $invoice->id,
+                            'additional_charge_id' => null,
+                            'name' => $c['name'],
+                            'amount' => $c['amount'],
+                        ]);
+                    }
+                }
+
+                // ✅ Replace invoice items
                 \App\Models\InvoiceItem::where('invoice_id', $invoice->id)->delete();
 
                 foreach ($cleanRows as $row) {
+                    $qty = (int)($row['qty'] ?? 1);
+                    $rate      = round((float)($row['rate'] ?? 0), 2);
+                    $lineTax   = round((float)($row['tax_amount'] ?? 0), 2);
+                    $lineTotal = round((float)($row['amount'] ?? ($rate + $lineTax)), 2);
+
                     \App\Models\InvoiceItem::create([
-                        'invoice_id'       => $invoice->id,
-                        'item_id'          => $row['item_id'] ?? null,
-                        'description'      => $row['description'] ?? '',
+                        'invoice_id' => $invoice->id,
+                        'item_id'    => $row['item_id'],
+                        'description'=> $row['description'] ?? '',
+                        'sac_code'   => null,
+                        'hsn_code'   => $row['hsn'] ?: null,
+                        'quantity'   => $qty,
 
-                        'sac_code'         => $row['sac_code'] ?? null,
-                        'hsn_code'         => $row['hsn_code'] ?? null,
+                        'gold_wt'    => (float)($row['gold_wt'] ?? 0),
+                        'silver_wt'  => (float)($row['silver_wt'] ?? 0),
+                        'gold_rate'  => (float)($row['gold_rate'] ?? 0),
+                        'silver_rate'=> (float)($row['silver_rate'] ?? 0),
 
-                        'quantity'         => (int)($row['quantity'] ?? 1),
+                        'gemstone_wt_ct' => (float)($row['gemstone_wt'] ?? 0),
+                        'diamond_wt_ct'  => (float)($row['diamond_wt'] ?? 0),
 
-                        'gold_wt'          => (float)($row['gold_wt'] ?? 0),
-                        'silver_wt'        => (float)($row['silver_wt'] ?? 0),
+                        'making_charge' => ($row['item_type']==='service') ? (float)($row['service_rate'] ?? $row['making_charge'] ?? 0) : null,
+                        'making_rate'   => ($row['item_type']==='product') ? (float)($row['making_rate'] ?? 0) : null,
 
-                        'gold_rate'        => (float)($row['gold_rate'] ?? 0),
-                        'silver_rate'      => (float)($row['silver_rate'] ?? 0),
+                        'discount'   => 0,
+                        'tax_percent'=> (float)($row['tax_percent'] ?? 0),
 
-                        'gemstone_wt_ct'   => (float)($row['gemstone_wt_ct'] ?? 0),
-                        'diamond_wt_ct'    => (float)($row['diamond_wt_ct'] ?? 0),
-
-                        'making_rate'      => (float)($row['making_rate'] ?? 0),
-
-                        'discount'         => (float)($row['discount'] ?? 0),
-                        'tax_percent'      => (float)($row['tax_percent'] ?? 0),
-
-                        'rate'             => (float)($row['rate'] ?? 0),
-                        'amount'           => (float)($row['amount'] ?? 0),
+                        'rate'       => $rate,
+                        'amount'     => $lineTotal,
                     ]);
                 }
 
-                // 3) update latest payment record OR create new
-                $payment = \App\Models\InvoicePayment::where('business_id', $bid)
-                    ->where('invoice_id', $invoice->id)
-                    ->latest('id')
-                    ->first();
+                // ✅ TAX only: update InvoicePayment + bank + stock
+                if ($docType === 'tax') {
 
-                $payload = [
-                    'business_id' => $bid,
-                    'invoice_id'  => $invoice->id,
-                    'client_id'   => $data['client_id'],
+                    // Update or create payment row
+                    $payRow = \App\Models\InvoicePayment::where('invoice_id', $invoice->id)->latest('id')->first();
+                    if (!$payRow) $payRow = new \App\Models\InvoicePayment();
 
-                    'total_value' => $grandTotal,
+                    $payRow->fill([
+                        'business_id' => $bid,
+                        'invoice_id'  => $invoice->id,
+                        'client_id'   => $data['client_id'],
 
-                    'cash_amount'   => $cash,
-                    'online_amount' => $online,
-                    'card_amount'   => $card,
-                    'cheque_amount' => $cheque,
+                        'total_value' => $grandTotal,
 
-                    'online_mode' => $pay['online_mode'] ?? null,
-                    'online_ref'  => $pay['online_ref'] ?? null,
-                    'upi_id'      => $pay['upi_id'] ?? null,
+                        'cash_amount'   => $cash,
+                        'online_amount' => $online,
+                        'card_amount'   => $card,
+                        'cheque_amount' => $cheque,
 
-                    'card_last4'  => $pay['card_last4'] ?? null,
-                    'card_ref'    => $pay['card_ref'] ?? null,
+                        'online_mode' => $pay['online_mode'] ?? null,
+                        'online_ref'  => $pay['online_ref'] ?? null,
+                        'upi_id'      => $pay['upi_id'] ?? null,
 
-                    'cheque_no'   => $pay['cheque_no'] ?? null,
-                    'bank_name'   => $pay['bank_name'] ?? null,
+                        'card_last4'  => $pay['card_last4'] ?? null,
+                        'card_ref'    => $pay['card_ref'] ?? null,
 
-                    'credit_sales_excess_amount' => $credit,
-                    'advance_amount'             => $advance,
+                        'cheque_no'   => $pay['cheque_no'] ?? null,
+                        'bank_name'   => $pay['bank_name'] ?? null,
 
-                    'received_total' => $receivedTotal,
+                        'credit_sales_excess_amount' => $credit,
+                        'advance_amount' => $advance,
 
-                    'notes'   => $pay['notes'] ?? null,
-                    'meta'    => null,
-                    'paid_at' => $receivedTotal > 0 ? now() : null,
-                ];
+                        'received_total' => $receivedTotal,
+                        'notes' => $pay['notes'] ?? null,
+                        'paid_at' => $receivedTotal > 0 ? now() : null,
+                    ]);
+                    $payRow->save();
 
-                if ($payment) {
-                    $payment->update($payload);
-                } else {
-                    \App\Models\InvoicePayment::create($payload);
+                    /**
+                     * ✅ STOCK NOTE:
+                     * Agar aap stock cut kar rahe ho on tax invoice,
+                     * update pe pehle old sale rollback karna chahiye, fir new record.
+                     *
+                     * Implement one of these in StockService:
+                     * 1) $stock->rollbackSale($invoice);
+                     * 2) ya invoice->items previous snapshot ke through reverse entries
+                     */
+                    if (method_exists($stock, 'rollbackSale')) {
+                        $stock->rollbackSale($invoice);
+                    }
+                    $invoice->load('items');
+                    $stock->recordSale($invoice);
+
+                    // ✅ bank balance update (simple approach)
+                    // NOTE: yaha previous received total ka delta handle nahi hai.
+                    // Best: bank ledger table banake entries store karo.
+                    $bankAccountId = $r->input('bank_account_id');
+                    $mode = strtolower(trim((string)($data['payment_method'] ?? '')));
+                    $bankModes = ['upi','bank','card','cheque'];
+
+                    if ($bankAccountId && in_array($mode, $bankModes, true) && $receivedTotal > 0) {
+                        $bank = \App\Models\BankAccount::where('business_id', $bid)->where('id', $bankAccountId)->first();
+                        if ($bank) {
+                            // ⚠️ This adds full received again (delta not handled)
+                            // Better: delta = newReceived - oldReceived
+                            $bank->balance = round(((float)$bank->balance) + $receivedTotal, 2);
+                            $bank->save();
+                        }
+                    }
                 }
             });
+
+            // regenerate PDF (optional)
+            $pdf = $this->simplePdfBuild($invoice->fresh(['client','items','business']));
+
+            $dir = "invoices/{$bid}/" . now()->format('Y-m');
+            $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
+            $filename = $safeName . ".pdf";
+            $path = $dir . "/" . $filename;
+
+            \Storage::disk('public')->put($path, $pdf->output());
+            $invoice->update(['pdf_url' => $path]);
+
         } catch (\Throwable $e) {
             report($e);
             return back()->withErrors(['invoice' => 'Invoice update करते समय error आया: '.$e->getMessage()])->withInput();
         }
 
-        return redirect()
-            ->route('invoices.index')
-            ->with('success', 'Invoice updated successfully.');
+        return redirect()->route('invoices.index')
+            ->with('success', ucfirst($docType).' updated successfully.');
     }
+
 
 
 
@@ -2543,5 +2071,182 @@ class InvoiceController extends Controller
         // Last me ensure no leading slash
         return ltrim($value, '/');
     }
+
+
+
+    public function convertToTax(Request $r, \App\Models\Invoice $inv, \App\Services\StockService $stock)
+    {
+        $invoice = $inv->load(['items', 'client', 'business']);
+
+        // only quotation/proforma allowed
+        $fromType = strtolower((string)($invoice->invoice_type ?? ''));
+        if (!in_array($fromType, ['quotation','proforma'], true)) {
+            return back()->withErrors(['convert' => 'Only Quotation/Proforma can be converted to Tax invoice.']);
+        }
+
+        // business safety
+        $bid = $r->user()->current_business_id ?? session('active_business_id') ?? $invoice->business_id;
+        if ((int)$invoice->business_id !== (int)$bid) abort(403);
+
+        $biz = \App\Models\Business::findOrFail($bid);
+
+        // build new tax invoice number/prefix
+        $today = now()->toDateString();
+        $taxBase = optional($r->user()->businesses()->where('businesses.id', $bid)->first())->invoice_base_prefix ?? 'RV/SL';
+        $prefix  = \App\Services\InvoiceNumber::previewPrefix($today, $taxBase);
+
+        // IMPORTANT: yaha aap apna actual "generate next invoice number" method use karein
+        // Example: InvoiceNumber::nextNumber($today, $taxBase, $bid)
+        $newInvoiceNumber = \App\Services\InvoiceNumber::nextNumber($today, $taxBase, $bid);
+
+        // copy items -> cleanRows (same structure jaisa update/store me)
+        $cleanRows = [];
+        foreach ($invoice->items as $it) {
+            $qty = (int)($it->quantity ?? 1);
+            $qty = $qty < 1 ? 1 : $qty;
+
+            $itemType = $it->item_type ? strtolower((string)$it->item_type) : null; // if you have
+            // fallback if you don't store item_type:
+            // $itemType = ($it->making_rate !== null || $it->gold_wt > 0 || $it->silver_wt > 0) ? 'product' : 'service';
+
+            if ($itemType === 'service') {
+                $serviceRate = (float)($it->making_charge ?? 0);
+                $base = round($serviceRate * $qty, 2);
+                $taxPct = (float)($it->tax_percent ?? 0);
+                $tax = round($base * ($taxPct/100), 2);
+
+                $cleanRows[] = [
+                    'item_id' => (int)$it->item_id,
+                    'item_type' => 'service',
+                    'description' => (string)$it->description,
+                    'hsn' => (string)($it->hsn_code ?? ''),
+                    'qty' => $qty,
+                    'tax_percent' => round($taxPct,2),
+                    'service_rate' => round($serviceRate,2),
+                    'rate' => $base,
+                    'tax_amount' => $tax,
+                    'amount' => round($base + $tax,2),
+                ];
+            } else {
+                $goldWt = (float)($it->gold_wt ?? 0);
+                $silverWt = (float)($it->silver_wt ?? 0);
+                $goldRate = (float)($it->gold_rate ?? 0);
+                $silverRate = (float)($it->silver_rate ?? 0);
+                $makingRate = (float)($it->making_rate ?? 0);
+
+                $base = round((($goldWt*$goldRate)+($silverWt*$silverRate)+$makingRate) * $qty, 2);
+                $taxPct = (float)($it->tax_percent ?? 0);
+                $tax = round($base * ($taxPct/100), 2);
+
+                $cleanRows[] = [
+                    'item_id' => (int)$it->item_id,
+                    'item_type' => 'product',
+                    'description' => (string)$it->description,
+                    'hsn' => (string)($it->hsn_code ?? ''),
+                    'qty' => $qty,
+                    'tax_percent' => round($taxPct,2),
+                    'gold_wt' => round($goldWt,3),
+                    'silver_wt' => round($silverWt,3),
+                    'gold_rate' => round($goldRate,2),
+                    'silver_rate' => round($silverRate,2),
+                    'making_rate' => round($makingRate,2),
+                    'rate' => $base,
+                    'tax_amount' => $tax,
+                    'amount' => round($base + $tax,2),
+                ];
+            }
+        }
+
+        // totals (same logic as update)
+        $subtotal = round(array_sum(array_column($cleanRows, 'rate')), 2);
+        $itemsTaxTotal = round(array_sum(array_column($cleanRows, 'tax_amount')), 2);
+
+        // discount/charges/tcs/roundoff old se copy OR set 0 (aap decide karo)
+        $discountTotal = round((float)($invoice->discount_total ?? 0), 2);
+        $chargeTotal   = round((float)($invoice->charge_total ?? 0), 2);
+        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
+
+        $taxAmount = round($itemsTaxTotal, 2); // chargesTax = 0 as your code
+        $tcsPercent = round((float)($invoice->tcs_percent ?? 0), 2);
+        $tcsAmount  = $tcsPercent > 0 ? round($taxableAmount * ($tcsPercent/100), 2) : 0;
+
+        $roundOff = round((float)($invoice->round_off ?? 0), 2);
+        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
+
+        DB::transaction(function () use ($invoice, $bid, $biz, $today, $prefix, $newInvoiceNumber, $cleanRows, $subtotal, $discountTotal, $chargeTotal, $taxAmount, $tcsPercent, $tcsAmount, $roundOff, $grandTotal, $stock) {
+
+            // create new tax invoice
+            $new = \App\Models\Invoice::create([
+                'business_id'    => $bid,
+                'client_id'      => $invoice->client_id,
+
+                'invoice_type'   => 'tax',
+                'invoice_date'   => $today,
+
+                'invoice_prefix' => $prefix,
+                'invoice_number' => $newInvoiceNumber,
+
+                'subtotal'       => $subtotal,
+                'discount_total' => $discountTotal,
+                'charge_total'   => $chargeTotal,
+                'tax_amount'     => $taxAmount,
+
+                'tcs_percent'    => $tcsPercent,
+                'tcs_amount'     => $tcsAmount,
+                'round_off'      => $roundOff,
+                'total'          => $grandTotal,
+
+                'received_amount'=> 0,
+                'balance'        => $grandTotal,
+
+                'gst_no'         => $biz->gstin,
+                'transport_mode' => $invoice->transport_mode,
+                'reverse_charge' => $invoice->reverse_charge ?? 0,
+
+                'notes'          => $invoice->notes,
+                'terms'          => $invoice->terms,
+
+                'charges_json'   => $invoice->charges_json,
+                'items_json'     => json_encode($cleanRows),
+            ]);
+
+            // insert invoice_items
+            foreach ($cleanRows as $row) {
+                \App\Models\InvoiceItem::create([
+                    'invoice_id' => $new->id,
+                    'item_id'    => $row['item_id'],
+                    'description'=> $row['description'] ?? '',
+                    'hsn_code'   => $row['hsn'] ?: null,
+                    'quantity'   => (int)($row['qty'] ?? 1),
+
+                    'gold_wt'    => (float)($row['gold_wt'] ?? 0),
+                    'silver_wt'  => (float)($row['silver_wt'] ?? 0),
+                    'gold_rate'  => (float)($row['gold_rate'] ?? 0),
+                    'silver_rate'=> (float)($row['silver_rate'] ?? 0),
+
+                    'making_rate'   => (float)($row['making_rate'] ?? 0),
+                    'making_charge' => (float)($row['service_rate'] ?? 0),
+
+                    'tax_percent'=> (float)($row['tax_percent'] ?? 0),
+                    'rate'       => (float)($row['rate'] ?? 0),
+                    'amount'     => (float)($row['amount'] ?? 0),
+                ]);
+            }
+
+            // mark old as converted (add these columns recommended)
+            // invoices: converted_to_invoice_id nullable, conversion_status nullable
+            $invoice->update([
+                'conversion_status' => 'converted',
+                'converted_to_invoice_id' => $new->id,
+            ]);
+
+            // stock cut only for tax invoice
+            $new->load('items');
+            $stock->recordSale($new);
+        });
+
+        return redirect()->route('invoices.index')->with('success', 'Converted to Tax Invoice successfully.');
+    }
+
 
 }

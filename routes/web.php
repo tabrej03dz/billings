@@ -111,6 +111,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/invoices/{invoice}',    [InvoiceController::class, 'update'])->name('invoices.update');
         Route::delete('/invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
 
+        Route::post('/invoices/{inv}/convert-to-tax', [InvoiceController::class, 'convertToTax'])
+            ->name('invoices.convertToTax');
+
         Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
 
 

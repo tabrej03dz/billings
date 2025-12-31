@@ -1,8 +1,9 @@
 <x-layouts.app :title="__('Invoices')">
     @php
-        $activeType = request('type', $type ?? 'tax'); // tax/proforma
-        $activeType = in_array($activeType, ['tax','proforma'], true) ? $activeType : 'tax';
+        $activeType = request('type', $type ?? 'tax'); // tax/proforma/quotation
+        $activeType = in_array($activeType, ['tax','proforma','quotation'], true) ? $activeType : 'tax';
     @endphp
+
 
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div>
@@ -19,6 +20,10 @@
                class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
                 + Proforma
             </a>
+            <a href="{{ route('invoices.create', 'quotation') }}"
+               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+                + quotation
+            </a>
 
             <a href="{{ route('invoices.create', 'tax') }}"
                class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
@@ -28,31 +33,46 @@
     </div>
 
     {{-- ✅ Tabs --}}
-    <div class="mb-4 flex items-center gap-2">
+    {{-- ✅ Tabs --}}
+    <div class="mb-4 flex items-center gap-2 flex-wrap">
         <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'tax'])) }}"
            class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
-           {{ $activeType === 'tax'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+       {{ $activeType === 'tax'
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
             Tax Invoices
             <span class="text-[11px] px-2 py-0.5 rounded-full border
-                {{ $activeType === 'tax' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
-                {{ $taxCount ?? '' }}
-            </span>
+            {{ $activeType === 'tax' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+            {{ $taxCount ?? '' }}
+        </span>
         </a>
 
         <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'proforma'])) }}"
            class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
-           {{ $activeType === 'proforma'
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+       {{ $activeType === 'proforma'
+            ? 'bg-indigo-600 text-white border-indigo-600'
+            : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
             Proforma
             <span class="text-[11px] px-2 py-0.5 rounded-full border
-                {{ $activeType === 'proforma' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
-                {{ $proCount ?? '' }}
-            </span>
+            {{ $activeType === 'proforma' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+            {{ $proCount ?? '' }}
+        </span>
+        </a>
+
+        {{-- ✅ NEW: Quotation tab --}}
+        <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'quotation'])) }}"
+           class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
+       {{ $activeType === 'quotation'
+            ? 'bg-amber-600 text-white border-amber-600'
+            : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+            Quotation
+            <span class="text-[11px] px-2 py-0.5 rounded-full border
+            {{ $activeType === 'quotation' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+            {{ $quoCount ?? '' }}
+        </span>
         </a>
     </div>
+
 
     {{-- ✅ Filters --}}
     <form method="GET"
@@ -189,6 +209,14 @@
                         <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
                         <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
                         <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
+
+                        @if(in_array($inv->invoice_type, ['quotation','proforma']))
+                            <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" class="inline">
+                                @csrf
+                                <button class="px-3 py-2 rounded bg-emerald-600 text-white">Convert to Tax Invoice</button>
+                            </form>
+                        @endif
+
 
                         <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
                             @csrf @method('DELETE')

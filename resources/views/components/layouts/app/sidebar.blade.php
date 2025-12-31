@@ -53,14 +53,97 @@
             @endrole
 
             @can('show invoices')
-                <flux:navlist variant="outline">
-                    <flux:navlist.group class="grid">
-                        <flux:navlist.item icon="home" :href="route('invoices.index')" :current="request()->routeIs('invoices.index')" wire:navigate>{{ __('Invoices') }}</flux:navlist.item>
-                    </flux:navlist.group>
-                </flux:navlist>
+                @php
+                    $type = request('type'); // quotation | tax | proforma | null
+                    $isInvoiceRoute = request()->routeIs('invoices.*');
+                @endphp
+
+                <details class="group {{ $isInvoiceRoute ? 'open' : '' }}">
+                    {{-- auto open --}}
+                    @if($isInvoiceRoute)
+                        <script>
+                            document.currentScript.parentElement.setAttribute('open','open')
+                        </script>
+                    @endif
+
+                    {{-- SUMMARY --}}
+                    <summary
+                        class="list-none cursor-pointer select-none
+            flex items-center justify-between
+            px-3 py-2 rounded-lg text-sm font-medium
+            {{ $isInvoiceRoute ? 'bg-white/15 text-white' : 'text-zinc-300 hover:text-white hover:bg-white/10' }}
+            focus:outline-none focus:ring-2 focus:ring-white/20"
+                    >
+            <span class="flex items-center gap-2">
+                <span class="inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-white">
+                    🧾
+                </span>
+                <span>Invoices</span>
+            </span>
+
+                        <svg class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
+                             viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                  d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
+                                  clip-rule="evenodd"/>
+                        </svg>
+                    </summary>
+
+                    {{-- SUB MENU --}}
+                    <div class="mt-1 ml-2 pl-2 border-l border-white/10 space-y-1">
+
+                        <flux:navlist variant="outline">
+                            <flux:navlist.group class="grid">
+
+                                {{-- Quotation --}}
+                                <flux:navlist.item
+                                    icon="document-text"
+                                    :href="route('invoices.index', ['type' => 'quotation'])"
+                                    :current="$isInvoiceRoute && $type === 'quotation'"
+                                    wire:navigate>
+                                    Quotation
+                                </flux:navlist.item>
+
+                                {{-- Create Invoice --}}
+                                <flux:navlist.item
+                                    icon="plus"
+                                    :href="route('invoices.create', ['type' => 'tax'])"
+                                    :current="request()->routeIs('invoices.create') && $type === 'tax'"
+                                    wire:navigate>
+                                    Create Invoice
+                                </flux:navlist.item>
+
+                                {{-- All Invoices --}}
+                                <flux:navlist.item
+                                    icon="list-bullet"
+                                    :href="route('invoices.index')"
+                                    :current="$isInvoiceRoute && empty($type)"
+                                    wire:navigate>
+                                    Invoices
+                                </flux:navlist.item>
+
+                                {{-- Proforma --}}
+                                <flux:navlist.item
+                                    icon="document"
+                                    :href="route('invoices.index', ['type' => 'proforma'])"
+                                    :current="$isInvoiceRoute && $type === 'proforma'"
+                                    wire:navigate>
+                                    Proforma
+                                </flux:navlist.item>
+
+                            </flux:navlist.group>
+                        </flux:navlist>
+
+                    </div>
+                </details>
+
+                <style>
+                    summary::-webkit-details-marker { display: none; }
+                </style>
             @endcan
 
-            @can('show businesses')
+
+        @can('show businesses')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('businesses.index')" :current="request()->routeIs('businesses.index')" wire:navigate>{{ __('Businesses') }}</flux:navlist.item>
@@ -98,7 +181,7 @@
             @endcan
 
 
-            @if($business->type == 'jewellery')
+            @if($business?->type == 'jewellery')
             @can('show metal rates')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">

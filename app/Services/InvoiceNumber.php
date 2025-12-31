@@ -157,6 +157,160 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+//class InvoiceNumber
+//{
+//    public static function fyFromDate(string $date): string
+//    {
+//        $d = Carbon::parse($date);
+//        $yy = (int)$d->format('y');
+//        $mm = (int)$d->format('m');
+//        $start = ($mm >= 4) ? $yy : ($yy - 1);
+//
+//        $a = str_pad(((($start + 100) % 100)), 2, '0', STR_PAD_LEFT);
+//        $b = str_pad(((($start + 1 + 100) % 100)), 2, '0', STR_PAD_LEFT);
+//        return "{$a}-{$b}";
+//    }
+//
+//    /**
+//     * $base examples:
+//     *  - tax: "RV/SL"
+//     *  - proforma: "PF"
+//     */
+//    public static function previewPrefix(string $date, string $base = 'RV/SL'): string
+//    {
+//        $base = trim($base);
+//        $base = rtrim($base, '/');
+//        $fy = self::fyFromDate($date);
+//        return "{$base}/{$fy}/";
+//    }
+//
+//    /**
+//     * For GST you enforced 16 chars, but Proforma is not a GST tax invoice.
+//     * So we keep enforce16 true only for tax by default.
+//     */
+//    protected static function buildFull(string $series, int $seq, int $pad = 3, bool $enforce16 = true): string
+//    {
+//        if (!Str::endsWith($series, ['/', '-'])) {
+//            $series = rtrim($series, '/') . '/';
+//        }
+//
+//        $number = str_pad((string)$seq, max(1, $pad), '0', STR_PAD_LEFT);
+//        $full = $series . $number;
+//
+//        if ($enforce16 && mb_strlen($full) > 16) {
+//            throw new \RuntimeException("Invoice number exceeds 16 characters: '{$full}'");
+//        }
+//
+//        return $full;
+//    }
+//
+//    /**
+//     * PREVIEW (no increment)
+//     */
+//    public static function peek(
+//        int    $businessId,
+//        string $invoiceDate,
+//        string $prefix,
+//        int    $pad = 3,
+//        string $invoiceType = 'tax' // tax | proforma
+//    ): array
+//    {
+//        $prefix = trim($prefix);
+//        $fy = self::fyFromDate($invoiceDate);
+//
+//        $row = DB::table('invoice_sequences')
+//            ->where('business_id', $businessId)
+//            ->where('invoice_type', $invoiceType)
+//            ->where('fy', $fy)
+//            ->where('series', $prefix)
+//            ->first();
+//
+//        $nextSeq = $row ? (int)$row->next_seq : 1;
+//
+//        $enforce16 = ($invoiceType === 'tax');
+//        $full = self::buildFull($prefix, $nextSeq, $pad, $enforce16);
+//
+//        return [
+//            'full' => $full,
+//            'prefix' => $prefix,
+//            'seq' => $nextSeq,
+//        ];
+//    }
+//
+//    /**
+//     * ALLOCATE (increment)
+//     */
+//    public static function next(
+//        int     $businessId,
+//        string  $invoiceDate,
+//        ?string $customPrefix = null,
+//        int     $pad = 3,
+//        string  $invoiceType = 'tax' // tax | proforma
+//    ): array
+//    {
+//        $fy = self::fyFromDate($invoiceDate);
+//        $series = $customPrefix ? trim($customPrefix) : self::previewPrefix($invoiceDate);
+//
+//        return DB::transaction(function () use ($businessId, $fy, $series, $pad, $invoiceType) {
+//
+//            $row = DB::table('invoice_sequences')
+//                ->where('business_id', $businessId)
+//                ->where('invoice_type', $invoiceType)
+//                ->where('fy', $fy)
+//                ->where('series', $series)
+//                ->lockForUpdate()
+//                ->first();
+//
+//            $enforce16 = ($invoiceType === 'tax');
+//
+//            if (!$row) {
+//                DB::table('invoice_sequences')->insert([
+//                    'business_id' => $businessId,
+//                    'invoice_type' => $invoiceType,
+//                    'fy' => $fy,
+//                    'series' => $series,
+//                    'next_seq' => 1,
+//                    'created_at' => now(),
+//                    'updated_at' => now(),
+//                ]);
+//
+//                $seq = 1;
+//                $full = self::buildFull($series, $seq, $pad, $enforce16);
+//
+//                DB::table('invoice_sequences')
+//                    ->where('business_id', $businessId)
+//                    ->where('invoice_type', $invoiceType)
+//                    ->where('fy', $fy)
+//                    ->where('series', $series)
+//                    ->update([
+//                        'next_seq' => 2,
+//                        'updated_at' => now(),
+//                    ]);
+//
+//                return ['full' => $full, 'prefix' => $series, 'seq' => $seq];
+//            }
+//
+//            $seq = max(1, (int)$row->next_seq);
+//            $full = self::buildFull($series, $seq, $pad, $enforce16);
+//
+//            DB::table('invoice_sequences')
+//                ->where('business_id', $businessId)
+//                ->where('invoice_type', $invoiceType)
+//                ->where('fy', $fy)
+//                ->where('series', $series)
+//                ->update([
+//                    'next_seq' => $seq + 1,
+//                    'updated_at' => now(),
+//                ]);
+//
+//            return ['full' => $full, 'prefix' => $series, 'seq' => $seq];
+//        });
+//    }
+//}
+
+
+
+
 class InvoiceNumber
 {
     public static function fyFromDate(string $date): string
@@ -172,9 +326,10 @@ class InvoiceNumber
     }
 
     /**
-     * $base examples:
+     * base examples:
      *  - tax: "RV/SL"
      *  - proforma: "PF"
+     *  - quotation: "QT"
      */
     public static function previewPrefix(string $date, string $base = 'RV/SL'): string
     {
@@ -184,10 +339,6 @@ class InvoiceNumber
         return "{$base}/{$fy}/";
     }
 
-    /**
-     * For GST you enforced 16 chars, but Proforma is not a GST tax invoice.
-     * So we keep enforce16 true only for tax by default.
-     */
     protected static function buildFull(string $series, int $seq, int $pad = 3, bool $enforce16 = true): string
     {
         if (!Str::endsWith($series, ['/', '-'])) {
@@ -212,9 +363,14 @@ class InvoiceNumber
         string $invoiceDate,
         string $prefix,
         int    $pad = 3,
-        string $invoiceType = 'tax' // tax | proforma
+        string $invoiceType = 'tax' // tax | proforma | quotation
     ): array
     {
+        $invoiceType = strtolower(trim((string)$invoiceType));
+        if (!in_array($invoiceType, ['tax','proforma','quotation'], true)) {
+            $invoiceType = 'tax';
+        }
+
         $prefix = trim($prefix);
         $fy = self::fyFromDate($invoiceDate);
 
@@ -227,13 +383,14 @@ class InvoiceNumber
 
         $nextSeq = $row ? (int)$row->next_seq : 1;
 
+        // ✅ only tax must be <=16 chars
         $enforce16 = ($invoiceType === 'tax');
         $full = self::buildFull($prefix, $nextSeq, $pad, $enforce16);
 
         return [
-            'full' => $full,
+            'full'   => $full,
             'prefix' => $prefix,
-            'seq' => $nextSeq,
+            'seq'    => $nextSeq,
         ];
     }
 
@@ -245,9 +402,14 @@ class InvoiceNumber
         string  $invoiceDate,
         ?string $customPrefix = null,
         int     $pad = 3,
-        string  $invoiceType = 'tax' // tax | proforma
+        string  $invoiceType = 'tax' // tax | proforma | quotation
     ): array
     {
+        $invoiceType = strtolower(trim((string)$invoiceType));
+        if (!in_array($invoiceType, ['tax','proforma','quotation'], true)) {
+            $invoiceType = 'tax';
+        }
+
         $fy = self::fyFromDate($invoiceDate);
         $series = $customPrefix ? trim($customPrefix) : self::previewPrefix($invoiceDate);
 
@@ -265,13 +427,13 @@ class InvoiceNumber
 
             if (!$row) {
                 DB::table('invoice_sequences')->insert([
-                    'business_id' => $businessId,
+                    'business_id'  => $businessId,
                     'invoice_type' => $invoiceType,
-                    'fy' => $fy,
-                    'series' => $series,
-                    'next_seq' => 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'fy'           => $fy,
+                    'series'       => $series,
+                    'next_seq'     => 1,
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
                 ]);
 
                 $seq = 1;
@@ -283,7 +445,7 @@ class InvoiceNumber
                     ->where('fy', $fy)
                     ->where('series', $series)
                     ->update([
-                        'next_seq' => 2,
+                        'next_seq'   => 2,
                         'updated_at' => now(),
                     ]);
 
@@ -299,7 +461,7 @@ class InvoiceNumber
                 ->where('fy', $fy)
                 ->where('series', $series)
                 ->update([
-                    'next_seq' => $seq + 1,
+                    'next_seq'   => $seq + 1,
                     'updated_at' => now(),
                 ]);
 
