@@ -211,7 +211,7 @@
                         <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
 
                         @if(in_array($inv->invoice_type, ['quotation','proforma']))
-                            <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" class="inline">
+                            <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" method="POST" class="inline">
                                 @csrf
                                 <button class="px-3 py-2 rounded bg-emerald-600 text-white">Convert to Tax Invoice</button>
                             </form>

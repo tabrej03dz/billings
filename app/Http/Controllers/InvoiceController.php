@@ -2074,179 +2074,134 @@ class InvoiceController extends Controller
 
 
 
-    public function convertToTax(Request $r, \App\Models\Invoice $inv, \App\Services\StockService $stock)
+    public function convertToTax(Request $r, \App\Models\Invoice $invoice, \App\Services\StockService $stock)
     {
-        $invoice = $inv->load(['items', 'client', 'business']);
+        $invoice = $invoice->load(['items', 'client', 'business']);
 
-        // only quotation/proforma allowed
-        $fromType = strtolower((string)($invoice->invoice_type ?? ''));
+        // ✅ same business safety
+        $bid = $r->user()->current_business_id ?? session('active_business_id') ?? $invoice->business_id;
+        if ((int)$invoice->business_id !== (int)$bid) abort(403);
+
+        $fromType = strtolower(trim((string)($invoice->invoice_type ?? '')));
         if (!in_array($fromType, ['quotation','proforma'], true)) {
             return back()->withErrors(['convert' => 'Only Quotation/Proforma can be converted to Tax invoice.']);
         }
 
-        // business safety
-        $bid = $r->user()->current_business_id ?? session('active_business_id') ?? $invoice->business_id;
-        if ((int)$invoice->business_id !== (int)$bid) abort(403);
-
-        $biz = \App\Models\Business::findOrFail($bid);
-
-        // build new tax invoice number/prefix
-        $today = now()->toDateString();
-        $taxBase = optional($r->user()->businesses()->where('businesses.id', $bid)->first())->invoice_base_prefix ?? 'RV/SL';
-        $prefix  = \App\Services\InvoiceNumber::previewPrefix($today, $taxBase);
-
-        // IMPORTANT: yaha aap apna actual "generate next invoice number" method use karein
-        // Example: InvoiceNumber::nextNumber($today, $taxBase, $bid)
-        $newInvoiceNumber = \App\Services\InvoiceNumber::nextNumber($today, $taxBase, $bid);
-
-        // copy items -> cleanRows (same structure jaisa update/store me)
-        $cleanRows = [];
-        foreach ($invoice->items as $it) {
-            $qty = (int)($it->quantity ?? 1);
-            $qty = $qty < 1 ? 1 : $qty;
-
-            $itemType = $it->item_type ? strtolower((string)$it->item_type) : null; // if you have
-            // fallback if you don't store item_type:
-            // $itemType = ($it->making_rate !== null || $it->gold_wt > 0 || $it->silver_wt > 0) ? 'product' : 'service';
-
-            if ($itemType === 'service') {
-                $serviceRate = (float)($it->making_charge ?? 0);
-                $base = round($serviceRate * $qty, 2);
-                $taxPct = (float)($it->tax_percent ?? 0);
-                $tax = round($base * ($taxPct/100), 2);
-
-                $cleanRows[] = [
-                    'item_id' => (int)$it->item_id,
-                    'item_type' => 'service',
-                    'description' => (string)$it->description,
-                    'hsn' => (string)($it->hsn_code ?? ''),
-                    'qty' => $qty,
-                    'tax_percent' => round($taxPct,2),
-                    'service_rate' => round($serviceRate,2),
-                    'rate' => $base,
-                    'tax_amount' => $tax,
-                    'amount' => round($base + $tax,2),
-                ];
-            } else {
-                $goldWt = (float)($it->gold_wt ?? 0);
-                $silverWt = (float)($it->silver_wt ?? 0);
-                $goldRate = (float)($it->gold_rate ?? 0);
-                $silverRate = (float)($it->silver_rate ?? 0);
-                $makingRate = (float)($it->making_rate ?? 0);
-
-                $base = round((($goldWt*$goldRate)+($silverWt*$silverRate)+$makingRate) * $qty, 2);
-                $taxPct = (float)($it->tax_percent ?? 0);
-                $tax = round($base * ($taxPct/100), 2);
-
-                $cleanRows[] = [
-                    'item_id' => (int)$it->item_id,
-                    'item_type' => 'product',
-                    'description' => (string)$it->description,
-                    'hsn' => (string)($it->hsn_code ?? ''),
-                    'qty' => $qty,
-                    'tax_percent' => round($taxPct,2),
-                    'gold_wt' => round($goldWt,3),
-                    'silver_wt' => round($silverWt,3),
-                    'gold_rate' => round($goldRate,2),
-                    'silver_rate' => round($silverRate,2),
-                    'making_rate' => round($makingRate,2),
-                    'rate' => $base,
-                    'tax_amount' => $tax,
-                    'amount' => round($base + $tax,2),
-                ];
-            }
+        // ✅ already tax?
+        if (strtolower((string)$invoice->invoice_type) === 'tax') {
+            return back()->withErrors(['convert' => 'This invoice is already a Tax invoice.']);
         }
 
-        // totals (same logic as update)
-        $subtotal = round(array_sum(array_column($cleanRows, 'rate')), 2);
-        $itemsTaxTotal = round(array_sum(array_column($cleanRows, 'tax_amount')), 2);
+        // ✅ prevent double conversion (if column exists)
+        if (!empty($invoice->converted_at)) {
+            return back()->withErrors(['convert' => 'This invoice is already converted once.']);
+        }
 
-        // discount/charges/tcs/roundoff old se copy OR set 0 (aap decide karo)
-        $discountTotal = round((float)($invoice->discount_total ?? 0), 2);
-        $chargeTotal   = round((float)($invoice->charge_total ?? 0), 2);
-        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
+        // ✅ items_json is source of truth (NO 0 amounts issue)
+        $rows = [];
+        if (!empty($invoice->items_json)) {
+            $rows = json_decode($invoice->items_json, true) ?: [];
+        }
+        if (!is_array($rows) || count($rows) < 1) {
+            return back()->withErrors(['convert' => 'Items not found (items_json missing).']);
+        }
 
-        $taxAmount = round($itemsTaxTotal, 2); // chargesTax = 0 as your code
-        $tcsPercent = round((float)($invoice->tcs_percent ?? 0), 2);
-        $tcsAmount  = $tcsPercent > 0 ? round($taxableAmount * ($tcsPercent/100), 2) : 0;
+        // ✅ Convert date: today (agar same date rakhna ho to $invoice->invoice_date use kar lo)
+        $invoiceDate = now()->toDateString();
 
-        $roundOff = round((float)($invoice->round_off ?? 0), 2);
-        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
+        // ===== TAX prefix series =====
+        $taxBase = optional(
+                $r->user()->businesses()->where('businesses.id', $bid)->first()
+            )->invoice_base_prefix ?? 'RV/SL';
 
-        DB::transaction(function () use ($invoice, $bid, $biz, $today, $prefix, $newInvoiceNumber, $cleanRows, $subtotal, $discountTotal, $chargeTotal, $taxAmount, $tcsPercent, $tcsAmount, $roundOff, $grandTotal, $stock) {
+        $taxSeries = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase); // RV/SL/25-26/
+        $alloc     = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $taxSeries, 3, 'tax');
 
-            // create new tax invoice
-            $new = \App\Models\Invoice::create([
-                'business_id'    => $bid,
-                'client_id'      => $invoice->client_id,
+        DB::transaction(function () use ($invoice, $invoiceDate, $taxSeries, $alloc, $rows, $stock) {
 
+            // ✅ Update main invoice only (keep totals/charges/notes etc. unchanged)
+            $invoice->update([
                 'invoice_type'   => 'tax',
-                'invoice_date'   => $today,
 
-                'invoice_prefix' => $prefix,
-                'invoice_number' => $newInvoiceNumber,
+                // number/prefix/date change
+                'invoice_date'   => $invoiceDate,
+                'invoice_prefix' => $taxSeries,
+                'invoice_number' => $alloc['full'],
 
-                'subtotal'       => $subtotal,
-                'discount_total' => $discountTotal,
-                'charge_total'   => $chargeTotal,
-                'tax_amount'     => $taxAmount,
-
-                'tcs_percent'    => $tcsPercent,
-                'tcs_amount'     => $tcsAmount,
-                'round_off'      => $roundOff,
-                'total'          => $grandTotal,
-
+                // ✅ make payments reset for tax conversion (optional)
                 'received_amount'=> 0,
-                'balance'        => $grandTotal,
+                'balance'        => (float)($invoice->total ?? 0),
 
-                'gst_no'         => $biz->gstin,
-                'transport_mode' => $invoice->transport_mode,
-                'reverse_charge' => $invoice->reverse_charge ?? 0,
+                // ✅ keep items_json as-is (or re-encode normalized rows)
+                'items_json'     => json_encode($rows),
 
-                'notes'          => $invoice->notes,
-                'terms'          => $invoice->terms,
-
-                'charges_json'   => $invoice->charges_json,
-                'items_json'     => json_encode($cleanRows),
+                // ✅ flags (if columns exist)
+                'converted_at'   => now(),
             ]);
 
-            // insert invoice_items
-            foreach ($cleanRows as $row) {
-                \App\Models\InvoiceItem::create([
-                    'invoice_id' => $new->id,
-                    'item_id'    => $row['item_id'],
-                    'description'=> $row['description'] ?? '',
-                    'hsn_code'   => $row['hsn'] ?: null,
-                    'quantity'   => (int)($row['qty'] ?? 1),
+            /**
+             * ✅ IMPORTANT:
+             * invoice_items rows ko update mat karo agar already correct hai.
+             * BUT: agar aapke invoice_items me amount/rate 0 ho jate hain kabhi,
+             * to below sync ON kar do (safe).
+             */
+            foreach ($rows as $row) {
+                $itemId = (int)($row['item_id'] ?? 0);
+                if (!$itemId) continue;
 
-                    'gold_wt'    => (float)($row['gold_wt'] ?? 0),
-                    'silver_wt'  => (float)($row['silver_wt'] ?? 0),
-                    'gold_rate'  => (float)($row['gold_rate'] ?? 0),
-                    'silver_rate'=> (float)($row['silver_rate'] ?? 0),
+                $qty = (int)($row['qty'] ?? $row['quantity'] ?? 1);
+                $qty = $qty < 1 ? 1 : $qty;
 
-                    'making_rate'   => (float)($row['making_rate'] ?? 0),
-                    'making_charge' => (float)($row['service_rate'] ?? 0),
+                $rate   = (float)($row['rate'] ?? 0);
+                $amount = (float)($row['amount'] ?? 0);
 
-                    'tax_percent'=> (float)($row['tax_percent'] ?? 0),
-                    'rate'       => (float)($row['rate'] ?? 0),
-                    'amount'     => (float)($row['amount'] ?? 0),
-                ]);
+                $type = strtolower(trim((string)($row['item_type'] ?? 'product')));
+
+                // match by item_id (agar multiple same item_id ho sakte hain to index based match karo)
+                $it = $invoice->items->firstWhere('item_id', $itemId);
+                if ($it) {
+                    $it->update([
+                        'quantity' => $qty,
+                        'tax_percent' => (float)($row['tax_percent'] ?? 0),
+                        'rate'     => $rate,     // base
+                        'amount'   => $amount,   // base+tax
+
+                        // product fields
+                        'gold_wt'     => (float)($row['gold_wt'] ?? 0),
+                        'silver_wt'   => (float)($row['silver_wt'] ?? 0),
+                        'gold_rate'   => (float)($row['gold_rate'] ?? 0),
+                        'silver_rate' => (float)($row['silver_rate'] ?? 0),
+                        'making_rate' => (float)($row['making_rate'] ?? 0),
+
+                        // service field
+                        'making_charge' => ($type === 'service')
+                            ? (float)($row['service_rate'] ?? $row['making_charge'] ?? 0)
+                            : null,
+                    ]);
+                }
             }
 
-            // mark old as converted (add these columns recommended)
-            // invoices: converted_to_invoice_id nullable, conversion_status nullable
-            $invoice->update([
-                'conversion_status' => 'converted',
-                'converted_to_invoice_id' => $new->id,
-            ]);
+            // ✅ stock cut ONE time (tax invoice banne ke baad)
+            $invoice->load(['items']);
+            $stock->recordSale($invoice);
 
-            // stock cut only for tax invoice
-            $new->load('items');
-            $stock->recordSale($new);
+            // ✅ stock flag (if column exists)
+            // $invoice->update(['stock_posted_at' => now()]);
         });
 
-        return redirect()->route('invoices.index')->with('success', 'Converted to Tax Invoice successfully.');
+        // ✅ regenerate pdf (optional but recommended)
+        // $pdf = $this->simplePdfBuild($invoice->fresh(['items','client','business']));
+        // $dir = "invoices/{$bid}/" . now()->format('Y-m');
+        // $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
+        // $path = $dir . "/" . $safeName . ".pdf";
+        // \Storage::disk('public')->put($path, $pdf->output());
+        // $invoice->update(['pdf_url' => $path]);
+
+        return redirect()->route('invoices.edit', $invoice->id)
+            ->with('success', 'Converted to Tax invoice successfully.');
     }
+
+
 
 
 }
