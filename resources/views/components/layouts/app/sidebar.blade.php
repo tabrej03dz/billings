@@ -19,7 +19,6 @@
                 </flux:navlist.group>
             </flux:navlist>
 
-            @role('super admin')
             @php
                 $user = auth()->user();
 
@@ -31,6 +30,9 @@
                 $business = App\Models\Business::find($activeBusinessId);
 
             @endphp
+
+            @role('super admin')
+
 
             <form action="{{ route('business.switch') }}" method="POST" class="inline-block">
                 @csrf
