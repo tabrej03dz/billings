@@ -5,8 +5,24 @@
 ========================================== --}}
 
 <x-layouts.app :title="__('Edit Sales Invoice')">
-    <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
+    <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4" style="margin: -35px">
 
+        <style>
+            .invoice-table th,
+            .invoice-table td {
+                padding: 4px 6px !important;   /* 👈 yahin se space kam hota hai */
+                vertical-align: top;
+            }
+
+            .invoice-table input,
+            .invoice-table select,
+            .invoice-table textarea {
+                padding: 2px 6px !important;
+                height: 26px;
+                font-size: 12px;
+            }
+
+        </style>
         {{-- errors --}}
         @if ($errors->any())
             <div class="p-3 rounded border border-red-300 bg-red-50 text-red-700">
@@ -139,7 +155,7 @@
             {{-- ================= TABLE ================= --}}
             <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border-separate border-spacing-0">
+                    <table class="min-w-full text-sm border-separate border-spacing-0 invoice-table">
                         <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
                         <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
                             <th>S.No.</th>
@@ -193,8 +209,11 @@
                                         </button>
                                     </div>
 
-                                    <input type="text" x-model="row.description" required
-                                           class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs">
+                                    <textarea x-model="row.description" required rows="2"
+                                              class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
+                                                 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs
+                                                 resize-y leading-tight"
+                                              style="min-height: 42px;"></textarea>
                                     <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
                                          x-show="row.item_type"
                                          x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>

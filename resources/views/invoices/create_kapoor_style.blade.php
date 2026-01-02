@@ -5,7 +5,25 @@
 ========================================== --}}
 
 <x-layouts.app :title="__('Create Sales Invoice')">
-    <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4">
+
+    <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl  px-3 sm:px-6 py-4" style="margin: -35px">
+
+        <style>
+            .invoice-table th,
+            .invoice-table td {
+                padding: 4px 6px !important;   /* 👈 yahin se space kam hota hai */
+                vertical-align: top;
+            }
+
+            .invoice-table input,
+            .invoice-table select,
+            .invoice-table textarea {
+                padding: 2px 6px !important;
+                height: 26px;
+                font-size: 12px;
+            }
+
+        </style>
 
         {{-- errors --}}
         @if ($errors->any())
@@ -132,7 +150,7 @@
             {{-- ================= TABLE ================= --}}
             <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border-separate border-spacing-0">
+                    <table class="min-w-full text-sm border-separate border-spacing-0 invoice-table">
                         <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
                         <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
                             <th>S.No.</th>
@@ -140,7 +158,7 @@
                             <th>HSN / SAC</th>
                             <th class="text-center">Qty</th>
 
-                            {{-- Product-only columns --}}
+{{--                             Product-only columns--}}
                             <th x-show="hasProduct()">Making Rate</th>
                             <th x-show="hasProduct()">Gold Rate (₹/g)</th>
                             <th x-show="hasProduct()">Silver Rate (₹/g)</th>
@@ -149,7 +167,7 @@
                             <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
                             <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
 
-                            {{-- Service-only column --}}
+{{--                             Service-only column--}}
                             <th x-show="hasService()">Service Rate (₹)</th>
 
                             <th>Tax %</th>
@@ -163,29 +181,15 @@
                             <tr>
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
-                                <td class="px-3 py-2">
-{{--                                    <select class="w-full border rounded px-2 py-1 mb-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"--}}
-{{--                                            @change="pickItem(i, $event.target.value)">--}}
-{{--                                        <option value="">-- Select Item --</option>--}}
-{{--                                        <template x-for="it in itemsData" :key="it.id">--}}
-{{--                                            <option :value="it.id" x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>--}}
-{{--                                        </template>--}}
-{{--                                    </select>--}}
-
-{{--                                    <button type="button"--}}
-{{--                                            class="mb-2 px-2 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs hover:bg-gray-50 dark:hover:bg-neutral-800"--}}
-{{--                                            @click="openItemModal(i)">--}}
-{{--                                        + New Item--}}
-{{--                                    </button>--}}
-
-                                    <div class="flex items-center gap-2 mb-2">
+                                <td class="px-2 py-1 w-[260px] max-w-[260px] align-top">
+                                    <div class="flex items-center gap-1 mb-1">
 
                                         <!-- Select -->
                                         <select
                                             class="flex-1 border rounded px-2 py-1
-               border-gray-300 dark:border-neutral-700
-               bg-white dark:bg-neutral-900
-               text-gray-900 dark:text-neutral-100 text-xs"
+                                           border-gray-300 dark:border-neutral-700
+                                           bg-white dark:bg-neutral-900
+                                           text-gray-900 dark:text-neutral-100 text-xs"
                                             @change="pickItem(i, $event.target.value)"
                                         >
                                             <option value="">-- Select Item --</option>
@@ -202,9 +206,9 @@
                                         <button
                                             type="button"
                                             class="px-3 py-1 rounded border
-               border-gray-300 dark:border-neutral-700
-               text-xs whitespace-nowrap
-               hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                           border-gray-300 dark:border-neutral-700
+                                           text-xs whitespace-nowrap
+                                           hover:bg-gray-50 dark:hover:bg-neutral-800"
                                             @click="openItemModal(i)"
                                         >
                                             + New
@@ -212,8 +216,10 @@
 
                                     </div>
 
-                                    <input type="text" x-model="row.description" required
-                                           class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs">
+                                    <textarea x-model="row.description" required rows="2"
+                                              class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs resize-none"
+                                              placeholder="Enter description..."></textarea>
+
                                     <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
                                          x-show="row.item_type"
                                          x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>
@@ -230,7 +236,7 @@
                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
                                 </td>
 
-                                {{-- Product-only cells --}}
+                                 Product-only cells
                                 <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.making_rate" @input="onAutoChange(row)"
@@ -277,7 +283,7 @@
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                {{-- Service-only cell --}}
+                                 Service-only cell
                                 <td class="px-3 py-2" x-show="row.item_type === 'service'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.service_rate" @input="onAutoChange(row)"
@@ -293,7 +299,7 @@
                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                {{-- ✅ Amount editable (manual override) --}}
+                                 ✅ Amount editable (manual override)
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.manual_amount"
@@ -324,6 +330,7 @@
                     </table>
                 </div>
             </div>
+
 
             {{-- ================= BOTTOM ================= --}}
             <div class="grid lg:grid-cols-2 gap-4">
