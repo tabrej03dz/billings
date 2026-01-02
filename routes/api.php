@@ -15,10 +15,10 @@ Route::post('/logout', [HomeController::class, 'logout'])->middleware('auth:sanc
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('businesses')->group(function(){
-        Route::get('/businesses/index', [BusinessController::class, 'index']);          // list
-        Route::post('/businesses/store', [BusinessController::class, 'store']);         // create
-        Route::post('/businesses/update/{business}', [BusinessController::class, 'update']); // update (supports file)
-        Route::delete('/businesses/delete/{business}', [BusinessController::class, 'destroy']); // delete
+        Route::get('index', [BusinessController::class, 'index']);          // list
+        Route::post('store', [BusinessController::class, 'store']);         // create
+        Route::post('update/{business}', [BusinessController::class, 'update']); // update (supports file)
+        Route::delete('delete/{business}', [BusinessController::class, 'destroy']); // delete
     });
 
 });

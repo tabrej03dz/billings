@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class BusinessController extends Controller
 {
@@ -12,12 +16,12 @@ class BusinessController extends Controller
         $user = $request->user();
 
         if ($user->hasRole('super admin') || $user->can('view all businesses')) {
-            $businesses = Business::latest()->paginate(15);
+            $businesses = Business::latest()->get();
         } else {
             $businesses = $user->businesses()
                 ->withPivot('role')
                 ->latest('business_user.created_at')
-                ->paginate(15);
+                ->get();
         }
 
         return response()->json([
@@ -40,6 +44,7 @@ class BusinessController extends Controller
 
     public function store(Request $request)
     {
+
         // ✅ IMPORTANT: store() me $business variable exist nahi karta, isliye ignore hata diya.
         $data = $request->validate([
             'name'    => ['required', 'string', 'max:255'],
@@ -55,10 +60,11 @@ class BusinessController extends Controller
             'signature'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'letter_head'=> ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
 
-            'state'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
+            'state'   => ['nullable', 'string', 'max:100'], // "09,Uttar Pradesh"
             'pdf_template_id' => ['required', 'string', 'max:100'],
             'type' => ['nullable', 'string', 'max:100'], // optional in store (aap chahe to required kar do)
         ]);
+        return response($request->all());
 
         // ✅ Split state_code & state_name
         if (!empty($data['state']) && str_contains($data['state'], ',')) {
