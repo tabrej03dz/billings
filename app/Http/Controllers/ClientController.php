@@ -129,6 +129,88 @@ class ClientController extends Controller
     }
 
 
+//    public function quickStore(Request $request)
+//    {
+//        // ✅ Business resolve (fallback added)
+//        $bid = $request->user()->current_business_id
+//            ?? session('active_business_id')
+//            ?? $request->user()->businesses()->pluck('businesses.id')->first();
+//
+//        if (!$bid) {
+//            return response()->json([
+//                'ok' => false,
+//                'message' => 'Active business not found.'
+//            ], 422);
+//        }
+//
+//        // ✅ Normalize inputs (avoid duplicates by formatting)
+//        $request->merge([
+//            'mobile'  => $request->mobile ? preg_replace('/\s+/', '', $request->mobile) : null,
+//            'gstin'   => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
+//            'pan'     => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
+//            'state'   => $request->state ? trim($request->state) : null,
+//            'state_code'   => $request->state_code ? trim($request->state_code) : null,
+//            'address' => $request->address ? trim($request->address) : null,
+//            'name'    => $request->name ? trim($request->name) : null,
+//            'pincode'    => $request->pincode ? trim($request->pincode) : null,
+//        ]);
+//
+//        // ✅ Convert empty string to null for nullable fields
+//        foreach (['gstin','pan','state','address'] as $f) {
+//            if ($request->has($f) && $request->input($f) === '') {
+//                $request->merge([$f => null]);
+//            }
+//        }
+//
+//        try {
+//            $data = $request->validate([
+//                'name'    => ['required','string','max:255'],
+//                'mobile'  => [
+//                    'nullable','string','max:20',
+//                    Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
+//                ],
+//                'gstin'   => [
+//                    'nullable','string','max:50',
+//                    Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
+//                ],
+//                'pan'     => [
+//                    'nullable','string','max:50',
+//                    Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
+//                ],
+//                'state'   => ['nullable','string','max:100'],
+//                'state_code'   => ['nullable','string','max:100'],
+//                'address' => ['nullable','string','max:1000'],
+//                'pincode' => ['nullable'],
+//            ]);
+//        } catch (ValidationException $e) {
+//            // ✅ return validation errors as JSON for modal
+//            return response()->json([
+//                'ok' => false,
+//                'message' => 'Validation failed',
+//                'errors' => $e->errors(),
+//            ], 422);
+//        }
+//
+//        $data['business_id'] = $bid;
+//
+//        $client = \App\Models\Client::create($data);
+//
+//        return response()->json([
+//            'ok' => true,
+//            'client' => [
+//                'id'         => $client->id,
+//                'name'       => $client->name,
+//                'mobile'     => $client->mobile,
+//                'address'    => $client->address,
+//                'state'      => $client->state,
+//                'state_code' => $client->state_code,
+//                'gstin'      => $client->gstin,
+//                'pincode'      => $client->pincode,
+//            ]
+//        ]);
+//    }
+
+
     public function quickStore(Request $request)
     {
         // ✅ Business resolve (fallback added)
@@ -145,45 +227,126 @@ class ClientController extends Controller
 
         // ✅ Normalize inputs (avoid duplicates by formatting)
         $request->merge([
-            'mobile'  => $request->mobile ? preg_replace('/\s+/', '', $request->mobile) : null,
-            'gstin'   => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
-            'pan'     => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
-            'state'   => $request->state ? trim($request->state) : null,
-            'state_code'   => $request->state_code ? trim($request->state_code) : null,
-            'address' => $request->address ? trim($request->address) : null,
-            'name'    => $request->name ? trim($request->name) : null,
-            'pincode'    => $request->pincode ? trim($request->pincode) : null,
+            'mobile'     => $request->mobile ? preg_replace('/\s+/', '', (string)$request->mobile) : null,
+            'gstin'      => $request->gstin ? strtoupper(preg_replace('/\s+/', '', (string)$request->gstin)) : null,
+            'pan'        => $request->pan ? strtoupper(preg_replace('/\s+/', '', (string)$request->pan)) : null,
+            'state'      => $request->state ? trim((string)$request->state) : null,
+            'state_code' => $request->state_code ? trim((string)$request->state_code) : null,
+            'address'    => $request->address ? trim((string)$request->address) : null,
+            'name'       => $request->name ? trim((string)$request->name) : null,
+            'pincode'    => $request->pincode ? trim((string)$request->pincode) : null,
         ]);
 
         // ✅ Convert empty string to null for nullable fields
-        foreach (['gstin','pan','state','address'] as $f) {
+        foreach (['mobile','gstin','pan','state','state_code','address','pincode'] as $f) {
             if ($request->has($f) && $request->input($f) === '') {
                 $request->merge([$f => null]);
+            }
+        }
+
+        // ✅ GST State Code → State Name map (India)
+        $gstStates = [
+            '01' => 'Jammu & Kashmir',
+            '02' => 'Himachal Pradesh',
+            '03' => 'Punjab',
+            '04' => 'Chandigarh',
+            '05' => 'Uttarakhand',
+            '06' => 'Haryana',
+            '07' => 'Delhi',
+            '08' => 'Rajasthan',
+            '09' => 'Uttar Pradesh',
+            '10' => 'Bihar',
+            '11' => 'Sikkim',
+            '12' => 'Arunachal Pradesh',
+            '13' => 'Nagaland',
+            '14' => 'Manipur',
+            '15' => 'Mizoram',
+            '16' => 'Tripura',
+            '17' => 'Meghalaya',
+            '18' => 'Assam',
+            '19' => 'West Bengal',
+            '20' => 'Jharkhand',
+            '21' => 'Odisha',
+            '22' => 'Chhattisgarh',
+            '23' => 'Madhya Pradesh',
+            '24' => 'Gujarat',
+            '25' => 'Daman & Diu',          // legacy
+            '26' => 'Dadra & Nagar Haveli',  // legacy
+            '27' => 'Maharashtra',
+            '28' => 'Andhra Pradesh (Old)',
+            '29' => 'Karnataka',
+            '30' => 'Goa',
+            '31' => 'Lakshadweep',
+            '32' => 'Kerala',
+            '33' => 'Tamil Nadu',
+            '34' => 'Puducherry',
+            '35' => 'Andaman & Nicobar Islands',
+            '36' => 'Telangana',
+            '37' => 'Andhra Pradesh',
+            '38' => 'Ladakh',
+            '97' => 'Other Territory',
+            '99' => 'Centre Jurisdiction',
+        ];
+
+        // ✅ PRO: If state/state_code missing, derive from GSTIN first 2 digits
+        // Also: basic GSTIN format check (15 chars) before deriving
+        $gstin = $request->gstin;
+
+        if (!empty($gstin)) {
+            // Basic GSTIN pattern: 2 digits + PAN(10) + 1 + Z + 1 (total 15)
+            // Example: 09ABCDE1234F1Z5
+            $gstinPattern = '/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/';
+
+            // If user entered gstin but wrong format, throw validation-like JSON error early
+            if (strlen($gstin) !== 15 || !preg_match($gstinPattern, $gstin)) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Validation failed',
+                    'errors' => [
+                        'gstin' => ['GSTIN format is invalid. Example: 09ABCDE1234F1Z5'],
+                    ],
+                ], 422);
+            }
+
+            $code = substr($gstin, 0, 2); // "09"
+
+            // If state_code not provided -> set from GSTIN
+            if (empty($request->state_code) && ctype_digit($code)) {
+                $request->merge(['state_code' => $code]);
+            }
+
+            // If state not provided -> set from map (if exists)
+            if (empty($request->state) && isset($gstStates[$code])) {
+                $request->merge(['state' => $gstStates[$code]]);
             }
         }
 
         try {
             $data = $request->validate([
                 'name'    => ['required','string','max:255'],
+
                 'mobile'  => [
                     'nullable','string','max:20',
                     Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
                 ],
+
                 'gstin'   => [
                     'nullable','string','max:50',
                     Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
                 ],
+
                 'pan'     => [
                     'nullable','string','max:50',
                     Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
                 ],
-                'state'   => ['nullable','string','max:100'],
-                'state_code'   => ['nullable','string','max:100'],
+
+                'state'      => ['nullable','string','max:100'],
+                'state_code' => ['nullable','string','max:10'], // "09" etc.
+
                 'address' => ['nullable','string','max:1000'],
-                'pincode' => ['nullable'],
+                'pincode' => ['nullable','string','max:20'],
             ]);
         } catch (ValidationException $e) {
-            // ✅ return validation errors as JSON for modal
             return response()->json([
                 'ok' => false,
                 'message' => 'Validation failed',
@@ -193,7 +356,7 @@ class ClientController extends Controller
 
         $data['business_id'] = $bid;
 
-        $client = \App\Models\Client::create($data);
+        $client = Client::create($data);
 
         return response()->json([
             'ok' => true,
@@ -205,7 +368,7 @@ class ClientController extends Controller
                 'state'      => $client->state,
                 'state_code' => $client->state_code,
                 'gstin'      => $client->gstin,
-                'pincode'      => $client->pincode,
+                'pincode'    => $client->pincode,
             ]
         ]);
     }
