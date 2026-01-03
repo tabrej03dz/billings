@@ -37,6 +37,47 @@ class ClientController extends Controller
         return view('clients.create');
     }
 
+//    public function store(Request $request)
+//    {
+//        $bid = $request->user()->current_business_id ?? session('active_business_id');
+//
+//        $data = $request->validate([
+//            'name'    => ['required','string','max:255'],
+//            'mobile'  => [
+//                'nullable','string','max:20',
+//                Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id',$bid)),
+//            ],
+//            'gstin'   => [
+//                'nullable','string','max:50',
+//                Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id',$bid)),
+//            ],
+//            'pan'     => [
+//                'nullable','string','max:50',
+//                Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
+//            ],
+//            'state'  => ['nullable','string','max:100'],
+//            'address' => ['nullable','string','max:1000'],
+//        ]);
+//
+//        $data['state_code'] = null;
+//
+//        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+//            [$code, $name] = explode(',', $data['state'], 2);
+//
+//            $data['state_code'] = trim($code); // "09"
+//            $data['state']      = trim($name); // "Uttar Pradesh"
+//        }
+//
+//        // BelongsToBusiness trait creation time pe business_id auto set kar dega;
+//        // phir bhi explicit set karna chahte ho to:
+//        $data['business_id'] = $bid;
+//
+//        Client::create($data);
+//
+//        return redirect()->route('clients.index')->with('success','Client created successfully.');
+//    }
+
+
     public function store(Request $request)
     {
         $bid = $request->user()->current_business_id ?? session('active_business_id');
@@ -55,26 +96,55 @@ class ClientController extends Controller
                 'nullable','string','max:50',
                 Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
             ],
-            'state'  => ['nullable','string','max:100'],
+            'state'   => ['nullable','string','max:100'],
             'address' => ['nullable','string','max:1000'],
         ]);
 
         $data['state_code'] = null;
 
+        // ✅ CASE 1: State dropdown selected
         if (!empty($data['state']) && str_contains($data['state'], ',')) {
             [$code, $name] = explode(',', $data['state'], 2);
-
-            $data['state_code'] = trim($code); // "09"
-            $data['state']      = trim($name); // "Uttar Pradesh"
+            $data['state_code'] = trim($code);
+            $data['state']      = trim($name);
         }
 
-        // BelongsToBusiness trait creation time pe business_id auto set kar dega;
-        // phir bhi explicit set karna chahte ho to:
+        // ✅ CASE 2: State NOT selected → derive from GSTIN
+        if (
+            empty($data['state']) &&
+            !empty($data['gstin']) &&
+            strlen($data['gstin']) >= 2
+        ) {
+            $gstStates = [
+                '01'=>'Jammu and Kashmir','02'=>'Himachal Pradesh','03'=>'Punjab',
+                '04'=>'Chandigarh','05'=>'Uttarakhand','06'=>'Haryana','07'=>'Delhi',
+                '08'=>'Rajasthan','09'=>'Uttar Pradesh','10'=>'Bihar','11'=>'Sikkim',
+                '12'=>'Arunachal Pradesh','13'=>'Nagaland','14'=>'Manipur','15'=>'Mizoram',
+                '16'=>'Tripura','17'=>'Meghalaya','18'=>'Assam','19'=>'West Bengal',
+                '20'=>'Jharkhand','21'=>'Odisha','22'=>'Chhattisgarh',
+                '23'=>'Madhya Pradesh','24'=>'Gujarat',
+                '26'=>'Dadra and Nagar Haveli and Daman and Diu',
+                '27'=>'Maharashtra','29'=>'Karnataka','30'=>'Goa','31'=>'Lakshadweep',
+                '32'=>'Kerala','33'=>'Tamil Nadu','34'=>'Puducherry',
+                '35'=>'Andaman and Nicobar Islands','36'=>'Telangana',
+                '37'=>'Andhra Pradesh','38'=>'Ladakh',
+            ];
+
+            $code = substr(strtoupper($data['gstin']), 0, 2);
+
+            if (isset($gstStates[$code])) {
+                $data['state_code'] = $code;
+                $data['state']      = $gstStates[$code];
+            }
+        }
+
         $data['business_id'] = $bid;
 
         Client::create($data);
 
-        return redirect()->route('clients.index')->with('success','Client created successfully.');
+        return redirect()
+            ->route('clients.index')
+            ->with('success','Client created successfully.');
     }
 
     public function edit(Client $client)
