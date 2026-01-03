@@ -113,6 +113,24 @@
                             <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
                         </div>
+
+{{--                        <div>--}}
+{{--                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">GST No.</label>--}}
+
+{{--                            <input type="text" name="gst_no"--}}
+{{--                                   x-model="hdr.gst_no"--}}
+{{--                                   @input.debounce.350ms="onGstinInput('hdr')"--}}
+{{--                                   placeholder="15-char GSTIN"--}}
+{{--                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
+
+{{--                            <!-- status text -->--}}
+{{--                            <div class="mt-1 text-[11px]"--}}
+{{--                                 x-show="gstin.status !== 'idle'"--}}
+{{--                                 :class="gstin.status==='valid' ? 'text-green-600' : (gstin.status==='checking' ? 'text-blue-600' : 'text-red-600')"--}}
+{{--                                 x-text="gstin.message">--}}
+{{--                            </div>--}}
+{{--                        </div>--}}
+
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
                             <div class="font-semibold" :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
@@ -140,11 +158,7 @@
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
                             <input type="hidden" name="invoice_prefix" :value="computedPrefix">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">GST No.</label>
-                            <input type="text" name="gst_no" x-model="hdr.gst_no"
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                        </div>
+
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Transport Mode</label>
                             <input type="text" name="transport_mode" x-model="hdr.transport_mode" placeholder="By Hand"
@@ -699,10 +713,26 @@
                         </div>
 
 
+{{--                        <div class="md:col-span-2">--}}
+{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>--}}
+{{--                            <input x-model="newClient.gstin" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="optional">--}}
+{{--                        </div>--}}
+
                         <div class="md:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>
-                            <input x-model="newClient.gstin" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="optional">
+
+                            <input x-model="newClient.gstin"
+                                   @input.debounce.350ms="onGstinInput('client')"
+                                   class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
+                                   placeholder="optional">
+
+                            <div class="mt-1 text-[11px]"
+                                 x-show="clientGstin.status !== 'idle'"
+                                 :class="clientGstin.status==='valid' ? 'text-green-600' : (clientGstin.status==='checking' ? 'text-blue-600' : 'text-red-600')"
+                                 x-text="clientGstin.message">
+                            </div>
                         </div>
+
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
@@ -1548,14 +1578,120 @@
                 },
 
 
+                // saving: false,
+                // submitForm(){
+                //     if(this.saving) return;
+                //     this.saving = true;
+                //     this.$refs.form.requestSubmit();
+                // },
+
                 saving: false,
                 submitForm(){
                     if(this.saving) return;
+
+                    // --- GSTIN confirm guard (hdr.gst_no) ---
+                    const g = this.normalizeGstin(this.hdr.gst_no);
+                    const res = this.validateGstinLocal(g);
+
+                    if(g && !res.ok){
+                        const ok = confirm("⚠️ GSTIN invalid lag raha hai.\n\n" + res.message + "\n\nPhir bhi Save karna hai?");
+                        if(!ok) return;
+                    }
+
                     this.saving = true;
                     this.$refs.form.requestSubmit();
                 },
 
+
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
+
+
+                gstin: { status:'idle', message:'', value:'' },          // for hdr.gst_no
+                clientGstin: { status:'idle', message:'', value:'' },   // for newClient.gstin
+
+                normalizeGstin(v){
+                    return String(v||'').toUpperCase().replace(/[^0-9A-Z]/g,'').trim();
+                },
+
+                validateGstinLocal(gstin){
+                    const g = this.normalizeGstin(gstin);
+                    if(!g) return { ok:true, empty:true, message:'' }; // empty allowed
+
+                    // Basic length
+                    if(g.length !== 15) return { ok:false, message:'GSTIN must be 15 characters.' };
+
+                    // Pattern: 2 digits + 10 PAN + 1 entity + Z + 1 checksum
+                    const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+                    if(!re.test(g)) return { ok:false, message:'GSTIN format is invalid (check state/PAN/etc).' };
+
+                    // Checksum validate
+                    // Checksum validate (GSTIN uses Mod 36, factor 2/1 from RIGHT to LEFT)
+                    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    const mod = 36;
+
+                    const codePoint = (c) => chars.indexOf(c);
+
+                    let sum = 0;
+                    let f = 2;
+
+                    // ✅ IMPORTANT: iterate from right-to-left for first 14 chars
+                    for (let i = 13; i >= 0; i--) {
+                        const v = codePoint(g[i]);
+                        if (v === -1) return { ok:false, message:'GSTIN has invalid characters.' };
+
+                        const p = v * f;
+                        f = (f === 2) ? 1 : 2;
+
+                        sum += Math.floor(p / mod) + (p % mod);
+                    }
+
+                    const checkCodePoint = (mod - (sum % mod)) % mod;
+                    const expected = chars[checkCodePoint];
+                    const actual = g[14];
+
+                    if (expected !== actual) {
+                        return { ok:false, message:'GSTIN checksum mismatch (likely wrong GSTIN).' };
+                    }
+
+
+                    return { ok:true, empty:false, message:'GSTIN looks valid.' };
+                },
+
+                onGstinInput(scope){
+                    if(scope === 'hdr'){
+                        const g = this.normalizeGstin(this.hdr.gst_no);
+                        this.hdr.gst_no = g;
+
+                        const res = this.validateGstinLocal(g);
+                        if(res.empty){
+                            this.gstin = { status:'idle', message:'', value:'' };
+                            return;
+                        }
+                        this.gstin = {
+                            status: res.ok ? 'valid' : 'invalid',
+                            message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
+                            value: g
+                        };
+                        return;
+                    }
+
+                    if(scope === 'client'){
+                        const g = this.normalizeGstin(this.newClient.gstin);
+                        this.newClient.gstin = g;
+
+                        const res = this.validateGstinLocal(g);
+                        if(res.empty){
+                            this.clientGstin = { status:'idle', message:'', value:'' };
+                            return;
+                        }
+                        this.clientGstin = {
+                            status: res.ok ? 'valid' : 'invalid',
+                            message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
+                            value: g
+                        };
+                    }
+                },
+
             }
 
         }

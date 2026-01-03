@@ -119,6 +119,8 @@
                             <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
                         </div>
+
+
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
                             <div class="font-semibold" :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
@@ -146,11 +148,7 @@
                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
                             <input type="hidden" name="invoice_prefix" :value="computedPrefix">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">GST No.</label>
-                            <input type="text" name="gst_no" x-model="hdr.gst_no"
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                        </div>
+
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Transport Mode</label>
                             <input type="text" name="transport_mode" x-model="hdr.transport_mode" placeholder="By Hand"
@@ -688,10 +686,26 @@
                             <input x-model="newClient.address" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Full address">
                         </div>
 
+{{--                        <div class="md:col-span-2">--}}
+{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>--}}
+{{--                            <input x-model="newClient.gstin" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="optional">--}}
+{{--                        </div>--}}
                         <div class="md:col-span-2">
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>
-                            <input x-model="newClient.gstin" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="optional">
+                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Client GSTIN (Optional)</label>
+
+                            <input type="text"
+                                   x-model="newClient.gstin"
+                                   @input.debounce.250ms="onClientGstinInput()"
+                                   placeholder="Eg: 09CYMPP9152J2ZK"
+                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+
+                            <div class="mt-1 text-xs"
+                                 x-show="clientGstCheck.touched"
+                                 :class="clientGstCheck.ok ? 'text-green-600' : 'text-red-600'"
+                                 x-text="clientGstCheck.msg"
+                                 style="display:none;"></div>
                         </div>
+
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
@@ -1010,6 +1024,9 @@
                         return;
                     }
                     this.newClient.mobile = mob;
+
+                    this.newClient.gstin = this.normalizeGstin(this.newClient.gstin);
+
 
                     try{
                         this.savingClient = true;
@@ -1486,6 +1503,65 @@
                 },
 
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
+
+
+                gstCheck: { ok: true, msg: '', touched: false },
+
+                normalizeGstin(v){
+                    return String(v || '').trim().toUpperCase().replace(/\s+/g,'');
+                },
+
+                validateGstinLocal(gstin){
+                    const g = this.normalizeGstin(gstin);
+
+                    // empty allowed (optional field)
+                    if(!g) return { ok:true, message:'' };
+
+                    // Basic format check
+                    // 15 chars: 2 digit state + 10 PAN + 1 entity + Z + 1 checksum
+                    const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+                    if(!re.test(g)) return { ok:false, message:'Invalid GSTIN format.' };
+
+                    // ✅ Checksum validate (Mod 36) — RIGHT to LEFT (first 14 chars)
+                    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                    const mod = 36;
+
+                    const codePoint = (c) => chars.indexOf(c);
+
+                    let sum = 0;
+                    let f = 2;
+
+                    for (let i = 13; i >= 0; i--) {
+                        const v = codePoint(g[i]);
+                        if (v === -1) return { ok:false, message:'GSTIN has invalid characters.' };
+
+                        const p = v * f;
+                        f = (f === 2) ? 1 : 2;
+
+                        sum += Math.floor(p / mod) + (p % mod);
+                    }
+
+                    const checkCodePoint = (mod - (sum % mod)) % mod;
+                    const expected = chars[checkCodePoint];
+                    const actual = g[14];
+
+                    if(expected !== actual){
+                        return { ok:false, message:'GSTIN checksum mismatch (likely wrong GSTIN).' };
+                    }
+
+                    return { ok:true, message:'GSTIN looks valid ✅' };
+                },
+
+                clientGstCheck: { ok: true, msg: '', touched: false },
+
+                onClientGstinInput(){
+                    this.clientGstCheck.touched = true;
+                    const res = this.validateGstinLocal(this.newClient.gstin);
+                    this.clientGstCheck.ok = !!res.ok;
+                    this.clientGstCheck.msg = res.message || '';
+                },
+
+
             }
         }
     </script>
