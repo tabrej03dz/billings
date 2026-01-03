@@ -41,10 +41,18 @@
 
         <div class="flex items-center justify-between">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Edit Sales Invoice</h1>
-            <button @click="$refs.form.requestSubmit()"
-                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                Update
+{{--            <button @click="$refs.form.requestSubmit()"--}}
+{{--                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">--}}
+{{--                Update--}}
+{{--            </button>--}}
+            <button type="button"
+                    @click="submitForm()"
+                    :disabled="saving"
+                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                <span x-show="!saving">Update</span>
+                <span x-show="saving">Updating...</span>
             </button>
+
         </div>
 
         <form x-ref="form"
@@ -606,10 +614,18 @@
             <input type="hidden" id="items_json" name="items_json">
 
             <div class="text-right">
-                <button @click="$refs.form.requestSubmit()"
-                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                    Update
+{{--                <button @click="$refs.form.requestSubmit()"--}}
+{{--                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">--}}
+{{--                    Update--}}
+{{--                </button>--}}
+                <button type="button"
+                        @click="submitForm()"
+                        :disabled="saving"
+                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <span x-show="!saving">Update</span>
+                    <span x-show="saving">Updating...</span>
                 </button>
+
             </div>
 
             {{-- =================== CLIENT MODAL =================== --}}
@@ -737,11 +753,23 @@
             const BIZ_STATE_CODE = @js($businessStateCode ?? '');
             const BIZ_GSTIN      = @js($businessGstin ?? '');
 
+
+
             return {
                 clients: CLIENTS,
                 itemsData: ITEMS,
                 metalRates: METAL_RATES,
                 banks: BANKS,
+
+                saving: false,
+                submitForm(){
+                    if(this.saving) return;        // ✅ double click guard
+                    this.saving = true;
+
+                    // same flow trigger as beforeSubmit
+                    this.$refs.form.requestSubmit();
+                },
+
 
                 clientId: '',
                 party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' },

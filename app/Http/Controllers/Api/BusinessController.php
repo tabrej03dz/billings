@@ -60,23 +60,19 @@ class BusinessController extends Controller
             'signature'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'letter_head'=> ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
 
-            'state'   => ['nullable', 'string', 'max:100'], // "09,Uttar Pradesh"
-            'pdf_template_id' => ['required', 'string', 'max:100'],
+            'pdf_template_id' => ['nullable', 'string', 'max:100'],
             'type' => ['nullable', 'string', 'max:100'], // optional in store (aap chahe to required kar do)
+            'state' => ['nullable', 'string', 'max:100'],
+            'state_code' => ['nullable', 'string', 'max:100'],
         ]);
-        return response($request->all());
 
-        // ✅ Split state_code & state_name
-        if (!empty($data['state']) && str_contains($data['state'], ',')) {
-            [$stateCode, $stateName] = explode(',', $data['state'], 2);
-            $data['state_code'] = trim($stateCode);
-            $data['state']      = trim($stateName);
-        }
+
 
         // Slug
-        $data['slug'] = $data['slug'] ?: Str::slug($data['name']);
+        $data['slug'] = Str::slug($data['name']);
+
         if (Business::where('slug', $data['slug'])->exists()) {
-            $data['slug'] = Str::slug($data['name'] . '-' . Str::random(6));
+            $data['slug'] .= '-' . Str::lower(Str::random(6));
         }
 
         // Files
@@ -90,12 +86,13 @@ class BusinessController extends Controller
             $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
         }
 
+
         $business = Business::create($data);
 
-        // Attach current user as OWNER
-        $request->user()->businesses()->syncWithoutDetaching([
-            $business->id => ['role' => 'owner']
-        ]);
+//        // Attach current user as OWNER
+//        $request->user()->businesses()->syncWithoutDetaching([
+//            $business->id => ['role' => 'owner']
+//        ]);
 
         return response()->json([
             'status' => true,
@@ -106,82 +103,78 @@ class BusinessController extends Controller
 
     public function update(Request $request, Business $business)
     {
-        $this->authorizeBusinessAccess($request, $business);
-
         $data = $request->validate([
             'name'    => ['required', 'string', 'max:255'],
-            'slug'    => ['nullable', 'alpha_dash', 'max:255', Rule::unique('businesses', 'slug')->ignore($business->id)],
-            'email'   => ['required', 'email', 'max:255', Rule::unique('businesses', 'email')->ignore($business->id)],
 
+            // slug request se optional hai, par aap generate kar rahe ho -> isko ignore bhi kar sakte ho
+            // agar user slug bhej hi nahi raha, to is field ko hata bhi sakte ho
+            'slug'    => ['nullable', 'alpha_dash', 'max:255', Rule::unique('businesses', 'slug')->ignore($business->id)],
+
+            'email'   => ['required', 'email', 'max:255', Rule::unique('businesses', 'email')->ignore($business->id)],
             'mobile'  => ['nullable', 'string', 'max:20', Rule::unique('businesses', 'mobile')->ignore($business->id)],
+
             'gstin'   => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:1000'],
             'terms'   => ['nullable', 'string', 'max:1000'],
 
-            'logo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'remove_logo' => ['nullable', 'boolean'],
+            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
 
-            'signature'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'remove_signature' => ['nullable', 'boolean'],
-
-            'letter_head'=> ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-            'remove_letter_head' => ['nullable', 'boolean'],
-
-            'state'   => ['required', 'string', 'max:100'],
-            'pdf_template_id' => ['required', 'string', 'max:100'],
-            'type' => ['required', 'string', 'max:100'],
+            'pdf_template_id' => ['nullable', 'string', 'max:100'],
+            'type'            => ['nullable', 'string', 'max:100'],
+            'state'           => ['nullable', 'string', 'max:100'],
+            'state_code'      => ['nullable', 'string', 'max:100'],
         ]);
 
-        // ✅ Split state_code & state_name
-        if (!empty($data['state']) && str_contains($data['state'], ',')) {
-            [$stateCode, $stateName] = explode(',', $data['state'], 2);
-            $data['state_code'] = trim($stateCode);
-            $data['state']      = trim($stateName);
+        // ✅ Slug (request se nahi lena)
+        // NOTE: Agar aap chahte ho ki name change hone par hi slug regenerate ho, to condition laga do.
+        if (isset($data['name']) && $data['name'] !== $business->name) {
+            $baseSlug = Str::slug($data['name']);
+            $slug = $baseSlug;
+            $counter = 1;
+
+            while (Business::where('slug', $slug)->where('id', '!=', $business->id)->exists()) {
+                $slug = $baseSlug . '-' . $counter;
+                $counter++;
+            }
+
+            $data['slug'] = $slug;
+        } else {
+            // name same hai -> existing slug keep
+            unset($data['slug']); // important: validation me slug tha, but we don't want to overwrite
         }
 
-        // Slug fallback
-        $data['slug'] = $data['slug'] ?: Str::slug($data['name']);
-        if (Business::where('slug', $data['slug'])->where('id', '!=', $business->id)->exists()) {
-            $data['slug'] = Str::slug($data['name'] . '-' . Str::random(6));
-        }
-
-        // Remove/Replace logo
-        if ($request->boolean('remove_logo') && $business->logo) {
-            Storage::disk('public')->delete($business->logo);
-            $data['logo'] = null;
-        }
+        // ✅ Files (replace + old delete)
         if ($request->hasFile('logo')) {
-            if ($business->logo) Storage::disk('public')->delete($business->logo);
+            if ($business->logo && Storage::disk('public')->exists($business->logo)) {
+                Storage::disk('public')->delete($business->logo);
+            }
             $data['logo'] = $request->file('logo')->store('business_logos', 'public');
         }
 
-        // Remove/Replace signature
-        if ($request->boolean('remove_signature') && $business->signature) {
-            Storage::disk('public')->delete($business->signature);
-            $data['signature'] = null;
-        }
         if ($request->hasFile('signature')) {
-            if ($business->signature) Storage::disk('public')->delete($business->signature);
+            if ($business->signature && Storage::disk('public')->exists($business->signature)) {
+                Storage::disk('public')->delete($business->signature);
+            }
             $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
         }
 
-        // Remove/Replace letter head
-        if ($request->boolean('remove_letter_head') && $business->letter_head) {
-            Storage::disk('public')->delete($business->letter_head);
-            $data['letter_head'] = null;
-        }
         if ($request->hasFile('letter_head')) {
-            if ($business->letter_head) Storage::disk('public')->delete($business->letter_head);
+            if ($business->letter_head && Storage::disk('public')->exists($business->letter_head)) {
+                Storage::disk('public')->delete($business->letter_head);
+            }
             $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
         }
 
+        // ✅ Update
         $business->update($data);
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Business updated successfully.',
-            'data' => $business->fresh(),
-        ]);
+            'data'    => $business->fresh(),
+        ], 200);
     }
 
     public function destroy(Request $request, Business $business)

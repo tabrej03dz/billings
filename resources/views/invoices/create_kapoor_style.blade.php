@@ -41,10 +41,17 @@
 
         <div class="flex items-center justify-between">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Create Sales Invoice</h1>
-            <button @click="$refs.form.requestSubmit()"
-                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                Save
+            <button type="button"
+                    @click="submitForm()"
+                    :disabled="saving"
+                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <svg x-show="saving" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span x-text="saving ? 'Saving...' : 'Save'"></span>
             </button>
+
         </div>
 
         <form x-ref="form" method="POST" action="{{ route('invoices.store', $docType) }}" enctype="multipart/form-data" @submit.prevent="beforeSubmit">
@@ -614,10 +621,21 @@
             <input type="hidden" id="items_json" name="items_json">
 
             <div class="text-right">
-                <button @click="$refs.form.requestSubmit()"
-                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
-                    Save
+{{--                <button @click="$refs.form.requestSubmit()"--}}
+{{--                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">--}}
+{{--                    Save--}}
+{{--                </button>--}}
+                <button type="button"
+                        @click="submitForm()"
+                        :disabled="saving"
+                        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                    <svg x-show="saving" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span x-text="saving ? 'Saving...' : 'Save'"></span>
                 </button>
+
             </div>
 
             {{-- =================== CLIENT MODAL =================== --}}
@@ -1529,8 +1547,17 @@
                     this.$refs.form.submit();
                 },
 
+
+                saving: false,
+                submitForm(){
+                    if(this.saving) return;
+                    this.saving = true;
+                    this.$refs.form.requestSubmit();
+                },
+
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
             }
+
         }
     </script>
 
