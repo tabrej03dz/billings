@@ -38,6 +38,80 @@ class InvoiceController extends Controller
     }
 
 
+//    public function index(\Illuminate\Http\Request $request)
+//    {
+//        $me  = $request->user();
+//
+//        // ✅ Active business resolve
+//        $bid = $me->current_business_id ?? session('active_business_id');
+//        if (!$bid) {
+//            $bid = $me->businesses()->pluck('businesses.id')->first();
+//        }
+//        if (!$bid) {
+//            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
+//        }
+//
+//        // ✅ Tab type (tax / proforma)
+//        $type = strtolower(trim((string) $request->get('type', 'tax')));
+//        if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
+//            $type = 'tax';
+//        }
+//
+//        // ✅ Filters
+//        $search   = trim((string)$request->get('search', ''));
+//        $fromDate = $request->get('from_date');
+//        $toDate   = $request->get('to_date');
+//        $status   = $request->get('status');
+//
+//        $q = \App\Models\Invoice::query()
+//            ->with(['client:id,name'])
+//            ->where('business_id', $bid)
+//            ->where('invoice_type', $type);
+//
+//        // ✅ Search (invoice_number OR client name)
+//        if ($search !== '') {
+//            $q->where(function ($w) use ($search) {
+//                $w->where('invoice_number', 'like', "%{$search}%")
+//                    ->orWhereHas('client', function ($c) use ($search) {
+//                        $c->where('name', 'like', "%{$search}%");
+//                    });
+//            });
+//        }
+//
+//        // ✅ Date filter
+//        if (!empty($fromDate)) $q->whereDate('invoice_date', '>=', $fromDate);
+//        if (!empty($toDate))   $q->whereDate('invoice_date', '<=', $toDate);
+//
+//        // ✅ Status filter
+//        if (!empty($status)) {
+//            if ($status === 'paid') {
+//                $q->where('balance', '<=', 0);
+//            } elseif ($status === 'unpaid') {
+//                $q->where('received_amount', '<=', 0);
+//            } elseif ($status === 'partial') {
+//                $q->where('received_amount', '>', 0)->where('balance', '>', 0);
+//            }
+//        }
+//
+//        // ✅ Counts for tab badges (optional but useful)
+//        $invoices = $q->orderByDesc('invoice_date')
+//            ->orderByDesc('id')
+//            ->paginate(20)
+//            ->withQueryString();
+//        $taxCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count();
+//        $proCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count();
+//        $quoCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count();
+//
+//        return view('invoices.index', [
+//            'invoices'   => $invoices,
+//            'type'       => $type,
+//            'taxCount'   => $taxCount,
+//            'proCount'   => $proCount,
+//            'quoCount'   => $quoCount,
+//        ]);
+//    }
+
+
     public function index(\Illuminate\Http\Request $request)
     {
         $me  = $request->user();
@@ -51,10 +125,25 @@ class InvoiceController extends Controller
             return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
         }
 
-        // ✅ Tab type (tax / proforma)
+        // ✅ Tab type (tax / proforma / quotation)
         $type = strtolower(trim((string) $request->get('type', 'tax')));
         if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
             $type = 'tax';
+        }
+
+        // ✅ Permission mapping by type
+        $permByType = [
+            'tax'       => 'show invoices',
+            'proforma'  => 'show proformas',
+            'quotation' => 'show quotations',
+        ];
+
+        $requiredPerm = $permByType[$type] ?? 'show invoices';
+
+        // ✅ Permission check
+        if (!$me->can($requiredPerm)) {
+            abort(403, "You don't have permission: {$requiredPerm}");
+            // or: return back()->with('error', "Permission denied: {$requiredPerm}");
         }
 
         // ✅ Filters
@@ -93,14 +182,23 @@ class InvoiceController extends Controller
             }
         }
 
-        // ✅ Counts for tab badges (optional but useful)
         $invoices = $q->orderByDesc('invoice_date')
             ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
-        $taxCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count();
-        $proCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count();
-        $quoCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count();
+
+        // ✅ Counts (optional) - but ONLY if user has permission for that tab
+        $taxCount = $me->can('show invoices')
+            ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count()
+            : null;
+
+        $proCount = $me->can('show proformas')
+            ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count()
+            : null;
+
+        $quoCount = $me->can('show quotations')
+            ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count()
+            : null;
 
         return view('invoices.index', [
             'invoices'   => $invoices,

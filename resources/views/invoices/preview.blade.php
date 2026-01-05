@@ -46,7 +46,7 @@
                     </button>
                 </form>
 
-                <form method="POST" action="{{ route('invoices.index', $invoice->id) }}"
+                <form method="get" action="{{ route('invoices.index', $invoice->id) }}"
                       onsubmit="return confirm('Cancel this invoice?');">
                     @csrf
                     <button class="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500">

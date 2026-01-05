@@ -16,25 +16,32 @@
         </div>
 
         <div class="flex items-center gap-2">
+            @can('create proforma')
             <a href="{{ route('invoices.create', 'proforma') }}"
                class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
                 + Proforma
             </a>
+            @endcan
+            @can('create quotation')
             <a href="{{ route('invoices.create', 'quotation') }}"
                class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
                 + quotation
             </a>
+                @endcan
 
+            @can('create invoice')
             <a href="{{ route('invoices.create', 'tax') }}"
                class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
                 + Tax Invoice
             </a>
+            @endcan
         </div>
     </div>
 
     {{-- ✅ Tabs --}}
     {{-- ✅ Tabs --}}
     <div class="mb-4 flex items-center gap-2 flex-wrap">
+        @can('show invoices')
         <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'tax'])) }}"
            class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
        {{ $activeType === 'tax'
@@ -46,6 +53,9 @@
             {{ $taxCount ?? '' }}
         </span>
         </a>
+        @endcan
+
+        @can('show proformas')
 
         <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'proforma'])) }}"
            class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
@@ -58,19 +68,22 @@
             {{ $proCount ?? '' }}
         </span>
         </a>
+            @endcan
 
-        {{-- ✅ NEW: Quotation tab --}}
-        <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'quotation'])) }}"
-           class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
-       {{ $activeType === 'quotation'
-            ? 'bg-amber-600 text-white border-amber-600'
-            : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
-            Quotation
-            <span class="text-[11px] px-2 py-0.5 rounded-full border
-            {{ $activeType === 'quotation' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
-            {{ $quoCount ?? '' }}
-        </span>
-        </a>
+            @can('show quotations')
+                {{-- ✅ NEW: Quotation tab --}}
+                <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'quotation'])) }}"
+                   class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
+               {{ $activeType === 'quotation'
+                    ? 'bg-amber-600 text-white border-amber-600'
+                    : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+                    Quotation
+                    <span class="text-[11px] px-2 py-0.5 rounded-full border
+                    {{ $activeType === 'quotation' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+                    {{ $quoCount ?? '' }}
+                </span>
+                </a>
+            @endcan
     </div>
 
 
@@ -207,7 +220,9 @@
                     <td class="px-4 py-2 text-right space-x-3 whitespace-nowrap">
                         <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>
                         <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
+                        @canany(['edit invoice', 'edit quotation', 'edit proforma'])
                         <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
+                        @endcanany
                         <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
 
                         @if(in_array($inv->invoice_type, ['quotation','proforma']))
@@ -217,11 +232,12 @@
                             </form>
                         @endif
 
-
+                        @canany(['delete invoice', 'delete quotation', 'delete proforma'])
                         <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
                             @csrf @method('DELETE')
                             <button class="text-red-600 hover:underline">Delete</button>
                         </form>
+                        @endcan
                     </td>
                 </tr>
             @empty

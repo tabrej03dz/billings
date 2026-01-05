@@ -54,7 +54,7 @@
             </form>
             @endrole
 
-            @can('show invoices')
+            @can('show invoices menu')
                 @php
                     $type = request('type'); // quotation | tax | proforma | null
                     $isInvoiceRoute = request()->routeIs('invoices.*');
@@ -71,17 +71,17 @@
                     {{-- SUMMARY --}}
                     <summary
                         class="list-none cursor-pointer select-none
-            flex items-center justify-between
-            px-3 py-2 rounded-lg text-sm font-medium
-            {{ $isInvoiceRoute ? 'bg-white/15 text-white' : 'text-zinc-300 hover:text-white hover:bg-white/10' }}
-            focus:outline-none focus:ring-2 focus:ring-white/20"
-                    >
-            <span class="flex items-center gap-2">
-                <span class="inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-white">
-                    🧾
-                </span>
-                <span>Invoices</span>
-            </span>
+                        flex items-center justify-between
+                        px-3 py-2 rounded-lg text-sm font-medium
+                        {{ $isInvoiceRoute ? 'bg-white/15 text-white' : 'text-zinc-300 hover:text-white hover:bg-white/10' }}
+                        focus:outline-none focus:ring-2 focus:ring-white/20"
+                                >
+                        <span class="flex items-center gap-2">
+                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-white">
+                                🧾
+                            </span>
+                            <span>Invoices</span>
+                        </span>
 
                         <svg class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"
                              viewBox="0 0 20 20" fill="currentColor">
@@ -98,6 +98,7 @@
                             <flux:navlist.group class="grid">
 
                                 {{-- Quotation --}}
+                                @can('show quotations')
                                 <flux:navlist.item
                                     icon="document-text"
                                     :href="route('invoices.index', ['type' => 'quotation'])"
@@ -105,7 +106,9 @@
                                     wire:navigate>
                                     Quotation
                                 </flux:navlist.item>
+                                @endcan
 
+                                @can('create invoice')
                                 {{-- Create Invoice --}}
                                 <flux:navlist.item
                                     icon="plus"
@@ -114,7 +117,9 @@
                                     wire:navigate>
                                     Create Invoice
                                 </flux:navlist.item>
+                                @endcan
 
+                                @can('show invoices')
                                 {{-- All Invoices --}}
                                 <flux:navlist.item
                                     icon="list-bullet"
@@ -123,6 +128,9 @@
                                     wire:navigate>
                                     Invoices
                                 </flux:navlist.item>
+                                @endcan
+
+                                @can('show proformas')
 
                                 {{-- Proforma --}}
                                 <flux:navlist.item
@@ -132,6 +140,7 @@
                                     wire:navigate>
                                     Proforma
                                 </flux:navlist.item>
+                                @endcan
 
                             </flux:navlist.group>
                         </flux:navlist>
