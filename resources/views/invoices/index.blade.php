@@ -225,12 +225,14 @@
                         @endcanany
                         <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
 
+                        @can('	delete quotation')
                         @if(in_array($inv->invoice_type, ['quotation','proforma']))
                             <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" method="POST" class="inline">
                                 @csrf
                                 <button class="px-3 py-2 rounded bg-emerald-600 text-white">Convert to Tax Invoice</button>
                             </form>
                         @endif
+                        @endcan
 
                         @canany(['delete invoice', 'delete quotation', 'delete proforma'])
                         <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
