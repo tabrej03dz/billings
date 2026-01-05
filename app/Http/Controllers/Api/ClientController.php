@@ -7,15 +7,16 @@ use App\Models\Client;
 use App\Models\InvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
 class ClientController extends Controller
 {
+    // -----------------------------
+    // GET /api/clients?q=
+    // -----------------------------
     public function index(Request $request)
     {
         $bid = $this->resolveBusinessId($request);
-
-        $q = trim((string) $request->query('q', ''));
+        $q   = trim((string) $request->query('q', ''));
 
         $clients = Client::query()
             ->where('business_id', $bid)
@@ -28,106 +29,83 @@ class ClientController extends Controller
                         ->orWhere('address', 'like', "%{$q}%");
                 });
             })
-            ->latest()
+            ->orderByDesc('id')
             ->get();
 
         return response()->json([
-            'ok' => true,
-            'q' => $q,
+            'ok'    => true,
+            'q'     => $q,
             'count' => $clients->count(),
-            'data' => $clients,
+            'data'  => $clients,
         ]);
     }
 
-
-    /**
-     * POST /api/clients
-     * ✅ Merged Store (normal + quick)
-     */
+    // -----------------------------
+    // POST /api/clients
+    // -----------------------------
     public function store(Request $request)
     {
         $bid = $this->resolveBusinessId($request);
 
-        // ✅ Normalize inputs (avoid duplicates by formatting)
+        // Normalize
         $request->merge([
-            'mobile'     => $request->mobile ? preg_replace('/\s+/', '', $request->mobile) : null,
-            'gstin'      => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
-            'pan'        => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
-            'state'      => $request->state ? trim($request->state) : null,
-            'state_code' => $request->state_code ? trim($request->state_code) : null,
-            'address'    => $request->address ? trim($request->address) : null,
-            'name'       => $request->name ? trim($request->name) : null,
-            'pincode'    => $request->pincode ? trim($request->pincode) : null,
+            'mobile'  => $request->mobile ? preg_replace('/\s+/', '', (string) $request->mobile) : null,
+            'gstin'   => $request->gstin  ? strtoupper(preg_replace('/\s+/', '', (string) $request->gstin)) : null,
+            'pan'     => $request->pan    ? strtoupper(preg_replace('/\s+/', '', (string) $request->pan)) : null,
+            'state'   => $request->state  ? trim((string) $request->state) : null,
+            'address' => $request->address? trim((string) $request->address) : null,
+            'name'    => $request->name   ? trim((string) $request->name) : null,
+            'pincode' => $request->pincode? trim((string) $request->pincode) : null,
         ]);
 
-        // ✅ Convert empty string to null for nullable fields
-        foreach (['mobile','gstin','pan','state','state_code','address','pincode'] as $f) {
+        // empty string -> null
+        foreach (['mobile','gstin','pan','state','address','pincode'] as $f) {
             if ($request->has($f) && $request->input($f) === '') {
                 $request->merge([$f => null]);
             }
         }
 
-        try {
-            $data = $request->validate([
-                'name'    => ['required','string','max:255'],
+        $data = $request->validate([
+            'name'    => ['required','string','max:255'],
+            'mobile'  => [
+                'nullable','string','max:20',
+                Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
+            ],
+            'gstin'   => [
+                'nullable','string','max:50',
+                Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
+            ],
+            'pan'     => [
+                'nullable','string','max:50',
+                Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
+            ],
+            'state'   => ['nullable','string','max:100'], // "09, Uttar Pradesh" OR "Uttar Pradesh"
+            'address' => ['nullable','string','max:1000'],
+            'pincode' => ['nullable','string','max:20'],
+        ]);
 
-                'mobile'  => [
-                    'nullable','string','max:20',
-                    Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
-                ],
-
-                'gstin'   => [
-                    'nullable','string','max:50',
-                    Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
-                ],
-
-                'pan'     => [
-                    'nullable','string','max:50',
-                    Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
-                ],
-
-                // ✅ Quick modal me sirf state/state_code bhi aa sakta
-                'state'      => ['nullable','string','max:100'],
-                'state_code' => ['nullable','string','max:10'],
-
-                'address' => ['nullable','string','max:1000'],
-                'pincode' => ['nullable','string','max:20'],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        }
-
-        // ✅ If state like "09, Uttar Pradesh" → split
-        if (!empty($data['state']) && str_contains($data['state'], ',')) {
-            [$code, $name] = explode(',', $data['state'], 2);
-            $data['state_code'] = trim($code);
-            $data['state']      = trim($name);
-        }
+        // State split/derive
+        $data = $this->applyStateFromInputOrGstin($data);
 
         $data['business_id'] = $bid;
 
         $client = Client::create($data);
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => 'Client created successfully.',
-            'client' => $this->clientPayload($client),
+            'client'  => $this->clientPayload($client),
         ], 201);
     }
 
-    /**
-     * GET /api/clients/{client}
-     * Show client + invoices summary + invoice list + recent items
-     */
+    // -----------------------------
+    // GET /api/clients/{client}
+    // -----------------------------
     public function show(Request $request, Client $client)
     {
         $bid = $this->resolveBusinessId($request);
 
-        if ((int)$client->business_id !== (int)$bid) {
+        if ((int) $client->business_id !== (int) $bid) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Client not found for active business.',
@@ -146,40 +124,38 @@ class ClientController extends Controller
             'total_balance'  => (clone $invoiceQuery)->sum('balance'),
         ];
 
+        $perPage = (int) $request->query('per_page', 15);
+
         $invoices = $invoiceQuery
             ->withCount('items')
-            ->paginate((int) $request->query('per_page', 15))
-            ->withQueryString();
+            ->paginate($perPage);
 
-        $recentItems = InvoiceItem::with(['invoice' => function ($q) use ($bid, $client) {
-            $q->where('business_id', $bid)
-                ->where('client_id', $client->id);
-        }])
+        $recentItems = InvoiceItem::query()
             ->whereHas('invoice', function ($q) use ($bid, $client) {
-                $q->where('business_id', $bid)
-                    ->where('client_id', $client->id);
+                $q->where('business_id', $bid)->where('client_id', $client->id);
             })
+            ->with(['invoice:id,client_id,business_id,invoice_date,invoice_no,total'])
             ->latest('created_at')
             ->limit(10)
             ->get();
 
         return response()->json([
-            'ok' => true,
-            'client' => $this->clientPayload($client),
-            'summary' => $summary,
-            'invoices' => $invoices,
+            'ok'           => true,
+            'client'       => $this->clientPayload($client),
+            'summary'      => $summary,
+            'invoices'     => $invoices,
             'recent_items' => $recentItems,
         ]);
     }
 
-    /**
-     * PUT/PATCH /api/clients/{client}
-     */
+    // -----------------------------
+    // PUT/PATCH /api/clients/{client}
+    // -----------------------------
     public function update(Request $request, Client $client)
     {
         $bid = $this->resolveBusinessId($request);
 
-        if ((int)$client->business_id !== (int)$bid) {
+        if ((int) $client->business_id !== (int) $bid) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Client not found for active business.',
@@ -188,14 +164,14 @@ class ClientController extends Controller
 
         // Normalize
         $request->merge([
-            'mobile'     => $request->mobile ? preg_replace('/\s+/', '', $request->mobile) : null,
-            'gstin'      => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
-            'pan'        => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
-            'state'      => $request->state ? trim($request->state) : null,
-            'state_code' => $request->state_code ? trim($request->state_code) : null,
-            'address'    => $request->address ? trim($request->address) : null,
-            'name'       => $request->name ? trim($request->name) : null,
-            'pincode'    => $request->pincode ? trim($request->pincode) : null,
+            'mobile'     => $request->mobile ? preg_replace('/\s+/', '', (string) $request->mobile) : null,
+            'gstin'      => $request->gstin ? strtoupper(preg_replace('/\s+/', '', (string) $request->gstin)) : null,
+            'pan'        => $request->pan ? strtoupper(preg_replace('/\s+/', '', (string) $request->pan)) : null,
+            'state'      => $request->state ? trim((string) $request->state) : null,
+            'state_code' => $request->state_code ? trim((string) $request->state_code) : null,
+            'address'    => $request->address ? trim((string) $request->address) : null,
+            'name'       => $request->name ? trim((string) $request->name) : null,
+            'pincode'    => $request->pincode ? trim((string) $request->pincode) : null,
         ]);
 
         foreach (['mobile','gstin','pan','state','state_code','address','pincode'] as $f) {
@@ -205,58 +181,52 @@ class ClientController extends Controller
         }
 
         $data = $request->validate([
-            'name'    => ['required','string','max:255'],
-
-            'mobile'  => [
+            'name' => ['required','string','max:255'],
+            'mobile' => [
                 'nullable','string','max:20',
-                Rule::unique('clients','mobile')
-                    ->ignore($client->id)
-                    ->where(fn($q) => $q->where('business_id', $bid)),
+                Rule::unique('clients','mobile')->ignore($client->id)->where(fn($q) => $q->where('business_id', $bid)),
             ],
-
-            'gstin'   => [
+            'gstin' => [
                 'nullable','string','max:50',
-                Rule::unique('clients','gstin')
-                    ->ignore($client->id)
-                    ->where(fn($q) => $q->where('business_id', $bid)),
+                Rule::unique('clients','gstin')->ignore($client->id)->where(fn($q) => $q->where('business_id', $bid)),
             ],
-
-            'pan'     => [
+            'pan' => [
                 'nullable','string','max:50',
-                Rule::unique('clients','pan')
-                    ->ignore($client->id)
-                    ->where(fn($q) => $q->where('business_id', $bid)),
+                Rule::unique('clients','pan')->ignore($client->id)->where(fn($q) => $q->where('business_id', $bid)),
             ],
-
             'state'      => ['nullable','string','max:100'],
             'state_code' => ['nullable','string','max:10'],
             'address'    => ['nullable','string','max:1000'],
             'pincode'    => ['nullable','string','max:20'],
         ]);
 
+        // If state looks like "09, Uttar Pradesh" -> split
         if (!empty($data['state']) && str_contains($data['state'], ',')) {
             [$code, $name] = explode(',', $data['state'], 2);
             $data['state_code'] = trim($code);
             $data['state']      = trim($name);
         }
 
+        // If state empty but gstin present -> derive (optional)
+        $data = $this->applyStateFromInputOrGstin($data);
+
         $client->update($data);
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => 'Client updated successfully.',
-            'client' => $this->clientPayload($client),
+            'client'  => $this->clientPayload($client),
         ]);
     }
 
-    /**
-     * DELETE /api/clients/{client}
-     */
+    // -----------------------------
+    // DELETE /api/clients/{client}
+    // -----------------------------
     public function destroy(Request $request, Client $client)
     {
         $bid = $this->resolveBusinessId($request);
 
-        if ((int)$client->business_id !== (int)$bid) {
+        if ((int) $client->business_id !== (int) $bid) {
             return response()->json([
                 'ok' => false,
                 'message' => 'Client not found for active business.',
@@ -266,30 +236,44 @@ class ClientController extends Controller
         $client->delete();
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => 'Client deleted successfully.',
         ]);
     }
 
     // ---------------- Helpers ----------------
 
+    /**
+     * ✅ API best practice:
+     * - X-Business-Id header OR business_id query OR user->current_business_id OR first business relation
+     */
     private function resolveBusinessId(Request $request): int
     {
         $user = $request->user();
-
-        $bid =
-            $user->current_business_id
-            ?? session('active_business_id')
-            ?? $user->businesses()->pluck('businesses.id')->first();
-
-        if (!$bid) {
+        if (!$user) {
             abort(response()->json([
                 'ok' => false,
-                'message' => 'Active business not found.',
-            ], 422));
+                'message' => 'Unauthenticated.',
+            ], 401));
         }
 
-        return (int) $bid;
+        $headerBid = $request->header('X-Business-Id');
+        if ($headerBid && is_numeric($headerBid)) return (int) $headerBid;
+
+        $queryBid = $request->query('business_id');
+        if ($queryBid && is_numeric($queryBid)) return (int) $queryBid;
+
+        if (!empty($user->current_business_id)) return (int) $user->current_business_id;
+
+        if (method_exists($user, 'businesses')) {
+            $first = $user->businesses()->select('businesses.id')->first();
+            if ($first) return (int) $first->id;
+        }
+
+        abort(response()->json([
+            'ok' => false,
+            'message' => 'Active business not found. Send X-Business-Id header or set current_business_id.',
+        ], 422));
     }
 
     private function clientPayload(Client $client): array
@@ -308,5 +292,45 @@ class ClientController extends Controller
             'created_at' => $client->created_at,
             'updated_at' => $client->updated_at,
         ];
+    }
+
+    private function applyStateFromInputOrGstin(array $data): array
+    {
+        $data['state_code'] = $data['state_code'] ?? null;
+
+        // CASE 1: "09, Uttar Pradesh"
+        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+            [$code, $name] = explode(',', $data['state'], 2);
+            $data['state_code'] = trim($code);
+            $data['state']      = trim($name);
+            return $data;
+        }
+
+        // CASE 2: derive from GSTIN
+        if ((empty($data['state']) || empty($data['state_code'])) && !empty($data['gstin']) && strlen($data['gstin']) >= 2) {
+            $gstStates = [
+                '01'=>'Jammu and Kashmir','02'=>'Himachal Pradesh','03'=>'Punjab',
+                '04'=>'Chandigarh','05'=>'Uttarakhand','06'=>'Haryana','07'=>'Delhi',
+                '08'=>'Rajasthan','09'=>'Uttar Pradesh','10'=>'Bihar','11'=>'Sikkim',
+                '12'=>'Arunachal Pradesh','13'=>'Nagaland','14'=>'Manipur','15'=>'Mizoram',
+                '16'=>'Tripura','17'=>'Meghalaya','18'=>'Assam','19'=>'West Bengal',
+                '20'=>'Jharkhand','21'=>'Odisha','22'=>'Chhattisgarh',
+                '23'=>'Madhya Pradesh','24'=>'Gujarat',
+                '26'=>'Dadra and Nagar Haveli and Daman and Diu',
+                '27'=>'Maharashtra','29'=>'Karnataka','30'=>'Goa','31'=>'Lakshadweep',
+                '32'=>'Kerala','33'=>'Tamil Nadu','34'=>'Puducherry',
+                '35'=>'Andaman and Nicobar Islands','36'=>'Telangana',
+                '37'=>'Andhra Pradesh','38'=>'Ladakh',
+            ];
+
+            $code = substr((string)$data['gstin'], 0, 2);
+
+            if (isset($gstStates[$code])) {
+                $data['state_code'] = $data['state_code'] ?: $code;
+                $data['state']      = $data['state'] ?: $gstStates[$code];
+            }
+        }
+
+        return $data;
     }
 }

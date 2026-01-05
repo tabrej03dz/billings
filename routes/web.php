@@ -129,6 +129,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('invoices/{invoice}/view', [\App\Http\Controllers\InvoiceController::class, 'show'])
             ->name('invoices.show'); // View page
 
+    Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])
+        ->name('invoices.preview');
+
         Route::post('/invoices/preview-number', [InvoiceController::class, 'previewNumber'])
             ->name('invoices.preview-number');
 

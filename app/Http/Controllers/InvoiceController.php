@@ -438,20 +438,20 @@ class InvoiceController extends Controller
         // -------------------------------
         // 1️⃣ If PDF already saved in DB
         // -------------------------------
-        if (!empty($invoice->pdf_url)) {
-
-            $path = $this->normalizePdfPath($invoice->pdf_url);
-
-            if ($path && Storage::disk('public')->exists($path)) {
-                return response()->file(
-                    Storage::disk('public')->path($path),
-                    [
-                        'Content-Type'        => 'application/pdf',
-                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
-                    ]
-                );
-            }
-        }
+//        if (!empty($invoice->pdf_url)) {
+//
+//            $path = $this->normalizePdfPath($invoice->pdf_url);
+//
+//            if ($path && Storage::disk('public')->exists($path)) {
+//                return response()->file(
+//                    Storage::disk('public')->path($path),
+//                    [
+//                        'Content-Type'        => 'application/pdf',
+//                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+//                    ]
+//                );
+//            }
+//        }
 
         // --------------------------------------------------
         // 2️⃣ PDF missing (DB empty OR file deleted)
@@ -484,6 +484,35 @@ class InvoiceController extends Controller
             ]
         );
     }
+
+    public function preview(Invoice $invoice)
+    {
+        // ✅ Ensure PDF exists (same logic as show but no file return)
+        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+
+        if (!empty($invoice->pdf_url)) {
+            $path = $this->normalizePdfPath($invoice->pdf_url);
+            if (!$path || !Storage::disk('public')->exists($path)) {
+                $invoice->update(['pdf_url' => null]);
+            }
+        }
+
+        if (empty($invoice->pdf_url)) {
+            $invoice = $invoice->fresh(['client', 'items', 'business']);
+            $pdf = $this->simplePdfBuild($invoice);
+            $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+            Storage::disk('public')->put($fileName, $pdf->output());
+            $invoice->update(['pdf_url' => $fileName]);
+        }
+
+        return view('invoices.preview', [
+            'invoice' => $invoice,
+            'pdfSrc'  => route('invoices.show', $invoice->id), // iframe src
+        ]);
+    }
+
+
 
 
 
@@ -987,7 +1016,9 @@ class InvoiceController extends Controller
             return back()->withErrors(['invoice' => 'Invoice save करते समय error आया: '.$e->getMessage()])->withInput();
         }
 
-        return redirect()->route('invoices.index')
+//        return redirect()->route('invoices.index')
+//            ->with('success', ($docType === 'proforma' ? 'Proforma created successfully.' : 'Invoice created successfully.'));
+        return redirect()->route('invoices.preview', $invoice->id)
             ->with('success', ($docType === 'proforma' ? 'Proforma created successfully.' : 'Invoice created successfully.'));
     }
 
@@ -1760,7 +1791,9 @@ class InvoiceController extends Controller
             return back()->withErrors(['invoice' => 'Invoice update करते समय error आया: '.$e->getMessage()])->withInput();
         }
 
-        return redirect()->route('invoices.index')
+//        return redirect()->route('invoices.index')
+//            ->with('success', ucfirst($docType).' updated successfully.');
+        return redirect()->route('invoices.preview', $invoice->id)
             ->with('success', ucfirst($docType).' updated successfully.');
     }
 

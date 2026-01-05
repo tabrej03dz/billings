@@ -11,6 +11,8 @@ Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
 
 Route::post('/login',  [HomeController::class, 'login']);
 
+//Route::post('clients/store', [\App\Http\Controllers\Api\ClientController::class, 'store']);
+
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [HomeController::class, 'logout']);
