@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Permission;
 
 class UserController extends Controller
 {
@@ -150,5 +151,23 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+    }
+
+    public function permissions(User $user){
+        $permissions = $user->permissions;
+        return view('users.permissions', compact('permissions', 'user'));
+    }
+
+    public function permissionRemove(User $user, $permission){
+        if (is_string($permission)) {
+            $permission = Permission::findByName($permission);
+        }
+
+        // remove permission
+        $user->revokePermissionTo($permission);
+
+        return back()->with([
+            'success' => 'Permission removed successfully'
+        ]);
     }
 }

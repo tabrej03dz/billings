@@ -38,6 +38,7 @@
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            <a href="{{ route('users.permissions', $u->id) }}" class="text-yellow-600 hover:underline">Permissions</a>
                         </td>
                     </tr>
                 @empty

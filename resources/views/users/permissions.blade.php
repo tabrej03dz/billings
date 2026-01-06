@@ -1,5 +1,10 @@
 <x-layouts.app :title="__('Clients')">
     <div class="flex flex-col gap-6">
+        @if(session('success'))
+            <div class="p-3 rounded-lg bg-green-50 text-green-700 border border-green-200">
+                {{ session('success') }}
+            </div>
+        @endif
         <div class="flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">User's Permissions</h1>
         </div>
