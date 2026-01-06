@@ -24,7 +24,7 @@ class ClientController extends Controller
                         ->orWhere('pan', 'like', "%{$q}%")
                         ->orWhere('address', 'like', "%{$q}%");
                 });
-            })
+            })->where('is_save', true)
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -305,6 +305,7 @@ class ClientController extends Controller
             'address'    => $request->address ? trim((string)$request->address) : null,
             'name'       => $request->name ? trim((string)$request->name) : null,
             'pincode'    => $request->pincode ? trim((string)$request->pincode) : null,
+//            'clientAutoSelect'    => $request->clientAutoSelect ? trim((string)$request->clientAutoSelect) : null,
         ]);
 
         // ✅ Convert empty string to null for nullable fields
@@ -415,6 +416,8 @@ class ClientController extends Controller
 
                 'address' => ['nullable','string','max:1000'],
                 'pincode' => ['nullable','string','max:20'],
+//                'clientAutoSelect' => ['nullable','string','max:20'],
+                'is_save' => ['required','boolean'],
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -425,8 +428,9 @@ class ClientController extends Controller
         }
 
         $data['business_id'] = $bid;
-
+        $data['is_save'] = (bool) $data['is_save'];
         $client = Client::create($data);
+
 
         return response()->json([
             'ok' => true,

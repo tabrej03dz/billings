@@ -709,6 +709,19 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between">
+                        <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200">
+                            <input type="checkbox" class="rounded border-gray-300 dark:border-neutral-700"
+                                   x-model="clientAutoSelect">
+                            Save & Auto Select Client
+                        </label>
+
+                        <div class="text-xs text-gray-500 dark:text-neutral-400">
+                            (Unchecked = sirf save, select nahi hoga)
+                        </div>
+                    </div>
+
+
+                    <div class="mt-4 flex items-center justify-between">
                         <div class="text-sm text-red-600" x-text="newClientError"></div>
                         <div class="flex gap-2">
                             <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeClientModal()">Cancel</button>
@@ -957,6 +970,7 @@
                 newClientError:'',
                 newItemError:'',
                 activeRowIndex: null,
+                clientAutoSelect: true, // ✅ ADD THIS LINE
 
                 newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' },
 
@@ -977,6 +991,7 @@
                 openClientModal(){
                     this.newClientError = '';
                     this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' };
+                    this.clientAutoSelect = true; // ✅ ADD THIS
                     this.modals.client = true;
                 },
                 closeClientModal(){ this.modals.client = false; },
@@ -1039,7 +1054,11 @@
                                 'X-Requested-With':'XMLHttpRequest',
                                 'Accept':'application/json',
                             },
-                            body: JSON.stringify(this.newClient)
+                            // body: JSON.stringify(this.newClient)
+                            body: JSON.stringify({
+                                ...this.newClient,
+                                is_save: this.clientAutoSelect ? 1 : 0,
+                            })
                         });
 
                         const data = await res.json().catch(()=> ({}));

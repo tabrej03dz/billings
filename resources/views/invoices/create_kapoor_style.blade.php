@@ -735,19 +735,46 @@
 
                     </div>
 
-                    <div class="mt-4 flex items-center justify-between">
-                        <div class="text-sm text-red-600" x-text="newClientError"></div>
-                        <div class="flex gap-2">
-                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeClientModal()">Cancel</button>
+{{--                    <div class="mt-4 flex items-center justify-between">--}}
+{{--                        <div class="text-sm text-red-600" x-text="newClientError"></div>--}}
+{{--                        <div class="flex gap-2">--}}
+{{--                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeClientModal()">Cancel</button>--}}
+{{--                            <button type="button"--}}
+{{--                                    class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"--}}
+{{--                                    :disabled="savingClient"--}}
+{{--                                    @click="saveClient()">--}}
+{{--                                <span x-show="!savingClient">Save Client</span>--}}
+{{--                                <span x-show="savingClient">Saving...</span>--}}
+{{--                            </button>--}}
+{{--                        </div>--}}
+{{--                    </div>--}}
+                    <div class="mt-4 flex items-center justify-between gap-3">
+                        <div class="flex flex-col">
+                            <div class="text-sm text-red-600" x-text="newClientError"></div>
+
+                            <!-- ✅ Checkbox -->
+                            <label class="mt-2 inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200 select-none">
+                                <input type="checkbox" class="rounded border-gray-300 dark:border-neutral-700"
+                                       x-model="clientAutoSelect">
+                                Save for future
+                            </label>
+                        </div>
+
+                        <div class="flex gap-2 shrink-0">
+                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeClientModal()">
+                                Cancel
+                            </button>
+
                             <button type="button"
                                     class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                                     :disabled="savingClient"
                                     @click="saveClient()">
-                                <span x-show="!savingClient">Save Client</span>
+                                <span x-show="!savingClient">Add Client</span>
                                 <span x-show="savingClient">Saving...</span>
                             </button>
                         </div>
                     </div>
+
                 </div>
             </div>
 
@@ -1070,6 +1097,7 @@
                 newClientError:'',
                 newItemError:'',
                 activeRowIndex: null,
+                clientAutoSelect: true,
 
                 // newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
 
@@ -1094,6 +1122,10 @@
                     this.newClientError = '';
                     // this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' };
                     this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' };
+                    // this.modals.client = true;
+                    // ✅ default ON
+                    this.clientAutoSelect = true;
+
                     this.modals.client = true;
                 },
                 closeClientModal(){ this.modals.client = false; },
@@ -1158,7 +1190,11 @@
                                 'X-Requested-With':'XMLHttpRequest',
                                 'Accept':'application/json',
                             },
-                            body: JSON.stringify(this.newClient)
+                            // body: JSON.stringify(this.newClient)
+                            body: JSON.stringify({
+                                ...this.newClient,
+                                is_save: this.clientAutoSelect ? 1 : 0, // ✅ checkbox -> db boolean
+                            })
                         });
 
                         const data = await res.json().catch(()=> ({}));
@@ -1168,6 +1204,12 @@
                         }
 
                         this.clients.unshift(data.client);
+
+                        // ✅ only if checkbox ON
+                        if(this.clientAutoSelect){
+                            this.clientId = data.client.id;
+                        }
+
                         this.clientId = data.client.id;
                         this.modals.client = false;
 

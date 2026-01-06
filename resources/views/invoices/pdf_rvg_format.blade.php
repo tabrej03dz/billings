@@ -137,7 +137,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{{ ucfirst($type) }} Invoice {{ $invoiceNo }}</title>
+    <title>{{ ucfirst($type) }} {{$type != 'quotation' ? 'Invoice' : ''}} {{ $invoiceNo }}</title>
     <style>
         *{ box-sizing:border-box; }
         body{
@@ -227,7 +227,7 @@
 
             <td style="width:62%;">
                 <div>
-                    <span class="bold" style="font-size:11px;">{{ strtoupper($type) }} INVOICE</span>
+                    <span class="bold" style="font-size:11px;">{{ strtoupper($type) }} {{$type != 'quotation' ? 'INVOICE' : ''}} </span>
                     <span class="smalltag">ORIGINAL FOR RECIPIENT</span>
                 </div>
 
@@ -259,8 +259,8 @@
     <div class="greybar">
         <table>
             <tr>
-                <td class="bold">Invoice No.: <span class="muted">{{ $invoiceNo }}</span></td>
-                <td class="right bold">Invoice Date: <span class="muted">{{ $dmy($invoiceDate) }}</span></td>
+                <td class="bold"> {{$type != 'quotation' ? 'Invoice' : 'Quotation'}}  No.: <span class="muted">{{ $invoiceNo }}</span></td>
+                <td class="right bold">{{$type != 'quotation' ? 'Invoice' : 'Quotation'}} Date: <span class="muted">{{ $dmy($invoiceDate) }}</span></td>
             </tr>
         </table>
     </div>

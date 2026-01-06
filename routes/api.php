@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/index', 'index');
         Route::post('store', 'store'); // ✅ merged store
 
-        Route::put('update/{client}', 'update');
+        Route::post('update/{client}', 'update');
 //        Route::patch('/{client}', 'update');
         Route::delete('delete/{client}', 'destroy');
     });

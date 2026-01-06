@@ -244,7 +244,7 @@ class InvoiceController extends Controller
         $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
 
         // ✅ Clients
-        $clients = Client::where('business_id', $bid)
+        $clients = Client::where('business_id', $bid)->where('is_save', true)
             ->orderBy('name')
             ->get(['id','name','mobile','address','state','state_code','gstin']);
 
@@ -342,7 +342,7 @@ class InvoiceController extends Controller
         $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
 
         // ✅ Clients
-        $clients = \App\Models\Client::where('business_id', $bid)
+        $clients = \App\Models\Client::where('business_id', $bid)->where('is_save', true)->orWhere('id', $invoice->client_id)
             ->orderBy('name')
             ->get(['id','name','mobile','address','state','state_code','gstin','pincode']);
 
