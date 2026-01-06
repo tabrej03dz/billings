@@ -220,9 +220,22 @@
                     <td class="px-4 py-2 text-right space-x-3 whitespace-nowrap">
                         <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>
                         <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
-                        @canany(['edit invoice', 'edit quotation', 'edit proforma'])
-                        <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
-                        @endcanany
+                        {{-- ✅ Edit button (type-wise permission) --}}
+                        @if($inv->invoice_type === 'tax')
+                            @can('edit invoice')
+
+                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
+                            @endcan
+                        @elseif($inv->invoice_type === 'proforma')
+                            @can('edit proforma')
+                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
+                            @endcan
+                        @elseif($inv->invoice_type === 'quotation')
+                            @can('edit quotation')
+                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
+                            @endcan
+                        @endif
+
                         <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
 
                         @can('	delete quotation')
@@ -234,12 +247,44 @@
                         @endif
                         @endcan
 
-                        @canany(['delete invoice', 'delete quotation', 'delete proforma'])
-                        <form action="{{ route('invoices.destroy',$inv->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete?')">
-                            @csrf @method('DELETE')
-                            <button class="text-red-600 hover:underline">Delete</button>
-                        </form>
-                        @endcan
+                        {{-- ✅ Delete button (type-wise permission) --}}
+                        @if($inv->invoice_type === 'tax')
+                            @can('delete invoice')
+                                <form action="{{ route('invoices.destroy',$inv->id) }}"
+                                      method="POST"
+                                      class="inline"
+                                      onsubmit="return confirm('Delete this Tax Invoice?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-red-600 hover:underline">Delete</button>
+                                </form>
+                            @endcan
+
+                        @elseif($inv->invoice_type === 'proforma')
+                            @can('delete proforma')
+                                <form action="{{ route('invoices.destroy',$inv->id) }}"
+                                      method="POST"
+                                      class="inline"
+                                      onsubmit="return confirm('Delete this Proforma?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-red-600 hover:underline">Delete</button>
+                                </form>
+                            @endcan
+
+                        @elseif($inv->invoice_type === 'quotation')
+                            @can('delete quotation')
+                                <form action="{{ route('invoices.destroy',$inv->id) }}"
+                                      method="POST"
+                                      class="inline"
+                                      onsubmit="return confirm('Delete this Quotation?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="text-red-600 hover:underline">Delete</button>
+                                </form>
+                            @endcan
+                        @endif
+
                     </td>
                 </tr>
             @empty

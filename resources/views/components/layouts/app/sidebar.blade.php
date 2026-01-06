@@ -227,7 +227,7 @@
             @endcan
 
 
-            @can('show invoices')
+            @can('show bank balance')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item icon="home" :href="route('bank-accounts.index')" :current="request()->routeIs('bank-accounts.index')" wire:navigate>{{ __('Banks & Balance') }}</flux:navlist.item>
