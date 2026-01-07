@@ -42,6 +42,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('delete/{client}', 'destroy');
     });
 
+    Route::prefix('categories')->controller(\App\Http\Controllers\Api\CategoryController::class)->group(function(){
+       Route::get('/', 'index');
+       Route::post('store', 'store');
+       Route::post('update/{category}', 'update');
+       Route::delete('delete/{category}', 'destroy');
+    });
+
+    Route::prefix('items')->controller(\App\Http\Controllers\Api\ItemController::class)->group(function(){
+        Route::get('/', 'index');
+        Route::post('store', 'store');
+        Route::post('update/{item}', 'update');
+        Route::delete('delete/{item}', 'destroy');
+    });
+
+
+
 
 });
 

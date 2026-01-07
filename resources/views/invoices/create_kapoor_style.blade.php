@@ -881,19 +881,33 @@
                         </template>
                     </div>
 
-                    <div class="mt-4 flex items-center justify-between">
-                        <div class="text-sm text-red-600" x-text="newItemError"></div>
-                        <div class="flex gap-2">
-                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeItemModal()">Cancel</button>
+                    <div class="mt-4 flex items-center justify-between gap-3">
+                        <div class="flex flex-col">
+                            <div class="text-sm text-red-600" x-text="newItemError"></div>
+
+                            <!-- ✅ Checkbox -->
+                            <label class="mt-2 inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200 select-none">
+                                <input type="checkbox" class="rounded border-gray-300 dark:border-neutral-700"
+                                       x-model="itemAutoSelect">
+                                Save for future
+                            </label>
+                        </div>
+
+                        <div class="flex gap-2 shrink-0">
+                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeItemModal()">
+                                Cancel
+                            </button>
+
                             <button type="button"
                                     class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                                     :disabled="savingItem"
                                     @click="saveItem()">
-                                <span x-show="!savingItem">Save Item</span>
+                                <span x-show="!savingItem" x-text="itemAutoSelect ? 'Save Item' : 'Use for this Invoice'"></span>
                                 <span x-show="savingItem">Saving...</span>
                             </button>
                         </div>
                     </div>
+
                 </div>
             </div>
 
@@ -1098,6 +1112,7 @@
                 newItemError:'',
                 activeRowIndex: null,
                 clientAutoSelect: true,
+                itemAutoSelect: true,
 
                 // newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
 
@@ -1147,6 +1162,10 @@
                 openItemModal(rowIndex=null){
                     this.activeRowIndex = rowIndex;
                     this.newItemError = '';
+
+                    // ✅ default ON
+                    this.itemAutoSelect = true;
+
                     this.newItem = {
                         type:'product',
                         name:'', sku:'', description:'',
@@ -1221,12 +1240,58 @@
                 },
 
 
+                {{--async saveItem(){--}}
+                {{--    this.newItemError = '';--}}
+                {{--    if(!this.newItem.name){--}}
+                {{--        this.newItemError = 'Item name is required.';--}}
+                {{--        return;--}}
+                {{--    }--}}
+                {{--    if(this.newItem.type === 'service' && Number(this.newItem.price||0) <= 0){--}}
+                {{--        this.newItemError = 'Service price is required.';--}}
+                {{--        return;--}}
+                {{--    }--}}
+
+                {{--    try{--}}
+                {{--        this.savingItem = true;--}}
+                {{--        const res = await fetch(@js(route('items.store.ajax')), {--}}
+                {{--            method:'POST',--}}
+                {{--            credentials:'same-origin',--}}
+                {{--            headers:{--}}
+                {{--                'Content-Type':'application/json',--}}
+                {{--                'X-CSRF-TOKEN': this.csrf(),--}}
+                {{--                'X-Requested-With':'XMLHttpRequest',--}}
+                {{--                'Accept':'application/json',--}}
+                {{--            },--}}
+                {{--            body: JSON.stringify(this.newItem)--}}
+                {{--        });--}}
+                {{--        const data = await res.json().catch(()=> ({}));--}}
+                {{--        if(!res.ok){--}}
+                {{--            this.newItemError = data?.message || 'Failed to save item.';--}}
+                {{--            return;--}}
+                {{--        }--}}
+
+                {{--        this.itemsData.unshift(data.item);--}}
+
+                {{--        if(this.activeRowIndex !== null && this.items[this.activeRowIndex]){--}}
+                {{--            this.pickItem(this.activeRowIndex, data.item.id);--}}
+                {{--        }--}}
+
+                {{--        this.modals.item = false;--}}
+                {{--    }catch(e){--}}
+                {{--        this.newItemError = 'Network error.';--}}
+                {{--    }finally{--}}
+                {{--        this.savingItem = false;--}}
+                {{--    }--}}
+                {{--},--}}
+
                 async saveItem(){
                     this.newItemError = '';
-                    if(!this.newItem.name){
+
+                    if(!String(this.newItem.name || '').trim()){
                         this.newItemError = 'Item name is required.';
                         return;
                     }
+
                     if(this.newItem.type === 'service' && Number(this.newItem.price||0) <= 0){
                         this.newItemError = 'Service price is required.';
                         return;
@@ -1234,6 +1299,7 @@
 
                     try{
                         this.savingItem = true;
+
                         const res = await fetch(@js(route('items.store.ajax')), {
                             method:'POST',
                             credentials:'same-origin',
@@ -1243,27 +1309,35 @@
                                 'X-Requested-With':'XMLHttpRequest',
                                 'Accept':'application/json',
                             },
-                            body: JSON.stringify(this.newItem)
+                            body: JSON.stringify({
+                                ...this.newItem,
+                                is_save: this.itemAutoSelect ? 1 : 0   // ✅ MAIN CHANGE
+                            })
                         });
+
                         const data = await res.json().catch(()=> ({}));
                         if(!res.ok){
                             this.newItemError = data?.message || 'Failed to save item.';
                             return;
                         }
 
+                        // ✅ item always comes from DB
                         this.itemsData.unshift(data.item);
 
+                        // ✅ always auto-pick in current row
                         if(this.activeRowIndex !== null && this.items[this.activeRowIndex]){
                             this.pickItem(this.activeRowIndex, data.item.id);
                         }
 
                         this.modals.item = false;
+
                     }catch(e){
                         this.newItemError = 'Network error.';
                     }finally{
                         this.savingItem = false;
                     }
                 },
+
 
                 init(){
                     this.$watch('clientId', () => this.syncParty());

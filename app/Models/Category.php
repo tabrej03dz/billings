@@ -10,12 +10,7 @@ use App\Models\Concerns\BelongsToBusiness;
 class Category extends Model
 {
     use HasFactory, BelongsToBusiness;
-    protected $fillable = [
-        'name',
-        'slug',
-        'description',
-        'is_active',
-    ];
+    protected $guarded = ['id'];
 
     // Automatically generate slug from name
     protected static function booted()
