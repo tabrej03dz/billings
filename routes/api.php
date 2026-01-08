@@ -6,12 +6,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BirthdayWishController;
 use App\Http\Controllers\Api\HomeController;
 
+//Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
 
 Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
 
 Route::post('/login',  [HomeController::class, 'login']);
 
-//Route::post('clients/store', [\App\Http\Controllers\Api\ClientController::class, 'store']);
 
 Route::middleware('auth:sanctum')->group(function () {
 

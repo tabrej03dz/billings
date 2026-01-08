@@ -66,22 +66,68 @@
                         <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100">Bill To</div>
                     </div>
 
+{{--                    <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>--}}
+{{--                    <input type="text"--}}
+{{--                           x-model="clientSearch"--}}
+{{--                           placeholder="Search client by name / mobile..."--}}
+{{--                           class="mb-2 w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700--}}
+{{--              bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
+{{--                    <div class="flex gap-2">--}}
+{{--                        <select name="client_id" x-model="clientId" required--}}
+{{--                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
+{{--                            <option value="">-- Select Client --</option>--}}
+{{--                            <template x-for="c in clients" :key="c.id">--}}
+{{--                                <option :value="c.id" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>--}}
+{{--                            </template>--}}
+{{--                        </select>--}}
+
+{{--                        <button type="button"--}}
+{{--                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"--}}
+{{--                                @click="openClientModal()">--}}
+{{--                            + New--}}
+{{--                        </button>--}}
+{{--                    </div>--}}
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
+
+                    <input type="text"
+                           x-model="clientSearch"
+                           placeholder="Search client by name / mobile..."
+                           @focus="openClientSelect()"
+                           @input="openClientSelect()"
+                           @keydown.escape="closeClientSelect()"
+                           class="mb-2 w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
+              bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+
                     <div class="flex gap-2">
-                        <select name="client_id" x-model="clientId" required
-                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                        <select x-ref="clientSelect"
+                                name="client_id"
+                                x-model="clientId"
+                                required
+                                @focus="openClientSelect()"
+                                @change="closeClientSelect(true)"
+                                @blur="closeClientSelect()"
+                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
+                   bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
                             <option value="">-- Select Client --</option>
-                            <template x-for="c in clients" :key="c.id">
-                                <option :value="c.id" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
+
+                            <template x-for="c in filteredClients" :key="c.id">
+                                <option :value="c.id"
+                                        x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
                             </template>
                         </select>
 
                         <button type="button"
-                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
+                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900
+                   text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
                                 @click="openClientModal()">
                             + New
                         </button>
                     </div>
+
+
+
+
+
 
                     {{-- details --}}
                     <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
@@ -113,23 +159,6 @@
                             <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
                         </div>
-
-{{--                        <div>--}}
-{{--                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">GST No.</label>--}}
-
-{{--                            <input type="text" name="gst_no"--}}
-{{--                                   x-model="hdr.gst_no"--}}
-{{--                                   @input.debounce.350ms="onGstinInput('hdr')"--}}
-{{--                                   placeholder="15-char GSTIN"--}}
-{{--                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
-
-{{--                            <!-- status text -->--}}
-{{--                            <div class="mt-1 text-[11px]"--}}
-{{--                                 x-show="gstin.status !== 'idle'"--}}
-{{--                                 :class="gstin.status==='valid' ? 'text-green-600' : (gstin.status==='checking' ? 'text-blue-600' : 'text-red-600')"--}}
-{{--                                 x-text="gstin.message">--}}
-{{--                            </div>--}}
-{{--                        </div>--}}
 
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
@@ -203,39 +232,94 @@
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
                                 <td class="px-2 py-1 w-[260px] max-w-[260px] align-top">
+{{--                                    <div class="flex items-center gap-1 mb-1">--}}
+
+{{--                                        <!-- Select -->--}}
+{{--                                        <select--}}
+{{--                                            class="flex-1 border rounded px-2 py-1--}}
+{{--                                           border-gray-300 dark:border-neutral-700--}}
+{{--                                           bg-white dark:bg-neutral-900--}}
+{{--                                           text-gray-900 dark:text-neutral-100 text-xs"--}}
+{{--                                            @change="pickItem(i, $event.target.value)"--}}
+{{--                                        >--}}
+{{--                                            <option value="">-- Select Item --</option>--}}
+
+{{--                                            <template x-for="it in itemsData" :key="it.id">--}}
+{{--                                                <option--}}
+{{--                                                    :value="it.id"--}}
+{{--                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name">--}}
+{{--                                                </option>--}}
+{{--                                            </template>--}}
+{{--                                        </select>--}}
+
+{{--                                        <!-- New Item Button -->--}}
+{{--                                        <button--}}
+{{--                                            type="button"--}}
+{{--                                            class="px-3 py-1 rounded border--}}
+{{--                                           border-gray-300 dark:border-neutral-700--}}
+{{--                                           text-xs whitespace-nowrap--}}
+{{--                                           hover:bg-gray-50 dark:hover:bg-neutral-800"--}}
+{{--                                            @click="openItemModal(i)"--}}
+{{--                                        >--}}
+{{--                                            + New--}}
+{{--                                        </button>--}}
+
+{{--                                    </div>--}}
+
+                                    <!-- ✅ Search input for items -->
                                     <div class="flex items-center gap-1 mb-1">
 
-                                        <!-- Select -->
-                                        <select
-                                            class="flex-1 border rounded px-2 py-1
-                                           border-gray-300 dark:border-neutral-700
-                                           bg-white dark:bg-neutral-900
-                                           text-gray-900 dark:text-neutral-100 text-xs"
-                                            @change="pickItem(i, $event.target.value)"
-                                        >
-                                            <option value="">-- Select Item --</option>
+                                        <!-- Search (same width feel, above select jaisa) -->
+                                        <input type="text"
+                                               x-model="row.search"
+                                               placeholder="Search item..."
+                                               @focus="openRowSelect(i)"
+                                               @input="openRowSelect(i)"
+                                               @keydown.escape="closeRowSelect(i)"
+                                               class="flex-1 border rounded px-2 py-1
+                  border-gray-300 dark:border-neutral-700
+                  bg-white dark:bg-neutral-900
+                  text-gray-900 dark:text-neutral-100 text-xs">
 
-                                            <template x-for="it in itemsData" :key="it.id">
-                                                <option
-                                                    :value="it.id"
-                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name">
-                                                </option>
-                                            </template>
-                                        </select>
-
-                                        <!-- New Item Button -->
-                                        <button
-                                            type="button"
-                                            class="px-3 py-1 rounded border
-                                           border-gray-300 dark:border-neutral-700
-                                           text-xs whitespace-nowrap
-                                           hover:bg-gray-50 dark:hover:bg-neutral-800"
-                                            @click="openItemModal(i)"
-                                        >
+                                        <!-- New Item Button (same as old) -->
+                                        <button type="button"
+                                                class="px-3 py-1 rounded border
+                   border-gray-300 dark:border-neutral-700
+                   text-xs whitespace-nowrap
+                   hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                @click="openItemModal(i)">
                                             + New
                                         </button>
-
                                     </div>
+
+                                    <!-- ✅ SAME SELECT as before (just filtered list) -->
+                                    <select :x-ref="'itemSelect_'+i"
+                                            class="w-full border rounded px-2 py-1
+               border-gray-300 dark:border-neutral-700
+               bg-white dark:bg-neutral-900
+               text-gray-900 dark:text-neutral-100 text-xs"
+                                            @focus="openRowSelect(i)"
+                                            @change="
+            row.item_id = $event.target.value;
+            pickItem(i, $event.target.value);
+            closeRowSelect(i, true);
+        "
+                                            @blur="closeRowSelect(i)"
+                                    >
+                                        <option value="">-- Select Item --</option>
+                                        <template x-for="it in filteredItems(row.search)" :key="it.id">
+                                            <option :value="it.id"
+                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>
+                                        </template>
+                                    </select>
+
+                                    <!-- ✅ backend compatibility -->
+                                    <input type="hidden" :name="'items['+i+'][item_id]'" :value="row.item_id">
+
+
+
+
+
 
                                     <textarea x-model="row.description" required rows="2"
                                               class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs resize-none"
@@ -927,6 +1011,41 @@
 
 
             return {
+                clientSearch: '',
+
+                get filteredClients() {
+                    const q = (this.clientSearch || '').toString().toLowerCase().trim();
+                    if (!q) return this.clients || [];
+                    return (this.clients || []).filter(c => {
+                        const name = (c.name || '').toString().toLowerCase();
+                        const mob  = (c.mobile || '').toString().toLowerCase();
+                        return name.includes(q) || mob.includes(q);
+                    });
+                },
+
+                filteredItems(q) {
+                    const s = (q || '').toString().toLowerCase().trim();
+                    if (!s) return this.itemsData || [];
+                    return (this.itemsData || []).filter(it => {
+                        const name = (it.name || '').toString().toLowerCase();
+                        const sku  = (it.sku || '').toString().toLowerCase();
+                        const desc = (it.description || '').toString().toLowerCase();
+                        return name.includes(s) || sku.includes(s) || desc.includes(s);
+                    });
+                },
+
+
+
+
+
+
+
+
+
+
+
+
+
                 clients: CLIENTS,
                 itemsData: ITEMS,
                 metalRates: METAL_RATES,
@@ -999,7 +1118,8 @@
                 },
 
                 // UI
-                ui: { showCharges:false, showDiscount:false },
+                ui: { showCharges:false, showDiscount:false, clientOpen:false, clientSelectOpen:false },
+
 
                 // Charges
                 charges: [],
@@ -1046,7 +1166,7 @@
                 },
 
                 // payment (single input + mode)
-                payment: { received:0, mode:'cash', markFullyPaid:false },
+                // payment: { received:0, mode:'cash', markFullyPaid:false },
 
                 toggleFullyPaid(){
                     if(this.payment.markFullyPaid){
@@ -1081,6 +1201,8 @@
                         item_id: null,
                         item_type: null,
 
+                        search: '',
+                        open: false,   // ✅ add this
                         description: '',
                         hsn: '',
                         quantity: 1,
@@ -1411,7 +1533,13 @@
 
                     const r = this.items[i];
 
+                    // ❌ r.search = '';  // remove this
                     r.item_id   = it.id;
+                    r.item_type = (it.type || '').toLowerCase().trim() || 'product';
+
+                    // ✅ selection ke baad input me selected item ka text show
+                    r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+
                     r.item_type = (it.type || '').toLowerCase().trim() || 'product';
 
                     r.description = it.description || it.name || '';
@@ -1807,6 +1935,68 @@
                         };
                     }
                 },
+
+                openClientSelect(){
+                    this.ui.clientSelectOpen = true;
+
+                    this.$nextTick(() => {
+                        const sel = this.$refs.clientSelect;
+                        if(!sel) return;
+
+                        // show dropdown list (open)
+                        const count = (this.filteredClients?.length || 0);
+                        sel.size = Math.min(8, Math.max(2, count + 1)); // +1 for placeholder
+                    });
+                },
+
+                closeClientSelect(syncText = false){
+                    this.ui.clientSelectOpen = false;
+
+                    this.$nextTick(() => {
+                        const sel = this.$refs.clientSelect;
+                        if(!sel) return;
+                        sel.size = 1;
+
+                        // ✅ optional: select choose karne ke baad input me text fill
+                        if(syncText){
+                            const c = this.clients.find(x => String(x.id) === String(this.clientId));
+                            this.clientSearch = c ? (c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name) : '';
+                        }
+                    });
+                },
+
+
+                openRowSelect(i){
+                    this.$nextTick(() => {
+                        const sel = this.$refs['itemSelect_'+i];
+                        if(!sel) return;
+
+                        const count = this.filteredItems(this.items[i]?.search).length || 0;
+                        sel.size = Math.min(10, Math.max(2, count + 1));
+
+                        // ✅ keep it visually open + keyboard nav works
+                        sel.focus({ preventScroll: true });
+                    });
+                },
+
+
+                closeRowSelect(i, keepText = false){
+                    this.$nextTick(() => {
+                        const sel = this.$refs['itemSelect_'+i];
+                        if(!sel) return;
+
+                        sel.size = 1;
+
+                        if(keepText){
+                            const r = this.items[i];
+                            const it = this.itemsData.find(x => String(x.id) === String(r.item_id));
+                            if(it){
+                                r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                            }
+                        }
+                    });
+                },
+
 
             }
 
