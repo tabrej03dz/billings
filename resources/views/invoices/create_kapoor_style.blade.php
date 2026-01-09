@@ -2,6 +2,7 @@
    FILE: resources/views/invoices/create_kapoor_style.blade.php
    NOTE: SERVICE => amount = service_rate * qty (NO metal rates)
    NOTE: Amount field editable (Manual override)
+   UI UPDATE: ✅ Screenshot-like dropdown (Party + Item)
 ========================================== --}}
 
 <x-layouts.app :title="__('Create Sales Invoice')">
@@ -11,7 +12,7 @@
         <style>
             .invoice-table th,
             .invoice-table td {
-                padding: 4px 6px !important;   /* 👈 yahin se space kam hota hai */
+                padding: 4px 6px !important;
                 vertical-align: top;
             }
 
@@ -22,7 +23,6 @@
                 height: 26px;
                 font-size: 12px;
             }
-
         </style>
 
         {{-- errors --}}
@@ -51,7 +51,6 @@
                 </svg>
                 <span x-text="saving ? 'Saving...' : 'Save'"></span>
             </button>
-
         </div>
 
         <form x-ref="form" method="POST" action="{{ route('invoices.store', $docType) }}" enctype="multipart/form-data" @submit.prevent="beforeSubmit">
@@ -66,68 +65,66 @@
                         <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100">Bill To</div>
                     </div>
 
-{{--                    <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>--}}
-{{--                    <input type="text"--}}
-{{--                           x-model="clientSearch"--}}
-{{--                           placeholder="Search client by name / mobile..."--}}
-{{--                           class="mb-2 w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700--}}
-{{--              bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
-{{--                    <div class="flex gap-2">--}}
-{{--                        <select name="client_id" x-model="clientId" required--}}
-{{--                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
-{{--                            <option value="">-- Select Client --</option>--}}
-{{--                            <template x-for="c in clients" :key="c.id">--}}
-{{--                                <option :value="c.id" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>--}}
-{{--                            </template>--}}
-{{--                        </select>--}}
-
-{{--                        <button type="button"--}}
-{{--                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"--}}
-{{--                                @click="openClientModal()">--}}
-{{--                            + New--}}
-{{--                        </button>--}}
-{{--                    </div>--}}
+                    {{-- ✅ PARTY: Screenshot-like dropdown --}}
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
 
-                    <input type="text"
-                           x-model="clientSearch"
-                           placeholder="Search client by name / mobile..."
-                           @focus="openClientSelect()"
-                           @input="openClientSelect()"
-                           @keydown.escape="closeClientSelect()"
-                           class="mb-2 w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-              bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                    <div class="relative"
+                         @keydown.escape="clientDD.close()"
+                         @keydown.arrow-down.prevent="clientDD.down()"
+                         @keydown.arrow-up.prevent="clientDD.up()"
+                         @keydown.enter.prevent="clientDD.enter()"
+                         @click.outside="clientDD.close()">
 
-                    <div class="flex gap-2">
-                        <select x-ref="clientSelect"
-                                name="client_id"
-                                x-model="clientId"
-                                required
-                                @focus="openClientSelect()"
-                                @change="closeClientSelect(true)"
-                                @blur="closeClientSelect()"
-                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                   bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                            <option value="">-- Select Client --</option>
+                        <input type="text"
+                               x-model="clientDD.q"
+                               placeholder="Search party by name or number"
+                               @focus="clientDD.open()"
+                               @input="clientDD.open()"
+                               class="mb-2 w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
+                                      bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
 
-                            <template x-for="c in filteredClients" :key="c.id">
-                                <option :value="c.id"
-                                        x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
-                            </template>
-                        </select>
+                        {{-- backend required --}}
+                        <input type="hidden" name="client_id" :value="clientId" required>
 
+                        <div x-show="clientDD.isOpen" x-transition
+                             class="absolute z-50 mt-1 w-full rounded border border-gray-200 dark:border-neutral-700
+                                    bg-white dark:bg-neutral-900 shadow-lg overflow-hidden">
+
+                            <div class="max-h-56 overflow-auto">
+                                <template x-if="clientDD.filtered().length === 0">
+                                    <div class="px-3 py-2 text-sm text-gray-500 dark:text-neutral-400">
+                                        No results
+                                    </div>
+                                </template>
+
+                                <template x-for="(c, idx) in clientDD.filtered()" :key="c.id">
+                                    <div
+                                        @mouseenter="clientDD.hi = idx"
+                                        @mousedown.prevent="clientDD.select(c)"
+                                        class="px-3 py-2 cursor-pointer flex items-center justify-between gap-3 border-b border-gray-100 dark:border-neutral-800"
+                                        :class="idx === clientDD.hi ? 'bg-gray-100 dark:bg-neutral-800' : ''">
+
+                                        <div class="min-w-0">
+                                            <div class="text-sm text-gray-900 dark:text-neutral-100 truncate"
+                                                 x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></div>
+                                        </div>
+
+                                        <div class="text-sm text-gray-700 dark:text-neutral-200 shrink-0"
+                                             x-text="Number(c.balance ?? 0).toFixed(1)"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
                         <button type="button"
                                 class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900
-                   text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
+                                       text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
                                 @click="openClientModal()">
                             + New
                         </button>
                     </div>
-
-
-
-
-
 
                     {{-- details --}}
                     <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
@@ -198,8 +195,8 @@
             </div>
 
             {{-- ================= TABLE ================= --}}
-            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                <div class="overflow-x-auto">
+            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 overflow-visible">
+            <div class="overflow-x-auto overflow-y-visible">
                     <table class="min-w-full text-sm border-separate border-spacing-0 invoice-table">
                         <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
                         <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
@@ -208,7 +205,7 @@
                             <th>HSN / SAC</th>
                             <th class="text-center">Qty</th>
 
-{{--                             Product-only columns--}}
+                            {{-- Product-only columns --}}
                             <th x-show="hasProduct()">Making Rate</th>
                             <th x-show="hasProduct()">Gold Rate (₹/g)</th>
                             <th x-show="hasProduct()">Silver Rate (₹/g)</th>
@@ -217,7 +214,7 @@
                             <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
                             <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
 
-{{--                             Service-only column--}}
+                            {{-- Service-only column --}}
                             <th x-show="hasService()">Service Rate (₹)</th>
 
                             <th>Tax %</th>
@@ -232,93 +229,70 @@
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
                                 <td class="px-2 py-1 w-[260px] max-w-[260px] align-top">
-{{--                                    <div class="flex items-center gap-1 mb-1">--}}
 
-{{--                                        <!-- Select -->--}}
-{{--                                        <select--}}
-{{--                                            class="flex-1 border rounded px-2 py-1--}}
-{{--                                           border-gray-300 dark:border-neutral-700--}}
-{{--                                           bg-white dark:bg-neutral-900--}}
-{{--                                           text-gray-900 dark:text-neutral-100 text-xs"--}}
-{{--                                            @change="pickItem(i, $event.target.value)"--}}
-{{--                                        >--}}
-{{--                                            <option value="">-- Select Item --</option>--}}
+                                    <div class="relative mb-1" @click.away="closeItemDD(i)">
+                                        <div class="flex items-center gap-1">
+                                            <input type="text"
+                                                   :id="'item_search_'+i"
+                                                   x-model="row.search"
+                                                   placeholder="Search item by name or sku"
+                                                   @focus="openItemDD(i)"
+                                                   @input.debounce.50ms="openItemDD(i)"
+                                                   @keydown.escape.prevent="closeItemDD(i)"
+                                                   @keydown.arrow-down.prevent="itemDDDown(i)"
+                                                   @keydown.arrow-up.prevent="itemDDUp(i)"
+                                                   @keydown.enter.prevent="itemDDEnter(i)"
+                                                   class="flex-1 border rounded px-2 py-1
+                      border-gray-300 dark:border-neutral-700
+                      bg-white dark:bg-neutral-900
+                      text-gray-900 dark:text-neutral-100 text-xs" />
 
-{{--                                            <template x-for="it in itemsData" :key="it.id">--}}
-{{--                                                <option--}}
-{{--                                                    :value="it.id"--}}
-{{--                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name">--}}
-{{--                                                </option>--}}
-{{--                                            </template>--}}
-{{--                                        </select>--}}
+                                            <button type="button"
+                                                    class="px-3 py-1 rounded border
+                       border-gray-300 dark:border-neutral-700
+                       text-xs whitespace-nowrap
+                       hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                    @click="openItemModal(i)">
+                                                + New
+                                            </button>
+                                        </div>
 
-{{--                                        <!-- New Item Button -->--}}
-{{--                                        <button--}}
-{{--                                            type="button"--}}
-{{--                                            class="px-3 py-1 rounded border--}}
-{{--                                           border-gray-300 dark:border-neutral-700--}}
-{{--                                           text-xs whitespace-nowrap--}}
-{{--                                           hover:bg-gray-50 dark:hover:bg-neutral-800"--}}
-{{--                                            @click="openItemModal(i)"--}}
-{{--                                        >--}}
-{{--                                            + New--}}
-{{--                                        </button>--}}
+                                        <!-- ✅ DROPDOWN (absolute overlay) -->
+                                        <div x-show="row.ddOpen"
+                                             x-transition.opacity
+                                             class="absolute left-0 right-0 mt-1 rounded border border-gray-200 dark:border-neutral-700
+                                                bg-white dark:bg-neutral-900 shadow-2xl
+                                                z-[999999] isolate
+                                                max-h-56 overflow-auto"
+                                             style="display:none; transform: translateZ(0);"
+                                             @mousedown.prevent>
 
-{{--                                    </div>--}}
+                                        <template x-if="filteredItems(row.search).length === 0">
+                                                <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                                                    No results
+                                                </div>
+                                            </template>
 
-                                    <!-- ✅ Search input for items -->
-                                    <div class="flex items-center gap-1 mb-1">
+                                            <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">
+                                                <div
+                                                    class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
+                       hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                    :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                    @mouseenter="row.ddHi = idx"
+                                                    @click="selectItemFromDD(i, it)"
+                                                >
+                                                    <div class="truncate"
+                                                         x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
 
-                                        <!-- Search (same width feel, above select jaisa) -->
-                                        <input type="text"
-                                               x-model="row.search"
-                                               placeholder="Search item..."
-                                               @focus="openRowSelect(i)"
-                                               @input="openRowSelect(i)"
-                                               @keydown.escape="closeRowSelect(i)"
-                                               class="flex-1 border rounded px-2 py-1
-                  border-gray-300 dark:border-neutral-700
-                  bg-white dark:bg-neutral-900
-                  text-gray-900 dark:text-neutral-100 text-xs">
-
-                                        <!-- New Item Button (same as old) -->
-                                        <button type="button"
-                                                class="px-3 py-1 rounded border
-                   border-gray-300 dark:border-neutral-700
-                   text-xs whitespace-nowrap
-                   hover:bg-gray-50 dark:hover:bg-neutral-800"
-                                                @click="openItemModal(i)">
-                                            + New
-                                        </button>
+                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
+                                                         x-text="it.price ? it.price : ''"></div>
+                                                </div>
+                                            </template>
+                                        </div>
                                     </div>
-
-                                    <!-- ✅ SAME SELECT as before (just filtered list) -->
-                                    <select :x-ref="'itemSelect_'+i"
-                                            class="w-full border rounded px-2 py-1
-               border-gray-300 dark:border-neutral-700
-               bg-white dark:bg-neutral-900
-               text-gray-900 dark:text-neutral-100 text-xs"
-                                            @focus="openRowSelect(i)"
-                                            @change="
-            row.item_id = $event.target.value;
-            pickItem(i, $event.target.value);
-            closeRowSelect(i, true);
-        "
-                                            @blur="closeRowSelect(i)"
-                                    >
-                                        <option value="">-- Select Item --</option>
-                                        <template x-for="it in filteredItems(row.search)" :key="it.id">
-                                            <option :value="it.id"
-                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>
-                                        </template>
-                                    </select>
 
                                     <!-- ✅ backend compatibility -->
                                     <input type="hidden" :name="'items['+i+'][item_id]'" :value="row.item_id">
-
-
-
-
 
 
                                     <textarea x-model="row.description" required rows="2"
@@ -341,7 +315,7 @@
                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
                                 </td>
 
-                                 Product-only cells
+                                {{-- Product-only cells --}}
                                 <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.making_rate" @input="onAutoChange(row)"
@@ -388,7 +362,7 @@
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                 Service-only cell
+                                {{-- Service-only cell --}}
                                 <td class="px-3 py-2" x-show="row.item_type === 'service'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.service_rate" @input="onAutoChange(row)"
@@ -404,7 +378,7 @@
                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                 ✅ Amount editable (manual override)
+                                {{-- ✅ Amount editable --}}
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.manual_amount"
@@ -435,7 +409,6 @@
                     </table>
                 </div>
             </div>
-
 
             {{-- ================= BOTTOM ================= --}}
             <div class="grid lg:grid-cols-2 gap-4">
@@ -664,7 +637,6 @@
 
                     <input type="hidden" name="bank_account_id" :value="payment.mode !== 'cash' ? payment.bank_account_id : ''">
 
-
                     {{-- Balance Amount --}}
                     <div class="flex justify-between pt-1">
                         <span class="text-sm font-semibold text-green-600">Balance Amount</span>
@@ -682,11 +654,11 @@
                                    name="signature"
                                    accept="image/*"
                                    class="w-full text-sm file:mr-3 file:px-3 file:py-2 file:rounded-lg
-                      file:border-0 file:bg-gray-100 file:text-gray-700
-                      dark:file:bg-neutral-800 dark:file:text-neutral-200
-                      border border-gray-300 dark:border-neutral-700
-                      rounded-lg px-3 py-2 bg-white dark:bg-neutral-900
-                      text-gray-900 dark:text-neutral-100">
+                                          file:border-0 file:bg-gray-100 file:text-gray-700
+                                          dark:file:bg-neutral-800 dark:file:text-neutral-200
+                                          border border-gray-300 dark:border-neutral-700
+                                          rounded-lg px-3 py-2 bg-white dark:bg-neutral-900
+                                          text-gray-900 dark:text-neutral-100">
 
                             <div class="text-[11px] text-gray-500 dark:text-neutral-400">
                                 Allowed: JPG/PNG/WebP • Max 2MB (recommended: transparent PNG)
@@ -694,23 +666,17 @@
                         </div>
                     </div>
 
-
                     {{-- ✅ Hidden inputs (ONLY ONCE) --}}
                     <input type="hidden" name="charges_json" :value="JSON.stringify(chargesPayload())">
-
                     <input type="hidden" name="discount_total" :value="discountAmount()">
                     <input type="hidden" name="charge_total" :value="chargesTotal()">
-
                     <input type="hidden" name="tcs_percent" :value="tcs.apply ? tcs.percent : 0">
                     <input type="hidden" name="tcs_amount" :value="tcsAmount()">
-
                     <input type="hidden" name="round_off" :value="roundOffAmount()">
                     <input type="hidden" name="less_amount" :value="discountAmount()">
-
                     <input type="hidden" name="cgst_percent" :value="isIntra() ? (avgTaxPercent()/2) : 0">
                     <input type="hidden" name="sgst_percent" :value="isIntra() ? (avgTaxPercent()/2) : 0">
                     <input type="hidden" name="igst_percent" :value="isIntra() ? 0 : avgTaxPercent()">
-
                     <input type="hidden" name="payment_method" :value="payment.mode">
                 </div>
             </div>
@@ -719,10 +685,6 @@
             <input type="hidden" id="items_json" name="items_json">
 
             <div class="text-right">
-{{--                <button @click="$refs.form.requestSubmit()"--}}
-{{--                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">--}}
-{{--                    Save--}}
-{{--                </button>--}}
                 <button type="button"
                         @click="submitForm()"
                         :disabled="saving"
@@ -733,7 +695,6 @@
                     </svg>
                     <span x-text="saving ? 'Saving...' : 'Save'"></span>
                 </button>
-
             </div>
 
             {{-- =================== CLIENT MODAL =================== --}}
@@ -763,9 +724,9 @@
 
                             <select
                                 class="mt-1 w-full border rounded-xl px-3 py-2 text-sm
-                                   bg-white dark:bg-neutral-900
-                                   border-gray-300 dark:border-neutral-700
-                                   text-gray-900 dark:text-neutral-100"
+                                       bg-white dark:bg-neutral-900
+                                       border-gray-300 dark:border-neutral-700
+                                       text-gray-900 dark:text-neutral-100"
                                 x-model="newClient.state_pick"
                                 @change="applyClientState()"
                             >
@@ -796,12 +757,6 @@
                             <input x-model="newClient.address" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Full address">
                         </div>
 
-
-{{--                        <div class="md:col-span-2">--}}
-{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>--}}
-{{--                            <input x-model="newClient.gstin" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="optional">--}}
-{{--                        </div>--}}
-
                         <div class="md:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>
 
@@ -819,24 +774,10 @@
 
                     </div>
 
-{{--                    <div class="mt-4 flex items-center justify-between">--}}
-{{--                        <div class="text-sm text-red-600" x-text="newClientError"></div>--}}
-{{--                        <div class="flex gap-2">--}}
-{{--                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700" @click="closeClientModal()">Cancel</button>--}}
-{{--                            <button type="button"--}}
-{{--                                    class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"--}}
-{{--                                    :disabled="savingClient"--}}
-{{--                                    @click="saveClient()">--}}
-{{--                                <span x-show="!savingClient">Save Client</span>--}}
-{{--                                <span x-show="savingClient">Saving...</span>--}}
-{{--                            </button>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
                     <div class="mt-4 flex items-center justify-between gap-3">
                         <div class="flex flex-col">
                             <div class="text-sm text-red-600" x-text="newClientError"></div>
 
-                            <!-- ✅ Checkbox -->
                             <label class="mt-2 inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200 select-none">
                                 <input type="checkbox" class="rounded border-gray-300 dark:border-neutral-700"
                                        x-model="clientAutoSelect">
@@ -969,7 +910,6 @@
                         <div class="flex flex-col">
                             <div class="text-sm text-red-600" x-text="newItemError"></div>
 
-                            <!-- ✅ Checkbox -->
                             <label class="mt-2 inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200 select-none">
                                 <input type="checkbox" class="rounded border-gray-300 dark:border-neutral-700"
                                        x-model="itemAutoSelect">
@@ -997,6 +937,7 @@
 
         </form>
     </div>
+
     <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
 
     <script>
@@ -1009,20 +950,62 @@
             const BIZ_GSTIN      = @js($businessGstin ?? '');
             const BANKS = JSON.parse(document.getElementById('banks-json')?.textContent || '[]');
 
-
             return {
-                clientSearch: '',
+                clients: CLIENTS,
+                itemsData: ITEMS,
+                metalRates: METAL_RATES,
 
-                get filteredClients() {
-                    const q = (this.clientSearch || '').toString().toLowerCase().trim();
-                    if (!q) return this.clients || [];
-                    return (this.clients || []).filter(c => {
-                        const name = (c.name || '').toString().toLowerCase();
-                        const mob  = (c.mobile || '').toString().toLowerCase();
-                        return name.includes(q) || mob.includes(q);
-                    });
+                clientId: '',
+                party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' },
+
+                // ✅ PARTY dropdown controller (screenshot style)
+                clientDD: {
+                    isOpen: false,
+                    q: '',
+                    hi: 0,
+                    parent: null, // ✅ will be set in init()
+
+                    open(){ this.isOpen = true; this.hi = 0; },
+                    close(){ this.isOpen = false; },
+
+                    filtered(){
+                        const q = (this.q || '').toString().toLowerCase().trim();
+                        const list = (this.parent?.clients || []);
+                        if(!q) return list;
+
+                        return list.filter(c => {
+                            const name = (c.name || '').toString().toLowerCase();
+                            const mob  = (c.mobile || '').toString().toLowerCase();
+                            return name.includes(q) || mob.includes(q);
+                        });
+                    },
+
+                    down(){
+                        if(!this.isOpen) this.open();
+                        const list = this.filtered();
+                        if(!list.length) return;
+                        this.hi = Math.min(list.length - 1, this.hi + 1);
+                    },
+                    up(){
+                        if(!this.isOpen) this.open();
+                        const list = this.filtered();
+                        if(!list.length) return;
+                        this.hi = Math.max(0, this.hi - 1);
+                    },
+                    enter(){
+                        const list = this.filtered();
+                        if(!this.isOpen || !list.length) return;
+                        this.select(list[this.hi]);
+                    },
+                    select(c){
+                        this.parent.clientId = c.id;
+                        this.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
+                        this.close();
+                    }
                 },
 
+
+                // search helper (items)
                 filteredItems(q) {
                     const s = (q || '').toString().toLowerCase().trim();
                     if (!s) return this.itemsData || [];
@@ -1033,25 +1016,6 @@
                         return name.includes(s) || sku.includes(s) || desc.includes(s);
                     });
                 },
-
-
-
-
-
-
-
-
-
-
-
-
-
-                clients: CLIENTS,
-                itemsData: ITEMS,
-                metalRates: METAL_RATES,
-
-                clientId: '',
-                party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' },
 
                 states: [
                     {code:'01', name:'Jammu and Kashmir'},
@@ -1092,10 +1056,7 @@
                     {code:'38', name:'Ladakh'},
                 ],
 
-
-
-                banks: BANKS,              // ✅ ADD THIS
-                // ...
+                banks: BANKS,
                 payment: { received:0, mode:'cash', markFullyPaid:false, bank_account_id:'' },
 
                 hdr: {
@@ -1117,9 +1078,7 @@
                     card_last4:'', card_ref:'', cheque_no:'', bank_name:'',
                 },
 
-                // UI
-                ui: { showCharges:false, showDiscount:false, clientOpen:false, clientSelectOpen:false },
-
+                ui: { showCharges:false, showDiscount:false },
 
                 // Charges
                 charges: [],
@@ -1165,9 +1124,6 @@
                     return Number((rounded - raw).toFixed(2));
                 },
 
-                // payment (single input + mode)
-                // payment: { received:0, mode:'cash', markFullyPaid:false },
-
                 toggleFullyPaid(){
                     if(this.payment.markFullyPaid){
                         this.payment.received = this.totalPayable();
@@ -1185,10 +1141,10 @@
                     if(this.payment.mode === 'card')   this.pay.card = amt;
                     if(this.payment.mode === 'cheque') this.pay.cheque = amt;
                     if(this.payment.mode === 'bank')   this.pay.upi = amt;
+
                     if (this.payment.mode === 'cash') {
                         this.payment.bank_account_id = '';
                     }
-
 
                     this.calc();
                 },
@@ -1202,7 +1158,9 @@
                         item_type: null,
 
                         search: '',
-                        open: false,   // ✅ add this
+                        ddOpen: false, // ✅
+                        ddHi: 0,       // ✅
+
                         description: '',
                         hsn: '',
                         quantity: 1,
@@ -1220,10 +1178,54 @@
                         service_rate: 0,
                         tax_percent: 0,
 
-                        // ✅ editable amount
-                        amount_mode: 'auto',   // auto|manual
+                        amount_mode: 'auto',
                         manual_amount: 0,
                     }
+                },
+
+                // ✅ ITEM dropdown controls (screenshot style)
+                rowDDOpen(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    r.ddOpen = true;
+                    r.hi = 0;
+                },
+                rowDDClose(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    r.ddOpen = false;
+                },
+                rowDDDown(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    if(!r.ddOpen) this.rowDDOpen(i);
+                    const list = this.filteredItems(r.search) || [];
+                    if(!list.length) return;
+                    r.hi = Math.min(list.length - 1, (r.hi || 0) + 1);
+                },
+                rowDDUp(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    if(!r.ddOpen) this.rowDDOpen(i);
+                    const list = this.filteredItems(r.search) || [];
+                    if(!list.length) return;
+                    r.hi = Math.max(0, (r.hi || 0) - 1);
+                },
+                rowDDEnter(i){
+                    const r = this.items[i];
+                    if(!r || !r.ddOpen) return;
+                    const list = this.filteredItems(r.search) || [];
+                    if(!list.length) return;
+                    const it = list[r.hi || 0];
+                    this.selectRowItem(i, it);
+                },
+                selectRowItem(i, it){
+                    const r = this.items[i];
+                    if(!r || !it) return;
+                    r.item_id = it.id;
+                    r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                    this.pickItem(i, it.id); // ✅ existing logic
+                    r.ddOpen = false;
                 },
 
                 // modals + ajax
@@ -1236,10 +1238,7 @@
                 clientAutoSelect: true,
                 itemAutoSelect: true,
 
-                // newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' },
-
                 newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' },
-
 
                 newItem: {
                     type:'product',
@@ -1257,16 +1256,11 @@
 
                 openClientModal(){
                     this.newClientError = '';
-                    // this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'' };
                     this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' };
-                    // this.modals.client = true;
-                    // ✅ default ON
                     this.clientAutoSelect = true;
-
                     this.modals.client = true;
                 },
                 closeClientModal(){ this.modals.client = false; },
-
 
                 applyClientState(){
                     const v = String(this.newClient.state_pick || '').trim();
@@ -1280,12 +1274,9 @@
                     this.newClient.state = (parts.slice(1).join(',') || '').trim();
                 },
 
-
                 openItemModal(rowIndex=null){
                     this.activeRowIndex = rowIndex;
                     this.newItemError = '';
-
-                    // ✅ default ON
                     this.itemAutoSelect = true;
 
                     this.newItem = {
@@ -1305,19 +1296,16 @@
                 async saveClient(){
                     this.newClientError = '';
 
-                    // ✅ only Name required
                     if(!String(this.newClient.name || '').trim()){
                         this.newClientError = 'Name is required.';
                         return;
                     }
 
-                    // ✅ if mobile filled, basic sanitize/validate (optional)
                     const mob = String(this.newClient.mobile || '').replace(/\D/g, '');
                     if(mob && mob.length < 10){
                         this.newClientError = 'Mobile must be 10 digits (optional).';
                         return;
                     }
-                    // keep sanitized (optional)
                     this.newClient.mobile = mob;
 
                     try{
@@ -1331,10 +1319,9 @@
                                 'X-Requested-With':'XMLHttpRequest',
                                 'Accept':'application/json',
                             },
-                            // body: JSON.stringify(this.newClient)
                             body: JSON.stringify({
                                 ...this.newClient,
-                                is_save: this.clientAutoSelect ? 1 : 0, // ✅ checkbox -> db boolean
+                                is_save: this.clientAutoSelect ? 1 : 0,
                             })
                         });
 
@@ -1346,12 +1333,11 @@
 
                         this.clients.unshift(data.client);
 
-                        // ✅ only if checkbox ON
                         if(this.clientAutoSelect){
                             this.clientId = data.client.id;
+                            this.clientDD.q = data.client.mobile ? (data.client.name + ' (' + data.client.mobile + ')') : data.client.name;
                         }
 
-                        this.clientId = data.client.id;
                         this.modals.client = false;
 
                     }catch(e){
@@ -1360,51 +1346,6 @@
                         this.savingClient = false;
                     }
                 },
-
-
-                {{--async saveItem(){--}}
-                {{--    this.newItemError = '';--}}
-                {{--    if(!this.newItem.name){--}}
-                {{--        this.newItemError = 'Item name is required.';--}}
-                {{--        return;--}}
-                {{--    }--}}
-                {{--    if(this.newItem.type === 'service' && Number(this.newItem.price||0) <= 0){--}}
-                {{--        this.newItemError = 'Service price is required.';--}}
-                {{--        return;--}}
-                {{--    }--}}
-
-                {{--    try{--}}
-                {{--        this.savingItem = true;--}}
-                {{--        const res = await fetch(@js(route('items.store.ajax')), {--}}
-                {{--            method:'POST',--}}
-                {{--            credentials:'same-origin',--}}
-                {{--            headers:{--}}
-                {{--                'Content-Type':'application/json',--}}
-                {{--                'X-CSRF-TOKEN': this.csrf(),--}}
-                {{--                'X-Requested-With':'XMLHttpRequest',--}}
-                {{--                'Accept':'application/json',--}}
-                {{--            },--}}
-                {{--            body: JSON.stringify(this.newItem)--}}
-                {{--        });--}}
-                {{--        const data = await res.json().catch(()=> ({}));--}}
-                {{--        if(!res.ok){--}}
-                {{--            this.newItemError = data?.message || 'Failed to save item.';--}}
-                {{--            return;--}}
-                {{--        }--}}
-
-                {{--        this.itemsData.unshift(data.item);--}}
-
-                {{--        if(this.activeRowIndex !== null && this.items[this.activeRowIndex]){--}}
-                {{--            this.pickItem(this.activeRowIndex, data.item.id);--}}
-                {{--        }--}}
-
-                {{--        this.modals.item = false;--}}
-                {{--    }catch(e){--}}
-                {{--        this.newItemError = 'Network error.';--}}
-                {{--    }finally{--}}
-                {{--        this.savingItem = false;--}}
-                {{--    }--}}
-                {{--},--}}
 
                 async saveItem(){
                     this.newItemError = '';
@@ -1433,7 +1374,7 @@
                             },
                             body: JSON.stringify({
                                 ...this.newItem,
-                                is_save: this.itemAutoSelect ? 1 : 0   // ✅ MAIN CHANGE
+                                is_save: this.itemAutoSelect ? 1 : 0
                             })
                         });
 
@@ -1443,10 +1384,8 @@
                             return;
                         }
 
-                        // ✅ item always comes from DB
                         this.itemsData.unshift(data.item);
 
-                        // ✅ always auto-pick in current row
                         if(this.activeRowIndex !== null && this.items[this.activeRowIndex]){
                             this.pickItem(this.activeRowIndex, data.item.id);
                         }
@@ -1460,14 +1399,19 @@
                     }
                 },
 
-
                 init(){
+                    this.clientDD.parent = this; // ✅ IMPORTANT
                     this.$watch('clientId', () => this.syncParty());
 
                     if (!this.items.length) this.items.push(this.blankRow());
                     if (!this.charges.length) this.charges.push(this.blankCharge());
 
                     this.syncParty();
+
+                    // ✅ keep party input text in sync
+                    const cc = this.clients.find(x => String(x.id) === String(this.clientId));
+                    this.clientDD.q = cc ? (cc.mobile ? (cc.name + ' (' + cc.mobile + ')') : cc.name) : '';
+
                     this.onReceivedInput();
                     this.calc();
                 },
@@ -1483,6 +1427,11 @@
                         gstin: c.gstin ?? '',
                         pincode: c.pincode ?? '',
                     } : { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' };
+
+                    // ✅ update textbox too
+                    if(c){
+                        this.clientDD.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
+                    }
 
                     this.calc();
                 },
@@ -1533,19 +1482,14 @@
 
                     const r = this.items[i];
 
-                    // ❌ r.search = '';  // remove this
                     r.item_id   = it.id;
                     r.item_type = (it.type || '').toLowerCase().trim() || 'product';
 
-                    // ✅ selection ke baad input me selected item ka text show
                     r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-
-                    r.item_type = (it.type || '').toLowerCase().trim() || 'product';
 
                     r.description = it.description || it.name || '';
                     r.tax_percent = Number(it.tax_rate ?? 0);
 
-                    // reset manual
                     r.amount_mode = 'auto';
                     r.manual_amount = 0;
 
@@ -1564,7 +1508,6 @@
                         r.gemstone_wt = 0;
                         r.diamond_wt = 0;
 
-                        // set auto amount preview
                         r.manual_amount = this.lineAmount(r);
                         this.calc();
                         return;
@@ -1589,7 +1532,6 @@
                     r.gold_rate   = this.findMetalRate('gold', r.gold_purity);
                     r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
 
-                    // set auto amount preview
                     r.manual_amount = this.lineAmount(r);
                     this.calc();
                 },
@@ -1605,47 +1547,24 @@
                     this.calc();
                 },
 
-                // Manual amount edit => switches to manual
-                // onAmountEdit(r){
-                //     const v = Number(r.manual_amount||0);
-                //     r.amount_mode = (v > 0) ? 'manual' : 'auto';
-                //     this.calc();
-                // },
-
-                // Manual amount edit => switches to manual + (service) adjusts service_rate
                 onAmountEdit(r){
                     const total = Number(r.manual_amount || 0);
                     r.amount_mode = (total > 0) ? 'manual' : 'auto';
 
-                    // ✅ If service row, keep service_rate in sync with edited amount
                     if (r.item_type === 'service') {
                         const qty = Math.max(1, Number(r.quantity || 1));
                         const pct = Number(r.tax_percent || 0);
-
-                        // manual_amount is TAX-INCLUDED => convert to base (tax excluded)
                         const base = (pct > 0) ? (total / (1 + (pct/100))) : total;
-
-                        // service_rate is per-unit (tax excluded)
                         r.service_rate = Number((base / qty).toFixed(2));
                     }
 
                     this.calc();
                 },
 
-
-                // if any product/service inputs changed, keep in auto unless manual chosen
-                // onAutoChange(r){
-                //     if(r.amount_mode !== 'manual'){
-                //         r.manual_amount = this.lineAmount(r); // keep showing auto computed in the input
-                //     }
-                //     this.calc();
-                // },
-
                 onAutoChange(r){
                     if(r.amount_mode !== 'manual'){
-                        r.manual_amount = this.lineAmount(r); // auto computed
+                        r.manual_amount = this.lineAmount(r);
                     } else {
-                        // ✅ If qty/tax changes while manual, re-sync service_rate (service only)
                         if (r.item_type === 'service') {
                             const total = Number(r.manual_amount || 0);
                             const qty = Math.max(1, Number(r.quantity || 1));
@@ -1657,13 +1576,10 @@
                     this.calc();
                 },
 
-
-                // base
                 lineBase(r){
                     const qty = Math.max(1, Number(r.quantity || 1));
                     const pct = Number(r.tax_percent||0);
 
-                    // manual total -> derive base (tax excluded)
                     if(r.amount_mode === 'manual'){
                         const total = Number(r.manual_amount||0);
                         const base = (pct > 0) ? (total / (1 + (pct/100))) : total;
@@ -1681,14 +1597,12 @@
                     return Math.max(0, Number(((goldAmt + silvAmt + making) * qty).toFixed(2)));
                 },
 
-                // tax on base
                 lineTax(r){
                     const pct = Number(r.tax_percent||0);
                     const base = this.lineBase(r);
                     return Number((base * (pct/100)).toFixed(2));
                 },
 
-                // final amount (tax included)
                 lineAmount(r){
                     if(r.amount_mode === 'manual'){
                         return Number((Number(r.manual_amount||0)).toFixed(2));
@@ -1696,68 +1610,41 @@
                     return Number((this.lineBase(r) + this.lineTax(r)).toFixed(2));
                 },
 
-                // subtotal = sum of base amounts
                 subtotal(){
                     return Number(this.items.reduce((s,r)=> s + this.lineBase(r), 0).toFixed(2));
                 },
 
-                // avg tax percent weighted by base
-                // avgTaxPercent(){
-                //     const baseSum = this.items.reduce((s,r)=> s + this.lineBase(r), 0);
-                //     if(baseSum <= 0) return 0;
-                //     const weighted = this.items.reduce((s,r)=> s + (this.lineBase(r) * Number(r.tax_percent||0)), 0);
-                //     return Number((weighted / baseSum).toFixed(2));
-                // },
-                //
-                // // taxable = subtotal + charges - discount
-                taxableAmount(){
-                    const val = this.subtotal() + this.chargesTotal() - this.discountAmount();
-                    return Number(Math.max(0,val).toFixed(2));
-                },
-                //
-                // // tax on taxable
-                // taxOnTaxable(){
-                //     const pct = this.avgTaxPercent();
-                //     return Number((this.taxableAmount() * (pct/100)).toFixed(2));
-                // },
-                //
-                // cgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
-                // sgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
-                // igst(){ return this.isIntra() ? 0 : Number(this.taxOnTaxable().toFixed(2)); },
-
-
-                // ✅ avg tax % WITHOUT rounding (only for display/hidden)
                 avgTaxPercentRaw(){
                     const baseSum = this.items.reduce((s,r)=> s + this.lineBase(r), 0);
                     if(baseSum <= 0) return 0;
                     const weighted = this.items.reduce((s,r)=> s + (this.lineBase(r) * Number(r.tax_percent||0)), 0);
-                    return (weighted / baseSum); // NO toFixed here
+                    return (weighted / baseSum);
                 },
                 avgTaxPercent(){
-                    return Number(this.avgTaxPercentRaw().toFixed(2)); // only display
+                    return Number(this.avgTaxPercentRaw().toFixed(2));
                 },
 
-                // ✅ Total tax = SUM of each line tax (exact slab wise)
                 itemsTaxTotal(){
                     return Number(this.items.reduce((s,r)=> s + this.lineTax(r), 0).toFixed(2));
                 },
 
-                // ✅ (optional) charges tax using avgTaxRaw (if you want charges taxable)
-                // if you don't want charges taxable, just return 0 here
                 chargesTaxTotal(){
                     const pct = this.avgTaxPercentRaw();
                     return Number((this.chargesTotal() * (pct/100)).toFixed(2));
                 },
 
+                taxableAmount(){
+                    const val = this.subtotal() + this.chargesTotal() - this.discountAmount();
+                    return Number(Math.max(0,val).toFixed(2));
+                },
+
                 taxOnTaxable(){
-                    // ✅ best: slab-wise tax + charges tax
                     return Number((this.itemsTaxTotal() + this.chargesTaxTotal()).toFixed(2));
                 },
 
                 cgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
                 sgst(){ return this.isIntra() ? Number((this.taxOnTaxable()/2).toFixed(2)) : 0; },
                 igst(){ return this.isIntra() ? 0 : Number(this.taxOnTaxable().toFixed(2)); },
-
 
                 totalBeforeRound(){
                     return Number((this.taxableAmount() + this.taxOnTaxable() + this.tcsAmount()).toFixed(2));
@@ -1779,12 +1666,10 @@
                 },
 
                 calc(){
-                    // reactive totals
                     return this.totalPayable();
                 },
 
                 beforeSubmit(){
-                    // ✅ items_json payload (backend expects your fields)
                     const payload = this.items.map(r => ({
                         item_id: r.item_id ?? null,
                         item_type: r.item_type ?? null,
@@ -1807,7 +1692,6 @@
                         discount: 0,
                         tax_percent: Number(r.tax_percent||0),
 
-                        // ✅ IMPORTANT: final derived amounts
                         rate: this.lineBase(r),
                         tax_amount: this.lineTax(r),
                         amount: this.lineAmount(r),
@@ -1815,25 +1699,14 @@
 
                     document.getElementById('items_json').value = JSON.stringify(payload);
 
-                    // ensure payment splits from received input
                     this.onReceivedInput();
-
                     this.$refs.form.submit();
                 },
-
-
-                // saving: false,
-                // submitForm(){
-                //     if(this.saving) return;
-                //     this.saving = true;
-                //     this.$refs.form.requestSubmit();
-                // },
 
                 saving: false,
                 submitForm(){
                     if(this.saving) return;
 
-                    // --- GSTIN confirm guard (hdr.gst_no) ---
                     const g = this.normalizeGstin(this.hdr.gst_no);
                     const res = this.validateGstinLocal(g);
 
@@ -1846,12 +1719,10 @@
                     this.$refs.form.requestSubmit();
                 },
 
-
                 money(v){ return '₹ ' + Number(v||0).toFixed(2); },
 
-
-                gstin: { status:'idle', message:'', value:'' },          // for hdr.gst_no
-                clientGstin: { status:'idle', message:'', value:'' },   // for newClient.gstin
+                gstin: { status:'idle', message:'', value:'' },
+                clientGstin: { status:'idle', message:'', value:'' },
 
                 normalizeGstin(v){
                     return String(v||'').toUpperCase().replace(/[^0-9A-Z]/g,'').trim();
@@ -1859,26 +1730,20 @@
 
                 validateGstinLocal(gstin){
                     const g = this.normalizeGstin(gstin);
-                    if(!g) return { ok:true, empty:true, message:'' }; // empty allowed
+                    if(!g) return { ok:true, empty:true, message:'' };
 
-                    // Basic length
                     if(g.length !== 15) return { ok:false, message:'GSTIN must be 15 characters.' };
 
-                    // Pattern: 2 digits + 10 PAN + 1 entity + Z + 1 checksum
                     const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
                     if(!re.test(g)) return { ok:false, message:'GSTIN format is invalid (check state/PAN/etc).' };
 
-                    // Checksum validate
-                    // Checksum validate (GSTIN uses Mod 36, factor 2/1 from RIGHT to LEFT)
                     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
                     const mod = 36;
-
                     const codePoint = (c) => chars.indexOf(c);
 
                     let sum = 0;
                     let f = 2;
 
-                    // ✅ IMPORTANT: iterate from right-to-left for first 14 chars
                     for (let i = 13; i >= 0; i--) {
                         const v = codePoint(g[i]);
                         if (v === -1) return { ok:false, message:'GSTIN has invalid characters.' };
@@ -1896,7 +1761,6 @@
                     if (expected !== actual) {
                         return { ok:false, message:'GSTIN checksum mismatch (likely wrong GSTIN).' };
                     }
-
 
                     return { ok:true, empty:false, message:'GSTIN looks valid.' };
                 },
@@ -1936,70 +1800,86 @@
                     }
                 },
 
-                openClientSelect(){
-                    this.ui.clientSelectOpen = true;
 
-                    this.$nextTick(() => {
-                        const sel = this.$refs.clientSelect;
-                        if(!sel) return;
 
-                        // show dropdown list (open)
-                        const count = (this.filteredClients?.length || 0);
-                        sel.size = Math.min(8, Math.max(2, count + 1)); // +1 for placeholder
-                    });
+                // addons method
+
+                openItemDD(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    r.ddOpen = true;
+                    r.ddHi = 0;
                 },
 
-                closeClientSelect(syncText = false){
-                    this.ui.clientSelectOpen = false;
+                closeItemDD(i, keepText = true){
+                    const r = this.items[i];
+                    if(!r) return;
 
-                    this.$nextTick(() => {
-                        const sel = this.$refs.clientSelect;
-                        if(!sel) return;
-                        sel.size = 1;
+                    // small delay not needed because we use mousedown.prevent
+                    r.ddOpen = false;
 
-                        // ✅ optional: select choose karne ke baad input me text fill
-                        if(syncText){
-                            const c = this.clients.find(x => String(x.id) === String(this.clientId));
-                            this.clientSearch = c ? (c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name) : '';
+                    // keep selected label in input
+                    if(keepText && r.item_id){
+                        const it = this.itemsData.find(x => String(x.id) === String(r.item_id));
+                        if(it){
+                            r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
                         }
-                    });
+                    }
                 },
 
+                selectItemFromDD(i, it){
+                    const r = this.items[i];
+                    if(!r) return;
 
-                openRowSelect(i){
+                    r.item_id = it.id;
+                    this.pickItem(i, it.id);   // ✅ existing logic (rates/tax etc)
+                    r.ddOpen = false;
+
+                    // focus back to input for smooth flow
                     this.$nextTick(() => {
-                        const sel = this.$refs['itemSelect_'+i];
-                        if(!sel) return;
-
-                        const count = this.filteredItems(this.items[i]?.search).length || 0;
-                        sel.size = Math.min(10, Math.max(2, count + 1));
-
-                        // ✅ keep it visually open + keyboard nav works
-                        sel.focus({ preventScroll: true });
+                        const el = document.getElementById('item_search_'+i);
+                        if(el) el.focus({preventScroll:true});
                     });
                 },
 
+                itemDDDown(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    const list = this.filteredItems(r.search);
+                    if(!r.ddOpen) r.ddOpen = true;
+                    if(!list.length) return;
+                    r.ddHi = Math.min(list.length - 1, (r.ddHi || 0) + 1);
+                    this.scrollItemDDIntoView(i);
+                },
 
-                closeRowSelect(i, keepText = false){
+                itemDDUp(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    const list = this.filteredItems(r.search);
+                    if(!r.ddOpen) r.ddOpen = true;
+                    if(!list.length) return;
+                    r.ddHi = Math.max(0, (r.ddHi || 0) - 1);
+                    this.scrollItemDDIntoView(i);
+                },
+
+                itemDDEnter(i){
+                    const r = this.items[i];
+                    if(!r) return;
+                    const list = this.filteredItems(r.search);
+                    if(!r.ddOpen || !list.length) return;
+                    const it = list[r.ddHi || 0];
+                    if(it) this.selectItemFromDD(i, it);
+                },
+
+                scrollItemDDIntoView(i){
+                    // optional smooth scroll in dropdown
                     this.$nextTick(() => {
-                        const sel = this.$refs['itemSelect_'+i];
-                        if(!sel) return;
-
-                        sel.size = 1;
-
-                        if(keepText){
-                            const r = this.items[i];
-                            const it = this.itemsData.find(x => String(x.id) === String(r.item_id));
-                            if(it){
-                                r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                            }
-                        }
+                        // find dropdown container: nearest absolute list inside same td
+                        // simplest: do nothing; works fine without scroll sync
                     });
                 },
-
 
             }
-
         }
     </script>
 
