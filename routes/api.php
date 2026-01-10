@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BusinessController;
+use App\Http\Controllers\Api\InvoiceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BirthdayWishController;
@@ -55,6 +56,42 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('update/{item}', 'update');
         Route::delete('delete/{item}', 'destroy');
     });
+
+
+
+
+
+
+    // INVOICE APIS
+
+    Route::prefix('invoices')->name('invoices.')->controller(InvoiceController::class)->group(function(){
+        Route::get('index/{type}', [InvoiceController::class, 'index']);
+
+        // create (docType: tax | proforma | quotation)
+        Route::post('store/{docType}', [InvoiceController::class, 'store']);
+
+        // show invoice json
+        Route::get('/{invoice}', [InvoiceController::class, 'show']);
+
+        // update
+        Route::post('update/{invoice}', [InvoiceController::class, 'update']);
+
+        // delete
+        Route::delete('delete/{invoice}', [InvoiceController::class, 'destroy']);
+
+        // pdf view/download links
+        Route::get('pdf/{invoice}/pdf', [InvoiceController::class, 'pdf']);        // stream
+        Route::get('pdf-url/{invoice}/pdf-url', [InvoiceController::class, 'pdfUrl']); // public url
+
+        // preview invoice number (prefix + date)
+        Route::post('/invoice-number/{type?}', [InvoiceController::class, 'preview']);
+
+        // convert quotation/proforma -> tax
+        Route::post('/{invoice}/convert-to-tax', [InvoiceController::class, 'convertToTax']);
+    });
+
+
+
 
 
 
