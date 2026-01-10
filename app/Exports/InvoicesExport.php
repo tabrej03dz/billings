@@ -54,6 +54,10 @@ class InvoicesExport implements FromView
             });
         }
 
+        if ($this->filters['type']){
+            $query->where('invoice_type', $this->filters['type']);
+        }
+
         $invoices = $query->get();
 
         return view('invoices.exports', compact('invoices'));

@@ -12,7 +12,6 @@
         <th>Payment Terms (days)</th>
 
         <th>Client Name</th>
-        <th>Client ID</th>
 
         {{-- Money / totals --}}
         <th>Subtotal</th>
@@ -45,9 +44,9 @@
     @foreach($invoices as $inv)
         <tr>
             {{-- IDs --}}
-            <td>{{ $inv->business_id }}</td>
+            <td>{{ $inv->business->name }}</td>
             <td>
-                {{ $inv->invoice_prefix ? $inv->invoice_prefix . $inv->invoice_number : $inv->invoice_number }}
+                {{  $inv->invoice_number }}
             </td>
             <td>{{ \Carbon\Carbon::parse($inv->invoice_date)->format('d-M-Y') }}</td>
             <td>{{ $inv->due_date ? \Carbon\Carbon::parse($inv->due_date)->format('d-M-Y') : '' }}</td>
@@ -55,7 +54,6 @@
 
             {{-- Client --}}
             <td>{{ optional($inv->client)->name }}</td>
-            <td>{{ $inv->client_id }}</td>
 
             {{-- Money / totals --}}
             <td>{{ $inv->subtotal }}</td>

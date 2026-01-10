@@ -148,7 +148,7 @@
             </a>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('invoices.export', request()->query()) }}"
+                <a href="{{ route('invoices.export', array_merge(request()->query(), ['type' => $type])) }}"
                    class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium">
                     📄 Download Full Report
                 </a>
