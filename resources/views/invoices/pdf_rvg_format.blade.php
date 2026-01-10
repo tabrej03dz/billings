@@ -1,6 +1,11 @@
 {{-- resources/views/invoices/pdf_simple.blade.php --}}
 
 @php
+    $termsText = $inv->terms ?? null;
+@endphp
+
+
+@php
     /** @var \App\Models\Invoice $inv */
     $b = $biz ?? ($inv->business ?? null);
     $c = $client ?? ($inv->client ?? null);
@@ -131,6 +136,9 @@
     $b_email  = $b->email ?? '';
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
+
+
+
 @endphp
 
     <!doctype html>
@@ -209,6 +217,68 @@
         .signArea{ width:52%; margin-left:auto; margin-top:14px; text-align:right; font-size:9px; }
         .signImg{ height:34px; width:auto; margin-bottom:6px; }
         .auth{ font-weight:700; margin-top:6px; }
+
+
+
+        .bottom{
+            margin-top:10px;
+            width:100%;
+            display:block; /* DomPDF friendly */
+        }
+
+        /* 2 columns via table-like layout (DomPDF safe) */
+        .leftCol{
+            width:48%;
+            float:left;
+        }
+        .rightCol{
+            width:52%;
+            float:right;
+        }
+
+        /* clear float after bottom */
+        .bottom:after{
+            content:"";
+            display:block;
+            clear:both;
+        }
+
+        /* LEFT box */
+        .termsLeft{
+            font-size:9px;
+
+
+        }
+
+        /* RIGHT side elements should be full width of rightCol */
+        .totalsBox,
+        .amountWords,
+        .signArea{
+            width:100%;
+            margin-left:0;
+        }
+
+
+        /* LEFT SIDE */
+        .termsLeft{
+            font-size: 9px;
+        }
+
+        .termsTitle{
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .termsText{
+            line-height: 1.4;
+            white-space: normal;
+        }
+
+        /* RIGHT SIDE already present */
+        .totalsBox{
+            width: 52%;
+            margin-left: auto;
+        }
     </style>
 </head>
 
@@ -374,58 +444,69 @@
 
     {{-- TOTALS (RIGHT) --}}
     <div class="bottom">
-        <table class="totalsBox">
-            <tr>
-                <td class="lab">Taxable Amount</td>
-                <td class="val">₹ {{ $fmt2($taxable) }}</td>
-            </tr>
-
-            @if($isIGST)
-                <tr>
-{{--                    <td class="lab">IGST {{ $fmt0($taxPercent) }}%</td>--}}
-                    <td class="lab">IGST </td>
-                    <td class="val">₹ {{ $fmt2($igst_db) }}</td>
-                </tr>
-            @else
-                <tr>
-{{--                    <td class="lab">CGST {{ $fmt0($taxPercent/2) }}%</td>--}}
-                    <td class="lab">CGST </td>
-                    <td class="val">₹ {{ $fmt2($cgst_db) }}</td>
-                </tr>
-                <tr>
-{{--                    <td class="lab">SGST {{ $fmt0($taxPercent/2) }}%</td>--}}
-                    <td class="lab">SGST </td>
-                    <td class="val">₹ {{ $fmt2($sgst_db) }}</td>
-                </tr>
+        {{-- LEFT --}}
+        <div class="leftCol">
+            @if(!empty($inv->terms))
+                <div class="termsLeft">
+                    <div class="termsTitle">TERMS & CONDITIONS</div>
+                    <div class="termsText">{!! nl2br(e($inv->terms)) !!}</div>
+                </div>
             @endif
-
-            <tr class="strong">
-                <td class="lab">Total Amount</td>
-                <td class="val">₹ {{ $fmt2($finalTotal) }}</td>
-            </tr>
-            <tr>
-                <td class="lab">Received Amount</td>
-                <td class="val">₹ {{ $fmt2($receivedTot) }}</td>
-            </tr>
-            <tr class="strong">
-                <td class="lab">Balance</td>
-                <td class="val">₹ {{ $fmt2($balanceNow) }}</td>
-            </tr>
-        </table>
-
-        <div class="amountWords">
-            <div class="bold muted" style="margin-bottom:3px;">Total Amount (in words)</div>
-            <div class="bold">{{ inr_words($finalTotal) }}</div>
         </div>
 
-        <div class="signArea">
-            @if(!empty($sign))
-                <img src="{{ $sign }}" class="signImg" alt="Signature">
-            @endif
-            <div class="auth">AUTHORISED SIGNATORY FOR</div>
-            <div class="muted">{{ $b->name ?? 'Real Victory Groups' }}</div>
+        {{-- RIGHT --}}
+        <div class="rightCol">
+            <table class="totalsBox">
+                <tr>
+                    <td class="lab">Taxable Amount</td>
+                    <td class="val">₹ {{ $fmt2($taxable) }}</td>
+                </tr>
+
+                @if($isIGST)
+                    <tr>
+                        <td class="lab">IGST</td>
+                        <td class="val">₹ {{ $fmt2($igst_db) }}</td>
+                    </tr>
+                @else
+                    <tr>
+                        <td class="lab">CGST</td>
+                        <td class="val">₹ {{ $fmt2($cgst_db) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lab">SGST</td>
+                        <td class="val">₹ {{ $fmt2($sgst_db) }}</td>
+                    </tr>
+                @endif
+
+                <tr class="strong">
+                    <td class="lab">Total Amount</td>
+                    <td class="val">₹ {{ $fmt2($finalTotal) }}</td>
+                </tr>
+                <tr>
+                    <td class="lab">Received Amount</td>
+                    <td class="val">₹ {{ $fmt2($receivedTot) }}</td>
+                </tr>
+                <tr class="strong">
+                    <td class="lab">Balance</td>
+                    <td class="val">₹ {{ $fmt2($balanceNow) }}</td>
+                </tr>
+            </table>
+
+            <div class="amountWords">
+                <div class="bold muted" style="margin-bottom:3px;">Total Amount (in words)</div>
+                <div class="bold">{{ inr_words($finalTotal) }}</div>
+            </div>
+
+            <div class="signArea">
+                @if(!empty($sign))
+                    <img src="{{ $sign }}" class="signImg" alt="Signature">
+                @endif
+                <div class="auth">AUTHORISED SIGNATORY FOR</div>
+                <div class="muted">{{ $b->name ?? 'Real Victory Groups' }}</div>
+            </div>
         </div>
     </div>
+
 
 </div>
 </body>
