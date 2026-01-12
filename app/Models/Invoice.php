@@ -107,4 +107,11 @@ class Invoice extends Model
     {
         return $this->hasMany(InvoicePayment::class);
     }
+
+    public function createdBy(){
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    public function updatedBy(){
+        return $this->belongsTo(User::class, 'updated_by');
+    }
 }
