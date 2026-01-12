@@ -149,14 +149,16 @@
     <style>
         *{ box-sizing:border-box; }
         body{
-            font-family: DejaVu Sans, Arial, sans-serif;
-            font-size:10px;
+            font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            font-size:12px;
             color:#111;
             margin:0;
             padding:0;
         }
-        .wrap{ margin:10px; padding:10px 12px 12px 12px; }
-        .topbar{ border-top:4px solid #2b2b2b; margin:-10px -12px 8px -12px; }
+        .wrap{ margin:10px; padding:10px 12px 12px 12px;
+            border:1px solid #8e8a8a;
+        }
+        /*.topbar{ border-top:4px solid #2b2b2b; margin:-10px -12px 8px -12px; }*/
         .muted{ color:#444; }
         .red{ color:#d60000; }
         .bold{ font-weight:700; }
@@ -168,11 +170,11 @@
             display:inline-block;
             border:1px solid #999;
             padding:2px 6px;
-            font-size:8.5px;
+            font-size:10.5px;
             margin-left:6px;
             color:#333;
         }
-        .headerRow td{ vertical-align:top; }
+        .headerRow td{ vertical-align:top; font-size: 12px; }
 
         .line-red{ border-top:3px solid #d60000; margin:8px 0 6px 0; }
 
@@ -180,32 +182,33 @@
             background:#e9e9e9;
             padding:8px 10px;
             margin:6px 0 10px 0;
-            font-size:9.5px;
+            font-size:10.5px;
         }
 
-        .billto{ font-size:9.5px; margin-bottom:8px; }
+        .billto{ font-size:12.5px; margin-bottom:8px; }
         .billto .name{ font-size:10.5px; font-weight:700; }
 
         .svc{
             border-top:2px solid #d60000;
             border-bottom:2px solid #d60000;
             margin-top:6px;
+            font-size: 12px;
         }
-        .svc th, .svc td{ padding:6px 6px; font-size:9.5px; }
+        .svc th, .svc td{ padding:6px 6px; font-size:12.5px; }
         .svc thead th{ text-align:left; font-weight:700; }
         .svc thead th.right, .svc td.right{ text-align:right; }
         .svc tbody td{ border-top:1px solid #cfcfcf; vertical-align:top; }
-        .svc .descSmall{ font-size:8.3px; color:#555; margin-top:2px; }
+        .svc .descSmall{ font-size:10.3px; color:#555; margin-top:2px; }
 
         .subtotalRow{
             border-top:2px solid #d60000;
             border-bottom:2px solid #d60000;
         }
-        .subtotalRow td{ padding:6px 6px; font-size:9.5px; font-weight:700; }
+        .subtotalRow td{ padding:6px 6px; font-size:12.5px; font-weight:700; }
 
         .bottom{ margin-top:10px; }
 
-        .totalsBox{ width:52%; margin-left:auto; font-size:9.5px; }
+        .totalsBox{ width:52%; margin-left:auto; font-size:12.5px; }
         .totalsBox td{ padding:4px 6px; }
         .totalsBox .lab{ text-align:right; color:#333; }
         .totalsBox .val{
@@ -213,8 +216,8 @@
         }
         .totalsBox .strong .lab, .totalsBox .strong .val{ font-weight:700; }
 
-        .amountWords{ width:52%; margin-left:auto; margin-top:10px; font-size:9.2px; }
-        .signArea{ width:52%; margin-left:auto; margin-top:14px; text-align:right; font-size:9px; }
+        .amountWords{ width:52%; margin-left:auto; margin-top:10px; font-size:12.2px; text-align: right;}
+        .signArea{ width:52%; margin-left:auto; margin-top:14px; text-align:right; font-size:10px; }
         .signImg{ height:34px; width:auto; margin-bottom:6px; }
         .auth{ font-weight:700; margin-top:6px; }
 
@@ -245,7 +248,7 @@
 
         /* LEFT box */
         .termsLeft{
-            font-size:9px;
+            font-size:12px;
 
 
         }
@@ -261,7 +264,7 @@
 
         /* LEFT SIDE */
         .termsLeft{
-            font-size: 9px;
+            font-size: 12px;
         }
 
         .termsTitle{
@@ -287,7 +290,7 @@
     <div class="topbar"></div>
 
     {{-- HEADER --}}
-    <table class="headerRow">
+    {{-- <table class="headerRow">
         <tr>
             <td style="width:18%;">
                 @if(!empty($logo))
@@ -301,27 +304,82 @@
                     <span class="smalltag">ORIGINAL FOR RECIPIENT</span>
                 </div>
 
-                <div class="red bold" style="font-size:18px; margin-top:6px;">
+                <div class="red bold" style="font-size:24px; margin-top:6px;">
                     {{ $b->name ?? 'Real Victory Groups' }}
                 </div>
 
-                <div class="muted" style="font-size:8.8px; margin-top:2px;">
+                <div class="muted" style="font-size:16.8px; margin-top:2px;">
                     {{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif @if($b_pin) ({{ $b_pin }})@endif
                 </div>
 
-                <div class="muted" style="font-size:8.8px; margin-top:2px;">
-                    Mobile: {{ $b_mobile ?: '-' }}
-                    &nbsp;&nbsp;&nbsp; GSTIN: {{ $b_gstin ?: '-' }}
+                <div class="muted" style="font-size:12.8px; margin-top:2px;">
+                   <span class="bold"> Mobile:</span> {{ $b_mobile ?: '-' }}
+                    &nbsp;&nbsp;&nbsp; <span class="bold">GSTIN:</span> {{ $b_gstin ?: '-' }}
                     <br>
-                    Email: {{ $b_email ?: '-' }}
+                   <span class="bold"> Email: </span> {{ $b_email ?: '-' }}
                 </div>
             </td>
 
             <td style="width:20%;" class="right">
-                <div class="bold" style="font-size:9.5px;">Think Outside The Box</div>
+                <div class="bold" style="font-size:10.5px;">Think Outside The Box</div>
             </td>
         </tr>
-    </table>
+    </table> --}}
+
+       <table class="headerRow" style="width:100%; border-collapse:collapse;">
+    <!-- First row: Type + Think Outside The Box -->
+   <tr>
+    <td colspan="3" style="width:100%; vertical-align:top;">
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <!-- Left: Tax Invoice / Original -->
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="bold" style="font-size:11px;">
+                    {{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}
+                </span>
+                <span class="smalltag" style="font-size:11px;">ORIGINAL FOR RECIPIENT</span>
+            </div>
+
+            <!-- Right: Think Outside The Box -->
+            <div class="bold" style="font-size:11px; text-align:right; ">
+                Think Outside The Box
+            </div>
+        </div>
+    </td>
+</tr>
+
+
+    <!-- Second row: Logo + Company Info -->
+    <tr>
+        <!-- Logo Column -->
+        <td style="width:18%; vertical-align:top;">
+            @if(!empty($logo))
+                <img src="{{ $logo }}" alt="Logo" style="height:auto;width:100%;">
+            @endif
+        </td>
+
+        <!-- Company Info Column -->
+        <td style="width:62%; vertical-align:top;">
+            <div class="red bold" style="font-size:24px; margin-top:6px;">
+                {{ $b->name ?? 'Real Victory Groups' }}
+            </div>
+
+            <div class="muted" style="font-size:16.8px; margin-top:2px;">
+                {{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif @if($b_pin) ({{ $b_pin }})@endif
+            </div>
+
+            <div class="muted" style="font-size:12.8px; margin-top:2px;">
+               <span class="bold">Mobile:</span> {{ $b_mobile ?: '-' }}
+                &nbsp;&nbsp;&nbsp; <span class="bold">GSTIN:</span> {{ $b_gstin ?: '-' }}
+                <br>
+               <span class="bold">Email:</span> {{ $b_email ?: '-' }}
+            </div>
+        </td>
+
+        <!-- Empty column for spacing -->
+        {{-- <td style="width:20%;"></td> --}}
+    </tr>
+</table>
+
 
     <div class="line-red"></div>
 
@@ -329,8 +387,8 @@
     <div class="greybar">
         <table>
             <tr>
-                <td class="bold"> {{$type != 'quotation' ? 'Invoice' : 'Quotation'}}  No.: <span class="muted">{{ $invoiceNo }}</span></td>
-                <td class="right bold">{{$type != 'quotation' ? 'Invoice' : 'Quotation'}} Date: <span class="muted">{{ $dmy($invoiceDate) }}</span></td>
+                <td class="bold" style="font-size: 12px"> {{$type != 'quotation' ? 'Invoice' : 'Quotation'}}  No.: <span class="muted" style="font-size: 12px">{{ $invoiceNo }}</span></td>
+                <td class="right bold" style="font-size: 12px">{{$type != 'quotation' ? 'Invoice' : 'Quotation'}} Date: <span class="muted" style="font-size: 12px">{{ $dmy($invoiceDate) }}</span></td>
             </tr>
         </table>
     </div>
@@ -339,19 +397,20 @@
     <div class="billto">
         <div class="bold">BILL TO</div>
         <div class="name">{{ strtoupper($c->name ?? '-') }}</div>
-        <div class="muted">
+        <div class="muted" style="font-size: 12px">
             {{ $c->address ?? '-' }}
             @if(!empty($c->city)), {{ $c->city }}@endif
             @if(!empty($c->state)), {{ $c->state }}@endif
             @if(!empty($c->pin)), {{ $c->pin }}@endif
         </div>
-        <div class="muted" style="margin-top:2px;">
-            Mobile: {{ $mobile ?: '-' }}<br>
-            GSTIN: {{ $gstin ?: '-' }}<br>
-            PAN Number: {{ $pan ?: '-' }}<br>
-            Place of Supply: {{ $pos ?: '-' }}
+        <div class="muted" style="margin-top:2px; font-size:12.2px;">
+           <span class="bold" style="font-size: 12px"> Mobile:</span> {{ $mobile ?: '-' }}<br>
+            <span class="bold" style="font-size: 12px"> GSTIN:</span> {{ $gstin ?: '-' }}<br>
+            <span class="bold" style="font-size: 12px"> PAN Number:</span> {{ $pan ?: '-' }}<br>
+            <span class="bold" style="font-size: 12px"> Place of Supply:</span> {{ $pos ?: '-' }}
         </div>
     </div>
+
 
     {{-- SERVICES TABLE --}}
     @php
@@ -363,12 +422,12 @@
     <table class="svc">
         <thead>
         <tr>
-            <th style="width:52%;">SERVICES</th>
-            <th style="width:10%;">SAC</th>
-            <th style="width:10%;">QTY.</th>
-            <th class="right" style="width:10%;">RATE</th>
-            <th class="right" style="width:10%;">TAX</th>
-            <th class="right" style="width:8%;">AMOUNT</th>
+            <th style="width:52%; font-size:12px">SERVICES</th>
+            <th style="width:10%; font-size:12px">SAC</th>
+            <th style="width:10%; font-size:12px">QTY.</th>
+            <th class="right" style="width:10%; font-size:12px">RATE</th>
+            <th class="right" style="width:10%; font-size:12px">TAX</th>
+            <th class="right" style="width:8%; font-size:12px">AMOUNT</th>
         </tr>
         </thead>
         <tbody>
@@ -419,7 +478,7 @@
 
                 <td class="right">
                     {{ $fmt2($lineTax) }}
-                    <div class="muted" style="font-size:8px;">
+                    <div class="muted" style="font-size:12px;">
                         ({{ $it->tax_percent  }}%)
                     </div>
                 </td>
@@ -448,8 +507,8 @@
         <div class="leftCol">
             @if(!empty($inv->terms))
                 <div class="termsLeft">
-                    <div class="termsTitle">TERMS & CONDITIONS</div>
-                    <div class="termsText">{!! nl2br(e($inv->terms)) !!}</div>
+                    <div class="termsTitle" style="font-size:12px">TERMS & CONDITIONS</div>
+                    <div class="termsText" style="font-size: 12px">{!! nl2br(e($inv->terms)) !!}</div>
                 </div>
             @endif
         </div>
@@ -493,7 +552,7 @@
             </table>
 
             <div class="amountWords">
-                <div class="bold muted" style="margin-bottom:3px;">Total Amount (in words)</div>
+                <div class="bold muted " style="margin-bottom:3px;">Total Amount (in words)</div>
                 <div class="bold">{{ inr_words($finalTotal) }}</div>
             </div>
 
@@ -501,8 +560,8 @@
                 @if(!empty($sign))
                     <img src="{{ $sign }}" class="signImg" alt="Signature">
                 @endif
-                <div class="auth">AUTHORISED SIGNATORY FOR</div>
-                <div class="muted">{{ $b->name ?? 'Real Victory Groups' }}</div>
+                <div class="auth" style="font-size: 12px">AUTHORISED SIGNATORY FOR</div>
+                <div class="muted" style="font-size:12px ">{{ $b->name ?? 'Real Victory Groups' }}</div>
             </div>
         </div>
     </div>
