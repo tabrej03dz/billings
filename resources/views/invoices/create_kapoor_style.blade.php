@@ -258,37 +258,65 @@
                                         </div>
 
                                         <!-- ✅ DROPDOWN (absolute overlay) -->
+{{--                                        <div x-show="row.ddOpen"--}}
+{{--                                             x-transition.opacity--}}
+{{--                                             class="absolute left-0 right-0 mt-1 rounded border border-gray-200 dark:border-neutral-700--}}
+{{--                                                bg-white dark:bg-neutral-900 shadow-2xl--}}
+{{--                                                z-[999999] isolate--}}
+{{--                                                max-h-56 overflow-auto"--}}
+{{--                                             style="display:none; transform: translateZ(0);"--}}
+{{--                                             @mousedown.prevent>--}}
+
+{{--                                        <template x-if="filteredItems(row.search).length === 0">--}}
+{{--                                                <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">--}}
+{{--                                                    No results--}}
+{{--                                                </div>--}}
+{{--                                            </template>--}}
+
+{{--                                            <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">--}}
+{{--                                                <div--}}
+{{--                                                    class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3--}}
+{{--                       hover:bg-gray-100 dark:hover:bg-neutral-800"--}}
+{{--                                                    :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"--}}
+{{--                                                    @mouseenter="row.ddHi = idx"--}}
+{{--                                                    @click="selectItemFromDD(i, it)"--}}
+{{--                                                >--}}
+{{--                                                    <div class="truncate"--}}
+{{--                                                         x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>--}}
+
+{{--                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"--}}
+{{--                                                         x-text="it.price ? it.price : ''"></div>--}}
+{{--                                                </div>--}}
+{{--                                            </template>--}}
+{{--                                        </div>--}}
+                                        <!-- ✅ DROPDOWN (FIXED: no clipping inside overflow-x-auto) -->
                                         <div x-show="row.ddOpen"
                                              x-transition.opacity
-                                             class="absolute left-0 right-0 mt-1 rounded border border-gray-200 dark:border-neutral-700
-                                                bg-white dark:bg-neutral-900 shadow-2xl
-                                                z-[999999] isolate
-                                                max-h-56 overflow-auto"
-                                             style="display:none; transform: translateZ(0);"
+                                             class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
+            bg-white dark:bg-neutral-900 shadow-2xl
+            z-[999999] max-h-56 overflow-auto"
+                                             :style="row.ddStyle"
+                                             style="display:none;"
                                              @mousedown.prevent>
-
-                                        <template x-if="filteredItems(row.search).length === 0">
+                                            <template x-if="filteredItems(row.search).length === 0">
                                                 <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
                                                     No results
                                                 </div>
                                             </template>
 
                                             <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">
-                                                <div
-                                                    class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
-                       hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                                    :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                                    @mouseenter="row.ddHi = idx"
-                                                    @click="selectItemFromDD(i, it)"
-                                                >
-                                                    <div class="truncate"
-                                                         x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
-
+                                                <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
+                    hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                     :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                     @mouseenter="row.ddHi = idx"
+                                                     @click="selectItemFromDD(i, it)">
+                                                    <div class="truncate" x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
                                                     <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
                                                          x-text="it.price ? it.price : ''"></div>
                                                 </div>
                                             </template>
                                         </div>
+
                                     </div>
 
                                     <!-- ✅ backend compatibility -->
@@ -1161,6 +1189,8 @@
                         ddOpen: false, // ✅
                         ddHi: 0,       // ✅
 
+                        ddStyle: '', // ✅ ADD THIS
+
                         description: '',
                         hsn: '',
                         quantity: 1,
@@ -1400,7 +1430,7 @@
                 },
 
                 init(){
-                    this.clientDD.parent = this; // ✅ IMPORTANT
+                    this.clientDD.parent = this;
                     this.$watch('clientId', () => this.syncParty());
 
                     if (!this.items.length) this.items.push(this.blankRow());
@@ -1408,13 +1438,19 @@
 
                     this.syncParty();
 
-                    // ✅ keep party input text in sync
-                    const cc = this.clients.find(x => String(x.id) === String(this.clientId));
-                    this.clientDD.q = cc ? (cc.mobile ? (cc.name + ' (' + cc.mobile + ')') : cc.name) : '';
+                    // ✅ Keep dropdown positioned on scroll/resize
+                    const reposition = () => {
+                        this.items.forEach((r, idx) => {
+                            if(r.ddOpen) this.setItemDDPos(idx);
+                        });
+                    };
+                    window.addEventListener('scroll', reposition, true);  // true => capture, works with nested scroll
+                    window.addEventListener('resize', reposition);
 
                     this.onReceivedInput();
                     this.calc();
                 },
+
 
                 syncParty(){
                     const c = this.clients.find(x => String(x.id) === String(this.clientId));
@@ -1809,6 +1845,8 @@
                     if(!r) return;
                     r.ddOpen = true;
                     r.ddHi = 0;
+
+                    this.$nextTick(() => this.setItemDDPos(i)); // ✅ ADD
                 },
 
                 closeItemDD(i, keepText = true){
@@ -1878,6 +1916,27 @@
                         // simplest: do nothing; works fine without scroll sync
                     });
                 },
+
+                setItemDDPos(i){
+                    const r = this.items[i];
+                    if(!r) return;
+
+                    const input = document.getElementById('item_search_'+i);
+                    if(!input) return;
+
+                    const rect = input.getBoundingClientRect();
+
+                    // dropdown width same as input, and just below it
+                    const top  = rect.bottom + 4;
+                    const left = rect.left;
+                    const width = rect.width;
+
+                    // viewport ke hisab se max height
+                    const maxH = Math.max(160, Math.min(280, window.innerHeight - top - 12));
+
+                    r.ddStyle = `top:${top}px; left:${left}px; width:${width}px; max-height:${maxH}px;`;
+                },
+
 
             }
         }
