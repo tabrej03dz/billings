@@ -433,6 +433,13 @@
                                         View
                                     </a>
 
+                                    @can('edit invoice')
+                                    <a href="{{ route('invoices.edit',$inv->id) }}"
+                                       class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                        Edit
+                                    </a>
+                                    @endcan
+
                                     <a href="{{ route('invoices.download',$inv->id) }}"
                                        class="block px-4 py-2 text-sm text-emerald-700 dark:text-emerald-300
                                           hover:bg-gray-50 dark:hover:bg-neutral-800">
