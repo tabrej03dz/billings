@@ -381,12 +381,13 @@
 
                                 {{-- Created --}}
                                 <div class="flex gap-2">
-                                <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
-                                    border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
-                                    Created
-                                </span>
+
                                     <div>
                                         <div class="font-medium text-gray-800 dark:text-neutral-200">
+                                            <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
+                                                border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
+                                                Created:
+                                            </span> &nbsp;
                                             {{ $inv->createdBy?->name ?? 'N/A' }}
                                         </div>
                                         <div class="text-gray-500 dark:text-neutral-400">
@@ -397,12 +398,14 @@
 
                                 {{-- Updated --}}
                                 <div class="flex gap-2">
-                                <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
-                                    border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
-                                    Updated
-                                </span>
+
                                     <div>
+
                                         <div class="font-medium text-gray-800 dark:text-neutral-200">
+                                            <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
+                                                border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
+                                                Updated:
+                                            </span> &nbsp;
                                             {{ $inv->updatedBy?->name ?? 'N/A' }}
                                         </div>
                                         <div class="text-gray-500 dark:text-neutral-400">
