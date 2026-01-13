@@ -38,10 +38,11 @@
     $creditExcess = (float)($pay->credit_sales_excess_amount ?? 0);
     $advanceAmt   = (float)($pay->advance_amount ?? 0);
 
-    $receivedTot = (float)($pay->received_total
-        ?? ($cashAmt + $onlineAmt + $cardAmt + $chequeAmt + $creditExcess + $advanceAmt)
-        ?? $received_db
-    );
+    //$receivedTot = (float)($pay->received_total
+    //    ?? ($cashAmt + $onlineAmt + $cardAmt + $chequeAmt + $creditExcess + $advanceAmt)
+    //    ?? $received_db
+    //);
+    $receivedTot = $inv->received_amount ?? 0;
 
     // balance
     $balanceNow = (float)($balance ?? ($inv->balance ?? max(0, $grand_db - $receivedTot)));

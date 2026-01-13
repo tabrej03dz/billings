@@ -113,6 +113,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::post('/invoices/{invoice}/convert-to-tax', [InvoiceController::class, 'convertToTax'])
             ->name('invoices.convertToTax');
+        Route::post('/invoices/{invoice}/payment-in', [InvoiceController::class, 'paymentIn'])
+            ->name('invoices.paymentIn');
 
         Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
 

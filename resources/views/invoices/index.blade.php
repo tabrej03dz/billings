@@ -167,324 +167,305 @@
         </div>
     @endif
 
-{{--    <div class="overflow-auto border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">--}}
-{{--        <table class="min-w-full text-sm border-separate border-spacing-0">--}}
-{{--            <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">--}}
-{{--            <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">--}}
-{{--                <th>Invoice</th>--}}
-{{--                <th>Date</th>--}}
-{{--                <th>Client</th>--}}
-{{--                <th>Total</th>--}}
-{{--                <th>Received</th>--}}
-{{--                <th>Balance</th>--}}
-{{--                <th>Created By</th>--}}
-{{--                <th>Updated By</th>--}}
-{{--                <th class="text-right">Actions</th>--}}
-{{--            </tr>--}}
-{{--            </thead>--}}
+    <div x-data="paymentInModal()">
 
-{{--            <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">--}}
-{{--            @forelse($invoices as $inv)--}}
-{{--                <tr class="hover:bg-gray-50 dark:hover:bg-neutral-800/60">--}}
-{{--                    <td class="px-4 py-2">--}}
-{{--                        <div class="flex items-center gap-2">--}}
-{{--                            <span class="font-semibold">{{ $inv->invoice_number }}</span>--}}
-
-{{--                            <span class="text-[10px] px-2 py-0.5 rounded-full border--}}
-{{--                                {{ $inv->invoice_type === 'proforma'--}}
-{{--                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800'--}}
-{{--                                    : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800' }}">--}}
-{{--                                {{ strtoupper($inv->invoice_type) }}--}}
-{{--                            </span>--}}
-{{--                        </div>--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2">--}}
-{{--                        {{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2">--}}
-{{--                        {{ $inv->client->name ?? '-' }}--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2">--}}
-{{--                        ₹ {{ number_format((float)$inv->total, 2) }}--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2">--}}
-{{--                        ₹ {{ number_format((float)$inv->received_amount, 2) }}--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2">--}}
-{{--                        ₹ {{ number_format((float)$inv->balance, 2) }}--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2">--}}
-{{--                        {{$inv->createdBy?->name ?? 'N/A'}}--}}
-{{--                    </td>--}}
-{{--                    <td class="px-4 py-2">--}}
-{{--                        {{$inv->updatedBy?->name ?? 'N/A'}}--}}
-{{--                    </td>--}}
-
-{{--                    <td class="px-4 py-2 text-right space-x-3 whitespace-nowrap">--}}
-{{--                        <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>--}}
-{{--                        <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>--}}
-{{--                        --}}{{-- ✅ Edit button (type-wise permission) --}}
-{{--                        @if($inv->invoice_type === 'tax')--}}
-{{--                            @can('edit invoice')--}}
-
-{{--                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
-{{--                            @endcan--}}
-{{--                        @elseif($inv->invoice_type === 'proforma')--}}
-{{--                            @can('edit proforma')--}}
-{{--                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
-{{--                            @endcan--}}
-{{--                        @elseif($inv->invoice_type === 'quotation')--}}
-{{--                            @can('edit quotation')--}}
-{{--                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
-{{--                            @endcan--}}
-{{--                        @endif--}}
-
-{{--                        <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>--}}
-
-{{--                        @can('	delete quotation')--}}
-{{--                        @if(in_array($inv->invoice_type, ['quotation','proforma']))--}}
-{{--                            <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" method="POST" class="inline">--}}
-{{--                                @csrf--}}
-{{--                                <button class="px-3 py-2 rounded bg-emerald-600 text-white">Convert to Tax Invoice</button>--}}
-{{--                            </form>--}}
-{{--                        @endif--}}
-{{--                        @endcan--}}
-
-{{--                        --}}{{-- ✅ Delete button (type-wise permission) --}}
-{{--                        @if($inv->invoice_type === 'tax')--}}
-{{--                            @can('delete invoice')--}}
-{{--                                <form action="{{ route('invoices.destroy',$inv->id) }}"--}}
-{{--                                      method="POST"--}}
-{{--                                      class="inline"--}}
-{{--                                      onsubmit="return confirm('Delete this Tax Invoice?')">--}}
-{{--                                    @csrf--}}
-{{--                                    @method('DELETE')--}}
-{{--                                    <button class="text-red-600 hover:underline">Delete</button>--}}
-{{--                                </form>--}}
-{{--                            @endcan--}}
-
-{{--                        @elseif($inv->invoice_type === 'proforma')--}}
-{{--                            @can('delete proforma')--}}
-{{--                                <form action="{{ route('invoices.destroy',$inv->id) }}"--}}
-{{--                                      method="POST"--}}
-{{--                                      class="inline"--}}
-{{--                                      onsubmit="return confirm('Delete this Proforma?')">--}}
-{{--                                    @csrf--}}
-{{--                                    @method('DELETE')--}}
-{{--                                    <button class="text-red-600 hover:underline">Delete</button>--}}
-{{--                                </form>--}}
-{{--                            @endcan--}}
-
-{{--                        @elseif($inv->invoice_type === 'quotation')--}}
-{{--                            @can('delete quotation')--}}
-{{--                                <form action="{{ route('invoices.destroy',$inv->id) }}"--}}
-{{--                                      method="POST"--}}
-{{--                                      class="inline"--}}
-{{--                                      onsubmit="return confirm('Delete this Quotation?')">--}}
-{{--                                    @csrf--}}
-{{--                                    @method('DELETE')--}}
-{{--                                    <button class="text-red-600 hover:underline">Delete</button>--}}
-{{--                                </form>--}}
-{{--                            @endcan--}}
-{{--                        @endif--}}
-
-{{--                    </td>--}}
-{{--                </tr>--}}
-{{--            @empty--}}
-{{--                <tr>--}}
-{{--                    <td colspan="7" class="px-4 py-3 text-center text-gray-500 dark:text-neutral-400">--}}
-{{--                        No invoices found.--}}
-{{--                    </td>--}}
-{{--                </tr>--}}
-{{--            @endforelse--}}
-{{--            </tbody>--}}
-{{--        </table>--}}
-{{--    </div>--}}
-
-    <div class="overflow-hidden border border-gray-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
-        <div class="overflow-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-neutral-800/60 text-xs uppercase tracking-wide text-gray-600 dark:text-neutral-300">
-                <tr>
-                    <th class="px-4 py-3 text-left">Invoice</th>
-                    <th class="px-4 py-3 text-left">Date</th>
-                    <th class="px-4 py-3 text-left">Client</th>
-                    <th class="px-4 py-3 text-right">Total</th>
-                    <th class="px-4 py-3 text-right">Received</th>
-                    <th class="px-4 py-3 text-right">Balance</th>
-                    <th class="px-4 py-3 text-left">Audit</th>
-                    <th class="px-4 py-3 text-right">Actions</th>
-                </tr>
-                </thead>
-
-                <tbody class="divide-y divide-gray-100 dark:divide-neutral-800">
-                @forelse($invoices as $inv)
-                    <tr class="hover:bg-gray-50/60 dark:hover:bg-neutral-800/40">
-
-                        {{-- Invoice --}}
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                <div class="min-w-0">
-                                    <div class="font-semibold text-gray-900 dark:text-white">
-                                        {{ $inv->invoice_number }}
-                                    </div>
-                                    <div class="text-xs text-gray-500 dark:text-neutral-400 truncate">
-                                        {{ $inv->client->name ?? '-' }}
-                                    </div>
-                                </div>
-
-                                @php
-                                    $type = $inv->invoice_type;
-                                    $badge = match($type){
-                                        'proforma' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800',
-                                        'quotation'=> 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800',
-                                        default    => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
-                                    };
-                                @endphp
-
-                                <span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full border {{ $badge }}">
-                                {{ strtoupper($type) }}
-                            </span>
-                            </div>
-                        </td>
-
-                        {{-- Invoice Date --}}
-                        <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-neutral-200">
-                            {{ optional($inv->invoice_date)->format('d M Y') }}
-                        </td>
-
-                        {{-- Client --}}
-                        <td class="px-4 py-3 text-gray-700 dark:text-neutral-200">
-                            {{ $inv->client->name ?? '-' }}
-                        </td>
-
-                        {{-- Amounts --}}
-                        <td class="px-4 py-3 text-right font-medium tabular-nums">
-                            ₹ {{ number_format((float)$inv->total, 2) }}
-                        </td>
-                        <td class="px-4 py-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
-                            ₹ {{ number_format((float)$inv->received_amount, 2) }}
-                        </td>
-                        <td class="px-4 py-3 text-right tabular-nums text-rose-700 dark:text-rose-300">
-                            ₹ {{ number_format((float)$inv->balance, 2) }}
-                        </td>
-
-                        {{-- Audit --}}
-                        <td class="px-4 py-3">
-                            <div class="space-y-2 text-xs">
-
-                                {{-- Created --}}
-                                <div class="flex gap-2">
-
-                                    <div>
-                                        <div class="font-medium text-gray-800 dark:text-neutral-200">
-                                            <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
-                                                border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
-                                                Created:
-                                            </span> &nbsp;
-                                            {{ $inv->createdBy?->name ?? 'N/A' }}
-                                        </div>
-                                        <div class="text-gray-500 dark:text-neutral-400">
-                                            {{ optional($inv->created_at)->format('d M Y, h:i A') }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {{-- Updated --}}
-                                <div class="flex gap-2">
-
-                                    <div>
-
-                                        <div class="font-medium text-gray-800 dark:text-neutral-200">
-                                            <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
-                                                border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
-                                                Updated:
-                                            </span> &nbsp;
-                                            {{ $inv->updatedBy?->name ?? 'N/A' }}
-                                        </div>
-                                        <div class="text-gray-500 dark:text-neutral-400">
-                                            {{ optional($inv->updated_at)->format('d M Y, h:i A') }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </td>
-
-                        {{-- Actions --}}
-                        <td class="px-4 py-3 text-right">
-                            <div class="relative inline-block" x-data="{open:false}">
-                                <button @click="open=!open"
-                                        class="w-9 h-9 rounded-lg border border-gray-200 dark:border-neutral-700
-                                           hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                    ⋮
-                                </button>
-
-                                <div x-show="open" @click.outside="open=false" x-transition
-                                     class="absolute right-0 mt-2 w-52 rounded-xl border
-                                        border-gray-200 dark:border-neutral-700
-                                        bg-white dark:bg-neutral-900 shadow-lg z-50">
-
-                                    <a href="{{ route('invoices.show',$inv->id) }}"
-                                       class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                        View
-                                    </a>
-
-                                    @can('edit invoice')
-                                    <a href="{{ route('invoices.edit',$inv->id) }}"
-                                       class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                        Edit
-                                    </a>
-                                    @endcan
-
-                                    <a href="{{ route('invoices.download',$inv->id) }}"
-                                       class="block px-4 py-2 text-sm text-emerald-700 dark:text-emerald-300
-                                          hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                        Download
-                                    </a>
-
-                                    <a href="{{ route('invoices.send',$inv->id) }}"
-                                       class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                        Send to WhatsApp
-                                    </a>
-
-                                    <div class="h-px bg-gray-100 dark:bg-neutral-800"></div>
-
-                                    {{-- Delete --}}
-                                    @can('delete invoice')
-                                        <form method="POST" action="{{ route('invoices.destroy',$inv->id) }}"
-                                              onsubmit="return confirm('Delete this invoice?')">
-                                            @csrf @method('DELETE')
-                                            <button class="w-full text-left px-4 py-2 text-sm text-red-600
-                                                   hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    @endcan
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
+        <div class="overflow-hidden border border-gray-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+            <div class="overflow-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-neutral-800/60 text-xs uppercase tracking-wide text-gray-600 dark:text-neutral-300">
                     <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-neutral-400">
-                            No invoices found.
-                        </td>
+                        <th class="px-4 py-3 text-left">Invoice</th>
+                        <th class="px-4 py-3 text-left">Date</th>
+    {{--                    <th class="px-4 py-3 text-left">Client</th>--}}
+                        <th class="px-4 py-3 text-right">Total</th>
+                        <th class="px-4 py-3 text-right">Received</th>
+                        <th class="px-4 py-3 text-right">Balance</th>
+                        <th class="px-4 py-3 text-left">Audit</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
                     </tr>
-                @endforelse
-                </tbody>
-            </table>
+                    </thead>
+
+                    <tbody class="divide-y divide-gray-100 dark:divide-neutral-800">
+                    @forelse($invoices as $inv)
+                        <tr class="hover:bg-gray-50/60 dark:hover:bg-neutral-800/40">
+
+                            {{-- Invoice --}}
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="min-w-0">
+                                        <div class="font-semibold text-gray-900 dark:text-white">
+                                            {{ $inv->invoice_number }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-neutral-400 truncate">
+                                            {{ $inv->client->name ?? '-' }}
+                                        </div>
+                                    </div>
+
+                                    @php
+                                        $type = $inv->invoice_type;
+                                        $badge = match($type){
+                                            'proforma' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800',
+                                            'quotation'=> 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800',
+                                            default    => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
+                                        };
+                                    @endphp
+
+                                    <span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full border {{ $badge }}">
+                                    {{ strtoupper($type) }}
+                                </span>
+                                </div>
+                            </td>
+
+                            {{-- Invoice Date --}}
+                            <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-neutral-200">
+                                {{ optional($inv->invoice_date)->format('d M Y') }}
+                            </td>
+
+                            {{-- Client --}}
+    {{--                        <td class="px-4 py-3 text-gray-700 dark:text-neutral-200">--}}
+    {{--                            {{ $inv->client->name ?? '-' }}--}}
+    {{--                        </td>--}}
+
+                            {{-- Amounts --}}
+                            <td class="px-4 py-3 text-right font-medium tabular-nums">
+                                ₹ {{ number_format((float)$inv->total, 2) }}
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                                ₹ {{ number_format((float)$inv->received_amount, 2) }}
+                            </td>
+                            <td class="px-4 py-3 text-right tabular-nums text-rose-700 dark:text-rose-300">
+                                ₹ {{ number_format((float)$inv->balance, 2) }}
+                            </td>
+
+                            {{-- Audit --}}
+                            <td class="px-4 py-3">
+                                <div class="space-y-2 text-xs">
+
+                                    {{-- Created --}}
+                                    <div class="flex gap-2">
+
+                                        <div>
+                                            <div class="font-medium text-gray-800 dark:text-neutral-200">
+                                                <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
+                                                    border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
+                                                    Created:
+                                                </span> &nbsp;
+                                                {{ $inv->createdBy?->name ?? 'N/A' }}
+                                            </div>
+                                            <div class="text-gray-500 dark:text-neutral-400">
+                                                {{ optional($inv->created_at)->format('d M Y, h:i A') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Updated --}}
+                                    <div class="flex gap-2">
+
+                                        <div>
+
+                                            <div class="font-medium text-gray-800 dark:text-neutral-200">
+                                                <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
+                                                    border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
+                                                    Updated:
+                                                </span> &nbsp;
+                                                {{ $inv->updatedBy?->name ?? 'N/A' }}
+                                            </div>
+                                            <div class="text-gray-500 dark:text-neutral-400">
+                                                {{ optional($inv->updated_at)->format('d M Y, h:i A') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </td>
+
+                            {{-- Actions --}}
+                            <td class="px-4 py-3 text-right">
+                                <div class="relative inline-block" x-data="{open:false}">
+                                    <button @click="open=!open"
+                                            class="w-9 h-9 rounded-lg border border-gray-200 dark:border-neutral-700
+                                               hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                        ⋮
+                                    </button>
+
+                                    <div x-show="open" @click.outside="open=false" x-transition
+                                         class="absolute right-0 mt-2 w-52 rounded-xl border
+                                            border-gray-200 dark:border-neutral-700
+                                            bg-white dark:bg-neutral-900 shadow-lg z-50">
+
+                                        <a href="{{ route('invoices.show',$inv->id) }}"
+                                           class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                            View
+                                        </a>
+
+                                        @can('edit invoice')
+                                        <a href="{{ route('invoices.edit',$inv->id) }}"
+                                           class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                            Edit
+                                        </a>
+                                        @endcan
+
+                                        <a href="{{ route('invoices.download',$inv->id) }}"
+                                           class="block px-4 py-2 text-sm text-emerald-700 dark:text-emerald-300
+                                              hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                            Download
+                                        </a>
+
+                                        <a href="{{ route('invoices.send',$inv->id) }}"
+                                           class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                            Send to WhatsApp
+                                        </a>
+
+                                        <div class="h-px bg-gray-100 dark:bg-neutral-800"></div>
+
+                                        {{-- Delete --}}
+                                        @can('delete invoice')
+                                            <form method="POST" action="{{ route('invoices.destroy',$inv->id) }}"
+                                                  onsubmit="return confirm('Delete this invoice?')">
+                                                @csrf @method('DELETE')
+                                                <button class="w-full text-left px-4 py-2 text-sm text-red-600
+                                                       hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @endcan
+                                        <button type="button"
+                                                @click="$dispatch('open-payment-in', {
+                                                    id: {{ $inv->id }},
+                                                    invoice: @js($inv->invoice_number),
+                                                    balance: {{ (float)$inv->balance }},
+                                                    received: {{ (float)$inv->received_amount }},
+                                                    total: {{ (float)$inv->total }}
+                                                })"
+                                                class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                            Payment In
+                                        </button>
+
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-neutral-400">
+                                No invoices found.
+                            </td>
+                        </tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        <div class="mt-4">
+            {{ $invoices->links() }}
+        </div>
+
+        {{-- ✅ Payment In Modal --}}
+        <div
+            x-on:open-payment-in.window="open($event.detail)"
+        >
+            <div x-show="show" x-transition
+                 class="fixed inset-0 z-[9999] flex items-center justify-center">
+                {{-- backdrop --}}
+                <div class="absolute inset-0 bg-black/50" @click="close()"></div>
+
+                {{-- modal --}}
+                <div class="relative w-full max-w-md mx-3 rounded-2xl bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-xl">
+                    <div class="p-4 border-b border-gray-100 dark:border-neutral-800 flex items-center justify-between">
+                        <div>
+                            <div class="text-lg font-bold text-gray-900 dark:text-white">Payment In</div>
+                            <div class="text-xs text-gray-500 dark:text-neutral-400" x-text="`Invoice: ${invoiceNo}`"></div>
+                        </div>
+                        <button type="button" @click="close()"
+                                class="w-9 h-9 rounded-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                            ✕
+                        </button>
+                    </div>
+
+                    <form method="POST" :action="actionUrl" class="p-4 space-y-4">
+                        @csrf
+
+                        <div class="grid grid-cols-3 gap-2 text-xs">
+                            <div class="p-2 rounded-lg bg-gray-50 dark:bg-neutral-800">
+                                <div class="text-gray-500 dark:text-neutral-400">Total</div>
+                                <div class="font-semibold text-gray-900 dark:text-white" x-text="money(total)"></div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-gray-50 dark:bg-neutral-800">
+                                <div class="text-gray-500 dark:text-neutral-400">Received</div>
+                                <div class="font-semibold text-emerald-700 dark:text-emerald-300" x-text="money(received)"></div>
+                            </div>
+                            <div class="p-2 rounded-lg bg-gray-50 dark:bg-neutral-800">
+                                <div class="text-gray-500 dark:text-neutral-400">Balance</div>
+                                <div class="font-semibold text-rose-700 dark:text-rose-300" x-text="money(balance)"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
+                                Amount to add
+                            </label>
+                            <input type="number" step="0.01" min="0.01" name="amount" x-model.number="amount" required
+                                   class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 focus:ring-blue-500 focus:border-blue-500">
+                            <div class="mt-1 text-[11px] text-gray-500 dark:text-neutral-400">
+                                New balance will be updated after submit.
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 pt-1">
+                            <button type="button" @click="close()"
+                                    class="px-4 py-2 rounded-lg border border-gray-300 dark:border-neutral-700 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                Cancel
+                            </button>
+
+                            <button type="submit"
+                                    class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">
+                                Save Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function paymentInModal() {
+                return {
+                    show: false,
+                    invoiceId: null,
+                    invoiceNo: '',
+                    total: 0,
+                    received: 0,
+                    balance: 0,
+                    amount: null,
+
+                    get actionUrl() {
+                        // /invoices/{id}/payment-in
+                        return `{{ url('invoices') }}/${this.invoiceId}/payment-in`;
+                    },
+
+                    open(d) {
+                        this.invoiceId = d.id;
+                        this.invoiceNo = d.invoice || '';
+                        this.total = Number(d.total || 0);
+                        this.received = Number(d.received || 0);
+                        this.balance = Number(d.balance || 0);
+                        this.amount = null;
+                        this.show = true;
+                    },
+
+                    close() {
+                        this.show = false;
+                    },
+
+                    money(v) {
+                        let n = Number(v || 0);
+                        return '₹ ' + n.toFixed(2);
+                    }
+                }
+            }
+        </script>
+
     </div>
 
-
-    <div class="mt-4">
-        {{ $invoices->links() }}
-    </div>
 </x-layouts.app>

@@ -2338,4 +2338,49 @@ class InvoiceController extends Controller
 
 
 
+    public function paymentIn(Request $request, Invoice $invoice)
+    {
+//        $this->authorize('edit invoice'); // apne permission/guard ke hisab se adjust
+
+        $data = $request->validate([
+            'amount' => ['required','numeric','min:0.01'],
+        ]);
+
+        $payAmount = (float) $data['amount'];
+
+        DB::transaction(function () use ($invoice, $payAmount) {
+
+            // lock row to avoid race condition
+            $inv = Invoice::whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+
+            $total    = (float) ($inv->total ?? 0);
+            $received = (float) ($inv->received_amount ?? 0);
+
+            $newReceived = $received + $payAmount;
+
+            // overpayment protect (optional)
+            if ($newReceived > $total) {
+                $newReceived = $total;
+            }
+
+            $newBalance = max($total - $newReceived, 0);
+
+            // status auto
+            $status = 'unpaid';
+            if ($newReceived >= $total && $total > 0) $status = 'paid';
+            elseif ($newReceived > 0) $status = 'partial';
+
+            $inv->update([
+                'received_amount' => $newReceived,
+                'balance'         => $newBalance,   // agar column nahi hai to remove karo
+                'status'          => $status,       // agar status field hai
+                'updated_by'      => auth()->id(),  // agar aap use karte ho
+            ]);
+        });
+        return redirect()->route('invoices.preview', $invoice->id)
+            ->with('success', 'Payment added successfully.');
+    }
+
+
+
 }
