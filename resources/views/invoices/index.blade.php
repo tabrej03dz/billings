@@ -148,9 +148,9 @@
             </a>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('invoices.export', array_merge(request()->query(), ['type' => $type])) }}"
-                   class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium">
-                    📄 Download Full Report
+                <a href="{{ route('invoices.export', array_merge(request()->query(), ['type' => $activeType])) }}">
+
+                📄 Download Full Report
                 </a>
 
                 <button type="submit"
@@ -167,136 +167,312 @@
         </div>
     @endif
 
-    <div class="overflow-auto border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-        <table class="min-w-full text-sm border-separate border-spacing-0">
-            <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
-            <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">
-                <th>Invoice</th>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Total</th>
-                <th>Received</th>
-                <th>Balance</th>
-                <th class="text-right">Actions</th>
-            </tr>
-            </thead>
+{{--    <div class="overflow-auto border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">--}}
+{{--        <table class="min-w-full text-sm border-separate border-spacing-0">--}}
+{{--            <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">--}}
+{{--            <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">--}}
+{{--                <th>Invoice</th>--}}
+{{--                <th>Date</th>--}}
+{{--                <th>Client</th>--}}
+{{--                <th>Total</th>--}}
+{{--                <th>Received</th>--}}
+{{--                <th>Balance</th>--}}
+{{--                <th>Created By</th>--}}
+{{--                <th>Updated By</th>--}}
+{{--                <th class="text-right">Actions</th>--}}
+{{--            </tr>--}}
+{{--            </thead>--}}
 
-            <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">
-            @forelse($invoices as $inv)
-                <tr class="hover:bg-gray-50 dark:hover:bg-neutral-800/60">
-                    <td class="px-4 py-2">
-                        <div class="flex items-center gap-2">
-                            <span class="font-semibold">{{ $inv->invoice_number }}</span>
+{{--            <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">--}}
+{{--            @forelse($invoices as $inv)--}}
+{{--                <tr class="hover:bg-gray-50 dark:hover:bg-neutral-800/60">--}}
+{{--                    <td class="px-4 py-2">--}}
+{{--                        <div class="flex items-center gap-2">--}}
+{{--                            <span class="font-semibold">{{ $inv->invoice_number }}</span>--}}
 
-                            <span class="text-[10px] px-2 py-0.5 rounded-full border
-                                {{ $inv->invoice_type === 'proforma'
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800'
-                                    : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800' }}">
-                                {{ strtoupper($inv->invoice_type) }}
-                            </span>
-                        </div>
-                    </td>
+{{--                            <span class="text-[10px] px-2 py-0.5 rounded-full border--}}
+{{--                                {{ $inv->invoice_type === 'proforma'--}}
+{{--                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800'--}}
+{{--                                    : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800' }}">--}}
+{{--                                {{ strtoupper($inv->invoice_type) }}--}}
+{{--                            </span>--}}
+{{--                        </div>--}}
+{{--                    </td>--}}
 
-                    <td class="px-4 py-2">
-                        {{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}
-                    </td>
+{{--                    <td class="px-4 py-2">--}}
+{{--                        {{ \Illuminate\Support\Carbon::parse($inv->invoice_date)->format('d M Y') }}--}}
+{{--                    </td>--}}
 
-                    <td class="px-4 py-2">
-                        {{ $inv->client->name ?? '-' }}
-                    </td>
+{{--                    <td class="px-4 py-2">--}}
+{{--                        {{ $inv->client->name ?? '-' }}--}}
+{{--                    </td>--}}
 
-                    <td class="px-4 py-2">
-                        ₹ {{ number_format((float)$inv->total, 2) }}
-                    </td>
+{{--                    <td class="px-4 py-2">--}}
+{{--                        ₹ {{ number_format((float)$inv->total, 2) }}--}}
+{{--                    </td>--}}
 
-                    <td class="px-4 py-2">
-                        ₹ {{ number_format((float)$inv->received_amount, 2) }}
-                    </td>
+{{--                    <td class="px-4 py-2">--}}
+{{--                        ₹ {{ number_format((float)$inv->received_amount, 2) }}--}}
+{{--                    </td>--}}
 
-                    <td class="px-4 py-2">
-                        ₹ {{ number_format((float)$inv->balance, 2) }}
-                    </td>
+{{--                    <td class="px-4 py-2">--}}
+{{--                        ₹ {{ number_format((float)$inv->balance, 2) }}--}}
+{{--                    </td>--}}
 
-                    <td class="px-4 py-2 text-right space-x-3 whitespace-nowrap">
-                        <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>
-                        <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>
-                        {{-- ✅ Edit button (type-wise permission) --}}
-                        @if($inv->invoice_type === 'tax')
-                            @can('edit invoice')
+{{--                    <td class="px-4 py-2">--}}
+{{--                        {{$inv->createdBy?->name ?? 'N/A'}}--}}
+{{--                    </td>--}}
+{{--                    <td class="px-4 py-2">--}}
+{{--                        {{$inv->updatedBy?->name ?? 'N/A'}}--}}
+{{--                    </td>--}}
 
-                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
-                            @endcan
-                        @elseif($inv->invoice_type === 'proforma')
-                            @can('edit proforma')
-                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
-                            @endcan
-                        @elseif($inv->invoice_type === 'quotation')
-                            @can('edit quotation')
-                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>
-                            @endcan
-                        @endif
+{{--                    <td class="px-4 py-2 text-right space-x-3 whitespace-nowrap">--}}
+{{--                        <a href="{{ route('invoices.show',$inv->id) }}" class="text-gray-700 dark:text-neutral-300 hover:underline">View</a>--}}
+{{--                        <a href="{{ route('invoices.download',$inv->id) }}" class="text-emerald-600 hover:underline">Download</a>--}}
+{{--                        --}}{{-- ✅ Edit button (type-wise permission) --}}
+{{--                        @if($inv->invoice_type === 'tax')--}}
+{{--                            @can('edit invoice')--}}
 
-                        <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>
+{{--                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
+{{--                            @endcan--}}
+{{--                        @elseif($inv->invoice_type === 'proforma')--}}
+{{--                            @can('edit proforma')--}}
+{{--                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
+{{--                            @endcan--}}
+{{--                        @elseif($inv->invoice_type === 'quotation')--}}
+{{--                            @can('edit quotation')--}}
+{{--                                <a href="{{ route('invoices.edit',$inv->id) }}" class="text-blue-600 hover:underline">Edit</a>--}}
+{{--                            @endcan--}}
+{{--                        @endif--}}
 
-                        @can('	delete quotation')
-                        @if(in_array($inv->invoice_type, ['quotation','proforma']))
-                            <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" method="POST" class="inline">
-                                @csrf
-                                <button class="px-3 py-2 rounded bg-emerald-600 text-white">Convert to Tax Invoice</button>
-                            </form>
-                        @endif
-                        @endcan
+{{--                        <a href="{{ route('invoices.send',$inv->id) }}" class="text-blue-600 hover:underline">Send to Whtsp</a>--}}
 
-                        {{-- ✅ Delete button (type-wise permission) --}}
-                        @if($inv->invoice_type === 'tax')
-                            @can('delete invoice')
-                                <form action="{{ route('invoices.destroy',$inv->id) }}"
-                                      method="POST"
-                                      class="inline"
-                                      onsubmit="return confirm('Delete this Tax Invoice?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-600 hover:underline">Delete</button>
-                                </form>
-                            @endcan
+{{--                        @can('	delete quotation')--}}
+{{--                        @if(in_array($inv->invoice_type, ['quotation','proforma']))--}}
+{{--                            <form method="POST" action="{{ route('invoices.convertToTax', $inv) }}" method="POST" class="inline">--}}
+{{--                                @csrf--}}
+{{--                                <button class="px-3 py-2 rounded bg-emerald-600 text-white">Convert to Tax Invoice</button>--}}
+{{--                            </form>--}}
+{{--                        @endif--}}
+{{--                        @endcan--}}
 
-                        @elseif($inv->invoice_type === 'proforma')
-                            @can('delete proforma')
-                                <form action="{{ route('invoices.destroy',$inv->id) }}"
-                                      method="POST"
-                                      class="inline"
-                                      onsubmit="return confirm('Delete this Proforma?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-600 hover:underline">Delete</button>
-                                </form>
-                            @endcan
+{{--                        --}}{{-- ✅ Delete button (type-wise permission) --}}
+{{--                        @if($inv->invoice_type === 'tax')--}}
+{{--                            @can('delete invoice')--}}
+{{--                                <form action="{{ route('invoices.destroy',$inv->id) }}"--}}
+{{--                                      method="POST"--}}
+{{--                                      class="inline"--}}
+{{--                                      onsubmit="return confirm('Delete this Tax Invoice?')">--}}
+{{--                                    @csrf--}}
+{{--                                    @method('DELETE')--}}
+{{--                                    <button class="text-red-600 hover:underline">Delete</button>--}}
+{{--                                </form>--}}
+{{--                            @endcan--}}
 
-                        @elseif($inv->invoice_type === 'quotation')
-                            @can('delete quotation')
-                                <form action="{{ route('invoices.destroy',$inv->id) }}"
-                                      method="POST"
-                                      class="inline"
-                                      onsubmit="return confirm('Delete this Quotation?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="text-red-600 hover:underline">Delete</button>
-                                </form>
-                            @endcan
-                        @endif
+{{--                        @elseif($inv->invoice_type === 'proforma')--}}
+{{--                            @can('delete proforma')--}}
+{{--                                <form action="{{ route('invoices.destroy',$inv->id) }}"--}}
+{{--                                      method="POST"--}}
+{{--                                      class="inline"--}}
+{{--                                      onsubmit="return confirm('Delete this Proforma?')">--}}
+{{--                                    @csrf--}}
+{{--                                    @method('DELETE')--}}
+{{--                                    <button class="text-red-600 hover:underline">Delete</button>--}}
+{{--                                </form>--}}
+{{--                            @endcan--}}
 
-                    </td>
-                </tr>
-            @empty
+{{--                        @elseif($inv->invoice_type === 'quotation')--}}
+{{--                            @can('delete quotation')--}}
+{{--                                <form action="{{ route('invoices.destroy',$inv->id) }}"--}}
+{{--                                      method="POST"--}}
+{{--                                      class="inline"--}}
+{{--                                      onsubmit="return confirm('Delete this Quotation?')">--}}
+{{--                                    @csrf--}}
+{{--                                    @method('DELETE')--}}
+{{--                                    <button class="text-red-600 hover:underline">Delete</button>--}}
+{{--                                </form>--}}
+{{--                            @endcan--}}
+{{--                        @endif--}}
+
+{{--                    </td>--}}
+{{--                </tr>--}}
+{{--            @empty--}}
+{{--                <tr>--}}
+{{--                    <td colspan="7" class="px-4 py-3 text-center text-gray-500 dark:text-neutral-400">--}}
+{{--                        No invoices found.--}}
+{{--                    </td>--}}
+{{--                </tr>--}}
+{{--            @endforelse--}}
+{{--            </tbody>--}}
+{{--        </table>--}}
+{{--    </div>--}}
+
+    <div class="overflow-hidden border border-gray-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+        <div class="overflow-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-neutral-800/60 text-xs uppercase tracking-wide text-gray-600 dark:text-neutral-300">
                 <tr>
-                    <td colspan="7" class="px-4 py-3 text-center text-gray-500 dark:text-neutral-400">
-                        No invoices found.
-                    </td>
+                    <th class="px-4 py-3 text-left">Invoice</th>
+                    <th class="px-4 py-3 text-left">Date</th>
+                    <th class="px-4 py-3 text-left">Client</th>
+                    <th class="px-4 py-3 text-right">Total</th>
+                    <th class="px-4 py-3 text-right">Received</th>
+                    <th class="px-4 py-3 text-right">Balance</th>
+                    <th class="px-4 py-3 text-left">Audit</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
-            @endforelse
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100 dark:divide-neutral-800">
+                @forelse($invoices as $inv)
+                    <tr class="hover:bg-gray-50/60 dark:hover:bg-neutral-800/40">
+
+                        {{-- Invoice --}}
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-gray-900 dark:text-white">
+                                        {{ $inv->invoice_number }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-neutral-400 truncate">
+                                        {{ $inv->client->name ?? '-' }}
+                                    </div>
+                                </div>
+
+                                @php
+                                    $type = $inv->invoice_type;
+                                    $badge = match($type){
+                                        'proforma' => 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800',
+                                        'quotation'=> 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800',
+                                        default    => 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
+                                    };
+                                @endphp
+
+                                <span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full border {{ $badge }}">
+                                {{ strtoupper($type) }}
+                            </span>
+                            </div>
+                        </td>
+
+                        {{-- Invoice Date --}}
+                        <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-neutral-200">
+                            {{ optional($inv->invoice_date)->format('d M Y') }}
+                        </td>
+
+                        {{-- Client --}}
+                        <td class="px-4 py-3 text-gray-700 dark:text-neutral-200">
+                            {{ $inv->client->name ?? '-' }}
+                        </td>
+
+                        {{-- Amounts --}}
+                        <td class="px-4 py-3 text-right font-medium tabular-nums">
+                            ₹ {{ number_format((float)$inv->total, 2) }}
+                        </td>
+                        <td class="px-4 py-3 text-right tabular-nums text-emerald-700 dark:text-emerald-300">
+                            ₹ {{ number_format((float)$inv->received_amount, 2) }}
+                        </td>
+                        <td class="px-4 py-3 text-right tabular-nums text-rose-700 dark:text-rose-300">
+                            ₹ {{ number_format((float)$inv->balance, 2) }}
+                        </td>
+
+                        {{-- Audit --}}
+                        <td class="px-4 py-3">
+                            <div class="space-y-2 text-xs">
+
+                                {{-- Created --}}
+                                <div class="flex gap-2">
+                                <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
+                                    border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
+                                    Created
+                                </span>
+                                    <div>
+                                        <div class="font-medium text-gray-800 dark:text-neutral-200">
+                                            {{ $inv->createdBy?->name ?? 'N/A' }}
+                                        </div>
+                                        <div class="text-gray-500 dark:text-neutral-400">
+                                            {{ optional($inv->created_at)->format('d M Y, h:i A') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Updated --}}
+                                <div class="flex gap-2">
+                                <span class="mt-0.5 px-1.5 py-0.5 rounded border text-[10px]
+                                    border-gray-200 dark:border-neutral-700 text-gray-500 dark:text-neutral-400">
+                                    Updated
+                                </span>
+                                    <div>
+                                        <div class="font-medium text-gray-800 dark:text-neutral-200">
+                                            {{ $inv->updatedBy?->name ?? 'N/A' }}
+                                        </div>
+                                        <div class="text-gray-500 dark:text-neutral-400">
+                                            {{ optional($inv->updated_at)->format('d M Y, h:i A') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </td>
+
+                        {{-- Actions --}}
+                        <td class="px-4 py-3 text-right">
+                            <div class="relative inline-block" x-data="{open:false}">
+                                <button @click="open=!open"
+                                        class="w-9 h-9 rounded-lg border border-gray-200 dark:border-neutral-700
+                                           hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                    ⋮
+                                </button>
+
+                                <div x-show="open" @click.outside="open=false" x-transition
+                                     class="absolute right-0 mt-2 w-52 rounded-xl border
+                                        border-gray-200 dark:border-neutral-700
+                                        bg-white dark:bg-neutral-900 shadow-lg z-50">
+
+                                    <a href="{{ route('invoices.show',$inv->id) }}"
+                                       class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                        View
+                                    </a>
+
+                                    <a href="{{ route('invoices.download',$inv->id) }}"
+                                       class="block px-4 py-2 text-sm text-emerald-700 dark:text-emerald-300
+                                          hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                        Download
+                                    </a>
+
+                                    <a href="{{ route('invoices.send',$inv->id) }}"
+                                       class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                        Send to WhatsApp
+                                    </a>
+
+                                    <div class="h-px bg-gray-100 dark:bg-neutral-800"></div>
+
+                                    {{-- Delete --}}
+                                    @can('delete invoice')
+                                        <form method="POST" action="{{ route('invoices.destroy',$inv->id) }}"
+                                              onsubmit="return confirm('Delete this invoice?')">
+                                            @csrf @method('DELETE')
+                                            <button class="w-full text-left px-4 py-2 text-sm text-red-600
+                                                   hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @endcan
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="8" class="px-4 py-8 text-center text-gray-500 dark:text-neutral-400">
+                            No invoices found.
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
+
 
     <div class="mt-4">
         {{ $invoices->links() }}

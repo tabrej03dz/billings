@@ -153,7 +153,7 @@ class InvoiceController extends Controller
         $status   = $request->get('status');
 
         $q = \App\Models\Invoice::query()
-            ->with(['client:id,name'])
+            ->with(['client:id,name','createdBy','updatedBy'])
             ->where('business_id', $bid)
             ->where('invoice_type', $type);
 
@@ -991,6 +991,8 @@ class InvoiceController extends Controller
 
                     'amount_in_words' => '',
                     'signature_path'  => $signaturePath,
+                    'created_by' => auth()->user()->id ?? null,
+                    'updated_by' => auth()->user()->id ?? null,
                 ]);
 
                 // additional charges rows
@@ -1750,6 +1752,7 @@ class InvoiceController extends Controller
                     'items_json'     => json_encode($cleanRows),
 
                     'signature_path' => $signaturePath,
+                    'updated_by' => auth()->user()->id ?? null,
                 ]);
 
                 // ✅ Replace additional charges table rows (optional)
@@ -1881,7 +1884,7 @@ class InvoiceController extends Controller
             $filename = $safeName . ".pdf";
             $path = $dir . "/" . $filename;
 
-            \Storage::disk('public')->put($path, $pdf->output());
+            Storage::disk('public')->put($path, $pdf->output());
             $invoice->update(['pdf_url' => $path]);
 
         } catch (\Throwable $e) {

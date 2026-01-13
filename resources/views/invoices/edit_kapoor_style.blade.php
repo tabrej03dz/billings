@@ -74,13 +74,65 @@
 
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
                     <div class="flex gap-2">
-                        <select name="client_id" x-model="clientId"
-                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                            <option value="">-- Select Client --</option>
-                            <template x-for="c in clients" :key="c.id">
-                                <option :value="String(c.id)" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>
-                            </template>
-                        </select>
+{{--                        <select name="client_id" x-model="clientId"--}}
+{{--                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
+{{--                            <option value="">-- Select Client --</option>--}}
+{{--                            <template x-for="c in clients" :key="c.id">--}}
+{{--                                <option :value="String(c.id)" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>--}}
+{{--                            </template>--}}
+{{--                        </select>--}}
+                        <div class="flex-1 relative"
+                             @click.outside="closeClientDD()">
+
+                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
+
+                            <!-- input -->
+                            <input type="text"
+                                   class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
+                  bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm"
+                                   placeholder="Search client by name / mobile..."
+                                   x-model="clientSearch"
+                                   @focus="openClientDD()"
+                                   @input="openClientDD()"
+                                   @keydown.arrow-down.prevent="clientDDDown()"
+                                   @keydown.arrow-up.prevent="clientDDUp()"
+                                   @keydown.enter.prevent="clientDDPick()"
+                            >
+
+                            <!-- hidden actual value -->
+                            <input type="hidden" name="client_id" :value="clientId">
+
+                            <!-- dropdown -->
+                            <div x-show="clientDD.open"
+                                 x-transition.opacity
+                                 class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
+                bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
+                max-h-72 overflow-auto"
+                                 :style="clientDD.style"
+                                 style="display:none;"
+                                 @mousedown.prevent.stop>
+
+                                <template x-if="filteredClients().length === 0">
+                                    <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
+                                </template>
+
+                                <template x-for="(c, idx) in filteredClients().slice(0,80)" :key="c.id">
+                                    <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
+                        hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                         :class="idx === clientDD.hi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                         @mouseenter="clientDD.hi = idx"
+                                         @mousedown.prevent.stop="selectClientFromDD(c)">
+
+                                        <div class="truncate"
+                                             x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></div>
+
+                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
+                                             x-text="c.state_code ? ('GST ' + c.state_code) : ''"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
 
                         <button type="button"
                                 class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
@@ -196,17 +248,68 @@
                                     <div class="flex items-center gap-2 mb-2">
 
                                         {{-- ✅ FIX: select now uses x-model (so edit value always selected) --}}
-                                        <select
-                                            class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                            x-model="row.item_id"
-                                            @change="pickItem(i, row.item_id)"
-                                        >
-                                            <option value="">-- Select Item --</option>
-                                            <template x-for="it in itemsData" :key="it.id">
-                                                <option :value="String(it.id)"
-                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>
-                                            </template>
-                                        </select>
+{{--                                        <select--}}
+{{--                                            class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"--}}
+{{--                                            x-model="row.item_id"--}}
+{{--                                            @change="pickItem(i, row.item_id)"--}}
+{{--                                        >--}}
+
+                                        <div class="flex-1 relative"
+                                             @click.outside="closeItemDD(i)">
+
+                                            <input type="text"
+                                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
+                                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
+                                                   placeholder="Search item..."
+                                                   x-model="row.search"
+                                                   @focus="openItemDD(i)"
+                                                   @input="openItemDD(i)"
+                                                   @keydown.arrow-down.prevent="itemDDDown(i)"
+                                                   @keydown.arrow-up.prevent="itemDDUp(i)"
+                                                   @keydown.enter.prevent="itemDDPick(i)"
+                                            >
+
+                                            <!-- hidden select value (backend use already items_json so ok, but keep for clarity) -->
+                                            <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
+
+                                            <!-- dropdown -->
+                                            <div x-show="row.ddOpen"
+                                                 x-transition.opacity
+                                                 class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
+                                                        bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
+                                                        max-h-72 overflow-auto"
+                                                 :style="row.ddStyle"
+                                                 style="display:none;"
+                                                 @mousedown.prevent.stop>
+
+                                                <template x-if="filteredItems(row.search).length === 0">
+                                                    <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
+                                                </template>
+
+                                                <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
+                                                    <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
+                                                        hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                         :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                         @mouseenter="row.ddHi = idx"
+                                                         @mousedown.prevent.stop="selectItemFromDD(i, it)">
+
+                                                        <div class="truncate"
+                                                             x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
+
+                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
+                                                             x-text="(it.type || '').toUpperCase()"></div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+
+
+{{--                                        <option value="">-- Select Item --</option>--}}
+{{--                                            <template x-for="it in itemsData" :key="it.id">--}}
+{{--                                                <option :value="String(it.id)"--}}
+{{--                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>--}}
+{{--                                            </template>--}}
+{{--                                        </select>--}}
 
                                         <button type="button"
                                                 class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap hover:bg-gray-50 dark:hover:bg-neutral-800"
@@ -801,6 +904,54 @@
                 clientId: '',
                 party: { name:'', address:'', state:'', state_code:'', mobile:'', gstin:'', pincode:'' },
 
+                // =======================
+// CLIENT SEARCH DROPDOWN
+// =======================
+                clientSearch: '',
+                clientDD: { open:false, hi:0, style:'' },
+
+                openClientDD(){
+                    this.clientDD.open = true;
+                    this.clientDD.hi = 0;
+                    this.$nextTick(() => this.setClientDDPos());
+                },
+                closeClientDD(){ this.clientDD.open = false; },
+
+                setClientDDPos(){
+                    const input = document.querySelector('input[x-model="clientSearch"]');
+                    if(!input) return;
+                    const r = input.getBoundingClientRect();
+                    this.clientDD.style = `top:${r.bottom + 4}px;left:${r.left}px;width:${r.width}px;`;
+                },
+
+                filteredClients(){
+                    const q = (this.clientSearch || '').toLowerCase();
+                    if(!q) return this.clients;
+                    return this.clients.filter(c =>
+                        (c.name || '').toLowerCase().includes(q) ||
+                        (c.mobile || '').includes(q)
+                    );
+                },
+
+                selectClientFromDD(c){
+                    this.clientId = String(c.id);
+                    this.clientSearch = c.mobile ? `${c.name} (${c.mobile})` : c.name;
+                    this.closeClientDD();
+                    this.syncParty();
+                },
+
+                clientDDDown(){
+                    this.clientDD.hi++;
+                },
+                clientDDUp(){
+                    this.clientDD.hi = Math.max(0, this.clientDD.hi - 1);
+                },
+                clientDDPick(){
+                    const c = this.filteredClients()[this.clientDD.hi];
+                    if(c) this.selectClientFromDD(c);
+                },
+
+
                 states: [
                     {code:'01', name:'Jammu and Kashmir'},
                     {code:'02', name:'Himachal Pradesh'},
@@ -939,6 +1090,13 @@
                     return {
                         _k: Date.now()+Math.random(),
                         item_id: '',   // ✅ FIX: always string for select binding
+
+                        search: '',
+                        ddOpen: false,
+                        ddHi: 0,
+                        ddStyle: '',
+
+
                         item_type: null,
 
                         description: '',
@@ -962,6 +1120,56 @@
                         manual_amount: 0,
                     }
                 },
+
+
+
+                // =======================
+// ITEM SEARCH DROPDOWN
+// =======================
+                filteredItems(q){
+                    const s = (q || '').toLowerCase();
+                    if(!s) return this.itemsData;
+                    return this.itemsData.filter(it =>
+                        (it.name || '').toLowerCase().includes(s) ||
+                        (it.sku || '').toLowerCase().includes(s)
+                    );
+                },
+
+                openItemDD(i){
+                    const r = this.items[i];
+                    r.ddOpen = true;
+                    r.ddHi = 0;
+                    this.$nextTick(() => this.setItemDDPos(i));
+                },
+                closeItemDD(i){
+                    this.items[i].ddOpen = false;
+                },
+
+                setItemDDPos(i){
+                    const inputs = document.querySelectorAll('input[placeholder="Search item..."]');
+                    const el = inputs[i];
+                    if(!el) return;
+                    const r = el.getBoundingClientRect();
+                    this.items[i].ddStyle = `top:${r.bottom + 4}px;left:${r.left}px;width:${r.width}px;`;
+                },
+
+                itemDDDown(i){
+                    this.items[i].ddHi++;
+                },
+                itemDDUp(i){
+                    this.items[i].ddHi = Math.max(0, this.items[i].ddHi - 1);
+                },
+                itemDDPick(i){
+                    const it = this.filteredItems(this.items[i].search)[this.items[i].ddHi];
+                    if(it) this.selectItemFromDD(i, it);
+                },
+
+                selectItemFromDD(i, it){
+                    this.items[i].search = it.name;
+                    this.pickItem(i, String(it.id));
+                    this.closeItemDD(i);
+                },
+
 
                 // modals + ajax
                 modals: { client:false, item:false },
@@ -1438,6 +1646,12 @@
                             const amt = Number(it.amount || 0);
                             r.manual_amount = amt;
                             r.amount_mode = (amt > 0) ? 'manual' : 'auto';
+
+                            const c = this.clients.find(x => String(x.id) === String(this.clientId));
+                            this.clientSearch = c ? (c.mobile ? `${c.name} (${c.mobile})` : c.name) : '';
+                            const it2 = this.itemsData.find(x => String(x.id) === String(r.item_id));
+                            r.search = it2 ? it2.name : '';
+
 
                             return r;
                         }) : [ this.blankRow() ];
