@@ -148,8 +148,15 @@
     <title>{{ ucfirst($type) }} {{$type != 'quotation' ? 'Invoice' : ''}} {{ $invoiceNo }}</title>
     <style>
         *{ box-sizing:border-box; }
+        /*body{*/
+        /*    font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;*/
+        /*    font-size:12px;*/
+        /*    color:#111;*/
+        /*    margin:0;*/
+        /*    padding:0;*/
+        /*}*/
         body{
-            font-family: 'Inter', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            font-family: "DejaVu Sans", sans-serif;
             font-size:12px;
             color:#111;
             margin:0;
