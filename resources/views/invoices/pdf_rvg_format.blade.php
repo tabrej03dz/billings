@@ -501,10 +501,10 @@
         <tr>
             <td style="width:52%;">SUBTOTAL</td>
             <td style="width:10%;">{{ $fmt0($items->count() ?: 1) }}</td>
+            <td style="width:8%;"></td>
             <td style="width:10%;"></td>
-            <td style="width:10%;"></td>
-            <td style="width:10%;" class="right">₹ {{ $fmt2($finalTax) }}</td>
-            <td style="width:8%;" class="right">₹ {{ $fmt2($finalTotal) }}</td>
+            <td style="width:10%; white-space:nowrap" class="right">₹ {{ $fmt2($finalTax) }}</td>
+            <td style="width:10%; white-space:nowrap" class="right">₹ {{ $fmt2($finalTotal) }}</td>
         </tr>
     </table>
 
