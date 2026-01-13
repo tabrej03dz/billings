@@ -163,10 +163,10 @@
             padding:0;
         }
         .wrap{ margin:10px; padding:10px 12px 12px 12px;
-            border:1px solid #8e8a8a;
+            /* border:1px solid #8e8a8a; */
         }
         /*.topbar{ border-top:4px solid #2b2b2b; margin:-10px -12px 8px -12px; }*/
-        .muted{ color:#444; }
+        .muted{ color:#000000; }
         .red{ color:#d60000; }
         .bold{ font-weight:700; }
         .right{ text-align:right; }
@@ -181,15 +181,17 @@
             margin-left:6px;
             color:#333;
         }
-        .headerRow td{ vertical-align:top; font-size: 12px; }
+        .headerRow td{ vertical-align:top; font-size: 12px;  margin-bottom: 6px; }
 
-        .line-red{ border-top:3px solid #d60000; margin:8px 0 6px 0; }
+        .line-red{ border-top:6px solid #d60000; margin:8px 0 6px 0; margin-bottom: 0px; margin-top: 0px; }
 
         .greybar{
-            background:#e9e9e9;
+            background:#dbd9d6;
             padding:8px 10px;
             margin:6px 0 10px 0;
             font-size:10.5px;
+            margin-top: 0px;
+            margin-bottom: 0px;
         }
 
         .billto{ font-size:12.5px; margin-bottom:8px; }
@@ -333,7 +335,7 @@
         </tr>
     </table> --}}
 
-       <table class="headerRow" style="width:100%; border-collapse:collapse;">
+       <table class="headerRow" style="width:100%; border-collapse:collapse; margin-bottom:8px;">
     <!-- First row: Type + Think Outside The Box -->
    <tr>
     <td colspan="3" style="width:100%; vertical-align:top;">
@@ -356,7 +358,7 @@
 
 
     <!-- Second row: Logo + Company Info -->
-    <tr>
+    <tr style="gap: 4p">
         <!-- Logo Column -->
         <td style="width:18%; vertical-align:top;">
             @if(!empty($logo))
@@ -370,7 +372,7 @@
                 {{ $b->name ?? 'Real Victory Groups' }}
             </div>
 
-            <div class="muted" style="font-size:16.8px; margin-top:2px;">
+            <div class="muted" style="font-size:14.8px; margin-top:2px;">
                 {{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif @if($b_pin) ({{ $b_pin }})@endif
             </div>
 
@@ -501,10 +503,10 @@
         <tr>
             <td style="width:52%;">SUBTOTAL</td>
             <td style="width:10%;">{{ $fmt0($items->count() ?: 1) }}</td>
+            <td style="width:8%;"></td>
             <td style="width:10%;"></td>
-            <td style="width:10%;"></td>
-            <td style="width:10%;" class="right">₹ {{ $fmt2($finalTax) }}</td>
-            <td style="width:8%;" class="right">₹ {{ $fmt2($finalTotal) }}</td>
+            <td style="width:10%; white-space:nowrap" class="right">₹ {{ $fmt2($finalTax) }}</td>
+            <td style="width:10%; white-space:nowrap" class="right">₹ {{ $fmt2($finalTotal) }}</td>
         </tr>
     </table>
 
