@@ -679,20 +679,35 @@ class NoBusinessWhatsappController extends Controller
         $status   = null;
         $body     = null;
 
-        try {
-            $client = Http::timeout(20);
-            if (app()->environment('local', 'development')) {
-                $client = $client->withoutVerifying();
-            }
-            $response = $client->get($endpoint);
+        // ⏳ IMPORTANT: rate-limit protection
+        sleep(3); // 👈 3 seconds delay before API hit
+//        try {
+//            $client = Http::timeout(20);
+//            if (app()->environment('local', 'development')) {
+//                $client = $client->withoutVerifying();
+//            }
+//            $response = $client->get($endpoint);
+//
+//            $status  = $response->status();
+//            $body    = $response->body();
+//            $success = $response->successful();
+//        } catch (\Throwable $e) {
+//            $body    = $e->getMessage();
+//            $status  = null;
+//            $success = false;
+//        }
 
+        // 6) call whatsapp api
+        try {
+            $response = Http::timeout(20)->get($endpoint);
+
+            $success = $response->successful();
             $status  = $response->status();
             $body    = $response->body();
-            $success = $response->successful();
         } catch (\Throwable $e) {
-            $body    = $e->getMessage();
-            $status  = null;
             $success = false;
+            $status  = null;
+            $body    = $e->getMessage();
         }
 
         // 7) log

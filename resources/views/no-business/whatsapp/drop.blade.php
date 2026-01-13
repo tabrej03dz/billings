@@ -162,10 +162,10 @@
                     </button>
                 </div>
 
-                <p class="text-[11px] sm:text-xs text-slate-500">
-                    PDF drop karo — system ek-ek karke upload karega aur WhatsApp par send karega (dropStore jaise).
-                    Phone blank chhodo to file name se number uth jayega.
-                </p>
+{{--                <p class="text-[11px] sm:text-xs text-slate-500">--}}
+{{--                    PDF drop karo — system ek-ek karke upload karega aur WhatsApp par send karega (dropStore jaise).--}}
+{{--                    Phone blank chhodo to file name se number uth jayega.--}}
+{{--                </p>--}}
 
                 {{-- PHONE INPUT (optional) --}}
                <div class="space-y-1">
