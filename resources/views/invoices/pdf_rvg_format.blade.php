@@ -159,7 +159,7 @@
             border:1px solid #8e8a8a;
         }
         /*.topbar{ border-top:4px solid #2b2b2b; margin:-10px -12px 8px -12px; }*/
-        .muted{ color:#444; }
+        .muted{ color:#000000; }
         .red{ color:#d60000; }
         .bold{ font-weight:700; }
         .right{ text-align:right; }
@@ -363,7 +363,7 @@
                 {{ $b->name ?? 'Real Victory Groups' }}
             </div>
 
-            <div class="muted" style="font-size:16.8px; margin-top:2px;">
+            <div class="muted" style="font-size:14.8px; margin-top:2px;">
                 {{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif @if($b_pin) ({{ $b_pin }})@endif
             </div>
 
