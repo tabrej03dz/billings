@@ -71,7 +71,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/no-business/pdfs/send-queued', [NoBusinessWhatsappController::class, 'sendQueuedPdfs'])
         ->name('no-business.pdfs.sendQueued');
 
-    Route::post('/no-business/pdfs/retry/{invoice}', [NoBusinessWhatsappController::class, 'sendPdfRetry'])
+    Route::get('/no-business/pdfs/retry/{invoice}', [NoBusinessWhatsappController::class, 'sendPdfRetry'])
         ->name('no-business.pdfs.retry');
 
 
