@@ -892,15 +892,49 @@ class NoBusinessWhatsappController extends Controller
                 $body   = null;
                 $ok     = false;
 
+//                try {
+//                    $resp = Http::timeout(30)->get($endpoint);
+//                    $status = $resp->status();
+//                    $body   = $resp->body();
+//                    $ok     = $resp->successful();
+//                } catch (\Throwable $e) {
+//                    $body = $e->getMessage();
+//                    $ok   = false;
+//                }
+
                 try {
-                    $resp = Http::timeout(30)->get($endpoint);
+                    $resp   = Http::timeout(30)->get($endpoint);
                     $status = $resp->status();
                     $body   = $resp->body();
-                    $ok     = $resp->successful();
+
+                    // 🔥 WhatsApp API JSON decode
+                    $json = null;
+                    try {
+                        $json = $resp->json();
+                    } catch (\Throwable $e) {}
+
+                    // ✅ success condition
+                    $ok = false;
+
+                    if ($resp->successful()) {
+                        // case 1: API returns { success: true }
+                        if (is_array($json) && ($json['success'] ?? false) === true) {
+                            $ok = true;
+                        }
+
+                        // case 2: plain text success (some APIs)
+                        if (is_string($body) && stripos($body, 'success') !== false) {
+                            $ok = true;
+                        }
+                    }
+
                 } catch (\Throwable $e) {
-                    $body = $e->getMessage();
-                    $ok   = false;
+                    $status = null;
+                    $body   = $e->getMessage();
+                    $ok     = false;
                 }
+
+
 
                 if ($ok) {
                     $row->update([
@@ -934,6 +968,96 @@ class NoBusinessWhatsappController extends Controller
                 'sent'    => $sent,
                 'failed'  => $failed,
                 'results' => $results,
+            ]);
+
+        } finally {
+            optional($lock)->release();
+        }
+    }
+
+
+
+
+
+
+
+    public function sendPdfRetry(InvoiceSend $invoice)
+    {
+        $user = auth()->user();
+
+        $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
+        if (!$apiKey) {
+            return redirect()->back([
+                'error' => 'WhatsApp API not set. Please set from API Settings.',
+            ], 422);
+        }
+
+        // ✅ avoid double click / parallel sending
+        $lock = Cache::lock("wa_send_user_{$user->id}", 180); // 3 min
+        if (!$lock->get()) {
+            return back()->with(['error' =>  'Sending already in progress. Please wait.'], 429);
+        }
+
+        try {
+            $baseUrl = strtok($apiKey->base_url, '?');
+                // mark sending
+            $invoice->update([
+                    'status' => 'sending',
+                    'error_message' => null,
+                    'response_code' => null,
+                ]);
+
+                $phone = preg_replace('/\D+/', '', (string)$invoice->recipient_phone);
+                $pdfUrl = (string)$invoice->file_url;
+
+                $endpoint = $baseUrl . '?' . http_build_query([
+                        'number' => $phone,
+                        'pdf'    => $pdfUrl,
+                    ]);
+
+                // ✅ rate limit protection
+
+                $status = null;
+
+
+                try {
+                    $resp = Http::timeout(30)->get($endpoint);
+                    $status = $resp->status();
+                    $body   = $resp->body();
+                    $ok     = $resp->successful();
+                } catch (\Throwable $e) {
+                    $body = $e->getMessage();
+                    $ok   = false;
+                }
+
+                if ($ok) {
+                    $invoice->update([
+                        'status'        => 'success',
+                        'response_code' => $status,
+                        'sent_at'       => now(),
+                        'meta'          => array_merge((array)($row->meta ?? []), [
+                            'endpoint' => $endpoint,
+                        ]),
+                    ]);
+
+                    $results[] = ['id' => $row->id, 'ok' => true, 'phone' => $phone];
+                } else {
+                    $invoice->update([
+                        'status'        => 'failed',
+                        'response_code' => $status,
+                        'error_message' => Str::limit((string)($body ?? 'Unknown error'), 500),
+                        'sent_at'       => now(),
+                        'meta'          => array_merge((array)($row->meta ?? []), [
+                            'endpoint' => $endpoint,
+                        ]),
+                    ]);
+
+
+                }
+
+
+            return redirect()->back([
+                'success' => 'Sent successfully'
             ]);
 
         } finally {

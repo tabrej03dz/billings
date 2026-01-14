@@ -240,6 +240,7 @@
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Provider</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">File</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Error</th>
+                        <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Action</th>
                     </tr>
                     </thead>
 
@@ -357,6 +358,9 @@
                                 @else
                                     <span class="text-slate-400 dark:text-slate-500">—</span>
                                 @endif
+                            </td>
+                            <td class="px-3 sm:px-4 py-2 align-top text-[11px] sm:text-xs max-w-xs">
+                                <a href="{{route('no-business.pdfs.retry', ['invoice' => $send->id])}}">Resend</a>
                             </td>
                         </tr>
                     @empty
