@@ -323,142 +323,115 @@
             dz.processFile(nextFile);
         }
 
-        {{--const dz = new Dropzone("#pdfDropzone", {--}}
-        {{--    url: "{{ route('no-business.send-pdf-dropzone') }}",--}}
-        {{--    method: "post",--}}
-        {{--    paramName: "pdf",--}}
-
-        {{--    acceptedFiles: "application/pdf,.pdf",--}}
-        {{--    maxFilesize: 5,--}}
-        {{--    uploadMultiple: false,--}}
-
-        {{--    parallelUploads: 1,          // ✅ still keep 1--}}
-        {{--    autoProcessQueue: false,     // ✅ IMPORTANT (we will control manually)--}}
-
-        {{--    addRemoveLinks: true,--}}
-        {{--    dictRemoveFile: "Remove",--}}
-        {{--    createImageThumbnails: false,--}}
-
-        {{--    timeout: 300000,--}}
-        {{--    headers: { 'X-CSRF-TOKEN': csrf },--}}
-
-        {{--    init: function () {--}}
-
-        {{--        this.on("addedfile", function(file){--}}
-        {{--            // ✅ when user adds files, start loop--}}
-        {{--            runNext(this);--}}
-        {{--        });--}}
-
-        {{--        this.on("sending", function(file, xhr, formData) {--}}
-        {{--            const phone = (document.getElementById('phoneInput').value || '').trim();--}}
-        {{--            formData.append('phone', phone);--}}
-        {{--        });--}}
-
-        {{--        this.on("success", function(file, res) {--}}
-        {{--            failedFileMap.delete(file.name);--}}
-        {{--            if (failedFileMap.size === 0) retryAllBtn.classList.add("hidden");--}}
-
-        {{--            file._sent_ok = true;--}}
-
-        {{--            Swal.fire({--}}
-        {{--                icon: 'success',--}}
-        {{--                title: '✅ Sent!',--}}
-        {{--                text: `${file.name} → ${res.phone ?? ''}`,--}}
-        {{--                timer: 1200,--}}
-        {{--                showConfirmButton: false--}}
-        {{--            });--}}
-
-        {{--            // ✅ mark done and start next--}}
-        {{--            isProcessing = false;--}}
-        {{--            runNext(this);--}}
-        {{--        });--}}
-
-        {{--        this.on("error", function(file, errorMessage, xhr) {--}}
-        {{--            failedFileMap.set(file.name, file);--}}
-        {{--            retryAllBtn.classList.remove("hidden");--}}
-
-        {{--            let msg = "Send failed.";--}}
-        {{--            if (xhr && xhr.responseText) {--}}
-        {{--                try {--}}
-        {{--                    const j = JSON.parse(xhr.responseText);--}}
-        {{--                    msg = j.message || msg;--}}
-        {{--                } catch(e){}--}}
-        {{--            }--}}
-
-        {{--            // add retry btn (avoid duplicates)--}}
-        {{--            if (file.previewElement && !file.previewElement.querySelector('.dz-retry')) {--}}
-        {{--                const retryBtn = Dropzone.createElement("<button type='button' class='dz-retry'>🔁 Retry</button>");--}}
-        {{--                file.previewElement.appendChild(retryBtn);--}}
-
-        {{--                retryBtn.addEventListener("click", (e) => {--}}
-        {{--                    e.preventDefault(); e.stopPropagation();--}}
-
-        {{--                    // ✅ reset status & requeue file--}}
-        {{--                    retryBtn.remove();--}}
-        {{--                    failedFileMap.delete(file.name);--}}
-
-        {{--                    // Remove and re-add (fresh queued)--}}
-        {{--                    dz.removeFile(file);--}}
-        {{--                    dz.addFile(file);--}}
-        {{--                });--}}
-        {{--            }--}}
-
-        {{--            Swal.fire({ icon:'error', title:'❌ Failed', text: msg });--}}
-
-        {{--            // ✅ IMPORTANT:--}}
-        {{--            // If you want "fail ho to bhi next chalao", uncomment below 2 lines:--}}
-        {{--            isProcessing = false;--}}
-        {{--            runNext(this);--}}
-
-        {{--            // If you want "fail ho to STOP", then comment above 2 lines.--}}
-        {{--        });--}}
-
-        {{--        this.on("removedfile", function(file){--}}
-        {{--            failedFileMap.delete(file.name);--}}
-        {{--            if (failedFileMap.size === 0) retryAllBtn.classList.add("hidden");--}}
-        {{--        });--}}
-
-        {{--        retryAllBtn.addEventListener("click", () => {--}}
-        {{--            if (failedFileMap.size === 0) return;--}}
-
-        {{--            const files = Array.from(failedFileMap.values());--}}
-        {{--            failedFileMap.clear();--}}
-        {{--            retryAllBtn.classList.add("hidden");--}}
-
-        {{--            files.forEach(f => {--}}
-        {{--                dz.removeFile(f);--}}
-        {{--                dz.addFile(f);--}}
-        {{--            });--}}
-        {{--        });--}}
-        {{--    }--}}
-        {{--});--}}
-
         const dz = new Dropzone("#pdfDropzone", {
             url: "{{ route('no-business.send-pdf-dropzone') }}",
             method: "post",
+            paramName: "pdf",
 
-            uploadMultiple: true,
-            parallelUploads: 1,
-            autoProcessQueue: false,
-
-            paramName: "pdfs",
             acceptedFiles: "application/pdf,.pdf",
             maxFilesize: 5,
+            uploadMultiple: false,
 
+            parallelUploads: 1,          // ✅ still keep 1
+            autoProcessQueue: false,     // ✅ IMPORTANT (we will control manually)
+
+            addRemoveLinks: true,
+            dictRemoveFile: "Remove",
+            createImageThumbnails: false,
+
+            timeout: 300000,
             headers: { 'X-CSRF-TOKEN': csrf },
 
-            init() {
-                this.on("sendingmultiple", function(files, xhr, formData){
-                    formData.append('phone', (document.getElementById('phoneInput').value || '').trim());
+            init: function () {
+
+                this.on("addedfile", function(file){
+                    // ✅ when user adds files, start loop
+                    runNext(this);
                 });
 
-                this.on("addedfiles", function(){
-                    this.processQueue(); // one request
+                this.on("sending", function(file, xhr, formData) {
+                    const phone = (document.getElementById('phoneInput').value || '').trim();
+                    formData.append('phone', phone);
+                });
+
+                this.on("success", function(file, res) {
+                    failedFileMap.delete(file.name);
+                    if (failedFileMap.size === 0) retryAllBtn.classList.add("hidden");
+
+                    file._sent_ok = true;
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✅ Sent!',
+                        text: `${file.name} → ${res.phone ?? ''}`,
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
+
+                    // ✅ mark done and start next
+                    isProcessing = false;
+                    runNext(this);
+                });
+
+                this.on("error", function(file, errorMessage, xhr) {
+                    failedFileMap.set(file.name, file);
+                    retryAllBtn.classList.remove("hidden");
+
+                    let msg = "Send failed.";
+                    if (xhr && xhr.responseText) {
+                        try {
+                            const j = JSON.parse(xhr.responseText);
+                            msg = j.message || msg;
+                        } catch(e){}
+                    }
+
+                    // add retry btn (avoid duplicates)
+                    if (file.previewElement && !file.previewElement.querySelector('.dz-retry')) {
+                        const retryBtn = Dropzone.createElement("<button type='button' class='dz-retry'>🔁 Retry</button>");
+                        file.previewElement.appendChild(retryBtn);
+
+                        retryBtn.addEventListener("click", (e) => {
+                            e.preventDefault(); e.stopPropagation();
+
+                            // ✅ reset status & requeue file
+                            retryBtn.remove();
+                            failedFileMap.delete(file.name);
+
+                            // Remove and re-add (fresh queued)
+                            dz.removeFile(file);
+                            dz.addFile(file);
+                        });
+                    }
+
+                    Swal.fire({ icon:'error', title:'❌ Failed', text: msg });
+
+                    // ✅ IMPORTANT:
+                    // If you want "fail ho to bhi next chalao", uncomment below 2 lines:
+                    isProcessing = false;
+                    runNext(this);
+
+                    // If you want "fail ho to STOP", then comment above 2 lines.
+                });
+
+                this.on("removedfile", function(file){
+                    failedFileMap.delete(file.name);
+                    if (failedFileMap.size === 0) retryAllBtn.classList.add("hidden");
+                });
+
+                retryAllBtn.addEventListener("click", () => {
+                    if (failedFileMap.size === 0) return;
+
+                    const files = Array.from(failedFileMap.values());
+                    failedFileMap.clear();
+                    retryAllBtn.classList.add("hidden");
+
+                    files.forEach(f => {
+                        dz.removeFile(f);
+                        dz.addFile(f);
+                    });
                 });
             }
         });
-
-
     </script>
 
 
