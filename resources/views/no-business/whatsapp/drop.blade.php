@@ -326,14 +326,14 @@
         const dz = new Dropzone("#pdfDropzone", {
             url: "{{ route('no-business.send-pdf-dropzone') }}",
             method: "post",
-            paramName: "pdf",
+            paramName: "pdfs",
 
             acceptedFiles: "application/pdf,.pdf",
             maxFilesize: 5,
-            uploadMultiple: false,
+            uploadMultiple: true,
 
             parallelUploads: 1,          // ✅ still keep 1
-            autoProcessQueue: false,     // ✅ IMPORTANT (we will control manually)
+            autoProcessQueue: true,     // ✅ IMPORTANT (we will control manually)
 
             addRemoveLinks: true,
             dictRemoveFile: "Remove",
