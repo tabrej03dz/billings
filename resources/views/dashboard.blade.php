@@ -75,6 +75,18 @@
                 </p>
             </div>
 
+            {{-- Pending Amount --}}
+            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-red-700 p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">
+                    Pending Amount
+                </p>
+                <p class="mt-1 text-lg font-bold text-red-700 dark:text-red-300 leading-none">
+                    ₹ {{ number_format($totalPendingAmount ?? 0, 2) }}
+                </p>
+                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    Today: ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
+                </p>
+            </div>
             {{-- Items / Stock --}}
             <div class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-3 shadow-sm">
                 <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -91,6 +103,9 @@
             </span>
                 </p>
             </div>
+
+
+
 
         </div>
 

@@ -309,6 +309,18 @@ class DashboardController extends Controller
         $lowStockItems = (clone $itemQ)->with('category')
             ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
 
+        // --- Pending / Balance (Due) ---
+        // NOTE: invoices table me 'balance' column already hai (pending amount)
+        $todayPendingAmount = (clone $salesQ)
+            ->whereDate('invoice_date', $today)
+            ->sum('balance');
+
+        $monthPendingAmount = (clone $salesQ)
+            ->whereBetween('invoice_date', [$monthStart, $today])
+            ->sum('balance');
+
+        $totalPendingAmount = (clone $salesQ)->sum('balance');
+
         return view('dashboard', compact(
             'today', 'business',
             'todaySalesAmount', 'todaySalesCount',
@@ -316,7 +328,7 @@ class DashboardController extends Controller
             'todayPurchasesAmount', 'monthPurchasesAmount', 'totalPurchasesAmount',
             'totalItems', 'totalStockQty', 'lowStockCount',
             'todayMetalRates', 'goldPurities', 'silverPurities', 'rateMap',
-            'recentInvoices', 'recentPurchases', 'lowStockItems'
+            'recentInvoices', 'recentPurchases', 'lowStockItems', 'todayPendingAmount', 'totalPendingAmount'
         ));
     }
 
