@@ -153,10 +153,10 @@
 {{--                        <h2 class="font-semibold text-slate-900 text-sm sm:text-base">Upload PDF & Send (Auto)</h2>--}}
 {{--                    </div>--}}
 
-{{--                    <button type="button" id="retry-all-btn"--}}
-{{--                            class="hidden text-[11px] px-3 py-1 rounded-full bg-yellow-50 text-yellow-800 border border-yellow-200">--}}
-{{--                        🔁 Retry All Failed--}}
-{{--                    </button>--}}
+                    <button type="button" id="retry-all-btn"
+                            class="hidden text-[11px] px-3 py-1 rounded-full bg-yellow-50 text-yellow-800 border border-yellow-200">
+                        🔁 Retry All Failed
+                    </button>
 {{--                </div>--}}
 
 {{--                <p class="text-[11px] sm:text-xs text-slate-500 -mt-2">--}}
