@@ -11,12 +11,6 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
-
-
-
-
 
 class NoBusinessWhatsappController extends Controller
 {
@@ -667,6 +661,7 @@ class NoBusinessWhatsappController extends Controller
 //        // 4) store pdf
 //        $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
 //        $pdfUrl  = asset('storage/' . $pdfPath);
+////        $pdfUrl  = 'https://post.realvictorygroups.com/storage/images/2025-12-20/Jewellery/BrckLBbXfHxGdR8cOA8xj6jKxPJAaR77Dr0waMZM.jpg';
 //
 //        // 5) build endpoint (whatapi)
 //        $baseUrl = strtok($apiKey->base_url, '?');
@@ -741,280 +736,80 @@ class NoBusinessWhatsappController extends Controller
 //        ]);
 //    }
 
-//    public function sendInvoiceWhatsappDropzone(Request $request)
-//    {
-//        $user = $request->user();
-//
-//        $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
-//        if (!$apiKey) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'WhatsApp API not set. Please set from API Settings.',
-//            ], 422);
-//        }
-//
-//        $request->validate([
-//            'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'],
-//            'phone' => ['nullable', 'string', 'max:20'],
-//        ]);
-//
-//        $pdfFile = $request->file('pdf');
-//
-//        // phone resolve
-//        $phone = preg_replace('/\D+/', '', (string)($request->phone ?? ''));
-//        if ($phone === '') {
-//            $name = pathinfo($pdfFile->getClientOriginalName(), PATHINFO_FILENAME);
-//            $phone = preg_replace('/\D+/', '', $name);
-//            if (strlen($phone) === 10) $phone = '91' . $phone;
-//        }
-//
-//        if ($phone === '' || strlen($phone) < 10) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'Valid phone not found. Provide phone input or name file as 10/12 digit number.',
-//            ], 422);
-//        }
-//
-//        // store pdf
-//        $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
-//        $pdfUrl  = asset('storage/' . $pdfPath);
-//
-//        // ✅ build endpoint safely
-//        $baseUrl = strtok($apiKey->base_url, '?');
-//
-//        $query = [
-//            'number' => $phone,
-//            // 'text' => 'Your invoice from Real Victory Groups',
-//            'pdf'   => $pdfUrl,
-//        ];
-//
-//        $endpoint = $baseUrl . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
-//
-//        // optional: log endpoint
-//        \Log::info('WA_ENDPOINT', ['endpoint' => $endpoint]);
-//
-//        $success     = false;
-//        $status      = null;
-//        $body        = null;
-//        $json        = null;
-//        $providerMsg = null;
-//
-//        // rate limit
-//        sleep(3);
-//
-//        try {
-//            $client = Http::timeout(30)->connectTimeout(15);
-//
-//            // ✅ if your server has SSL issues, temporarily enable:
-//            // $client = $client->withoutVerifying();
-//
-//            $response = $client->get($endpoint);
-//
-//            $status = $response->status();
-//            $body   = $response->body();
-//
-//            // JSON parse (if possible)
-//            $json = null;
-//            try {
-//                $json = $response->json();
-//            } catch (\Throwable $e) {}
-//
-//            // ✅ true success detection:
-//            // 1) HTTP 2xx
-//            // 2) If JSON exists, ensure it doesn't say error/false
-//            $success = $response->successful();
-//
-//            if (is_array($json)) {
-//                // adjust keys based on your provider's response
-//                if (($json['success'] ?? null) === false) $success = false;
-//                if (($json['status']  ?? null) === 'error') $success = false;
-//                if (isset($json['error']) && $json['error']) $success = false;
-//
-//                $providerMsg = $json['message_id'] ?? $json['id'] ?? $json['msgid'] ?? null;
-//            }
-//
-//            Log::info('WA_RESPONSE', [
-//                'http' => $status,
-//                'success_final' => $success,
-//                'body' => \Illuminate\Support\Str::limit((string)$body, 500),
-//                'json' => $json,
-//            ]);
-//
-//        } catch (\Throwable $e) {
-//            $success = false;
-//            $status  = null;
-//            $body    = $e->getMessage();
-//            Log::error('WA_EXCEPTION', ['msg' => $body]);
-//        }
-//
-//        // ✅ DB log always stores response (even for success)
-//        InvoiceSend::create([
-//            'business_id'         => null,
-//            'user_id'             => $user->id,
-//            'invoice_id'          => null,
-//            'channel'             => 'whatsapp',
-//            'recipient_phone'     => $phone,
-//            'recipient_email'     => null,
-//            'file_url'            => $pdfUrl,
-//            'status'              => $success ? 'success' : 'failed',
-//            'response_code'       => $status,
-//            'provider_message_id' => $providerMsg,
-//            'error_message'       => $success ? null : \Illuminate\Support\Str::limit((string)$body, 500),
-//            'meta'                => [
-//                'endpoint'      => $endpoint,
-//                'pdf_path'      => $pdfPath,
-//                'pdf_url'       => $pdfUrl,
-//                'source_name'   => $pdfFile->getClientOriginalName(),
-//                'api_http'      => $status,
-//                'api_body'      => \Illuminate\Support\Str::limit((string)$body, 2000),
-//                'api_json'      => $json,
-//            ],
-//            'sent_at'             => now(),
-//        ]);
-//
-//        if (!$success) {
-//            return response()->json([
-//                'success' => false,
-//                'message' => 'WhatsApp API error: ' . ($body ?? 'Unknown error'),
-//            ], 422);
-//        }
-//
-//        return response()->json([
-//            'success' => true,
-//            'message' => 'Sent successfully',
-//            'phone'   => $phone,
-//            'pdf_url' => $pdfUrl,
-//            'provider_message_id' => $providerMsg,
-//        ]);
-//    }
-
-
-    public function sendInvoiceWhatsappDropzone(Request $request)
+    public function uploadPdfQueue(Request $request)
     {
         $user = $request->user();
 
+        // ✅ API config check (optional: aap upload allow karna chaho to hata sakte ho)
         $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
         if (!$apiKey) {
             return response()->json([
                 'success' => false,
-                'message' => 'WhatsApp API not set.',
+                'message' => 'WhatsApp API not set. Please set from API Settings.',
             ], 422);
         }
 
-        // single OR multiple pdf support
         $request->validate([
-            'phone'      => ['nullable','string','max:20'],
-            'pdf'        => ['nullable','file','mimes:pdf','max:5120'],
-            'pdfs'       => ['nullable'],
-            'pdfs.*'     => ['file','mimes:pdf','max:5120'],
+            'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
-        $files = [];
+        $pdfFile = $request->file('pdf');
 
-        if ($request->hasFile('pdf')) {
-            $files[] = $request->file('pdf');
-        }
-        if ($request->hasFile('pdfs')) {
-            $files = array_merge($files, $request->file('pdfs'));
+        // ✅ phone decide: input > filename
+        $phone = preg_replace('/\D+/', '', (string)($request->phone ?? ''));
+
+        if (empty($phone)) {
+            $originalName = $pdfFile->getClientOriginalName(); // 9876543210.pdf
+            $nameNoExt    = pathinfo($originalName, PATHINFO_FILENAME);
+            $phoneFromFile = preg_replace('/\D+/', '', $nameNoExt);
+
+            if (strlen($phoneFromFile) === 10) {
+                $phoneFromFile = '91' . $phoneFromFile;
+            }
+            $phone = $phoneFromFile;
         }
 
-        if (empty($files)) {
+        if (empty($phone) || strlen($phone) < 10) {
             return response()->json([
                 'success' => false,
-                'message' => 'No PDF found.',
+                'message' => 'Valid phone not found. Provide phone input or name file as 10/12 digit number.',
             ], 422);
         }
 
-        $ids = [];
+        // ✅ store pdf
+        $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
+        $pdfUrl  = asset('storage/' . $pdfPath);
 
-        /**
-         * ==========================
-         * STEP 1: STORE + DB SAVE
-         * ==========================
-         */
-        foreach ($files as $pdfFile) {
-
-            // phone resolve
-            $phone = preg_replace('/\D+/', '', (string)($request->phone ?? ''));
-            if ($phone === '') {
-                $name  = pathinfo($pdfFile->getClientOriginalName(), PATHINFO_FILENAME);
-                $phone = preg_replace('/\D+/', '', $name);
-                if (strlen($phone) === 10) $phone = '91'.$phone;
-            }
-
-            if ($phone === '' || strlen($phone) < 10) {
-                continue;
-            }
-
-            $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
-            $pdfUrl  = asset('storage/'.$pdfPath);
-
-            $row = InvoiceSend::create([
-                'business_id'     => null,
-                'user_id'         => $user->id,
-                'invoice_id'      => null,
-                'channel'         => 'whatsapp',
-                'recipient_phone' => $phone,
-                'file_url'        => $pdfUrl,
-                'status'          => 'pending',
-                'meta'            => [
-                    'pdf_path'    => $pdfPath,
-                    'source_name' => $pdfFile->getClientOriginalName(),
-                ],
-            ]);
-
-            $ids[] = $row->id;
-        }
-
-        /**
-         * ==========================
-         * STEP 2: LOOP & SEND
-         * ==========================
-         */
-        $rows = InvoiceSend::whereIn('id', $ids)->get();
-
-        foreach ($rows as $row) {
-
-            $row->update(['status' => 'processing']);
-
-            try {
-                // 🔥 EXACTLY AS YOU SAID – direct base_url use
-                $response = Http::timeout(30)->get(
-                    $apiKey->base_url,
-                    [
-                        'number' => $row->recipient_phone,
-                        'pdf'    => $row->file_url,
-                    ]
-                );
-
-                $success = $response->successful();
-
-                $row->update([
-                    'status'        => $success ? 'success' : 'failed',
-                    'response_code' => $response->status(),
-                    'error_message' => $success ? null : Str::limit($response->body(), 500),
-                    'sent_at'       => now(),
-                ]);
-
-            } catch (\Throwable $e) {
-                $row->update([
-                    'status'        => 'failed',
-                    'error_message' => $e->getMessage(),
-                ]);
-            }
-
-            // provider safety delay
-            sleep(2);
-        }
+        // ✅ ONLY QUEUE RECORD (no API call)
+        $row = InvoiceSend::create([
+            'business_id'         => null,
+            'user_id'             => $user->id,
+            'invoice_id'          => null,
+            'channel'             => 'whatsapp',
+            'recipient_phone'     => $phone,
+            'recipient_email'     => null,
+            'file_url'            => $pdfUrl,
+            'status'              => 'queued',     // ✅ important
+            'response_code'       => null,
+            'provider_message_id' => null,
+            'error_message'       => null,
+            'meta'                => [
+                'pdf_path'    => $pdfPath,
+                'pdf_url'     => $pdfUrl,
+                'source_name' => $pdfFile->getClientOriginalName(),
+            ],
+            'sent_at'             => null,
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'PDF upload & WhatsApp send completed',
-            'total'   => count($ids),
+            'message' => 'Uploaded & queued',
+            'id'      => $row->id,
+            'phone'   => $phone,
+            'pdf_url' => $pdfUrl,
         ]);
     }
-
-
 
 
 }

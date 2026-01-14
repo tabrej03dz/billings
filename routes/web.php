@@ -64,6 +64,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/no-business/send-pdf-dropzone', [NoBusinessWhatsappController::class, 'sendInvoiceWhatsappDropzone'])
         ->name('no-business.send-pdf-dropzone');
 
+    // web.php
+    Route::post('/no-business/pdfs/upload', [NoBusinessWhatsappController::class, 'uploadPdfQueue'])
+        ->name('no-business.pdfs.upload');
+
+    Route::post('/no-business/pdfs/send-queued', [NoBusinessWhatsappController::class, 'sendQueuedPdfs'])
+        ->name('no-business.pdfs.sendQueued');
+
 
 
     Route::resource('birthday-wish-logs', BirthdayWishLogController::class)
