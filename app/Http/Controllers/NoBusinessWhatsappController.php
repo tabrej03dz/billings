@@ -892,49 +892,15 @@ class NoBusinessWhatsappController extends Controller
                 $body   = null;
                 $ok     = false;
 
-//                try {
-//                    $resp = Http::timeout(30)->get($endpoint);
-//                    $status = $resp->status();
-//                    $body   = $resp->body();
-//                    $ok     = $resp->successful();
-//                } catch (\Throwable $e) {
-//                    $body = $e->getMessage();
-//                    $ok   = false;
-//                }
-
                 try {
-                    $resp   = Http::timeout(30)->get($endpoint);
+                    $resp = Http::timeout(30)->get($endpoint);
                     $status = $resp->status();
                     $body   = $resp->body();
-
-                    // 🔥 WhatsApp API JSON decode
-                    $json = null;
-                    try {
-                        $json = $resp->json();
-                    } catch (\Throwable $e) {}
-
-                    // ✅ success condition
-                    $ok = false;
-
-                    if ($resp->successful()) {
-                        // case 1: API returns { success: true }
-                        if (is_array($json) && ($json['success'] ?? false) === true) {
-                            $ok = true;
-                        }
-
-                        // case 2: plain text success (some APIs)
-                        if (is_string($body) && stripos($body, 'success') !== false) {
-                            $ok = true;
-                        }
-                    }
-
+                    $ok     = $resp->successful();
                 } catch (\Throwable $e) {
-                    $status = null;
-                    $body   = $e->getMessage();
-                    $ok     = false;
+                    $body = $e->getMessage();
+                    $ok   = false;
                 }
-
-
 
                 if ($ok) {
                     $row->update([
