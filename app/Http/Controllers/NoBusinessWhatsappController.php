@@ -893,7 +893,7 @@ class NoBusinessWhatsappController extends Controller
                 $ok     = false;
 
                 try {
-                    $resp = Http::timeout(20)->get($endpoint);
+                    $resp = Http::timeout(30)->get($endpoint);
                     $status = $resp->status();
                     $body   = $resp->body();
                     $ok     = $resp->successful();
