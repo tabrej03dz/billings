@@ -382,6 +382,9 @@
                     @endforelse
                     </tbody>
                 </table>
+                <div class="px-4 sm:px-5 py-3 border-t border-slate-100 dark:border-slate-800">
+                    {{ $latestSends->links() }}
+                </div>
             </div>
         </div>
 

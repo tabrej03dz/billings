@@ -211,9 +211,9 @@ class InvoiceSendController extends Controller
         // latest sends
         $latestSends = (clone $query)
             ->latest('sent_at')
-            ->limit(50)
             ->with(['user', 'invoice'])
-            ->get();
+            ->paginate(30)          // per page
+            ->withQueryString();
 
         return view('reports.invoice_sends', compact(
             'perUser',
