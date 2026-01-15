@@ -749,13 +749,13 @@ class NoBusinessWhatsappController extends Controller
         $user = $request->user();
 
         // ✅ API config check (optional: aap upload allow karna chaho to hata sakte ho)
-        $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
-        if (!$apiKey) {
-            return response()->json([
-                'success' => false,
-                'message' => 'WhatsApp API not set. Please set from API Settings.',
-            ], 422);
-        }
+//        $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
+//        if (!$apiKey) {
+//            return response()->json([
+//                'success' => false,
+//                'message' => 'WhatsApp API not set. Please set from API Settings.',
+//            ], 422);
+//        }
 
         $request->validate([
             'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB
@@ -798,7 +798,7 @@ class NoBusinessWhatsappController extends Controller
             'recipient_phone'     => $phone,
             'recipient_email'     => null,
             'file_url'            => $pdfUrl,
-            'status'              => 'queued',     // ✅ important
+            'status' => 'uploaded',    // ✅ important
             'response_code'       => null,
             'provider_message_id' => null,
             'error_message'       => null,
@@ -975,7 +975,6 @@ class NoBusinessWhatsappController extends Controller
 //
 //                $phone = preg_replace('/\D+/', '', (string)$invoice->recipient_phone);
 //                $pdfUrl = (string)$invoice->file_url;
-//                $pdfUrl = asset('storage/'. $invoice->file_url);
 //
 //                $endpoint = $baseUrl . '?' . http_build_query([
 //                        'number' => $phone,
@@ -1031,6 +1030,9 @@ class NoBusinessWhatsappController extends Controller
 //            optional($lock)->release();
 //        }
 //    }
+
+
+
 
     public function sendPdfRetry(InvoiceSend $invoice)
     {
@@ -1117,5 +1119,4 @@ class NoBusinessWhatsappController extends Controller
             optional($lock)->release();
         }
     }
-
 }
