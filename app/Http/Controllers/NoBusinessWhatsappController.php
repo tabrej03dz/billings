@@ -947,85 +947,172 @@ class NoBusinessWhatsappController extends Controller
 
 
 
+//    public function sendPdfRetry(InvoiceSend $invoice)
+//    {
+//        $user = auth()->user();
+//
+//        $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
+//        if (!$apiKey) {
+//            return redirect()->back([
+//                'error' => 'WhatsApp API not set. Please set from API Settings.',
+//            ], 422);
+//        }
+//
+//        // ✅ avoid double click / parallel sending
+//        $lock = Cache::lock("wa_send_user_{$user->id}", 180); // 3 min
+//        if (!$lock->get()) {
+//            return back()->with(['error' =>  'Sending already in progress. Please wait.'], 429);
+//        }
+//
+//        try {
+//            $baseUrl = strtok($apiKey->base_url, '?');
+//                // mark sending
+//            $invoice->update([
+//                    'status' => 'sending',
+//                    'error_message' => null,
+//                    'response_code' => null,
+//                ]);
+//
+//                $phone = preg_replace('/\D+/', '', (string)$invoice->recipient_phone);
+//                $pdfUrl = (string)$invoice->file_url;
+//                $pdfUrl = asset('storage/'. $invoice->file_url);
+//
+//                $endpoint = $baseUrl . '?' . http_build_query([
+//                        'number' => $phone,
+//                        'pdf'    => $pdfUrl,
+//                    ]);
+//
+//                // ✅ rate limit protection
+//
+//                $status = null;
+//
+//
+//                try {
+//                    $resp = Http::timeout(30)->get($endpoint);
+//                    $status = $resp->status();
+//                    $body   = $resp->body();
+//                    $ok     = $resp->successful();
+//                } catch (\Throwable $e) {
+//                    $body = $e->getMessage();
+//                    $ok   = false;
+//                }
+//
+//                if ($ok) {
+//                    $invoice->update([
+//                        'status'        => 'success',
+//                        'response_code' => $status,
+//                        'sent_at'       => now(),
+//                        'meta'          => array_merge((array)($row->meta ?? []), [
+//                            'endpoint' => $endpoint,
+//                        ]),
+//                    ]);
+//
+//                    $results[] = ['id' => $row->id, 'ok' => true, 'phone' => $phone];
+//                } else {
+//                    $invoice->update([
+//                        'status'        => 'failed',
+//                        'response_code' => $status,
+//                        'error_message' => Str::limit((string)($body ?? 'Unknown error'), 500),
+//                        'sent_at'       => now(),
+//                        'meta'          => array_merge((array)($row->meta ?? []), [
+//                            'endpoint' => $endpoint,
+//                        ]),
+//                    ]);
+//
+//
+//                }
+//
+//
+//            return redirect()->back([
+//                'success' => 'Sent successfully'
+//            ]);
+//
+//        } finally {
+//            optional($lock)->release();
+//        }
+//    }
+
     public function sendPdfRetry(InvoiceSend $invoice)
     {
         $user = auth()->user();
 
         $apiKey = ApiKey::where('user_id', $user->id)->latest('id')->first();
         if (!$apiKey) {
-            return redirect()->back([
-                'error' => 'WhatsApp API not set. Please set from API Settings.',
-            ], 422);
+            return back()->with('error', 'WhatsApp API not set. Please set from API Settings.');
         }
 
-        // ✅ avoid double click / parallel sending
-        $lock = Cache::lock("wa_send_user_{$user->id}", 180); // 3 min
+        // ✅ Double click / parallel send avoid
+        $lock = Cache::lock("wa_send_invoice_{$invoice->id}", 180);
         if (!$lock->get()) {
-            return back()->with(['error' =>  'Sending already in progress. Please wait.'], 429);
+            return back()->with('error', 'This invoice is already sending. Please wait.');
         }
 
         try {
             $baseUrl = strtok($apiKey->base_url, '?');
-                // mark sending
-            $invoice->update([
-                    'status' => 'sending',
-                    'error_message' => null,
-                    'response_code' => null,
+
+            $phone  = preg_replace('/\D+/', '', (string) $invoice->recipient_phone);
+            $pdfUrl = (string) $invoice->file_url;
+
+            if (!$phone || !$pdfUrl) {
+                $invoice->update([
+                    'status'        => 'failed',
+                    'error_message' => 'Phone or PDF URL missing.',
                 ]);
+                return back()->with('error', 'Phone or PDF URL missing.');
+            }
 
-                $phone = preg_replace('/\D+/', '', (string)$invoice->recipient_phone);
-                $pdfUrl = (string)$invoice->file_url;
-
-                $endpoint = $baseUrl . '?' . http_build_query([
-                        'number' => $phone,
-                        'pdf'    => $pdfUrl,
-                    ]);
-
-                // ✅ rate limit protection
-
-                $status = null;
-
-
-                try {
-                    $resp = Http::timeout(30)->get($endpoint);
-                    $status = $resp->status();
-                    $body   = $resp->body();
-                    $ok     = $resp->successful();
-                } catch (\Throwable $e) {
-                    $body = $e->getMessage();
-                    $ok   = false;
-                }
-
-                if ($ok) {
-                    $invoice->update([
-                        'status'        => 'success',
-                        'response_code' => $status,
-                        'sent_at'       => now(),
-                        'meta'          => array_merge((array)($row->meta ?? []), [
-                            'endpoint' => $endpoint,
-                        ]),
-                    ]);
-
-                    $results[] = ['id' => $row->id, 'ok' => true, 'phone' => $phone];
-                } else {
-                    $invoice->update([
-                        'status'        => 'failed',
-                        'response_code' => $status,
-                        'error_message' => Str::limit((string)($body ?? 'Unknown error'), 500),
-                        'sent_at'       => now(),
-                        'meta'          => array_merge((array)($row->meta ?? []), [
-                            'endpoint' => $endpoint,
-                        ]),
-                    ]);
-
-
-                }
-
-
-            return redirect()->back([
-                'success' => 'Sent successfully'
+            // mark sending
+            $invoice->update([
+                'status'        => 'sending',
+                'error_message' => null,
+                'response_code' => null,
             ]);
 
+            $status = null;
+            $body   = null;
+            $ok     = false;
+
+            try {
+                // ✅ Best practice: params separately
+                $resp = Http::timeout(30)->get($baseUrl, [
+                    'number' => $phone,
+                    'pdf'    => $pdfUrl,
+                ]);
+
+                $status = $resp->status();
+                $body   = $resp->body();
+                $ok     = $resp->successful(); // 200-299
+            } catch (\Throwable $e) {
+                $body = $e->getMessage();
+                $ok   = false;
+            }
+
+            $endpoint = $baseUrl . '?' . http_build_query(['number' => $phone, 'pdf' => $pdfUrl]);
+
+            if ($ok) {
+                $invoice->update([
+                    'status'        => 'success',
+                    'response_code' => $status,
+                    'sent_at'       => now(),
+                    'meta'          => array_merge((array) ($invoice->meta ?? []), [
+                        'endpoint' => $endpoint,
+                        'response' => Str::limit((string) $body, 1000),
+                    ]),
+                ]);
+
+                return back()->with('success', 'PDF sent successfully.');
+            }
+
+            $invoice->update([
+                'status'        => 'failed',
+                'response_code' => $status,
+                'error_message' => Str::limit((string) ($body ?? 'Unknown error'), 500),
+                'meta'          => array_merge((array) ($invoice->meta ?? []), [
+                    'endpoint' => $endpoint,
+                ]),
+            ]);
+
+            return back()->with('error', 'PDF send failed. Please retry.');
         } finally {
             optional($lock)->release();
         }
