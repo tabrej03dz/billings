@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\InvoiceSendController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BirthdayWishController;
@@ -14,7 +15,7 @@ Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
 Route::post('/login',  [HomeController::class, 'login']);
 
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     Route::post('/logout', [HomeController::class, 'logout']);
 
@@ -80,7 +81,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('delete/{invoice}', [InvoiceController::class, 'destroy']);
 
         // pdf view/download links
-        Route::get('pdf/{invoice}/pdf', [InvoiceController::class, 'pdf']);        // stream
+        Route::get('pdf/show/{invoice}', [InvoiceController::class, 'show']);         // stream
         Route::get('pdf-url/{invoice}/pdf-url', [InvoiceController::class, 'pdfUrl']); // public url
 
         // preview invoice number (prefix + date)
@@ -89,6 +90,20 @@ Route::middleware('auth:sanctum')->group(function () {
         // convert quotation/proforma -> tax
         Route::post('/{invoice}/convert-to-tax', [InvoiceController::class, 'convertToTax']);
     });
+
+
+
+
+    // api for set external api keys
+
+    Route::prefix('api-keys')->controller(App\Http\Controllers\Api\ApiKeyController::class)->group(function (){
+       Route::get('index', 'index');
+       Route::post('store', 'store');
+       Route::delete('delete/{api}', 'destroy');
+    });
+
+    Route::post('/whatsapp/upload-send-pdf', [InvoiceSendController::class, 'uploadAndSendPdf']);
+
 
 
 

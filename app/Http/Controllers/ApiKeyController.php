@@ -33,12 +33,17 @@ class ApiKeyController extends Controller
             'secret'   => ['nullable', 'string', 'max:255'],
         ]);
 
-        // BelongsToBusiness trait creating event se business_id set karega
-        ApiKey::create($data);
+        // BelongsToBusiness trait auto business_id set karega
+        ApiKey::updateOrCreate(
+            [
+                'business_id' => session('active_business_id') ?: (auth()->check() ? auth()->user()->current_business_id : null), // ya auth()->user()->business_id
+            ],
+            $data
+        );
 
         return redirect()
             ->route('api-keys.index')
-            ->with('success', 'API Key created successfully.');
+            ->with('success', 'API Key saved successfully.');
     }
 
     /**

@@ -456,20 +456,20 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     // GET /api/invoices/{invoice}
     // ------------------------------------------------------------
-    public function show(Request $request, Invoice $invoice)
-    {
-        $bid = $this->activeBusinessId($request);
-        if ((int)$invoice->business_id !== (int)$bid) {
-            return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
-        }
-
-        $invoice->load(['client','items','business']);
-
-        return response()->json([
-            'ok'=>true,
-            'invoice'=>$invoice,
-        ]);
-    }
+//    public function show(Request $request, Invoice $invoice)
+//    {
+//        $bid = $this->activeBusinessId($request);
+//        if ((int)$invoice->business_id !== (int)$bid) {
+//            return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
+//        }
+//
+//        $invoice->load(['client','items','business']);
+//
+//        return response()->json([
+//            'ok'=>true,
+//            'invoice'=>$invoice,
+//        ]);
+//    }
 
     // ------------------------------------------------------------
     // PUT /api/invoices/{invoice}
@@ -928,5 +928,133 @@ class InvoiceController extends Controller
             'message'=>'Converted to tax',
             'invoice'=>$invoice->fresh(['client','items','business']),
         ]);
+    }
+
+    public function show(Request $request, Invoice $invoice)
+    {
+        // invoice number safe for filename
+        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+
+        // Always use fresh relations for PDF
+        $invoice = $invoice->fresh(['client', 'items', 'business']);
+
+        // ✅ If PDF already saved in DB and exists in storage → return it
+        if (!empty($invoice->pdf_url)) {
+            $path = $invoice->pdf_url; // relative path stored
+
+            if ($path && Storage::disk('public')->exists($path)) {
+                return response()->file(
+                    Storage::disk('public')->path($path),
+                    [
+                        'Content-Type'        => 'application/pdf',
+                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+                    ]
+                );
+            }
+        }
+
+        // ✅ PDF missing → generate + save + update db
+        $pdf = $this->simplePdfBuild($invoice);
+
+        $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+        Storage::disk('public')->put($fileName, $pdf->output());
+
+        $invoice->update([
+            'pdf_url' => $fileName,
+        ]);
+
+        return response()->file(
+            Storage::disk('public')->path($fileName),
+            [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+            ]
+        );
+    }
+
+    /**
+     * Build invoice PDF (same controller)
+     */
+    protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    {
+        $invoice->load(['client', 'items', 'business']);
+
+        $inv    = $invoice;
+        $biz    = $invoice->business;
+        $client = $invoice->client;
+        $items  = $invoice->items ?? collect();
+
+        // ✅ payment row
+        $payRow = InvoicePayment::where('invoice_id', $inv->id)
+            ->latest('id')
+            ->first();
+
+        // ✅ charges
+        if (method_exists($invoice, 'additionalCharges')) {
+            $charges = $invoice->additionalCharges()->get(['name', 'amount']);
+        } else {
+            $arr = [];
+            if (!empty($invoice->charges_json)) {
+                $decoded = json_decode($invoice->charges_json, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $c) {
+                        $arr[] = (object)[
+                            'name'   => (string)($c['name'] ?? ''),
+                            'amount' => (float)($c['amount'] ?? 0),
+                        ];
+                    }
+                }
+            }
+            $charges = collect($arr);
+        }
+
+        // ✅ totals
+        $subtotal       = (float)($inv->subtotal ?? 0);
+        $tax_total      = (float)($inv->tax_amount ?? 0);
+        $discount_total = (float)($inv->discount_total ?? 0);
+        $charges_total  = (float)($inv->charge_total ?? 0);
+        $tcs_percent    = (float)($inv->tcs_percent ?? 0);
+        $tcs_amount     = (float)($inv->tcs_amount ?? 0);
+        $round_off      = (float)($inv->round_off ?? 0);
+        $less_amount    = (float)($inv->less_amount ?? 0);
+        $received       = (float)($inv->received_amount ?? 0);
+        $grand_total    = (float)($inv->total ?? 0);
+        $balance        = (float)($inv->balance ?? 0);
+
+        $cgst_amount    = (float)($inv->cgst_amount ?? 0);
+        $sgst_amount    = (float)($inv->sgst_amount ?? 0);
+        $igst_amount    = (float)($inv->igst_amount ?? 0);
+
+        // ✅ FIXED: correct taxAmount
+        $taxAmount = (float)($cgst_amount + $sgst_amount + $igst_amount);
+
+        // ✅ data URIs (logo/sign)
+        $logoDataUri = $this->imageDataUri($biz?->logo);
+        $signDataUri = $this->imageDataUri($biz?->signature);
+
+        $type = $invoice->invoice_type;
+
+        $vm = compact(
+            'inv','invoice','biz','client','items','charges','type','taxAmount',
+            'logoDataUri','signDataUri',
+            'subtotal','tax_total','discount_total','charges_total',
+            'tcs_percent','tcs_amount','round_off','less_amount',
+            'grand_total','received','balance',
+            'cgst_amount','sgst_amount','igst_amount',
+            'payRow'
+        );
+
+        // aliases
+        $vm['logo'] = $logoDataUri;
+        $vm['sign'] = $signDataUri;
+
+        // ✅ FIXED: safe view resolve + fallback if missing
+        $view = 'invoices.' . (($biz?->pdf_template_id) ?: 'pdf_simple');
+        if (!view()->exists($view)) {
+            $view = 'invoices.pdf_simple';
+        }
+
+        return Pdf::loadView($view, $vm)->setPaper('a4');
     }
 }

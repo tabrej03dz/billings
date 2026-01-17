@@ -208,6 +208,7 @@ class InvoiceSendController extends Controller
             ->with('user')
             ->get();
 
+
         // latest sends
         $latestSends = (clone $query)
             ->latest('sent_at')
