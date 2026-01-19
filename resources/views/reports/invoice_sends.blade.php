@@ -14,6 +14,18 @@
                     User-wise summary & latest send logs for invoices (WhatsApp / Email / SMS).
                 </p>
             </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('no-business.whatsapp') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 rounded-xl
+              bg-gradient-to-r from-indigo-600 to-purple-600
+              text-white text-sm font-semibold shadow-md
+              hover:from-indigo-700 hover:to-purple-700
+              transition-all">
+                    <i class="fas fa-paper-plane text-xs"></i>
+                    Send Invoice
+                </a>
+            </div>
+
         </div>
 
         {{-- ========================= FILTER BAR ========================= --}}
@@ -360,10 +372,7 @@
                                 @endif
                             </td>
                             <td class="px-3 sm:px-4 py-2 align-top text-[11px] sm:text-xs max-w-xs">
-                                <a href="{{ route('no-business.pdfs.retry', ['invoice' => $send->id]) }}"
-                                   class="text-indigo-600 hover:underline">
-                                    Resend
-                                </a>
+
                                 @if($send->status !== 'success')
                                     <a href="{{ route('no-business.pdfs.retry', ['invoice' => $send->id]) }}"
                                        class="text-indigo-600 hover:underline">

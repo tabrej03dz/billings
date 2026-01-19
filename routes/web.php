@@ -42,6 +42,11 @@ Route::post('/metal-rates/today', [\App\Http\Controllers\MetalRateController::cl
 
 
 Route::middleware(['auth'])->group(function () {
+
+    Route::prefix('invoice-sends')->name('invoice-sends.')->controller(\App\Http\Controllers\InvoiceSendController::class)->group(function(){
+        Route::get('/', 'index')->name('index');
+    });
+
     Route::get('/no-business/whatsapp', [NoBusinessWhatsappController::class, 'index'])
         ->name('no-business.whatsapp');
 
@@ -256,9 +261,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{bankAccount}/default', [BankAccountController::class, 'makeDefault'])->name('default');
     });
 
-    Route::prefix('invoice-sends')->name('invoice-sends.')->controller(\App\Http\Controllers\InvoiceSendController::class)->group(function(){
-       Route::get('/', 'index')->name('index');
-    });
+
 
 
     Route::get('/birthday-records/import', [BirthdayRecordController::class, 'importForm'])

@@ -207,100 +207,9 @@
     </div>
 
 {{--    <script>--}}
-{{--        // IMPORTANT: Dropzone must be loaded globally OR uncomment CDN in head section above.--}}
 {{--        Dropzone.autoDiscover = false;--}}
 
 {{--        const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');--}}
-{{--        const retryAllBtn = document.getElementById('retry-all-btn');--}}
-{{--        const failedFileMap = new Map(); // name => File--}}
-
-{{--        --}}{{--const dz = new Dropzone("#pdfDropzone", {--}}
-{{--        --}}{{--    url: "{{ route('no-business.send-pdf-dropzone') }}",--}}
-{{--        --}}{{--    method: "post",--}}
-{{--        --}}{{--    paramName: "pdf",--}}
-
-{{--        --}}{{--    acceptedFiles: "application/pdf,.pdf",--}}
-{{--        --}}{{--    maxFilesize: 5,--}}
-{{--        --}}{{--    uploadMultiple: false,--}}
-{{--        --}}{{--    parallelUploads: 1,      // ✅ one by one--}}
-{{--        --}}{{--    autoProcessQueue: true,  // ✅ drop => auto upload+send--}}
-
-{{--        --}}{{--    addRemoveLinks: true,--}}
-{{--        --}}{{--    dictRemoveFile: "Remove",--}}
-{{--        --}}{{--    createImageThumbnails: false,--}}
-
-{{--        --}}{{--    timeout: 300000,--}}
-{{--        --}}{{--    headers: { 'X-CSRF-TOKEN': csrf },--}}
-
-{{--        --}}{{--    init: function () {--}}
-
-{{--        --}}{{--        this.on("sending", function(file, xhr, formData) {--}}
-{{--        --}}{{--            const phone = (document.getElementById('phoneInput').value || '').trim();--}}
-{{--        --}}{{--            formData.append('phone', phone);--}}
-{{--        --}}{{--        });--}}
-
-{{--        --}}{{--        this.on("success", function(file, res) {--}}
-{{--        --}}{{--            failedFileMap.delete(file.name);--}}
-{{--        --}}{{--            if (failedFileMap.size === 0) retryAllBtn.classList.add("hidden");--}}
-
-{{--        --}}{{--            file._sent_ok = true;--}}
-
-{{--        --}}{{--            Swal.fire({--}}
-{{--        --}}{{--                icon: 'success',--}}
-{{--        --}}{{--                title: '✅ Sent!',--}}
-{{--        --}}{{--                text: `${file.name} → ${res.phone ?? ''}`,--}}
-{{--        --}}{{--                timer: 1600,--}}
-{{--        --}}{{--                showConfirmButton: false--}}
-{{--        --}}{{--            });--}}
-{{--        --}}{{--        });--}}
-
-{{--        --}}{{--        this.on("error", function(file, errorMessage, xhr) {--}}
-{{--        --}}{{--            failedFileMap.set(file.name, file);--}}
-{{--        --}}{{--            retryAllBtn.classList.remove("hidden");--}}
-
-{{--        --}}{{--            let msg = "Send failed.";--}}
-{{--        --}}{{--            if (xhr && xhr.responseText) {--}}
-{{--        --}}{{--                try {--}}
-{{--        --}}{{--                    const j = JSON.parse(xhr.responseText);--}}
-{{--        --}}{{--                    msg = j.message || msg;--}}
-{{--        --}}{{--                } catch(e){}--}}
-{{--        --}}{{--            }--}}
-
-{{--        --}}{{--            // add retry btn (avoid duplicates)--}}
-{{--        --}}{{--            if (!file.previewElement.querySelector('.dz-retry')) {--}}
-{{--        --}}{{--                const retryBtn = Dropzone.createElement("<button type='button' class='dz-retry'>🔁 Retry</button>");--}}
-{{--        --}}{{--                file.previewElement.appendChild(retryBtn);--}}
-
-{{--        --}}{{--                retryBtn.addEventListener("click", function(e){--}}
-{{--        --}}{{--                    e.preventDefault(); e.stopPropagation();--}}
-{{--        --}}{{--                    retryBtn.remove();--}}
-{{--        --}}{{--                    dz.removeFile(file);--}}
-{{--        --}}{{--                    dz.addFile(file); // re-upload--}}
-{{--        --}}{{--                });--}}
-{{--        --}}{{--            }--}}
-
-{{--        --}}{{--            Swal.fire({ icon:'error', title:'❌ Failed', text: msg });--}}
-{{--        --}}{{--        });--}}
-
-{{--        --}}{{--        this.on("removedfile", function(file){--}}
-{{--        --}}{{--            failedFileMap.delete(file.name);--}}
-{{--        --}}{{--            if (failedFileMap.size === 0) retryAllBtn.classList.add("hidden");--}}
-{{--        --}}{{--        });--}}
-
-{{--        --}}{{--        retryAllBtn.addEventListener("click", function(){--}}
-{{--        --}}{{--            if (failedFileMap.size === 0) return;--}}
-
-{{--        --}}{{--            const files = Array.from(failedFileMap.values());--}}
-{{--        --}}{{--            failedFileMap.clear();--}}
-{{--        --}}{{--            retryAllBtn.classList.add("hidden");--}}
-
-{{--        --}}{{--            files.forEach(f => {--}}
-{{--        --}}{{--                dz.removeFile(f);--}}
-{{--        --}}{{--                dz.addFile(f);--}}
-{{--        --}}{{--            });--}}
-{{--        --}}{{--        });--}}
-{{--        --}}{{--    }--}}
-{{--        --}}{{--});--}}
 
 {{--        const dz = new Dropzone("#pdfDropzone", {--}}
 {{--            url: "{{ route('no-business.pdfs.upload') }}", // ✅ upload-only--}}
@@ -323,41 +232,16 @@
 {{--                });--}}
 
 {{--                this.on("success", function(file, res) {--}}
-{{--                    file._queued_id = res.id; // ✅ store queued row id--}}
+{{--                    // ✅ store uploaded row id if needed--}}
+{{--                    file._uploaded_id = res.id;--}}
+
 {{--                    Swal.fire({--}}
 {{--                        icon: 'success',--}}
-{{--                        title: '✅ Queued!',--}}
-{{--                        text: `${file.name} queued for ${res.phone ?? ''}`,--}}
+{{--                        title: '✅ Uploaded!',--}}
+{{--                        text: `${file.name} uploaded for ${res.phone ?? ''}`,--}}
 {{--                        timer: 1200,--}}
 {{--                        showConfirmButton: false--}}
 {{--                    });--}}
-{{--                });--}}
-
-{{--                this.on("queuecomplete", async function () {--}}
-{{--                    // ✅ Now send all queued in server foreach--}}
-{{--                    try {--}}
-{{--                        const r = await fetch("{{ route('no-business.pdfs.sendQueued') }}", {--}}
-{{--                            method: "POST",--}}
-{{--                            headers: {--}}
-{{--                                "Content-Type": "application/json",--}}
-{{--                                "X-CSRF-TOKEN": csrf--}}
-{{--                            },--}}
-{{--                            body: JSON.stringify({ limit: 200 })--}}
-{{--                        });--}}
-{{--                        const j = await r.json();--}}
-
-{{--                        if (j.success) {--}}
-{{--                            Swal.fire({--}}
-{{--                                icon: 'success',--}}
-{{--                                title: '✅ Sending Done',--}}
-{{--                                text: j.message || `Sent ${j.sent}, Failed ${j.failed}`,--}}
-{{--                            });--}}
-{{--                        } else {--}}
-{{--                            Swal.fire({ icon:'error', title:'❌ Send Failed', text: j.message || 'Error' });--}}
-{{--                        }--}}
-{{--                    } catch (e) {--}}
-{{--                        Swal.fire({ icon:'error', title:'❌ Send Failed', text: 'Network/Server error' });--}}
-{{--                    }--}}
 {{--                });--}}
 
 {{--                this.on("error", function(file, errorMessage, xhr) {--}}
@@ -369,16 +253,20 @@
 {{--                });--}}
 {{--            }--}}
 {{--        });--}}
-
 {{--    </script>--}}
+
 
     <script>
         Dropzone.autoDiscover = false;
 
         const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
+        // ✅ CHANGE THIS if you want different URL
+        const INVOICE_SENDS_URL = "{{ url('invoice-sends') }}";
+        // or: const INVOICE_SENDS_URL = "{{ route('invoice-sends.index') }}";
+
         const dz = new Dropzone("#pdfDropzone", {
-            url: "{{ route('no-business.pdfs.upload') }}", // ✅ upload-only
+            url: "{{ route('no-business.pdfs.upload') }}",
             method: "post",
             paramName: "pdf",
             acceptedFiles: "application/pdf,.pdf",
@@ -391,6 +279,7 @@
             headers: { 'X-CSRF-TOKEN': csrf },
 
             init: function () {
+                let donePopupShown = false;
 
                 this.on("sending", function(file, xhr, formData) {
                     const phone = (document.getElementById('phoneInput').value || '').trim();
@@ -398,7 +287,6 @@
                 });
 
                 this.on("success", function(file, res) {
-                    // ✅ store uploaded row id if needed
                     file._uploaded_id = res.id;
 
                     Swal.fire({
@@ -416,6 +304,63 @@
                         try { msg = (JSON.parse(xhr.responseText).message) || msg; } catch(e){}
                     }
                     Swal.fire({ icon:'error', title:'❌ Failed', text: msg });
+                });
+
+                // ✅ FINAL POPUP: when all uploads finished (success/error)
+                this.on("queuecomplete", () => {
+                    if (donePopupShown) return; // prevent double popup
+                    donePopupShown = true;
+
+                    const total = dz.files.length;
+                    const successCount = dz.getAcceptedFiles().filter(f => f.status === "success").length;
+                    const failedCount  = dz.getRejectedFiles().length + dz.files.filter(f => f.status === "error").length;
+
+                    // ✅ Optional: popup only if at least 1 file uploaded/processed
+                    if (total === 0) {
+                        donePopupShown = false;
+                        return;
+                    }
+
+                    Swal.fire({
+                        icon: failedCount > 0 ? 'warning' : 'success',
+                        title: failedCount > 0 ? 'Uploads completed with errors' : '✅ All PDFs uploaded!',
+                        html: `
+                        <div style="font-size:12px; color:#475569; line-height:1.5;">
+                            Total: <b>${total}</b><br/>
+                            Success: <b>${successCount}</b><br/>
+                            Failed: <b>${failedCount}</b>
+                        </div>
+                    `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Done',
+                        cancelButtonText: 'Continue Uploading',
+                        reverseButtons: true,
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+
+                            console.log('Redirecting to:', INVOICE_SENDS_URL);
+
+                            // if URL is empty -> reload happens, so guard it
+                            if (!INVOICE_SENDS_URL) {
+                                Swal.fire({ icon:'error', title:'Redirect URL missing', text:'INVOICE_SENDS_URL is empty' });
+                                return;
+                            }
+
+                            setTimeout(() => {
+                                window.location.assign(INVOICE_SENDS_URL);
+                            }, 200);
+
+                        } else {
+                            donePopupShown = false;
+                        }
+                    });
+                });
+
+                // ✅ When user adds new files again after popup, allow popup again
+                this.on("addedfile", () => {
+                    // once new upload starts, we can show final popup again later
+                    donePopupShown = false;
                 });
             }
         });
