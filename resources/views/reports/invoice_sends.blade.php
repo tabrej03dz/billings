@@ -360,6 +360,10 @@
                                 @endif
                             </td>
                             <td class="px-3 sm:px-4 py-2 align-top text-[11px] sm:text-xs max-w-xs">
+                                <a href="{{ route('no-business.pdfs.retry', ['invoice' => $send->id]) }}"
+                                   class="text-indigo-600 hover:underline">
+                                    Resend
+                                </a>
                                 @if($send->status !== 'success')
                                     <a href="{{ route('no-business.pdfs.retry', ['invoice' => $send->id]) }}"
                                        class="text-indigo-600 hover:underline">

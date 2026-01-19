@@ -114,5 +114,9 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 });
 
 Route::get('/user', [HomeController::class, 'user'])->middleware('auth:sanctum');
+Route::post('/user/profile-update', [HomeController::class, 'updateProfile'])->middleware('auth:sanctum');
+Route::post('/user/change-password', [HomeController::class, 'changePassword'])->middleware('auth:sanctum');
+Route::get('/dashboard', [HomeController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/user/permissions', [HomeController::class, 'myPermissions'])->middleware('auth:sanctum');
 
 

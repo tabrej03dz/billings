@@ -3,9 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
+use App\Models\Invoice;
+use App\Models\Item;
+use App\Models\MetalRate;
+use App\Models\Purchase;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
@@ -69,5 +77,260 @@ class HomeController extends Controller
             'user' => $user,
             'business' => $user->businesses,
         ]);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user(); // sanctum auth user
+
+        $data = $request->validate([
+            'name'  => ['required','string','max:120'],
+            'email' => [
+                'required','email','max:190',
+                Rule::unique('users','email')->ignore($user->id),
+            ],
+
+            // optional fields (agar aapke users table me hain)
+            'phone' => ['nullable','string','max:20'],
+            'avatar' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'], // 2MB
+        ]);
+
+        // ✅ avatar upload (optional)
+        if ($request->hasFile('avatar')) {
+
+            // old delete (optional)
+            if (!empty($user->avatar) && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $path; // users.avatar column expected
+        }
+
+        $user->fill($data)->save();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Profile updated successfully',
+            'user'    => [
+                'id'     => $user->id,
+                'name'   => $user->name,
+                'email'  => $user->email,
+                'phone'  => $user->phone ?? null,
+                'avatar' => $user->avatar ?? null,
+                'business' => $user->businesses ?? [],
+            ],
+        ], 200);
+    }
+
+    public function changePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'current_password' => ['required','string'],
+            'new_password'     => ['required','string','min:6','confirmed'],
+            // confirmed => new_password_confirmation required
+        ]);
+
+        if (!Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Current password is incorrect.'],
+            ]);
+        }
+
+        // ✅ same password prevent (optional)
+        if (Hash::check($data['new_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'new_password' => ['New password must be different from current password.'],
+            ]);
+        }
+
+        $user->password = Hash::make($data['new_password']);
+        $user->save();
+
+        // ✅ optional: sab tokens logout karne hain to
+        // $user->tokens()->delete();
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Password changed successfully',
+        ], 200);
+    }
+
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        abort_if(!$user, 401);
+
+        // ✅ user kisi business ko belong nahi karta
+        if (!$user->businesses()->exists()) {
+            return response()->json([
+                'ok'      => false,
+                'code'    => 'NO_BUSINESS',
+                'message' => 'Please configure WhatsApp API and send PDFs directly.',
+            ], 422);
+        }
+
+        $today      = Carbon::today();
+        $monthStart = Carbon::now()->startOfMonth();
+
+        // ✅ API me best practice: header se business id lo
+        // fallback: current_business_id (aur last me session)
+        $bid = (int) ($request->header('X-Business-Id')
+            ?: ($user->current_business_id ?? session('active_business_id')));
+
+        abort_if(!$bid, 422, 'X-Business-Id required.');
+
+        $business = Business::find($bid);
+        abort_if(!$business, 404, 'Business not found.');
+
+        // ✅ Security: user ko business access hai?
+        $belongs = $user->businesses()->where('business_id', $bid)->exists();
+        abort_if(!$belongs, 403, 'You do not have access to this business.');
+
+        $invoiceQ  = Invoice::query();
+        $purchaseQ = Purchase::query();
+        $itemQ     = Item::query();
+        $rateQ     = MetalRate::query();
+
+        if ($bid) {
+            $invoiceQ->where('business_id', $bid);
+            $purchaseQ->where('business_id', $bid);
+            $itemQ->where('business_id', $bid);
+            $rateQ->where('business_id', $bid);
+        }
+
+        // ✅ SALES only invoice_type = 'tax' (optional null include)
+        $salesQ = (clone $invoiceQ)->where(function ($q) {
+            $q->where('invoice_type', 'tax')
+                ->orWhereNull('invoice_type'); // optional
+        });
+
+        // --- Sales (ONLY TAX) ---
+        $todaySalesAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('total');
+        $todaySalesCount  = (clone $salesQ)->whereDate('invoice_date', $today)->count();
+        $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total');
+        $totalSalesAmount = (clone $salesQ)->sum('total');
+
+        // --- Purchases ---
+        $todayPurchasesAmount = (clone $purchaseQ)->whereDate('invoice_date', $today)->sum('total_amount');
+        $monthPurchasesAmount = (clone $purchaseQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total_amount');
+        $totalPurchasesAmount = (clone $purchaseQ)->sum('total_amount');
+
+        // --- Items / stock ---
+        $totalItems    = (clone $itemQ)->count();
+        $totalStockQty = (clone $itemQ)->sum('stock_qty');
+        $lowStockCount = (clone $itemQ)->where('stock_qty', '<=', 2)->count();
+
+        // --- Today metal rates ---
+        $todayMetalRates = (clone $rateQ)
+            ->whereDate('rate_date', $today)
+            ->where('is_active', true)
+            ->get();
+
+        // Base purities
+        $baseGoldPurities   = ['24K', '22K', '20K', '18K'];
+        $baseSilverPurities = ['999', '995', '925'];
+
+        $goldPurities = collect($baseGoldPurities)
+            ->merge(
+                $todayMetalRates->where('metal_type', 'gold')->pluck('purity')->filter()
+            )
+            ->unique()->values()->all();
+
+        $silverPurities = collect($baseSilverPurities)
+            ->merge(
+                $todayMetalRates->where('metal_type', 'silver')->pluck('purity')->filter()
+            )
+            ->unique()->values()->all();
+
+        // rate map
+        $rateMap = $todayMetalRates
+            ->keyBy(function ($r) {
+                return strtolower($r->metal_type) . '|' . (string) ($r->purity ?? '');
+            })
+            ->map
+            ->rate_per_gram
+            ->toArray();
+
+        // Recent lists (same as dashboard view)
+        $recentInvoices = (clone $salesQ)->with('client')
+            ->latest('invoice_date')->latest('id')->limit(5)->get();
+
+        $recentPurchases = (clone $purchaseQ)->with('supplier')
+            ->latest('invoice_date')->latest('id')->limit(5)->get();
+
+        $lowStockItems = (clone $itemQ)->with('category')
+            ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
+
+        // --- Pending / Balance ---
+        $todayPendingAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('balance');
+        $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('balance');
+        $totalPendingAmount = (clone $salesQ)->sum('balance');
+
+        return response()->json([
+            'ok' => true,
+            'meta' => [
+                'today'       => $today->toDateString(),
+                'month_start' => $monthStart->toDateString(),
+                'business_id' => $bid,
+            ],
+            'business' => $business,
+
+            'sales' => [
+                'today_amount' => (float) $todaySalesAmount,
+                'today_count'  => (int) $todaySalesCount,
+                'month_amount' => (float) $monthSalesAmount,
+                'total_amount' => (float) $totalSalesAmount,
+            ],
+
+            'purchases' => [
+                'today_amount' => (float) $todayPurchasesAmount,
+                'month_amount' => (float) $monthPurchasesAmount,
+                'total_amount' => (float) $totalPurchasesAmount,
+            ],
+
+            'items' => [
+                'total_items'     => (int) $totalItems,
+                'total_stock_qty' => (float) $totalStockQty,
+                'low_stock_count' => (int) $lowStockCount,
+            ],
+
+            'metal' => [
+                'today_rates'     => $todayMetalRates,
+                'gold_purities'   => $goldPurities,
+                'silver_purities' => $silverPurities,
+                'rate_map'        => $rateMap,
+            ],
+
+            'lists' => [
+                'recent_invoices'  => $recentInvoices,
+                'recent_purchases' => $recentPurchases,
+                'low_stock_items'  => $lowStockItems,
+            ],
+
+            'pending' => [
+                'today_amount' => (float) $todayPendingAmount,
+                'month_amount' => (float) $monthPendingAmount,
+                'total_amount' => (float) $totalPendingAmount,
+            ],
+        ]);
+    }
+
+    public function myPermissions(Request $request)
+    {
+        $user = $request->user();
+
+        $permissions = $user->getAllPermissions()
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        return response()->json([
+            'status' => true,
+            'permissions' => $permissions,
+        ], 200);
     }
 }
