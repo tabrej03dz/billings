@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\HomeController;
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
 
 Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
+Route::get('/installment-reminders/run', [\App\Http\Controllers\InstallmentReminderController::class, 'run']);
 
 Route::post('/login',  [HomeController::class, 'login']);
 

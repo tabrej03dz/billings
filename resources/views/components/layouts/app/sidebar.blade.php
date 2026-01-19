@@ -266,6 +266,14 @@
                     </flux:navlist.group>
                 </flux:navlist>
             @endcan
+
+            @can('show installment reminders')
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
+                        <flux:navlist.item icon="home" :href="route('installment-reminders.index')" :current="request()->routeIs('installment-reminders.*')" wire:navigate>{{ __('Installment Reminders') }}</flux:navlist.item>
+                    </flux:navlist.group>
+                </flux:navlist>
+            @endcan
             @can('show birthday records')
                 <flux:navlist variant="outline">
                     <flux:navlist.group class="grid">

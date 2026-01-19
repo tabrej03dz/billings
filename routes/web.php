@@ -37,10 +37,6 @@ Route::post('/metal-rates/today', [\App\Http\Controllers\MetalRateController::cl
 
 
 
-
-
-
-
 Route::middleware(['auth'])->group(function () {
 
     Route::prefix('invoice-sends')->name('invoice-sends.')->controller(\App\Http\Controllers\InvoiceSendController::class)->group(function(){
@@ -89,6 +85,17 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('birthday-wish-logs/{birthdayWishLog}/failed', [BirthdayWishLogController::class, 'markFailed'])
         ->name('birthday-wish-logs.failed');
+
+    Route::prefix('installment-reminders')->name('installment-reminders.')->controller(\App\Http\Controllers\InstallmentReminderController::class)->group(function(){
+        Route::get('/', 'index')->name('index');
+        Route::get('create', 'create')->name('create');
+        Route::get('import', 'importForm')->name('import-form');
+        Route::post('import', 'importStore')->name('import-store');
+        Route::post('store', 'store')->name('store');
+        Route::get('edit/{installment}', 'edit')->name('edit');
+        Route::post('update/{installment}', 'update')->name('update');
+        Route::delete('delete/{installment}', 'delete')->name('destroy');
+    });
 });
 
 
