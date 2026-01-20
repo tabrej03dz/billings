@@ -92,9 +92,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('import', 'importForm')->name('import-form');
         Route::post('import', 'importStore')->name('import-store');
         Route::post('store', 'store')->name('store');
-        Route::get('edit/{installment}', 'edit')->name('edit');
-        Route::post('update/{installment}', 'update')->name('update');
-        Route::delete('delete/{installment}', 'delete')->name('destroy');
+        Route::get('edit/{installmentReminder}', 'edit')->name('edit');
+        Route::get('show/{installmentReminder}', 'show')->name('show');
+        Route::post('update/{installmentReminder}', 'update')->name('update');
+        Route::delete('delete/{installmentReminder}', 'destroy')->name('destroy');
     });
 });
 

@@ -36,7 +36,6 @@
         <div class="rounded-2xl shadow-sm border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 p-5">
             <form method="POST" action="{{ route('installment-reminders.update', $installmentReminder) }}" class="grid gap-4 md:grid-cols-2">
                 @csrf
-                @method('PUT')
 
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Contact Number</label>
@@ -105,16 +104,7 @@
                 </div>
 
                 <div class="md:col-span-2 flex justify-between gap-2 pt-2">
-                    <form method="POST" action="{{ route('installment-reminders.destroy', $installmentReminder) }}"
-                          onsubmit="return confirm('Delete this reminder?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit"
-                                class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold
-                                       bg-rose-600 text-white hover:bg-rose-700 shadow-sm">
-                            <i class="fas fa-trash mr-1.5 text-xs"></i> Delete
-                        </button>
-                    </form>
+
 
                     <button type="submit"
                             class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold

@@ -215,11 +215,11 @@
 
                             <td class="px-3 sm:px-4 py-2 whitespace-nowrap">
                                 <div class="flex items-center gap-3">
-                                    <a href="{{ route('installment-reminders.edit', $r) }}" class="text-indigo-600 hover:underline">
+                                    <a href="{{ route('installment-reminders.edit', ['installmentReminder' => $r->id]) }}" class="text-indigo-600 hover:underline">
                                         Edit
                                     </a>
 
-                                    <form method="POST" action="{{ route('installment-reminders.destroy', $r) }}"
+                                    <form method="POST" action="{{ route('installment-reminders.destroy', ['installmentReminder' => $r->id]) }}"
                                           onsubmit="return confirm('Delete this reminder?')">
                                         @csrf
                                         @method('DELETE')
@@ -227,19 +227,9 @@
                                             Delete
                                         </button>
                                     </form>
-
-                                    {{-- Optional quick status change --}}
-                                    <form method="POST" class="hidden sm:block">
-                                        @csrf
-                                        <select name="status"
-                                                onchange="this.form.submit()"
-                                                class="rounded-lg border border-slate-200 bg-white text-[11px] px-2 py-1
-                                                       dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700">
-                                            <option value="uploaded" {{ $r->status==='uploaded'?'selected':'' }}>Uploaded</option>
-                                            <option value="sent" {{ $r->status==='sent'?'selected':'' }}>Sent</option>
-                                            <option value="failed" {{ $r->status==='failed'?'selected':'' }}>Failed</option>
-                                        </select>
-                                    </form>
+                                    <a href="{{ route('installment-reminders.show', ['installmentReminder' => $r->id]) }}" class="text-indigo-600 hover:underline">
+                                        View
+                                    </a>
                                 </div>
                             </td>
                         </tr>
