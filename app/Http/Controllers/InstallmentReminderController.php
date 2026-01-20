@@ -156,7 +156,7 @@ class InstallmentReminderController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'Birthday wish command executed',
+            'message' => 'Installment Reminder command executed',
             'output' => Artisan::output(),
         ]);
     }

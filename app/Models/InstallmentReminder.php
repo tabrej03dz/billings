@@ -7,4 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class InstallmentReminder extends Model
 {
     protected $guarded = ['id'];
+
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

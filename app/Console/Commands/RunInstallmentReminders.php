@@ -65,7 +65,7 @@ class RunInstallmentReminders extends Command
             // ✅ safe api url (null-safe)
 //            $url = "https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4";
             // ?number=917753800444&AcNo=1234&amount=7272&date15/05/26
-            $url = "https://webhooks.1automations.com/webhook/696f108302e28c7ee4b83fbf";
+            $url = $r->user->api->installment_reminder_api ?? "https://webhooks.1automations.com/webhook/696f108302e28c7ee4b83fbf";
             $snmeNumber = $r->snme_number;
             $amount = $r->installment_amount;
             $date = $r->installment_date;
