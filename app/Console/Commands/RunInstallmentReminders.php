@@ -52,7 +52,7 @@ class RunInstallmentReminders extends Command
             $message = "🎉 Happy Birthday {$name}! 🎂\nGod bless you with health, happiness & success.\n\n— Real Victory Groups";
 
             // ✅ safe api url (null-safe)
-            $url = data_get($r, 'user.api.wishes_api');
+            $url = "https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4";
 
             if (empty($url)) {
                 $this->line("❌ Skipped: wishes_api missing for {$phone} (ID: {$r->id})");
