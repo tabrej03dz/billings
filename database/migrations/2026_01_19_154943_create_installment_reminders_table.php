@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('installment_reminders', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->string('contact_number');
             $table->date('reminder_date');
             $table->time('reminder_time');
@@ -20,6 +21,9 @@ return new class extends Migration
             $table->decimal('installment_amount', 12, 2);
             $table->date('installment_date');
             $table->string('status')->default('uploaded');
+            $table->text('response')->nullable();
+            $table->dateTime('sent_at')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

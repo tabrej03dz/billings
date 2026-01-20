@@ -74,7 +74,7 @@ class RunInstallmentReminders extends Command
                 $this->line("❌ Skipped: installment  missing for {$phone} (ID: {$r->id})");
                 $r->update([
                     'status'   => 'failed',
-//                    'response' => 'wishes_api missing',
+                    'response' => 'wishes_api missing',
                 ]);
                 continue;
             }
@@ -85,8 +85,8 @@ class RunInstallmentReminders extends Command
 
                 $r->update([
                     'status'   => !empty($resp['ok']) ? 'success' : 'failed',
-//                    'response' => $resp['raw'] ?? ($resp['message'] ?? null),
-//                    'sent_at'  => !empty($resp['ok']) ? now() : null,
+                    'response' => $resp['raw'] ?? ($resp['message'] ?? null),
+                    'sent_at'  => !empty($resp['ok']) ? now() : null,
                 ]);
 
                 $this->line((!empty($resp['ok']) ? "✅ Sent: " : "❌ Failed: ").$phone);
@@ -95,7 +95,7 @@ class RunInstallmentReminders extends Command
 
                 $r->update([
                     'status'   => 'failed',
-//                    'response' => $e->getMessage(),
+                    'response' => $e->getMessage(),
                 ]);
 
                 $this->line("❌ Exception: {$phone} - ".$e->getMessage());
