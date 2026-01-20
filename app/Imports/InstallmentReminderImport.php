@@ -117,6 +117,7 @@ class InstallmentReminderImport implements ToCollection, WithHeadingRow, SkipsEm
                 'installment_amount' => $amount,
                 'installment_date'   => $installDate,
                 'status'             => ($statusRaw ?? 'uploaded') ?: 'uploaded',
+                'user_id'            => auth()->user()->id,
             ]);
         }
     }
