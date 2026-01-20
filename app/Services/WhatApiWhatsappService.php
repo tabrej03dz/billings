@@ -41,7 +41,7 @@ class WhatApiWhatsappService
 
     }
 
-    public function runInstallmentReminders(string $phone, $url): array
+    public function runInstallmentReminders(string $phone, $message, $url): array
     {
 //        $url = config('services.whatapi.webhook_url');
 //        $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
