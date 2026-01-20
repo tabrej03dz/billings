@@ -31,7 +31,7 @@ class RunInstallmentReminders extends Command
         $today = Carbon::now(config('app.timezone'))->toDateString();
 
         $records = InstallmentReminder::query()
-            ->whereDate('reminder_date', $today)
+            ->whereDate('reminder_date', $today)->where('status', '!=', 'success')
             ->get();
 
         $this->info("Found: {$records->count()} birthday records for ".$today);
@@ -58,7 +58,7 @@ class RunInstallmentReminders extends Command
                 $this->line("❌ Skipped: wishes_api missing for {$phone} (ID: {$r->id})");
                 $r->update([
                     'status'   => 'failed',
-                    'response' => 'wishes_api missing',
+//                    'response' => 'wishes_api missing',
                 ]);
                 continue;
             }
@@ -69,8 +69,8 @@ class RunInstallmentReminders extends Command
 
                 $r->update([
                     'status'   => !empty($resp['ok']) ? 'success' : 'failed',
-                    'response' => $resp['raw'] ?? ($resp['message'] ?? null),
-                    'sent_at'  => !empty($resp['ok']) ? now() : null,
+//                    'response' => $resp['raw'] ?? ($resp['message'] ?? null),
+//                    'sent_at'  => !empty($resp['ok']) ? now() : null,
                 ]);
 
                 $this->line((!empty($resp['ok']) ? "✅ Sent: " : "❌ Failed: ").$phone);
@@ -79,7 +79,7 @@ class RunInstallmentReminders extends Command
 
                 $r->update([
                     'status'   => 'failed',
-                    'response' => $e->getMessage(),
+//                    'response' => $e->getMessage(),
                 ]);
 
                 $this->line("❌ Exception: {$phone} - ".$e->getMessage());
