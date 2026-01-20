@@ -53,13 +53,14 @@ class RunInstallmentReminders extends Command
 
             // ✅ safe api url (null-safe)
 //            $url = "https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4";
-            $url = "https://webhooks.1automations.com/webhook/696f108302e28c7ee4b83fbf?number=917753800444&AcNo=1234&amount=7272&date15/05/26";
+            // ?number=917753800444&AcNo=1234&amount=7272&date15/05/26
+            $url = "https://webhooks.1automations.com/webhook/696f108302e28c7ee4b83fbf";
             $snmeNumber = $r->snme_number;
             $amount = $r->installment_amount;
             $date = $r->installment_date;
 
             if (empty($url)) {
-                $this->line("❌ Skipped: wishes_api missing for {$phone} (ID: {$r->id})");
+                $this->line("❌ Skipped: installment  missing for {$phone} (ID: {$r->id})");
                 $r->update([
                     'status'   => 'failed',
 //                    'response' => 'wishes_api missing',
