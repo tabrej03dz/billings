@@ -41,7 +41,7 @@ class WhatApiWhatsappService
 
     }
 
-    public function runInstallmentReminders(string $phone, $message, $url): array
+    public function runInstallmentReminders(string $phone, $message, $url, $snmeNumber, $amount, $date): array
     {
 //        $url = config('services.whatapi.webhook_url');
 //        $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
@@ -55,7 +55,10 @@ class WhatApiWhatsappService
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
             'number'      => $to,
-            'Video' => asset('asset/video/birthday-wish.mp4'),
+//            'Video' => asset('asset/video/birthday-wish.mp4'),
+            'AcNo' => $snmeNumber,
+            'amount' => $amount,
+            'date' => $date,
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
