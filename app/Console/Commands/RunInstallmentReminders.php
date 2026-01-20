@@ -28,16 +28,13 @@ class RunInstallmentReminders extends Command
      */
     public function handle()
     {
-        $today = now(config('app.timezone'));
+        $today = Carbon::now(config('app.timezone'))->toDateString();
 
-        // ✅ Month + Day match (same day & month)
         $records = InstallmentReminder::query()
-            ->whereNotNull('date_of_birth')
-            ->whereMonth('date_of_birth', $today->month)
-            ->whereDay('date_of_birth', $today->day)
+            ->whereDate('reminder_date', $today)
             ->get();
 
-        $this->info("Found: {$records->count()} birthday records for ".$today->toDateString());
+        $this->info("Found: {$records->count()} birthday records for ".$today);
 
         // ✅ sender service resolve (change class to your actual service)
         $sender = app(\App\Services\WhatApiWhatsappService::class);
