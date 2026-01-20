@@ -42,6 +42,17 @@ class RunInstallmentReminders extends Command
         foreach ($records as $r) {
 
             $phone = $r->phone ?? $r->contact_number ?? null;
+
+            if ($phone) {
+
+                // sirf digits rakho
+                $phone = preg_replace('/\D+/', '', $phone);
+
+                // agar 91 se start nahi hota → 91 prefix karo
+                if (!str_starts_with($phone, '91')) {
+                    $phone = '91' . $phone;
+                }
+            }
             if (empty($phone)) {
                 $this->line("❌ Skipped: phone missing (ID: {$r->id})");
                 $r->update(['status' => 'failed']);
