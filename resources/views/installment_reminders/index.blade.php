@@ -157,6 +157,7 @@
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Installment</th>
                         <th class="px-3 sm:px-4 py-2 text-right font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Amount</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Status</th>
+                        <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Sent At</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Action</th>
                     </tr>
                     </thead>
@@ -210,6 +211,12 @@
                             <td class="px-3 sm:px-4 py-2">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border {{ $badge }}">
                                     {{ ucfirst($r->status) }}
+                                </span>
+                            </td>
+
+                            <td class="px-3 sm:px-4 py-2">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] border {{ $badge }}">
+                                    {{ $r->sent_at ?? 'N/A' }}
                                 </span>
                             </td>
 
