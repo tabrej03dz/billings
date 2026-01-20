@@ -81,7 +81,7 @@ class RunInstallmentReminders extends Command
 
             try {
                 // ✅ call your sender (adjust method signature if different)
-                $resp = $sender->runInstallmentReminders($phone, $message, $url, $snmeNumber, $amount, $date);
+                $resp = $sender->runInstallmentReminders($phone, $url, $snmeNumber, $amount, $date);
 
                 $r->update([
                     'status'   => !empty($resp['ok']) ? 'success' : 'failed',

@@ -41,7 +41,7 @@ class WhatApiWhatsappService
 
     }
 
-    public function runInstallmentReminders(string $phone, $message, $url, $snmeNumber, $amount, $date): array
+    public function runInstallmentReminders(string $phone, $url, $snmeNumber, $amount, $date): array
     {
 
         // ✅ Basic sanitation (only digits)
