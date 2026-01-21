@@ -73,12 +73,12 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     // GET /api/invoices?type=tax&search=&from_date=&to_date=&status=
     // ------------------------------------------------------------
-    public function index(Request $request)
+    public function index(Request $request, $type = 'tax')
     {
         $me  = $request->user();
         $bid = $this->activeBusinessId($request);
 
-        $type = $this->normalizeDocType((string)$request->get('type', 'tax'));
+        $type = $this->normalizeDocType((string)$type);
         if (!$me->can($this->requiredPerm($type))) {
             return response()->json(['ok'=>false,'message'=>'Permission denied'], 403);
         }
