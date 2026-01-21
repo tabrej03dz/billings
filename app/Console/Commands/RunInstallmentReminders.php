@@ -31,7 +31,7 @@ class RunInstallmentReminders extends Command
         $today = Carbon::now(config('app.timezone'))->toDateString();
 
         $records = InstallmentReminder::query()
-            ->whereDate('reminder_date', $today)->where('status', '!=', 'success')
+            ->whereDate('reminder_date', $today)->where('status', '!=', 'sent')
             ->get();
 
         $this->info("Found: {$records->count()} birthday records for ".$today);
@@ -84,7 +84,7 @@ class RunInstallmentReminders extends Command
                 $resp = $sender->runInstallmentReminders($phone, $url, $snmeNumber, $amount, $date);
 
                 $r->update([
-                    'status'   => !empty($resp['ok']) ? 'success' : 'failed',
+                    'status'   => !empty($resp['ok']) ? 'sent' : 'failed',
                     'response' => $resp['raw'] ?? ($resp['message'] ?? null),
                     'sent_at'  => !empty($resp['ok']) ? now() : null,
                 ]);

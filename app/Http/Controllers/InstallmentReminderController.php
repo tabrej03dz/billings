@@ -42,7 +42,6 @@ class InstallmentReminderController extends Controller
 
     public function index(Request $request)
     {
-        $installmentReminders = InstallmentReminder::where('status', 'success')->update(['status' => 'sent']);
         $q = InstallmentReminder::query();
 
         if ($request->filled('status')) {
