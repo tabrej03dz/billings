@@ -453,23 +453,7 @@ class InvoiceController extends Controller
         ], 201);
     }
 
-    // ------------------------------------------------------------
-    // GET /api/invoices/{invoice}
-    // ------------------------------------------------------------
-//    public function show(Request $request, Invoice $invoice)
-//    {
-//        $bid = $this->activeBusinessId($request);
-//        if ((int)$invoice->business_id !== (int)$bid) {
-//            return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
-//        }
-//
-//        $invoice->load(['client','items','business']);
-//
-//        return response()->json([
-//            'ok'=>true,
-//            'invoice'=>$invoice,
-//        ]);
-//    }
+
 
     // ------------------------------------------------------------
     // PUT /api/invoices/{invoice}
@@ -757,27 +741,6 @@ class InvoiceController extends Controller
         return response()->json(['ok'=>true,'message'=>'Deleted']);
     }
 
-    // ------------------------------------------------------------
-    // POST /api/invoices/preview-number
-    // ------------------------------------------------------------
-//    public function previewNumber(Request $request)
-//    {
-//        $request->validate([
-//            'invoice_date'   => ['required','date'],
-//            'invoice_prefix' => ['required','string'],
-//            'doc_type'       => ['nullable','string'],
-//        ]);
-//
-//        $bid = $this->activeBusinessId($request);
-//
-//        $docType = $this->normalizeDocType((string)($request->get('doc_type','tax')));
-//        $peek = InvoiceNumber::peek((int)$bid, $request->invoice_date, $request->invoice_prefix, 3, $docType);
-//
-//        return response()->json([
-//            'ok' => true,
-//            'number' => $peek['full'] ?? null,
-//        ]);
-//    }
 
     public function preview(Request $request)
     {
