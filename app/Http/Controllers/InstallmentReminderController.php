@@ -11,6 +11,35 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class InstallmentReminderController extends Controller
 {
+//    public function index(Request $request)
+//    {
+//        $q = InstallmentReminder::query();
+//
+//        if ($request->filled('status')) {
+//            $q->where('status', $request->status);
+//        }
+//
+//        if ($request->filled('from') && $request->filled('to')) {
+//            $q->whereBetween('reminder_date', [
+//                Carbon::parse($request->from)->startOfDay(),
+//                Carbon::parse($request->to)->endOfDay(),
+//            ]);
+//        }
+//
+//        if ($request->filled('q')) {
+//            $term = trim((string)$request->q);
+//            $q->where(function ($qq) use ($term) {
+//                $qq->where('contact_number', 'like', "%{$term}%")
+//                    ->orWhere('snme_number', 'like', "%{$term}%");
+//            });
+//        }
+//
+//        $reminders = $q->orderByDesc('reminder_date')->paginate(20)->withQueryString();
+//
+//        return view('installment_reminders.index', compact('reminders'));
+//    }
+
+
     public function index(Request $request)
     {
         $q = InstallmentReminder::query();
@@ -34,7 +63,14 @@ class InstallmentReminderController extends Controller
             });
         }
 
-        $reminders = $q->orderByDesc('reminder_date')->paginate(20)->withQueryString();
+        $today = now(config('app.timezone'))->toDateString();
+
+        // ✅ Upcoming first, Past last
+        $q->orderByRaw("CASE WHEN reminder_date >= ? THEN 0 ELSE 1 END", [$today])
+            ->orderBy('reminder_date', 'asc')
+            ->orderBy('reminder_time', 'asc');
+
+        $reminders = $q->paginate(20)->withQueryString();
 
         return view('installment_reminders.index', compact('reminders'));
     }

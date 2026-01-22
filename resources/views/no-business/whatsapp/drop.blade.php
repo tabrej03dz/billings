@@ -3,10 +3,6 @@
 
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        {{-- Dropzone CSS & JS --}}
-        {{-- NOTE: Dropzone script must be loaded somewhere globally (layout/app.js) or uncomment below --}}
-        {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.css"> --}}
-        {{-- <script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/5.9.3/min/dropzone.min.js"></script> --}}
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         {{-- ALERTS --}}
@@ -147,22 +143,13 @@
         <div class="grid md:grid-cols-1 gap-6 ">
             <div class="bg-[#F3F4F6] dark:bg-[#1A1D23] rounded-2xl border border-slate-200 shadow-lg shadow-slate-900/5 p-5 sm:p-6 space-y-4">
 
-{{--                <div class="flex items-center justify-between gap-2">--}}
-{{--                    <div class="flex items-center gap-2">--}}
-{{--                        <span class="inline-flex h-7 w-7 items-center justify-center rounded-xl bg-indigo-600 text-white text-[11px] font-semibold">1</span>--}}
-{{--                        <h2 class="font-semibold text-slate-900 text-sm sm:text-base">Upload PDF & Send (Auto)</h2>--}}
-{{--                    </div>--}}
 
                     <button type="button" id="retry-all-btn"
                             class="hidden text-[11px] px-3 py-1 rounded-full bg-yellow-50 text-yellow-800 border border-yellow-200">
                         🔁 Retry All Failed
                     </button>
-{{--                </div>--}}
 
-{{--                <p class="text-[11px] sm:text-xs text-slate-500 -mt-2">--}}
-{{--                    PDFs drop karo ya click karo — system one-by-one upload karke WhatsApp par send karega.--}}
-{{--                    Phone blank chhodo to file name se number uth jayega.--}}
-{{--                </p>--}}
+
 
                 {{-- PHONE INPUT (optional) --}}
                 <div class="space-y-1">
@@ -205,55 +192,6 @@
             </div>
         </div>
     </div>
-
-{{--    <script>--}}
-{{--        Dropzone.autoDiscover = false;--}}
-
-{{--        const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');--}}
-
-{{--        const dz = new Dropzone("#pdfDropzone", {--}}
-{{--            url: "{{ route('no-business.pdfs.upload') }}", // ✅ upload-only--}}
-{{--            method: "post",--}}
-{{--            paramName: "pdf",--}}
-{{--            acceptedFiles: "application/pdf,.pdf",--}}
-{{--            maxFilesize: 5,--}}
-{{--            parallelUploads: 1,--}}
-{{--            autoProcessQueue: true,--}}
-{{--            addRemoveLinks: true,--}}
-{{--            createImageThumbnails: false,--}}
-{{--            timeout: 300000,--}}
-{{--            headers: { 'X-CSRF-TOKEN': csrf },--}}
-
-{{--            init: function () {--}}
-
-{{--                this.on("sending", function(file, xhr, formData) {--}}
-{{--                    const phone = (document.getElementById('phoneInput').value || '').trim();--}}
-{{--                    formData.append('phone', phone);--}}
-{{--                });--}}
-
-{{--                this.on("success", function(file, res) {--}}
-{{--                    // ✅ store uploaded row id if needed--}}
-{{--                    file._uploaded_id = res.id;--}}
-
-{{--                    Swal.fire({--}}
-{{--                        icon: 'success',--}}
-{{--                        title: '✅ Uploaded!',--}}
-{{--                        text: `${file.name} uploaded for ${res.phone ?? ''}`,--}}
-{{--                        timer: 1200,--}}
-{{--                        showConfirmButton: false--}}
-{{--                    });--}}
-{{--                });--}}
-
-{{--                this.on("error", function(file, errorMessage, xhr) {--}}
-{{--                    let msg = "Upload failed.";--}}
-{{--                    if (xhr && xhr.responseText) {--}}
-{{--                        try { msg = (JSON.parse(xhr.responseText).message) || msg; } catch(e){}--}}
-{{--                    }--}}
-{{--                    Swal.fire({ icon:'error', title:'❌ Failed', text: msg });--}}
-{{--                });--}}
-{{--            }--}}
-{{--        });--}}
-{{--    </script>--}}
 
 
     <script>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -56,7 +57,7 @@ class WhatApiWhatsappService
 //            'Video' => asset('asset/video/birthday-wish.mp4'),
             'AcNo' => $snmeNumber,
             'amount' => $amount,
-            'date' => $date,
+            'date' => now('Asia/Kolkata')->addDay()->format('d/m/Y'),
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);

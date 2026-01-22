@@ -31,7 +31,7 @@ class RunInstallmentReminders extends Command
         $today = Carbon::now(config('app.timezone'))->toDateString();
 
         $records = InstallmentReminder::query()
-            ->whereDate('reminder_date', $today)->where('status', '!=', 'success')
+            ->whereDate('reminder_date', $today)->where('status', '!=', 'sent')
             ->get();
 
         $this->info("Found: {$records->count()} birthday records for ".$today);
@@ -68,7 +68,9 @@ class RunInstallmentReminders extends Command
             $url = $r->user->api->installment_reminder_api ?? "https://webhooks.1automations.com/webhook/696f108302e28c7ee4b83fbf";
             $snmeNumber = $r->snme_number;
             $amount = $r->installment_amount;
-            $date = $r->installment_date;
+            $amount = (float) $amount;
+            $amount = ($amount == (int)$amount) ? (int)$amount : $amount;
+            $date = $r->installment_date->format('d/m/Y');
 
             if (empty($url)) {
                 $this->line("❌ Skipped: installment  missing for {$phone} (ID: {$r->id})");
@@ -84,7 +86,7 @@ class RunInstallmentReminders extends Command
                 $resp = $sender->runInstallmentReminders($phone, $url, $snmeNumber, $amount, $date);
 
                 $r->update([
-                    'status'   => !empty($resp['ok']) ? 'success' : 'failed',
+                    'status'   => !empty($resp['ok']) ? 'sent' : 'failed',
                     'response' => $resp['raw'] ?? ($resp['message'] ?? null),
                     'sent_at'  => !empty($resp['ok']) ? now() : null,
                 ]);

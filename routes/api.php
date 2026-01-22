@@ -93,6 +93,11 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     });
 
 
+    Route::prefix('invoice-send')->controller(\App\Http\Controllers\Api\InvoiceSendReportController::class)->group(function(){
+        Route::get('reports', 'index');
+    });
+
+
 
 
     // api for set external api keys
