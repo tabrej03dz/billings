@@ -57,7 +57,8 @@ class WhatApiWhatsappService
 //            'Video' => asset('asset/video/birthday-wish.mp4'),
             'AcNo' => $snmeNumber,
             'amount' => $amount,
-            'date' => now('Asia/Kolkata')->addDay()->format('d/m/Y'),
+//            'date' => now('Asia/Kolkata')->addDay()->format('d/m/Y'),
+            'date' => $date,
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
