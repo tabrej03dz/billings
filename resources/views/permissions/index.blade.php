@@ -15,12 +15,12 @@
     >
 
         <!-- Header -->
-        <div class="flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex flex-wrap gap-3 justify-between items-center bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Assign Permissions</h1>
 
             <div class="flex items-center gap-3">
                 <!-- Selected counter -->
-                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-200">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-neutral-800 text-amber-700 dark:text-gray-200">
                     Selected: <span x-text="selectedCount"></span>
                 </span>
 
@@ -39,7 +39,7 @@
                 <button
                     type="button"
                     @click="open = true; $nextTick(() => document.getElementById('perm-name')?.focus())"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
+                    class="inline-flex items-center gap-2 px-4 py-3 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
@@ -55,8 +55,8 @@
 
             <div class="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label for="user" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select User</label>
-                    <select name="user" id="user" required class="mt-1 block w-full border-gray-300 dark:border-neutral-600 rounded-md shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white">
+                    <label for="user" class="block text-sm font-medium text-amber-700 dark:text-gray-300 p-2">Select User</label>
+                    <select name="user" id="user" required class="mt-1 p-3 block w-full border-gray-300 dark:border-neutral-600 rounded-md shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white border border-gray-300">
                         <option value="">-- Select User --</option>
                         @foreach($users as $user)
                             <option value="{{ $user->id }}">{{ $user->name }}</option>
@@ -67,7 +67,7 @@
 
             <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-                    <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-semibold text-gray-700 dark:text-white">
+                    <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-semibold text-gray-700 dark:text-white">
                     <tr>
                         <th class="px-6 py-3">#</th>
                         <th class="px-6 py-3">
@@ -117,7 +117,7 @@
             <div class="mt-6">
                 <button
                     type="submit"
-                    class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition"
+                    class="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition"
                 >
                     Assign Permissions
                 </button>
@@ -149,7 +149,7 @@
                             name="name"
                             id="perm-name"
                             required
-                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white"
+                            class="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white"
                             placeholder="e.g. invoice.create"
                         >
                     </div>
@@ -159,7 +159,7 @@
                         <select
                             name="guard_name"
                             id="guard"
-                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white"
+                            class="mt-1 p-2 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white"
                         >
                             <option value="web" selected>web</option>
                             <option value="api">api</option>

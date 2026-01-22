@@ -2,12 +2,12 @@
     <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-8">
 
         {{-- ========================= PAGE HEADER ========================= --}}
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <div>
                 <h1 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    <span class="inline-flex items-center justify-center h-9 w-9 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg">
+                    {{-- <span class="inline-flex items-center justify-center h-9 w-9 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg">
                         <i class="fas fa-paper-plane"></i>
-                    </span>
+                    </span> --}}
                     <span>Invoice Send Report</span>
                 </h1>
                 <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -17,7 +17,7 @@
             <div class="flex items-center gap-2">
                 <a href="{{ route('no-business.whatsapp') }}"
                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl
-              bg-gradient-to-r from-indigo-600 to-purple-600
+              bg-gradient-to-r from-green-600 to-cyan-600
               text-white text-sm font-semibold shadow-md
               hover:from-indigo-700 hover:to-purple-700
               transition-all">
@@ -29,7 +29,7 @@
         </div>
 
         {{-- ========================= FILTER BAR ========================= --}}
-        <div class="rounded-2xl shadow-sm border border-slate-100 bg-white
+        <div class="rounded-2xl shadow-sm border border-slate-100 bg-slate-200
                     dark:bg-slate-900 dark:border-slate-800 p-4 sm:p-5">
             <form method="GET" action="{{ url()->current() }}" class="grid gap-4 md:grid-cols-5 items-end">
                 <div>
@@ -41,7 +41,7 @@
                            value="{{ $from }}"
                            class="w-full rounded-lg border border-slate-200 bg-white text-sm text-slate-900
                                   focus:ring-indigo-500 focus:border-indigo-500
-                                  dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400">
+                                  dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400 p-2">
                 </div>
 
                 <div>
@@ -53,7 +53,7 @@
                            value="{{ $to }}"
                            class="w-full rounded-lg border border-slate-200 bg-white text-sm text-slate-900
                                   focus:ring-indigo-500 focus:border-indigo-500
-                                  dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400">
+                                  dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400 p-2">
                 </div>
 
                 <div>
@@ -63,7 +63,7 @@
                     <select name="channel"
                             class="w-full rounded-lg border border-slate-200 bg-white text-sm text-slate-900
                                    focus:ring-indigo-500 focus:border-indigo-500
-                                   dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400">
+                                   dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400 p-2">
                         <option value="">All</option>
                         <option value="whatsapp" {{ $channel === 'whatsapp' ? 'selected' : '' }}>WhatsApp</option>
                         <option value="email" {{ $channel === 'email' ? 'selected' : '' }}>Email</option>
@@ -74,13 +74,13 @@
                 <div class="flex gap-2 md:col-span-2 justify-end">
                     <button type="submit"
                             class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium
-                                   bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm">
+                                   bg-green-600 text-white hover:bg-green-700 shadow-sm">
                         <i class="fas fa-filter mr-1.5 text-xs"></i> Apply Filters
                     </button>
 
                     <a href="{{ url()->current() }}"
                        class="inline-flex items-center px-3 py-2 rounded-lg text-xs sm:text-sm font-medium
-                              bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200
+                              bg-red-50 text-red-600 hover:bg-red-100 border border-red-200
                               dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:border-slate-700">
                         Reset
                     </a>
@@ -96,28 +96,28 @@
 
         {{-- ========================= SUMMARY CARDS ========================= --}}
         <div class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl shadow-sm border border-slate-100 bg-white p-4
+            <div class="rounded-2xl shadow-sm border border-slate-100 bg-[#FCB859] p-4
                         dark:bg-slate-900 dark:border-slate-800">
-                <p class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
+                <p class="text-xs font-medium text-slate-50 dark:text-slate-400 uppercase tracking-wide mb-1">
                     Total Sends
                 </p>
                 <div class="flex items-end justify-between">
-                    <p class="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                    <p class="text-2xl font-bold text-slate-50 dark:text-slate-100">
                         {{ number_format($totalSends) }}
                     </p>
                 </div>
-                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                <p class="mt-1 text-xs text-slate-50 dark:text-slate-500">
                     Date range: {{ $from }} to {{ $to }}
                 </p>
             </div>
 
-            <div class="rounded-2xl shadow-sm border border-emerald-100 bg-white p-4
+            <div class="rounded-2xl shadow-sm border border-emerald-100 bg-[#00947f] p-4
                         dark:bg-slate-900 dark:border-slate-800">
-                <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1">
+                <p class="text-xs font-medium text-emerald-50 uppercase tracking-wide mb-1">
                     Successful Sends
                 </p>
                 <div class="flex items-end justify-between">
-                    <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
+                    <p class="text-2xl font-bold text-emerald-50 dark:text-emerald-400">
                         {{ number_format($totalSuccess) }}
                     </p>
                     <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100
@@ -125,22 +125,22 @@
                         {{ $totalSends > 0 ? round(($totalSuccess / max($totalSends,1)) * 100, 1) : 0 }}%
                     </span>
                 </div>
-                <p class="mt-1 text-xs text-emerald-500 dark:text-emerald-300/80">
+                <p class="mt-1 text-xs text-emerald-50 dark:text-emerald-300/80">
                     Delivered by provider successfully.
                 </p>
             </div>
 
-            <div class="rounded-2xl shadow-sm border border-rose-100 bg-white p-4
+            <div class="rounded-2xl shadow-sm border border-rose-100 bg-[#b7a6b5] p-4
                         dark:bg-slate-900 dark:border-slate-800">
-                <p class="text-xs font-medium text-rose-600 uppercase tracking-wide mb-1">
+                <p class="text-xs font-medium text-rose-50 uppercase tracking-wide mb-1">
                     Failed Sends
                 </p>
                 <div class="flex items-end justify-between">
-                    <p class="text-2xl font-bold text-rose-700 dark:text-rose-400">
+                    <p class="text-2xl font-bold text-rose-50 dark:text-rose-400">
                         {{ number_format($totalFailed) }}
                     </p>
                 </div>
-                <p class="mt-1 text-xs text-rose-500 dark:text-rose-300/80">
+                <p class="mt-1 text-xs text-rose-50 dark:text-rose-300/80">
                     Check error messages & response codes below.
                 </p>
             </div>
@@ -148,9 +148,9 @@
 
         {{-- ========================= PER USER SUMMARY ========================= --}}
         <div class="rounded-2xl shadow-sm border border-slate-100 bg-white overflow-hidden
-                    dark:bg-slate-900 dark:border-slate-800">
+                    dark:bg-slate-900 dark:border-slate-800 ">
             <div class="px-4 sm:px-5 py-3 border-b border-slate-100 flex items-center justify-between gap-2
-                        dark:border-slate-800">
+                        dark:border-slate-800 bg-slate-200">
                 <div>
                     <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">
                         User wise summary
@@ -163,7 +163,7 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100 text-sm dark:divide-slate-800">
-                    <thead class="bg-slate-50 dark:bg-slate-800/60">
+                    <thead class="bg-[#BFE0E0] dark:bg-[#354A54]">
                     <tr>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">#</th>
                         <th class="px-4 py-2 text-left text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide">User</th>
@@ -214,7 +214,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
+                            <td colspan="6" class="px-4 py-4 text-center text-sm text-slate-500 dark:text-slate-400 bg-slate-200">
                                 No records found for the selected filters.
                             </td>
                         </tr>
@@ -228,7 +228,7 @@
         <div class="rounded-2xl shadow-sm border border-slate-100 bg-white overflow-hidden
                     dark:bg-slate-900 dark:border-slate-800">
             <div class="px-4 sm:px-5 py-3 border-b border-slate-100 flex items-center justify-between gap-2
-                        dark:border-slate-800">
+                        dark:border-slate-800 bg-slate-200">
                 <div>
                     <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Latest sends (last {{ $latestSends->count() }})
@@ -241,7 +241,7 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100 text-xs sm:text-sm dark:divide-slate-800">
-                    <thead class="bg-slate-50 dark:bg-slate-800/60">
+                        <thead class="bg-[#BFE0E0] dark:bg-[#354A54] ">
                     <tr>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Sent At</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">User</th>
@@ -395,7 +395,7 @@
                     @endforelse
                     </tbody>
                 </table>
-                <div class="px-4 sm:px-5 py-3 border-t border-slate-100 dark:border-slate-800">
+                <div class="px-4 sm:px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-200">
                     {{ $latestSends->links() }}
                 </div>
             </div>

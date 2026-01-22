@@ -18,7 +18,7 @@
             </div>
         @endif
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-1 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Birthday Records</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Manage birthdays & import via Excel.</p>
@@ -31,7 +31,7 @@
                 </a>
 
                 <a href="{{ route('birthday-records.create') }}"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                     + New Record
                 </a>
             </div>
@@ -39,7 +39,8 @@
 
         {{-- Filters --}}
             {{-- Filters --}}
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900">
+         <div class="bg-slate-200 dark:bg-transparent">
+               <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700 dark:bg-neutral-900 ">
 
                 <div class="md:col-span-2">
                     <label class="text-xs text-gray-600 dark:text-gray-400">Search (Name/Phone)</label>
@@ -82,7 +83,7 @@
 
                 <div class="flex items-end gap-2">
                     <button type="submit"
-                            class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                            class="w-full inline-flex justify-center items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700">
                         Apply
                     </button>
                     <a href="{{ route('birthday-records.index') }}"
@@ -91,11 +92,12 @@
                     </a>
                 </div>
             </form>
+         </div>
 
             {{-- Table --}}
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Phone</th>

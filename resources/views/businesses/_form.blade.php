@@ -68,7 +68,7 @@
         <div>
             <label class="block text-sm font-medium mb-1">Name <span class="text-red-600">*</span></label>
             <input type="text" name="name" value="{{ old('name', $business->name ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2"
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
                    required>
             @error('name') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
@@ -77,7 +77,7 @@
             <label class="block text-sm font-medium mb-1">Slug (optional)</label>
             <input type="text" name="slug" value="{{ old('slug', $business->slug ?? '') }}"
                    placeholder="auto-from-name if left blank"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('slug') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -85,28 +85,28 @@
             <label class="block text-sm font-medium mb-1">Invoice Base Prefix</label>
             <input type="text" name="invoice_base_prefix" value="{{ old('invoice_base_prefix', $business->invoice_base_prefix ?? '') }}"
                    placeholder="RV/SL"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('invoice_base_prefix') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label class="block text-sm font-medium mb-1">Email <span class="text-red-600">*</span></label>
             <input type="email" name="email" value="{{ old('email', $business->email ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2" required>
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]" required>
             @error('email') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label class="block text-sm font-medium mb-1">Mobile </label>
             <input type="text" name="mobile" value="{{ old('mobile', $business->mobile ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2" >
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]" >
             @error('mobile') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label class="block text-sm font-medium mb-1">GSTIN</label>
             <input type="text" name="gstin" value="{{ old('gstin', $business->gstin ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('gstin') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -119,16 +119,16 @@
                 name="type"
                 required
                 class="mt-1 w-full border rounded px-3 py-2
-               bg-gray-900 text-white border-gray-600
+               bg-gray-300 dark:bg-[#242833] text-gray-400 border-gray-600
                focus:border-blue-500 focus:ring-blue-500"
             >
-                <option value="" class="bg-gray-900 text-white">
+                <option value="" class="bg-gray-300 dark:bg-[#242833] text-gray-400">
                     -- Select Business Type --
                 </option>
 
                 @foreach($businessTypes as $key => $label)
                     <option value="{{ $key }}"
-                            class="bg-gray-900 text-white"
+                            class="bg-gray-300 dark:bg-[#242833] text-gray-400"
                         {{ $selectedBusinessType === $key ? 'selected' : '' }}>
                         {{ $label }}
                     </option>
@@ -147,17 +147,17 @@
 
             <select
                 name="state"
-                class="mt-1 w-full border rounded px-3 py-2 bg-gray-900 text-white border-gray-600
+                class="mt-1 w-full border rounded px-3 py-2 bg-gray-300 dark:bg-[#242833] text-gray-400 border-gray-600
            focus:border-blue-500 focus:ring-blue-500"
                 required
             >
-                <option value="" class="bg-gray-900 text-white">-- Select State --</option>
+                <option value="" class="bg-gray-300 dark:bg-[#242833] text-gray-400">-- Select State --</option>
 
                 @foreach($states as $st)
                     @php $value = $st['code'].','.$st['name']; @endphp
 
                     <option value="{{ $value }}"
-                            class="bg-gray-900 text-white"
+                            class="bg-gray-300 dark:bg-[#242833] text-gray-400"
                         {{ $selectedState === $value ? 'selected' : '' }}>
                         {{ $st['name'] }} ({{ $st['code'] }})
                     </option>
@@ -180,17 +180,17 @@
             </label>
 
             <select name="pdf_template_id" required
-                    class="mt-1 w-full border rounded px-3 py-2 bg-gray-900 text-white border-gray-600
+                    class="mt-1 w-full border rounded px-3 py-2 bg-gray-300 dark:bg-[#242833] text-gray-400 border-gray-600
              focus:border-blue-500 focus:ring-blue-500">
 
-                <option value="" class="bg-gray-900 text-white">-- Select template --</option>
+                <option value="" class="bg-gray-300 dark:bg-[#242833] text-gray-400">-- Select template --</option>
 
-                <option value="pdf_simple" class="bg-gray-900 text-white"
+                <option value="pdf_simple" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
                     {{ $currentTemplate === 'pdf_simple' ? 'selected' : '' }}>
                     Simple Format
                 </option>
 
-                <option value="pdf_rvg_format" class="bg-gray-900 text-white"
+                <option value="pdf_rvg_format" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
                     {{ $currentTemplate === 'pdf_rvg_format' ? 'selected' : '' }}>
                     RVG Format
                 </option>
@@ -204,7 +204,7 @@
 
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">Address</label>
-            <textarea name="address" rows="3" class="mt-1 w-full border rounded px-3 py-2"
+            <textarea name="address" rows="3" class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
                       placeholder="Optional">{{ old('address', $business->address ?? '') }}</textarea>
             @error('address') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
@@ -213,7 +213,7 @@
     <div class="grid md:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium mb-1">Logo</label>
-            <input type="file" name="logo" accept="image/*" class="mt-1 w-full border rounded px-3 py-2">
+            <input type="file" name="logo" accept="image/*" class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('logo') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             @if($isEdit && $business->logo)
                 <div class="mt-3 flex items-center gap-4">
@@ -228,7 +228,7 @@
 
         <div>
             <label class="block text-sm font-medium mb-1">Signature</label>
-            <input type="file" name="signature" accept="image/*" class="mt-1 w-full border rounded px-3 py-2">
+            <input type="file" name="signature" accept="image/*" class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('signature') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             @if($isEdit && $business->signature)
                 <div class="mt-3 flex items-center gap-4">
@@ -243,13 +243,13 @@
 
         <div>
             <label class="block text-sm font-medium mb-1">Letter Head</label>
-            <input type="file" name="letter_head" accept="image/*" class="mt-1 w-full border rounded px-3 py-2">
+            <input type="file" name="letter_head" accept="image/*" class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('letter_head') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
             @if($isEdit && $business->letter_head)
                 <div class="mt-3 flex items-center gap-4">
                     <img src="{{ asset('storage/'.$business->letter_head) }}" class="w-14 h-14 rounded object-cover" alt="letter_head">
                     <label class="inline-flex items-center gap-2 text-sm">
-                        <input type="checkbox" name="remove_letter_head" value="1" class="rounded border-gray-300">
+                        <input type="checkbox" name="remove_letter_head" value="1" class="rounded border-gray-300 bg-slate-200 dark:bg-[#242833]">
                         Remove current letter_head
                     </label>
                 </div>
@@ -261,7 +261,7 @@
     <div class="grid md:grid-cols-2 gap-4">
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">Terms & Conditions</label>
-            <textarea name="terms" rows="3" class="mt-1 w-full border rounded px-3 py-2"
+            <textarea name="terms" rows="3" class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
                       placeholder="Optional">{{ old('terms', $business->terms ?? '') }}</textarea>
             @error('terms') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
@@ -269,10 +269,10 @@
 
     <div class="flex items-center gap-3">
         <button type="submit"
-                class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
             {{ $isEdit ? 'Update Business' : 'Create Business' }}
         </button>
-        <a href="{{ route('businesses.index') }}" class="text-gray-600 hover:underline">Cancel</a>
+        <a href="{{ route('businesses.index') }}" class=" bg-amber-400 p-2 rounded-lg text-white hover:underline">Cancel</a>
     </div>
 </div>
 

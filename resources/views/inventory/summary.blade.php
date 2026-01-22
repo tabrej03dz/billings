@@ -9,7 +9,7 @@
         @endif
 
         {{-- PAGE HEADER + FILTERS --}}
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
                 Inventory Summary
             </h1>
@@ -81,7 +81,7 @@
         {{-- TABLE --}}
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class="bg-[#BFE0E0] dark:bg-[#354A54]  text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Item</th>
                     <th class="px-6 py-3">SKU</th>

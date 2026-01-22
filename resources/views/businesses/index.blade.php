@@ -7,11 +7,11 @@
             </div>
         @endif
 
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Businesses</h1>
             @can('create business')
                 <a href="{{ route('businesses.create') }}"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-700">
                     + New Business
                 </a>
             @endcan
@@ -19,7 +19,7 @@
 
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Logo</th>
                     <th class="px-6 py-3">Name</th>
@@ -50,7 +50,7 @@
                         <td class="px-6 py-4">{{ $business->address ?? 'N/A' }}</td>
                         <td class="px-6 py-4 space-x-2">
                             @can('edit business')
-                                <a href="{{ route('businesses.edit', $business->id) }}" class="text-yellow-600 hover:underline">Edit</a>
+                                <a href="{{ route('businesses.edit', $business->id) }}" class=" bg-yellow-500 text-white p-2 hover:underline m-3">Edit</a>
                             @endcan
 
                             @can('delete business')
@@ -58,9 +58,9 @@
                                       onsubmit="return confirm('Are you sure?');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                    <button type="submit" class="bg-red-600 p-2 m-3 text-white hover:underline">Delete</button>
                                 </form>
-                                    <a href="{{ route('bank-accounts.destroy', $business->id) }}" class="text-yellow-600 hover:underline">Banks</a>
+                                    <a href="{{ route('bank-accounts.destroy', $business->id) }}" class=" bg-sky-600 p-2 m-3 text-white hover:underline">Banks</a>
 
 
                                 @endcan

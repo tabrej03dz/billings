@@ -5,7 +5,7 @@
     @endphp
 
 
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">
                 Invoices
@@ -18,20 +18,20 @@
         <div class="flex items-center gap-2">
             @can('create proforma')
             <a href="{{ route('invoices.create', 'proforma') }}"
-               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#D7B059] text-white text-sm font-medium hover:bg-amber-500">
                 + Proforma
             </a>
             @endcan
             @can('create quotation')
             <a href="{{ route('invoices.create', 'quotation') }}"
-               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-cyan-600 text-white text-sm font-medium hover:bg-cyan-700">
                 + quotation
             </a>
                 @endcan
 
             @can('create invoice')
             <a href="{{ route('invoices.create', 'tax') }}"
-               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#46837d] text-white text-sm font-medium hover:bg-[#46837d]">
                 + Tax Invoice
             </a>
             @endcan
@@ -46,10 +46,10 @@
            class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
        {{ $activeType === 'tax'
             ? 'bg-blue-600 text-white border-blue-600'
-            : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+            : 'bg-[#46837d] dark:bg-[#46837d] text-gray-50 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-[#46837d] dark:hover:bg-[#46837d]' }}">
             Tax Invoices
             <span class="text-[11px] px-2 py-0.5 rounded-full border
-            {{ $activeType === 'tax' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+            {{ $activeType === 'tax' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-neutral-800 dark:bg-neutral-800' }}">
             {{ $taxCount ?? '' }}
         </span>
         </a>
@@ -61,10 +61,10 @@
            class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
        {{ $activeType === 'proforma'
             ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+            : 'bg-[#D7B059] dark:bg-[#D7B059] text-gray-50 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-[#D7B059]' }}">
             Proforma
             <span class="text-[11px] px-2 py-0.5 rounded-full border
-            {{ $activeType === 'proforma' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+            {{ $activeType === 'proforma' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-neutral-900 dark:bg-neutral-800' }}">
             {{ $proCount ?? '' }}
         </span>
         </a>
@@ -75,11 +75,11 @@
                 <a href="{{ route('invoices.index', array_merge(request()->except('page'), ['type' => 'quotation'])) }}"
                    class="px-4 py-2 rounded-lg text-sm font-semibold border flex items-center gap-2
                {{ $activeType === 'quotation'
-                    ? 'bg-amber-600 text-white border-amber-600'
-                    : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+                    ? 'bg-cyan-600 text-white border-cyan-600'
+                    : 'bg-white dark:bg-cyan-600 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-cyan-800' }}">
                     Quotation
                     <span class="text-[11px] px-2 py-0.5 rounded-full border
-                    {{ $activeType === 'quotation' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800' }}">
+                    {{ $activeType === 'quotation' ? 'border-white/30 bg-white/10' : 'border-gray-200 dark:border-neutral-700 bg-neutral-900 dark:bg-neutral-800' }}">
                     {{ $quoCount ?? '' }}
                 </span>
                 </a>
@@ -90,13 +90,13 @@
     {{-- ✅ Filters --}}
     <form method="GET"
           action="{{ route('invoices.index') }}"
-          class="mb-4 grid gap-3 md:grid-cols-5 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
+          class="mb-4 grid gap-3 md:grid-cols-5 bg-gray-100 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-3">
 
         {{-- ✅ keep tab type on filter submit --}}
         <input type="hidden" name="type" value="{{ $activeType }}">
 
         {{-- Search --}}
-        <div class="md:col-span-2">
+        <div class="md:col-span-2 ">
             <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
                 Search (Invoice / Client)
             </label>
@@ -143,18 +143,18 @@
         {{-- Buttons --}}
         <div class="md:col-span-5 flex items-center justify-between gap-2 pt-1">
             <a href="{{ route('invoices.index', ['type' => $activeType]) }}"
-               class="inline-flex items-center px-3 py-1.5 rounded-md border border-gray-300 dark:border-neutral-700 text-xs font-medium text-gray-700 dark:text-neutral-200 hover:bg-gray-50 dark:hover:bg-neutral-800">
+               class="inline-flex items-center px-3 py-1.5 rounded-md border border-red-300 dark:border-red-700 text-xs font-medium text-red-700 dark:text-red-600 hover:bg-gray-50 dark:hover:bg-grey-400">
                 Reset
             </a>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 text-green-600 font-bold dark:text-green-400">
                 <a href="{{ route('invoices.export', array_merge(request()->query(), ['type' => $activeType])) }}">
 
                 📄 Download Full Report
                 </a>
 
                 <button type="submit"
-                        class="inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                        class="inline-flex items-center px-4 py-2 rounded-md bg-amber-600 text-white text-sm font-medium hover:bg-amber-700">
                     Apply Filters
                 </button>
             </div>
@@ -169,7 +169,7 @@
 
     <div x-data="paymentInModal()">
 
-        <div class="overflow-hidden border border-gray-200 dark:border-neutral-800 rounded-2xl bg-white dark:bg-neutral-900">
+        <div class="overflow-hidden border border-gray-200 dark:border-neutral-800 rounded-2xl bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <div class="overflow-auto">
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50 dark:bg-neutral-800/60 text-xs uppercase tracking-wide text-gray-600 dark:text-neutral-300">

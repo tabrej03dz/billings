@@ -1,5 +1,5 @@
 <x-layouts.app :title="__('Additional Charges')">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Additional Charges</h1>
 
         <div class="flex items-center gap-2">
@@ -11,7 +11,7 @@
             </form>
 
             <a href="{{ route('additional-charges.create') }}"
-               class="px-3 py-2 rounded bg-blue-600 text-white">+ New</a>
+               class="px-3 py-2 rounded bg-green-600 text-white">+ New</a>
         </div>
     </div>
 
@@ -23,7 +23,7 @@
 
     <div class="overflow-auto border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
         <table class="min-w-full text-sm border-separate border-spacing-0">
-            <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
+            <thead class="bg-[#BFE0E0] dark:bg-[#354A54]  text-gray-700 dark:text-neutral-200">
             <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">
                 <th style="width: 90px;">#ID</th>
                 <th>Name</th>
@@ -41,13 +41,13 @@
                     <td class="px-4 py-2">{{ $charge->created_at->format('d M Y, h:i A') }}</td>
                     <td class="px-4 py-2 space-x-3">
                         <a href="{{ route('additional-charges.edit', $charge->id) }}"
-                           class="text-blue-600 hover:underline">Edit</a>
+                           class="bg-blue-600 hover:underline p-2">Edit</a>
 
                         <form action="{{ route('additional-charges.destroy', $charge->id) }}"
                               method="POST" class="inline"
                               onsubmit="return confirm('Delete this charge?')">
                             @csrf @method('DELETE')
-                            <button class="text-red-600 hover:underline">Delete</button>
+                            <button class="bg-red-600 hover:underline p-2">Delete</button>
                         </form>
                     </td>
                 </tr>

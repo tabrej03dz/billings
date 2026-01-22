@@ -14,9 +14,9 @@
 
         @include('purchases._form', ['purchase' => $purchase, 'suppliers' => $suppliers, 'items' => $items])
 
-        <div class="flex justify-end gap-2">
+        <div class="flex justify-end gap-2 max-w-3xl mx-auto">
             <a href="{{ route('purchases.index') }}" class="px-3 py-2 border rounded">Cancel</a>
-            <button class="px-4 py-2 rounded bg-blue-600 text-white">Save Purchase</button>
+            <button class="px-4 py-2 rounded bg-green-600 text-white">Save Purchase</button>
         </div>
     </form>
 </x-layouts.app>

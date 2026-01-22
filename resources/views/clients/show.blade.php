@@ -2,7 +2,7 @@
     <div class="space-y-6 max-w-6xl mx-auto">
 
         {{-- Back + heading --}}
-        <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center justify-between gap-3 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <div>
                 <a href="{{ route('clients.index') }}"
                    class="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
@@ -20,7 +20,7 @@
 
             <a href="{{ route('clients.edit', $client->id) }}"
                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white
-                      bg-blue-600 rounded-lg hover:bg-blue-700">
+                      bg-green-600 rounded-lg hover:bg-green-700">
                 Edit Client
             </a>
         </div>
@@ -28,7 +28,7 @@
         {{-- Client details card --}}
         <div class="grid md:grid-cols-3 gap-4">
             <div class="md:col-span-2 p-4 rounded-xl border border-gray-200 dark:border-gray-700
-                        bg-white dark:bg-neutral-900 space-y-2">
+                        bg-[#F3F4F6] dark:bg-[#1A1D23] space-y-2">
                 <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Client Details
                 </h2>
@@ -54,7 +54,7 @@
 
             {{-- Purchase summary --}}
             <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-700
-                        bg-white dark:bg-neutral-900 space-y-3">
+                    bg-[#F3F4F6] dark:bg-[#1A1D23] space-y-3">
                 <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Purchase Summary
                 </h2>
@@ -97,7 +97,7 @@
 
             <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                    <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                    <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                     <tr>
                         <th class="px-4 py-3">Date</th>
                         <th class="px-4 py-3">Invoice No.</th>
@@ -110,13 +110,13 @@
                         <th class="px-4 py-3 text-right">Action</th>
                     </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
+                    <tbody class=" divide-y divide-gray-200 bg-[#F3F4F6]  dark:bg-[#1A1D23] dark:divide-neutral-700">
                     @forelse($invoices as $inv)
                         <tr>
                             <td class="px-4 py-3">
                                 {{ \Carbon\Carbon::parse($inv->invoice_date)->format('d-m-Y') }}
                             </td>
-                            <td class="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                            <td class="px-4 py-3 font-medium ">
                                 {{ $inv->invoice_prefix }}{{ $inv->invoice_number }}
                             </td>
                             <td class="px-4 py-3">
@@ -168,7 +168,7 @@
 
             <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                    <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                    <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                     <tr>
                         <th class="px-4 py-3">Date</th>
                         <th class="px-4 py-3">Invoice No.</th>
@@ -177,7 +177,7 @@
                         <th class="px-4 py-3 text-right">Amount</th>
                     </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
+                    <tbody class="bg-white divide-y divide-gray-200 bg-[#F3F4F6] dark:bg-[#1A1D23] dark:divide-neutral-700">
                     @forelse($recentItems as $item)
                         <tr>
                             <td class="px-4 py-3">
