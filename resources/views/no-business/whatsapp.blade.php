@@ -1,5 +1,5 @@
 <x-layouts.app :title="__('Dashboard')">
-    <div class="max-w-6xl mx-auto py-8 px-3 sm:px-4 lg:px-6 space-y-6">
+    <div class="max-w-6xl mx-auto py-8 px-3 sm:px-4 lg:px-6 space-y-6 ">
 
          ALERTS
         @if(session('success'))
@@ -25,7 +25,7 @@
          TOP HEADER CARD
         <div class="bg-slate-900 border border-slate-800 rounded-2xl px-5 py-4 sm:px-6 sm:py-5 shadow-lg shadow-slate-900/40 flex flex-wrap items-center justify-between gap-4">
             <div>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 bg-[#F3F4F6] dark:bg-[#1A1D23]">
                     <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg">
                         <i class="fas fa-paper-plane text-sm"></i>
                     </span>

@@ -19,14 +19,14 @@
         @endif
 
         {{-- PAGE HEADER --}}
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+        <div class="flex flex-wrap bg-[#BFE0E0] dark:bg-[#354A54] items-center justify-between gap-3 p-6">
+            <h1 class="text-2xl font-bold text-black dark:text-white">
                 Dashboard
             </h1>
 
-            <div class="text-sm text-gray-500 dark:text-gray-300">
+            <div class="text-sm text-gray-500 dark:text-gray-50 p-3 border-2 border-[#FCB055]">
                 Today:
-                <span class="font-semibold">
+                <span class="font-semibold text-grey-900">
                     {{ isset($today) ? $today->format('d M Y') : now()->format('d M Y') }}
                 </span>
             </div>
@@ -37,68 +37,68 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
 
             {{-- Today Sales --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <div class="bg-[#33D39A] dark:bg-[#E6F7F1] rounded-lg border border-grey-900 dark:border p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-500 uppercase tracking-wider">
                     Today Sales
                 </p>
-                <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white leading-none">
+                <p class="mt-1 text-lg font-bold text-gray-50 dark:text-black leading-none">
                     ₹ {{ number_format($todaySalesAmount ?? 0, 2) }}
                 </p>
-                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-[11px] text-[#F5F5F5] dark:text-gray-500">
                     {{ $todaySalesCount ?? 0 }} invoice(s)
                 </p>
             </div>
 
             {{-- Month Sales --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <div class="bg-[#37BEF7] dark:bg-[#658282] rounded-lg border border-grey-200 dark:border  p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-50 uppercase tracking-wider">
                     This Month Sales
                 </p>
-                <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white leading-none">
+                <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
                     ₹ {{ number_format($monthSalesAmount ?? 0, 2) }}
                 </p>
-                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-[11px] text-[#E0F3FF] dark:text-gray-50">
                     Total from 1st of month
                 </p>
             </div>
 
             {{-- Month Purchases --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <div class="bg-[#00bcac] dark:bg-[#354a54] rounded-lg border border-grey-200 dark:border  p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-400 uppercase tracking-wider">
                     This Month Purchases
                 </p>
-                <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white leading-none">
+                <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
                     ₹ {{ number_format($monthPurchasesAmount ?? 0, 2) }}
                 </p>
-                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-400">
                     Today: ₹ {{ number_format($todayPurchasesAmount ?? 0, 2) }}
                 </p>
             </div>
 
             {{-- Pending Amount --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-red-700 p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-red-600 dark:text-red-400 uppercase tracking-wider">
+            <div class="bg-[#bc5b6a] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-red-50 dark:text-red-50 uppercase tracking-wider">
                     Pending Amount
                 </p>
-                <p class="mt-1 text-lg font-bold text-red-700 dark:text-red-300 leading-none">
+                <p class="mt-1 text-lg font-bold text-red-50 dark:text-red-50 leading-none">
                     ₹ {{ number_format($totalPendingAmount ?? 0, 2) }}
                 </p>
-                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
                     Today: ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
                 </p>
             </div>
             {{-- Items / Stock --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <div class="bg-[#ffd055] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border  p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-50 uppercase tracking-wider">
                     Items / Stock
                 </p>
-                <p class="mt-1 text-lg font-bold text-gray-900 dark:text-white leading-none">
+                <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
                     {{ number_format($totalItems ?? 0) }} items
                 </p>
-                <p class="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
                     Stock: {{ number_format($totalStockQty ?? 0) }} •
                     Low:
-                    <span class="font-semibold text-red-600 dark:text-red-400">
+                    <span class="font-semibold text-red-50 dark:text-[#E5533D] p-2">
                 {{ $lowStockCount ?? 0 }}
             </span>
                 </p>
@@ -115,11 +115,11 @@
 
             {{-- Lifetime Sales --}}
             <div class="w-full sm:w-1/2 xl:w-1/3">
-                <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm px-4 py-3 h-full">
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                <div class="bg-green-600 dark:bg-[#54696C] rounded-xl border border-grey-200 dark:border  shadow-sm px-4 py-3 h-full">
+                    <p class="text-xs font-medium text-gray-50 dark:text-gray-50 uppercase tracking-wide">
                         Total Sales (All Time)
                     </p>
-                    <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
+                    <p class="mt-2 text-xl font-bold text-gray-50 dark:text-white">
                         ₹ {{ number_format($totalSalesAmount ?? 0, 2) }}
                     </p>
                 </div>
@@ -127,11 +127,11 @@
 
             {{-- Lifetime Purchases --}}
             <div class="w-full sm:w-1/2 xl:w-1/3">
-                <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm px-4 py-3 h-full">
-                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                <div class="bg-[#1E90FF] dark:bg-[#E6F7F1] rounded-xl border border-grey-900 dark:border  shadow-sm px-4 py-3 h-full">
+                    <p class="text-xs font-medium text-gray-50 dark:text-gray-500 uppercase tracking-wide">
                         Total Purchases (All Time)
                     </p>
-                    <p class="mt-2 text-xl font-bold text-gray-900 dark:text-white">
+                    <p class="mt-2 text-xl font-bold text-gray-50 dark:text-black">
                         ₹ {{ number_format($totalPurchasesAmount ?? 0, 2) }}
                     </p>
                 </div>
@@ -140,7 +140,7 @@
             @if($business->type == 'jewellery')
             {{-- Today Metal Rates + button --}}
             <div class="w-full xl:w-1/3">
-                <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm px-4 py-3 h-full">
+                <div class="bg-white dark:bg-neutral-900 rounded-xl border border-red-200 dark:border p-3 dark:border-neutral-700 shadow-sm px-4 py-3 h-full">
                     <div class="flex items-center justify-between mb-2">
                         <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                             Today Metal Rates
@@ -368,13 +368,13 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
             {{-- Recent Sales --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
+            <div class="bg-[#BFE0E0] dark:bg-[#354A54] rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-neutral-700">
                     <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
                         Recent Sales
                     </h2>
                     <a href="{{ route('invoices.index') }}"
-                       class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                       class="text-xs text-[#FA5252] dark:text-red-700 hover:underline">
                         View all
                     </a>
                 </div>
@@ -418,13 +418,13 @@
             </div>
 
             {{-- Recent Purchases --}}
-            <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
+            <div class="bg-[#BFE0E0] dark:bg-[#354A54] rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-neutral-700">
                     <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
                         Recent Purchases
                     </h2>
                     <a href="{{ route('purchases.index') }}"
-                       class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                       class="text-xs text-[#FA5252] dark:text-red-700 hover:underline">
                         View all
                     </a>
                 </div>
@@ -471,13 +471,13 @@
         </div>
 
         {{-- LOW STOCK ITEMS --}}
-        <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
+        <div class="bg-[#BFE0E0] dark:bg-[#354A54] rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
             <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-neutral-700">
                 <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
                     Low Stock Items
                 </h2>
                 <a href="{{ route('items.index') }}"
-                   class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                   class="text-xs text-[#FA5252] dark:text-red-700 hover:underline">
                     Manage items
                 </a>
             </div>

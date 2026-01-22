@@ -16,7 +16,7 @@
         <script type="application/json" id="charges-json">{!! $chargesJson !!}</script>
         <script type="application/json" id="metal-rates-json">{!! $metalRatesJson !!}</script>
 
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between ">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Create Sales Invoice</h1>
             <button @click="$refs.form.requestSubmit()"
                     class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">

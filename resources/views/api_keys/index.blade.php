@@ -9,11 +9,11 @@
         @endif
 
         {{-- Header --}}
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">API Keys</h1>
 
             <a href="{{ route('api-keys.create') }}"
-               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+               class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                 + New API Key
             </a>
         </div>
@@ -21,7 +21,7 @@
         {{-- Table --}}
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class=" bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Base URL</th>
                     <th class="px-6 py-3">API Key</th>
@@ -56,7 +56,7 @@
 
                         <td class="px-6 py-4 space-x-3">
                             <a href="{{ route('api-keys.edit', $key->id) }}"
-                               class="text-yellow-600 hover:underline">
+                               class="bg-yellow-500 text-white p-2 hover:underline m-3">
                                 Edit
                             </a>
 
@@ -66,7 +66,7 @@
                                 @csrf
                                 @method('DELETE')
 
-                                <button class="text-red-600 hover:underline">
+                                <button class="bg-red-500 text-white p-2 hover:underline m-3">
                                     Delete
                                 </button>
                             </form>

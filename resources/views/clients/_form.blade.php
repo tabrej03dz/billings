@@ -56,7 +56,7 @@
             <label class="block text-sm font-medium mb-1">Name <span class="text-red-600">*</span></label>
             <input type="text" name="name" required
                    value="{{ old('name', $client->name ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('name') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -64,7 +64,7 @@
             <label class="block text-sm font-medium mb-1">Mobile <span class="text-red-600"></span></label>
             <input type="text" name="mobile"
                    value="{{ old('mobile', $client->mobile ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('mobile') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -83,7 +83,7 @@
                    name="gstin"
                    id="gstinInput"
                    value="{{ old('gstin', $client->gstin ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2 uppercase"
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833] uppercase"
                    maxlength="15"
                    placeholder="22AAAAA0000A1Z5">
 
@@ -99,7 +99,7 @@
             <label class="block text-sm font-medium mb-1">PAN</label>
             <input type="text" name="pan"
                    value="{{ old('pan', $client->pan ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('pan') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -111,11 +111,11 @@
             <select
                 name="state"
                 class="mt-1 w-full border rounded px-3 py-2
-               bg-gray-900 text-white border-gray-600
+               bg-gray-300 text-gray-400 border-gray-600
                focus:border-blue-500 focus:ring-blue-500"
 
             >
-                <option value="" class="bg-gray-900 text-white">
+                <option value="" class="bg-gray-300 text-gray-400">
                     -- Select State --
                 </option>
 
@@ -123,7 +123,7 @@
                     @php $value = $st['code'].','.$st['name']; @endphp
 
                     <option value="{{ $value }}"
-                            class="bg-gray-900 text-white"
+                            class="bg-gray-300 text-gray-400"
                         {{ $selectedState === $value ? 'selected' : '' }}>
                         {{ $st['name'] }} ({{ $st['code'] }})
                     </option>
@@ -138,17 +138,17 @@
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">Address</label>
             <textarea name="address" rows="3"
-                      class="mt-1 w-full border rounded px-3 py-2"
+                      class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
                       placeholder="Optional">{{ old('address', $client->address ?? '') }}</textarea>
             @error('address') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
 
     <div class="flex items-center gap-3">
-        <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
             {{ $isEdit ? 'Update Client' : 'Create Client' }}
         </button>
-        <a href="{{ route('clients.index') }}" class="text-gray-600 hover:underline">Cancel</a>
+        <a href="{{ route('clients.index') }}" class="bg-red-400 p-2 text-white rounded-lg hover:underline">Cancel</a>
     </div>
 </div>
 

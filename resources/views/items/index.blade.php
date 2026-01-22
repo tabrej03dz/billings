@@ -7,36 +7,36 @@
             </div>
         @endif
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Items</h1>
+        <div class="flex flex-wrap items-center justify-between gap-3  bg-[#BFE0E0] dark:bg-[#354A54] p-6">
+            <h1 class="text-2xl font-bold text-black dark:text-white">Items</h1>
 
             <div class="flex items-center gap-2">
                 <form method="GET" class="flex flex-wrap items-center gap-2">
                     <input type="text" name="q" value="{{ $q }}"
                            placeholder="Search name / SKU / desc..."
-                           class="border rounded px-3 py-2 text-sm w-56" />
+                           class="border border-black dark:border-white rounded px-3 py-2 text-sm w-56" />
 
-                    <select name="category_id" class="border rounded px-2 py-2 text-sm">
+                    <select name="category_id" class="border border-black dark:border-white rounded px-2 py-2 text-sm">
                         <option value="">All Categories</option>
                         @foreach($categories as $cat)
                             <option value="{{ $cat->id }}" @selected($category_id==$cat->id)>{{ $cat->name }}</option>
                         @endforeach
                     </select>
 
-                    <select name="active" class="border rounded px-2 py-2 text-sm">
+                    <select name="active" class="border border-black dark:border-white rounded px-2 py-2 text-sm ">
                         <option value="">Any Status</option>
                         <option value="1" @selected($active==='1')>Active</option>
                         <option value="0" @selected($active==='0')>Inactive</option>
                     </select>
 
-                    <button class="px-3 py-2 text-sm rounded bg-gray-100 hover:bg-gray-200">Filter</button>
+                    <button class="px-3 py-2 text-sm rounded dark:bg-gray-500 dark:hover:bg-gray-400 border border-black dark:border-white">Filter</button>
                     @if($q!=='' || $category_id || $active!=='')
-                        <a href="{{ route('items.index') }}" class="text-sm text-gray-600 hover:underline">Clear</a>
+                        <a href="{{ route('items.index') }}" class="text-sm text-gray-900 dark:text-white border border-black dark:border-white p-2 hover:underline">Clear</a>
                     @endif
                 </form>
 
                 <a href="{{ route('item.create') }}"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                     + New Item
                 </a>
             </div>
@@ -44,7 +44,7 @@
 
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">SKU</th>
@@ -73,11 +73,11 @@
                             @endif
                         </td>
                         <td class="px-6 py-3 space-x-2">
-                            <a href="{{ route('items.edit', $it->id) }}" class="text-yellow-600 hover:underline">Edit</a>
+                            <a href="{{ route('items.edit', $it->id) }}" class="bg-yellow-600 hover:underline p-2 text-white ">Edit</a>
                             <form action="{{ route('items.destroy', $it->id) }}" method="POST" class="inline-block"
                                   onsubmit="return confirm('Delete this item?');">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                <button type="submit" class="bg-red-600 hover:underline p-2 text-white ">Delete</button>
                             </form>
                         </td>
                     </tr>

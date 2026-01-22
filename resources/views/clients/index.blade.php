@@ -7,7 +7,7 @@
             </div>
         @endif
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Clients</h1>
 
             <div class="flex items-center gap-2">
@@ -15,14 +15,14 @@
                     <input type="text" name="q" value="{{ $q }}"
                            placeholder="Search name/mobile/gstin/pan..."
                            class="border rounded px-3 py-2 text-sm w-64" />
-                    <button class="px-3 py-2 text-sm rounded bg-gray-100 hover:bg-gray-200">Search</button>
+                    <button class="px-3 py-2 text-sm rounded bg-gray-500 hover:bg-gray-600 ">Search</button>
                     @if($q !== '')
                         <a href="{{ route('clients.index') }}" class="text-sm text-gray-600 hover:underline">Clear</a>
                     @endif
                 </form>
 
                 <a href="{{ route('clients.create') }}"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                     + New Client
                 </a>
             </div>
@@ -30,7 +30,7 @@
 
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Mobile</th>
@@ -51,12 +51,12 @@
                         <td class="px-6 py-3">{{ $c->state ?? '—' }}</td>
                         <td class="px-6 py-3">{{ $c->address ? Str::limit($c->address, 60) : '—' }}</td>
                         <td class="px-6 py-3 space-x-2">
-                            <a href="{{ route('clients.show', $c->id) }}" class="text-blue-600 hover:underline">Record</a>
-                            <a href="{{ route('clients.edit', $c->id) }}" class="text-yellow-600 hover:underline">Edit</a>
+                            <a href="{{ route('clients.show', $c->id) }}" class="bg-blue-500 text-white p-2 hover:underline m-1">Record</a>
+                            <a href="{{ route('clients.edit', $c->id) }}" class="bg-yellow-500 text-white p-2 hover:underline m-1">Edit</a>
                             <form action="{{ route('clients.destroy', $c->id) }}" method="POST" class="inline-block"
                                   onsubmit="return confirm('Delete this client?');">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:underline">Delete</button>
+                                <button type="submit" class="bg-red-500 text-white p-2 hover:underline m-1">Delete</button>
                             </form>
                         </td>
                     </tr>

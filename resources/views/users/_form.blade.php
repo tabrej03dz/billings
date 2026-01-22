@@ -11,7 +11,7 @@
             <label class="block text-sm font-medium mb-1">Name <span class="text-red-600">*</span></label>
             <input type="text" name="name" required
                    value="{{ old('name', $user->name ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2">
+            class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
             @error('name') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -19,7 +19,7 @@
             <label class="block text-sm font-medium mb-1">Email <span class="text-red-600">*</span></label>
             <input type="email" name="email" required
                    value="{{ old('email', $user->email ?? '') }}"
-                   class="mt-1 w-full border rounded px-3 py-2">
+                   class="mt-1 w-full border rounded px-3 py-2  bg-slate-200 dark:bg-[#242833]">
             @error('email') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -29,14 +29,14 @@
                 @unless($isEdit) <span class="text-red-600">*</span> @endunless
             </label>
             <input type="password" name="password" {{ $isEdit ? '' : 'required' }}
-            class="mt-1 w-full border rounded px-3 py-2" placeholder="{{ $isEdit ? 'Leave blank to keep current' : '' }}">
+            class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]" placeholder="{{ $isEdit ? 'Leave blank to keep current' : '' }}">
             @error('password') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">{{ $isEdit ? 'Confirm New Password' : 'Confirm Password' }} @unless($isEdit)<span class="text-red-600">*</span>@endunless</label>
             <input type="password" name="password_confirmation" {{ $isEdit ? '' : 'required' }}
-            class="mt-1 w-full border rounded px-3 py-2">
+            class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]">
         </div>
     </div>
 
@@ -46,7 +46,7 @@
 
         <div class="rounded border border-gray-200 dark:border-neutral-700 overflow-hidden">
             <table class="min-w-full text-sm">
-                <thead class="bg-gray-50 dark:bg-neutral-800 text-xs uppercase font-medium">
+                <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium">
                 <tr>
                     <th class="px-4 py-2">Select</th>
                     <th class="px-4 py-2 text-left">Business</th>
@@ -63,7 +63,7 @@
                     <tr>
                         <td class="px-4 py-2 text-center">
                             <input type="checkbox" name="businesses[]" value="{{ $biz->id }}" {{ $checked ? 'checked' : '' }}
-                            class="rounded border-gray-300">
+                            class="rounded border-gray-300 bg-slate-200 dark:bg-[#242833]">
                         </td>
                         <td class="px-4 py-2">{{ $biz->name }} <span class="text-xs text-gray-400">/{{ $biz->slug }}</span></td>
                         <td class="px-4 py-2">
@@ -87,9 +87,9 @@
     </div>
 
     <div class="flex items-center gap-3">
-        <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
             {{ $isEdit ? 'Update User' : 'Create User' }}
         </button>
-        <a href="{{ route('users.index') }}" class="text-gray-600 hover:underline">Cancel</a>
+        <a href="{{ route('users.index') }}" class="bg-red-400 p-2 text-white rounded-lg hover:underline">Cancel</a>
     </div>
 </div>

@@ -27,16 +27,16 @@
         @endif
 
         {{-- TOP HEADER (SLIM, LESS FOCUS) --}}
-        <div class="bg-white/90 border border-slate-200 rounded-2xl px-5 py-4 sm:px-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm">
+        <div class="bg-[#F3F4F6] dark:bg-[#1A1D23] border border-slate-200 rounded-2xl px-5 py-4 sm:px-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3 ">
+                {{-- <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-sm">
                     <i class="fas fa-paper-plane text-sm"></i>
-                </span>
+                </span> --}}
                 <div>
-                    <h1 class="text-lg sm:text-xl font-semibold text-slate-900 leading-tight">
+                    <h1 class="text-lg sm:text-xl font-semibold text-slate-100 leading-tight">
                         Send PDF via WhatsApp
                     </h1>
-                    <p class="text-[11px] sm:text-xs text-slate-500">
+                    <p class="text-[11px] sm:text-xs text-slate-50">
                         Drop PDF → auto upload + WhatsApp send
                     </p>
                 </div>
@@ -140,8 +140,8 @@
         </style>
 
         {{-- MAIN CONTENT --}}
-        <div class="grid md:grid-cols-1 gap-6">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-lg shadow-slate-900/5 p-5 sm:p-6 space-y-4">
+        <div class="grid md:grid-cols-1 gap-6 ">
+            <div class="bg-[#F3F4F6] dark:bg-[#1A1D23] rounded-2xl border border-slate-200 shadow-lg shadow-slate-900/5 p-5 sm:p-6 space-y-4">
 
 
                     <button type="button" id="retry-all-btn"
@@ -156,7 +156,7 @@
                     <label class="block text-xs font-medium text-slate-700">WhatsApp Number (optional)</label>
                     <input type="text" id="phoneInput"
                            placeholder="e.g. 9198XXXXXXXX (optional)"
-                           class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white
+                           class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white dark:bg-[#242833]
                                   text-slate-900 placeholder:text-slate-400
                                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <p class="text-[10px] text-slate-400">
@@ -165,13 +165,13 @@
                 </div>
 
                 {{-- DROPZONE (HERO) --}}
-                <div id="pdfDropzone" class="dropzone rounded-2xl">
+                <div id="pdfDropzone" class=" rounded-2xl p-4 bg-white dark:bg-[#242833]">
                     <div class="dz-message" data-dz-message>
                         <div class="flex items-center gap-3">
-                            <div class="pdf-icon"><i class="fas fa-file-pdf text-rose-500"></i></div>
+                            {{-- <div class="pdf-icon"><i class="fas fa-file-pdf text-rose-500"></i></div> --}}
                             <div class="flex-1">
-                                <div class="text-sm font-semibold text-slate-800">Drop PDFs here or click to upload</div>
-                                <div class="text-[11px] text-slate-500">Only .pdf, max 5 MB each</div>
+                                <div class="text-sm font-semibold text-slate-100">Drop PDFs here or click to upload</div>
+                                <div class="text-[11px] text-slate-50">Only .pdf, max 5 MB each</div>
                             </div>
                             <div class="hidden sm:block">
                                 <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 text-[11px] font-medium">

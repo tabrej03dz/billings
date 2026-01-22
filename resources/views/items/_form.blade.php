@@ -13,12 +13,12 @@
     }
     select.rv-select option{
         background:#fff !important;
-        color:#0f172a !important;
+        color:#1A1D23 !important;
     }
 </style>
 
 
-<div class="space-y-6">
+<div class="space-y-6 ">
 
     {{-- ================= BASIC DETAILS ================= --}}
     <div class="border-b pb-4">
@@ -30,7 +30,7 @@
                 <label class="block text-sm font-medium mb-1">Name <span class="text-red-600">*</span></label>
                 <input type="text" name="name" required
                        value="{{ old('name', $item->name ?? '') }}"
-                       class="mt-1 w-full border rounded px-3 py-2">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                 @error('name') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -38,13 +38,13 @@
                 <label class="block text-sm font-medium mb-1">SKU</label>
                 <input type="text" name="sku"
                        value="{{ old('sku', $item->sku ?? '') }}"
-                       class="mt-1 w-full border rounded px-3 py-2" placeholder="Optional">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200" placeholder="Optional">
                 @error('sku') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label class="block text-sm font-medium mb-1">Category</label>
-                <select name="category_id" class="rv-select mt-1 w-full border rounded px-3 py-2">
+                <select name="category_id" class="rv-select mt-1 w-full border rounded px-3 py-2 ">
                     <option value="">— None —</option>
                     @foreach($categories as $cat)
                         <option value="{{ $cat->id }}"
@@ -80,7 +80,7 @@
                 <label class="block text-sm font-medium mb-1">SAC Code</label>
                 <input type="text" name="sac"
                        value="{{ old('sac', $item->sac ?? '') }}"
-                       class="mt-1 w-full border rounded px-3 py-2" placeholder="Optional">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200" placeholder="Optional">
                 @error('sac') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -89,7 +89,7 @@
                 <input type="number" name="service_duration"
                        value="{{ old('service_duration', $item->service_duration ?? '') }}"
                        class="mt-1 w-full border rounded px-3 py-2" placeholder="Optional">
-                @error('service_duration') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                @error('service_duration') <p class="text-xs text-red-600 mt-1 bg-slate-200">{{ $message }}</p> @enderror
             </div>
         </div>
     </div>
@@ -106,7 +106,7 @@
                     <label class="block text-sm font-medium mb-1">Gross Weight (gm)</label>
                     <input type="number" step="0.001" name="gross_weight"
                            value="{{ old('gross_weight', $item->gross_weight ?? '') }}"
-                           class="mt-1 w-full border rounded px-3 py-2">
+                           class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                     @error('gross_weight') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -114,7 +114,7 @@
                     <label class="block text-sm font-medium mb-1">Gemstone Weight (gm)</label>
                     <input type="number" step="0.001" name="stone_weight"
                            value="{{ old('stone_weight', $item->stone_weight ?? '') }}"
-                           class="mt-1 w-full border rounded px-3 py-2">
+                           class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                     @error('stone_weight') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -122,7 +122,7 @@
                     <label class="block text-sm font-medium mb-1">Gemstone Charges (₹)</label>
                     <input type="number" step="0.01" name="stone_charges"
                            value="{{ old('stone_charges', $item->stone_charges ?? '') }}"
-                           class="mt-1 w-full border rounded px-3 py-2">
+                           class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                     @error('stone_charges') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
@@ -136,7 +136,7 @@
                         <label class="block text-sm font-medium mb-1">Gold Weight (gm)</label>
                         <input type="number" step="0.001" name="gold_weight"
                                value="{{ old('gold_weight', $item->gold_weight ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2">
+                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                         @error('gold_weight') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
 
@@ -158,7 +158,7 @@
                         <label class="block text-sm font-medium mb-1">Silver Weight (gm)</label>
                         <input type="number" step="0.001" name="silver_weight"
                                value="{{ old('silver_weight', $item->silver_weight ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2">
+                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 ">
                         @error('silver_weight') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
 
@@ -178,7 +178,7 @@
                         <label class="block text-sm font-medium mb-1">Diamond Weight (ct)</label>
                         <input type="number" step="0.001" name="diamond_weight"
                                value="{{ old('diamond_weight', $item->diamond_weight ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2">
+                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                         @error('diamond_weight') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
 
@@ -186,7 +186,7 @@
                         <label class="block text-sm font-medium mb-1">Diamond Charges (₹)</label>
                         <input type="number" step="0.01" name="diamond_charges"
                                value="{{ old('diamond_charges', $item->diamond_charges ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2">
+                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                         @error('diamond_charges') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
@@ -202,7 +202,7 @@
                     <label class="block text-sm font-medium mb-1">Stock Qty <span class="text-red-600">*</span></label>
                     <input id="stockQty" type="number" step="1" min="0" name="stock_qty"
                            value="{{ old('stock_qty', $item->stock_qty ?? 0) }}"
-                           class="mt-1 w-full border rounded px-3 py-2">
+                           class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                     @error('stock_qty') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
 
@@ -210,7 +210,7 @@
                     <label class="block text-sm font-medium mb-1">Unit</label>
                     <input type="text" name="unit"
                            value="{{ old('unit', $item->unit ?? '') }}"
-                           class="mt-1 w-full border rounded px-3 py-2" placeholder="pcs / gm / ml ...">
+                           class="mt-1 w-full border rounded px-3 py-2 bg-slate-200" placeholder="pcs / gm / ml ...">
                     @error('unit') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
@@ -227,7 +227,7 @@
                 <label class="block text-sm font-medium mb-1">Price (₹)</label>
                 <input type="number" step="0.01" min="0" name="price"
                        value="{{ old('price', $item->price ?? 0) }}"
-                       class="mt-1 w-full border rounded px-3 py-2">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                 @error('price') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -235,7 +235,7 @@
                 <label class="block text-sm font-medium mb-1">Cost Price (₹)</label>
                 <input type="number" step="0.01" min="0" name="cost_price"
                        value="{{ old('cost_price', $item->cost_price ?? '') }}"
-                       class="mt-1 w-full border rounded px-3 py-2">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                 @error('cost_price') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -244,7 +244,7 @@
                 <label class="block text-sm font-medium mb-1">Making Charge (₹)</label>
                 <input type="number" step="0.01" min="0" name="making_charge"
                        value="{{ old('making_charge', $item->making_charge ?? '') }}"
-                       class="mt-1 w-full border rounded px-3 py-2">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                 @error('making_charge') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
@@ -252,7 +252,7 @@
                 <label class="block text-sm font-medium mb-1">Tax % <span class="text-red-600">*</span></label>
                 <input type="number" step="0.01" min="0" max="100" name="tax_rate" required
                        value="{{ old('tax_rate', $item->tax_rate ?? 0) }}"
-                       class="mt-1 w-full border rounded px-3 py-2">
+                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
                 @error('tax_rate') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
@@ -261,7 +261,7 @@
     {{-- DESCRIPTION --}}
     <div>
         <label class="block text-sm font-medium mb-1">Description</label>
-        <textarea name="description" rows="3" class="mt-1 w-full border rounded px-3 py-2"
+        <textarea name="description" rows="3" class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
                   placeholder="Optional">{{ old('description', $item->description ?? '') }}</textarea>
         @error('description') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
     </div>
@@ -278,10 +278,10 @@
 
     {{-- BUTTONS --}}
     <div class="flex items-center gap-3">
-        <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
             {{ $isEdit ? 'Update Item' : 'Create Item' }}
         </button>
-        <a href="{{ route('items.index') }}" class="text-gray-600 hover:underline">Cancel</a>
+        <a href="{{ route('items.index') }}" class="bg-red-400 p-2 rounded-sm text-gray-50 hover:underline">Cancel</a>
     </div>
 
 </div>

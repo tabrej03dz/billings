@@ -1,7 +1,7 @@
 <x-layouts.app :title="__('Purchases')">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-3  bg-[#BFE0E0] dark:bg-[#354A54] p-6">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Purchases</h1>
-        <a href="{{ route('purchases.create') }}" class="px-3 py-2 rounded bg-blue-600 text-white">+ New Purchase</a>
+        <a href="{{ route('purchases.create') }}" class="px-3 py-2 rounded bg-green-600 text-white">+ New Purchase</a>
     </div>
 
     @if(session('success'))
@@ -12,7 +12,7 @@
 
     <div class="overflow-auto border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
         <table class="min-w-full text-sm border-separate border-spacing-0">
-            <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
+            <thead class="bg-[#BFE0E0] dark:bg-[#354A54]  text-gray-700 dark:text-neutral-200">
             <tr class="[&>th]:px-4 [&>th]:py-2 [&>th]:font-medium text-left">
                 <th>#</th>
                 <th>Date</th>

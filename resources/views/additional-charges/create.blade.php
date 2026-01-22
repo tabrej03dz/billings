@@ -1,9 +1,14 @@
 <x-layouts.app :title="__('Add Additional Charge')">
-    <div class="max-w-2xl mx-auto">
+
+     <div class=" max-w-3xl mx-auto bg-[#BFE0E0] dark:bg-[#354A54] p-6 text-center text-xl font-bold my-2">
+        Add Addition Charge
+    </div>
+
+    <div class="max-w-3xl mx-auto bg-[#F3F4F6] dark:bg-[#1A1D23] p-6">
         <div class="flex items-center justify-between mb-5">
             <h1 class="text-2xl font-bold text-gray-900 dark:text-neutral-100">Add Additional Charge</h1>
             <a href="{{ route('additional-charges.index') }}"
-               class="text-sm text-blue-600 hover:underline">← Back to list</a>
+               class="text-sm text-green-600 hover:underline">← Back to list</a>
         </div>
 
         @if($errors->any())
@@ -17,7 +22,7 @@
         @endif
 
         <form method="POST" action="{{ route('additional-charges.store') }}"
-              class="bg-white dark:bg-neutral-900 p-6 rounded-lg border border-gray-200 dark:border-neutral-700 space-y-5">
+              class=" p-6 rounded-lg border border-gray-200 dark:border-neutral-700 space-y-5">
             @csrf
 
             <div>
@@ -38,7 +43,7 @@
                 <a href="{{ route('additional-charges.index') }}"
                    class="px-4 py-2 text-gray-600 dark:text-neutral-300 hover:text-gray-900">Cancel</a>
                 <button type="submit"
-                        class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow">
+                        class="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded shadow">
                     Save
                 </button>
             </div>

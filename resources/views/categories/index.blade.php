@@ -2,14 +2,14 @@
     {{-- Alpine JS load (zaroori) --}}
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <div x-data="categoryForm()" class="flex flex-col gap-6">
+    <div x-data="categoryForm()" class="flex flex-col gap-6 bg-[#F3F4F6]  dark:bg-[#1A1D23]">
 
         {{-- Header --}}
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Categories</h1>
+        <div class="flex items-center justify-between mb-4  bg-[#BFE0E0] dark:bg-[#354A54] p-6">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white ">Categories</h1>
             @can('create category')
             <button @click="openForm()"
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow">
+                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow">
                 + New Category
             </button>
             @endcan
@@ -17,21 +17,21 @@
 
         {{-- Inline Form --}}
         <div x-cloak x-show="showForm" x-transition
-             class="p-4 bg-white dark:bg-neutral-900 rounded-xl shadow border">
+             class="p-4   rounded-xl shadow border">
             <form @submit.prevent="submitForm">
-                <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-4 sm:grid-cols-2 ">
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category Name</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 p-2">Category Name</label>
                         <input x-model="form.name" type="text"
-                               class="w-full border-gray-300 dark:border-gray-700 dark:bg-neutral-800 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                               class="w-full border-gray-300 dark:border-gray-700 bg-slate-200 p-2 dark:bg-[#242833] rounded-lg focus:ring-blue-500 focus:border-blue-500 ">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 p-2">Description</label>
                         <textarea x-model="form.description"
-                                  class="w-full border-gray-300 dark:border-gray-700 dark:bg-neutral-800 rounded-lg focus:ring-blue-500 focus:border-blue-500"></textarea>
+                                  class="w-full border-gray-300 dark:border-gray-700 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-slate-200 p-2 dark:bg-[#242833]"></textarea>
                     </div>
-                    <div class="flex items-center gap-2 sm:col-span-2">
-                        <input x-model="form.is_active" type="checkbox" class="rounded border-gray-300 text-blue-600">
+                    <div class="flex items-center gap-2 sm:col-span-2 p-2">
+                        <input x-model="form.is_active" type="checkbox" class="rounded border-gray-300 text-blue-600 bg-slate-200 p-2 dark:bg-[#242833]">
                         <span class="text-sm text-gray-700 dark:text-gray-300">Active</span>
                     </div>
                 </div>
@@ -40,7 +40,7 @@
                     <button type="button" @click="resetForm"
                             class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg">Cancel</button>
                     <button type="submit"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">
                         <span x-text="form.id ? 'Update Category' : 'Create Category'"></span>
                     </button>
                 </div>
@@ -50,7 +50,7 @@
         {{-- Category Table --}}
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
+                <thead class=" bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">#</th>
                     <th class="px-6 py-3">Name</th>
@@ -71,10 +71,10 @@
                         </td>
                         <td class="px-6 py-3 flex gap-3">
                             @can('edit category')
-                            <button @click="editCategory(category)" class="text-yellow-600 hover:underline">Edit</button>
+                            <button @click="editCategory(category)" class="bg-yellow-600 text-white p-2 m-1 hover:underline ">Edit</button>
                             @endcan
                             @can('delete category')
-                            <button @click="deleteCategory(category.id)" class="text-red-600 hover:underline">Delete</button>
+                            <button @click="deleteCategory(category.id)" class="bg-red-600 text-white p-2 m-1  hover:underline">Delete</button>
                                 @endcan
                         </td>
                     </tr>

@@ -13,7 +13,7 @@
     >
 
         <!-- Header -->
-        <div class="flex flex-wrap gap-3 justify-between items-center">
+        <div class="flex flex-wrap gap-3 justify-between items-center bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Assign Roles</h1>
 
             <div class="flex items-center gap-3">
@@ -48,9 +48,9 @@
             @csrf
             <div class="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label for="user" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select User</label>
+                    <label for="user" class="block text-sm font-medium text-amber-700 dark:text-gray-300">Select User</label>
                     <select name="user" id="user" required
-                            class="mt-1 block w-full border-gray-300 dark:border-neutral-600 rounded-md shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white">
+                            class="mt-1 p-3 block w-full border-gray-300 dark:border-neutral-600 rounded-md shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white">
                         <option value="">-- Select User --</option>
                         @foreach($users as $user)
                             <option value="{{ $user->id }}">{{ $user->name }}</option>
@@ -61,7 +61,7 @@
 
             <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-                    <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-semibold text-gray-700 dark:text-white">
+                    <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-semibold text-gray-700 dark:text-white">
                     <tr>
                         <th class="px-6 py-3">#</th>
                         <th class="px-6 py-3"><input type="checkbox" id="all-roles"> All</th>
@@ -81,7 +81,7 @@
                                 <div class="flex justify-center gap-2">
                                     <button type="button"
                                             @click="openPerms({ id: {{ $role->id }}, name: '{{ $role->name }}' })"
-                                            class="px-3 py-1 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 text-sm">
+                                            class="px-3 py-1 rounded-md bg-sky-600 text-white hover:bg-sky-700 text-sm">
                                         Permissions
                                     </button>
                                     <button type="button"
@@ -100,7 +100,7 @@
             </div>
 
             <div class="mt-6">
-                <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition">
+                <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition">
                     Assign Roles
                 </button>
             </div>
@@ -185,7 +185,7 @@
                                     Cancel
                                 </button>
                                 <button @click="const f=$root.querySelector('form[method=POST][@submit\\.prevent]'); if(f){f.requestSubmit();}"
-                                        class="px-5 py-2 rounded-md bg-indigo-600 text-white font-semibold hover:bg-indigo-700">
+                                        class="px-5 py-2 rounded-md bg-green-600 text-white font-semibold hover:bg-green-700">
                                     Save Changes
                                 </button>
                             </div>
