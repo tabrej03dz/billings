@@ -68,7 +68,7 @@ class RunInstallmentReminders extends Command
             $url = $r->user->api->installment_reminder_api ?? "https://webhooks.1automations.com/webhook/696f108302e28c7ee4b83fbf";
             $snmeNumber = $r->snme_number;
             $amount = $r->installment_amount;
-            $date = $r->installment_date;
+            $date = $r->installment_date->format('d/m/y');
 
             if (empty($url)) {
                 $this->line("❌ Skipped: installment  missing for {$phone} (ID: {$r->id})");
