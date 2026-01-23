@@ -105,6 +105,7 @@ class ClientController extends Controller
     {
         $bid = $this->resolveBusinessId($request);
 
+
         if ((int) $client->business_id !== (int) $bid) {
             return response()->json([
                 'ok' => false,
@@ -112,11 +113,13 @@ class ClientController extends Controller
             ], 404);
         }
 
+        // ✔️ Invoices for this client + business
         $invoiceQuery = $client->invoices()
             ->where('business_id', $bid)
             ->orderByDesc('invoice_date')
             ->orderByDesc('id');
 
+        // Summary totals (alag se, taaki full history ka data mile)
         $summary = [
             'total_invoices' => (clone $invoiceQuery)->count(),
             'total_amount'   => (clone $invoiceQuery)->sum('total'),
@@ -124,20 +127,25 @@ class ClientController extends Controller
             'total_balance'  => (clone $invoiceQuery)->sum('balance'),
         ];
 
-        $perPage = (int) $request->query('per_page', 15);
-
+        // List ke liye paginate
         $invoices = $invoiceQuery
             ->withCount('items')
-            ->paginate($perPage);
+            ->paginate(15)
+            ->withQueryString();
 
-        $recentItems = InvoiceItem::query()
+        // Recent purchased items (last 10 lines)
+        $recentItems = \App\Models\InvoiceItem::with(['invoice' => function ($q) use ($bid, $client) {
+            $q->where('business_id', $bid)
+                ->where('client_id', $client->id);
+        }])
             ->whereHas('invoice', function ($q) use ($bid, $client) {
-                $q->where('business_id', $bid)->where('client_id', $client->id);
+                $q->where('business_id', $bid)
+                    ->where('client_id', $client->id);
             })
-            ->with(['invoice:id,client_id,business_id,invoice_date,invoice_no,total'])
             ->latest('created_at')
             ->limit(10)
             ->get();
+
 
         return response()->json([
             'ok'           => true,

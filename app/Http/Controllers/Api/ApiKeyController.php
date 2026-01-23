@@ -17,15 +17,26 @@ class ApiKeyController extends Controller
 
     public function index(Request $request)
     {
-        $this->bid(); // ensure X-Business-Id present
+        $user = $request->user(); // auth user
+        $businessId = $request->header('X-Business-Id');
 
-        $keys = ApiKey::latest()->paginate(20);
+        $q = ApiKey::query()
+            ->where('user_id', $user->id)   // 👈 USER filter
+            ->latest();
+
+        // 🔐 sirf jab business id ho tab filter
+        if (!empty($businessId)) {
+            $q->where('business_id', $businessId);
+        }
+
+        $keys = $q->paginate(20);
 
         return response()->json([
             'success' => true,
             'data' => $keys,
         ]);
     }
+
 
     // GET /api/api-keys/me (current business key)
     public function show()

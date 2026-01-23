@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::post('store', 'store'); // ✅ merged store
 
         Route::post('update/{client}', 'update');
+        Route::get('record/{client}', 'show');
 //        Route::patch('/{client}', 'update');
         Route::delete('delete/{client}', 'destroy');
     });
