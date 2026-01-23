@@ -24,6 +24,10 @@
                 <thead class=" bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Base URL</th>
+                    <th class="px-6 py-3">Wishes Api</th>
+                    <th class="px-6 py-3">Installment Reminder Api</th>
+                    <th class="px-6 py-3">Business</th>
+                    <th class="px-6 py-3">User</th>
                     <th class="px-6 py-3">API Key</th>
                     <th class="px-6 py-3">Secret</th>
                     <th class="px-6 py-3">Created</th>
@@ -38,6 +42,18 @@
                             {{ $key->base_url ?? 'N/A' }}
                         </td>
 
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            {{ $key->wishes_api ?? 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            {{ $key->installment_reminder_api ?? 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            {{ $key->business?->name ?? 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                            {{ $key->user?->name ?? 'N/A' }}
+                        </td>
                         <td class="px-6 py-4">
                             <span class="text-gray-800 dark:text-gray-200">
                                 {{ $key->key ?? 'N/A' }}

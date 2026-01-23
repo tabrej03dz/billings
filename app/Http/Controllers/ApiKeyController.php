@@ -9,7 +9,7 @@ class ApiKeyController extends Controller
 {
     public function index()
     {
-        $keys = ApiKey::latest()->paginate(20);
+        $keys = ApiKey::withoutGlobalScope('business')->latest()->paginate(20);
 
         return view('api_keys.index', compact('keys'));
     }
