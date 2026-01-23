@@ -120,7 +120,9 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::post('import', 'import');
     });
 
-//    Route::prefix('')
+    Route::prefix('wishes-logs')->controller(\App\Http\Controllers\Api\BirthdayWishLogController::class)->group(function(){
+        Route::get('/', 'index');
+    });
 
 
 
