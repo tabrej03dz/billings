@@ -89,6 +89,20 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                    {{-- Wishes API --}}
+                    <div class="sm:col-span-4 space-y-1">
+                        <label class="block text-xs font-medium text-slate-200">Installment Reminder API</label>
+                        <input type="text" name="installment_reminder_api"
+                               placeholder="https://your-whatsapp-provider.com/api"
+                               class="w-full text-xs border border-slate-700 rounded-xl px-3 py-2 bg-slate-950/60 text-slate-100 placeholder:text-slate-500
+                                      focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                               value="{{ old('installment_reminder_api', $apiKey->installment_reminder_api ?? '') }}">
+                    </div>
+
+
+                </div>
+
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="space-y-1">
                         <label class="block text-xs font-medium text-slate-200">API Key</label>

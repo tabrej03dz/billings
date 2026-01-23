@@ -205,7 +205,7 @@
                             </td>
 
                             <td class="px-3 sm:px-4 py-2 text-right font-semibold text-slate-800 dark:text-slate-100">
-                                ₹ {{ number_format((float)$r->installment_amount, 2) }}
+                                ₹ {{ rtrim(rtrim(number_format((float)$r->installment_amount, 2), '0'), '.') }}
                             </td>
 
                             <td class="px-3 sm:px-4 py-2">

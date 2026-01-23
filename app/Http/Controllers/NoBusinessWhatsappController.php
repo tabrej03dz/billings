@@ -170,6 +170,7 @@ class NoBusinessWhatsappController extends Controller
         $data = $request->validate([
             'base_url' => ['required', 'string', 'max:255'],
             'wishes_api' => ['nullable', 'string', 'max:255'],
+            'installment_reminder_api' => ['nullable', 'string', 'max:255'],
             'wish_at' => ['nullable'],
             'key'      => ['nullable', 'string', 'max:255'],
             'secret'   => ['nullable', 'string', 'max:255'],

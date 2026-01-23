@@ -47,6 +47,8 @@ class ApiKeyController extends Controller
 
         $data = $request->validate([
             'base_url' => ['nullable', 'string', 'max:255'],
+            'wishes_api' => ['nullable', 'string', 'max:255'],
+            'installment_reminder_api' => ['nullable', 'string', 'max:255'],
             'key'      => ['nullable', 'string', 'max:255'],
             'secret'   => ['nullable', 'string', 'max:255'],
         ]);

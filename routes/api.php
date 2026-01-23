@@ -111,6 +111,15 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     Route::post('/whatsapp/upload-send-pdf', [InvoiceSendController::class, 'uploadAndSendPdf']);
 
+    Route::prefix('birthday-records')->controller(\App\Http\Controllers\Api\BirthdayRecordController::class)->group(function(){
+        Route::get('/', 'index');
+        Route::post('store', 'store');
+        Route::post('update/{birthdayRecord}', 'update');
+        Route::delete('delete/{birthdayRecord}', 'destroy');
+        Route::post('import', 'import');
+    });
+
+//    Route::prefix('')
 
 
 
