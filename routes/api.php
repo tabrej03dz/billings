@@ -124,6 +124,15 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::get('/', 'index');
     });
 
+    Route::prefix('bank-accounts')->controller(\App\Http\Controllers\Api\BankAccountController::class)->group(function(){
+        Route::get('/', 'index');
+        Route::post('store', 'store');
+        Route::post('update/{bank}', 'update');
+        Route::delete('delete/{bank}', 'destroy');
+        Route::get('show/{bank}', 'show');
+
+    });
+
 
 
 
