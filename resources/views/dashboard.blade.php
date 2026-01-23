@@ -32,6 +32,61 @@
             </div>
         </div>
 
+        {{-- FILTER BAR (Month / From-To) --}}
+        <div class="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-xl p-4">
+            <form method="GET" action="{{ url()->current() }}" class="flex flex-col lg:flex-row gap-3 lg:items-end">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
+                    {{-- Preset --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Preset</label>
+                        <select name="preset"
+                                class="w-full border rounded px-2 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                            <option value="">Custom</option>
+                            <option value="today" {{ ($preset ?? '') === 'today' ? 'selected' : '' }}>Today</option>
+                            <option value="7d" {{ ($preset ?? '') === '7d' ? 'selected' : '' }}>Last 7 Days</option>
+                            <option value="month" {{ ($preset ?? '') === 'month' ? 'selected' : '' }}>This Month</option>
+                        </select>
+                    </div>
+
+                    {{-- From --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">From</label>
+                        <input type="date" name="from"
+                               value="{{ isset($from) ? \Carbon\Carbon::parse($from)->toDateString() : request('from') }}"
+                               class="w-full border rounded px-2 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                    </div>
+
+                    {{-- To --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">To</label>
+                        <input type="date" name="to"
+                               value="{{ isset($to) ? \Carbon\Carbon::parse($to)->toDateString() : request('to') }}"
+                               class="w-full border rounded px-2 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700 dark:text-gray-100">
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit"
+                            class="px-4 py-2 rounded text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700">
+                        Apply
+                    </button>
+
+                    <a href="{{ url()->current() }}"
+                       class="px-4 py-2 rounded text-sm font-semibold border border-gray-300 dark:border-neutral-700
+                      text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                        Reset
+                    </a>
+                </div>
+            </form>
+
+            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Showing data from
+                <span class="font-semibold">{{ isset($from) ? \Carbon\Carbon::parse($from)->format('d M Y') : '—' }}</span>
+                to
+                <span class="font-semibold">{{ isset($to) ? \Carbon\Carbon::parse($to)->format('d M Y') : '—' }}</span>
+            </div>
+        </div>
+
 
         {{-- TOP SUMMARY CARDS: SMALL COMPACT BOXES --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">

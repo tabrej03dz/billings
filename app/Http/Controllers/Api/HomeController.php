@@ -159,12 +159,171 @@ class HomeController extends Controller
     }
 
 
+//    public function index(Request $request)
+//    {
+//        $user = $request->user();
+//        abort_if(!$user, 401);
+//
+//        // ✅ user kisi business ko belong nahi karta
+//        if (!$user->businesses()->exists()) {
+//            return response()->json([
+//                'ok'      => false,
+//                'code'    => 'NO_BUSINESS',
+//                'message' => 'Please configure WhatsApp API and send PDFs directly.',
+//            ], 422);
+//        }
+//
+//        $today      = Carbon::today();
+//        $monthStart = Carbon::now()->startOfMonth();
+//
+//        // ✅ API me best practice: header se business id lo
+//        // fallback: current_business_id (aur last me session)
+//        $bid = (int) ($request->header('X-Business-Id')
+//            ?: ($user->current_business_id ?? session('active_business_id')));
+//
+//        abort_if(!$bid, 422, 'X-Business-Id required.');
+//
+//        $business = Business::find($bid);
+//        abort_if(!$business, 404, 'Business not found.');
+//
+//        // ✅ Security: user ko business access hai?
+//        $belongs = $user->businesses()->where('business_id', $bid)->exists();
+//        abort_if(!$belongs, 403, 'You do not have access to this business.');
+//
+//        $invoiceQ  = Invoice::query();
+//        $purchaseQ = Purchase::query();
+//        $itemQ     = Item::query();
+//        $rateQ     = MetalRate::query();
+//
+//        if ($bid) {
+//            $invoiceQ->where('business_id', $bid);
+//            $purchaseQ->where('business_id', $bid);
+//            $itemQ->where('business_id', $bid);
+//            $rateQ->where('business_id', $bid);
+//        }
+//
+//        // ✅ SALES only invoice_type = 'tax' (optional null include)
+//        $salesQ = (clone $invoiceQ)->where(function ($q) {
+//            $q->where('invoice_type', 'tax')
+//                ->orWhereNull('invoice_type'); // optional
+//        });
+//
+//        // --- Sales (ONLY TAX) ---
+//        $todaySalesAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('total');
+//        $todaySalesCount  = (clone $salesQ)->whereDate('invoice_date', $today)->count();
+//        $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total');
+//        $totalSalesAmount = (clone $salesQ)->sum('total');
+//
+//        // --- Purchases ---
+//        $todayPurchasesAmount = (clone $purchaseQ)->whereDate('invoice_date', $today)->sum('total_amount');
+//        $monthPurchasesAmount = (clone $purchaseQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total_amount');
+//        $totalPurchasesAmount = (clone $purchaseQ)->sum('total_amount');
+//
+//        // --- Items / stock ---
+//        $totalItems    = (clone $itemQ)->count();
+//        $totalStockQty = (clone $itemQ)->sum('stock_qty');
+//        $lowStockCount = (clone $itemQ)->where('stock_qty', '<=', 2)->count();
+//
+//        // --- Today metal rates ---
+//        $todayMetalRates = (clone $rateQ)
+//            ->whereDate('rate_date', $today)
+//            ->where('is_active', true)
+//            ->get();
+//
+//        // Base purities
+//        $baseGoldPurities   = ['24K', '22K', '20K', '18K'];
+//        $baseSilverPurities = ['999', '995', '925'];
+//
+//        $goldPurities = collect($baseGoldPurities)
+//            ->merge(
+//                $todayMetalRates->where('metal_type', 'gold')->pluck('purity')->filter()
+//            )
+//            ->unique()->values()->all();
+//
+//        $silverPurities = collect($baseSilverPurities)
+//            ->merge(
+//                $todayMetalRates->where('metal_type', 'silver')->pluck('purity')->filter()
+//            )
+//            ->unique()->values()->all();
+//
+//        // rate map
+//        $rateMap = $todayMetalRates
+//            ->keyBy(function ($r) {
+//                return strtolower($r->metal_type) . '|' . (string) ($r->purity ?? '');
+//            })
+//            ->map
+//            ->rate_per_gram
+//            ->toArray();
+//
+//        // Recent lists (same as dashboard view)
+//        $recentInvoices = (clone $salesQ)->with('client')
+//            ->latest('invoice_date')->latest('id')->limit(5)->get();
+//
+//        $recentPurchases = (clone $purchaseQ)->with('supplier')
+//            ->latest('invoice_date')->latest('id')->limit(5)->get();
+//
+//        $lowStockItems = (clone $itemQ)->with('category')
+//            ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
+//
+//        // --- Pending / Balance ---
+//        $todayPendingAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('balance');
+//        $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('balance');
+//        $totalPendingAmount = (clone $salesQ)->sum('balance');
+//
+//        return response()->json([
+//            'ok' => true,
+//            'meta' => [
+//                'today'       => $today->toDateString(),
+//                'month_start' => $monthStart->toDateString(),
+//                'business_id' => $bid,
+//            ],
+//            'business' => $business,
+//
+//            'sales' => [
+//                'today_amount' => (float) $todaySalesAmount,
+//                'today_count'  => (int) $todaySalesCount,
+//                'month_amount' => (float) $monthSalesAmount,
+//                'total_amount' => (float) $totalSalesAmount,
+//            ],
+//
+//            'purchases' => [
+//                'today_amount' => (float) $todayPurchasesAmount,
+//                'month_amount' => (float) $monthPurchasesAmount,
+//                'total_amount' => (float) $totalPurchasesAmount,
+//            ],
+//
+//            'items' => [
+//                'total_items'     => (int) $totalItems,
+//                'total_stock_qty' => (float) $totalStockQty,
+//                'low_stock_count' => (int) $lowStockCount,
+//            ],
+//
+//            'metal' => [
+//                'today_rates'     => $todayMetalRates,
+//                'gold_purities'   => $goldPurities,
+//                'silver_purities' => $silverPurities,
+//                'rate_map'        => $rateMap,
+//            ],
+//
+//            'lists' => [
+//                'recent_invoices'  => $recentInvoices,
+//                'recent_purchases' => $recentPurchases,
+//                'low_stock_items'  => $lowStockItems,
+//            ],
+//
+//            'pending' => [
+//                'today_amount' => (float) $todayPendingAmount,
+//                'month_amount' => (float) $monthPendingAmount,
+//                'total_amount' => (float) $totalPendingAmount,
+//            ],
+//        ]);
+//    }
+
     public function index(Request $request)
     {
         $user = $request->user();
         abort_if(!$user, 401);
 
-        // ✅ user kisi business ko belong nahi karta
         if (!$user->businesses()->exists()) {
             return response()->json([
                 'ok'      => false,
@@ -173,11 +332,9 @@ class HomeController extends Controller
             ], 422);
         }
 
-        $today      = Carbon::today();
-        $monthStart = Carbon::now()->startOfMonth();
+        $tz = config('app.timezone', 'Asia/Kolkata');
 
-        // ✅ API me best practice: header se business id lo
-        // fallback: current_business_id (aur last me session)
+        // ✅ Business id (header best)
         $bid = (int) ($request->header('X-Business-Id')
             ?: ($user->current_business_id ?? session('active_business_id')));
 
@@ -186,95 +343,143 @@ class HomeController extends Controller
         $business = Business::find($bid);
         abort_if(!$business, 404, 'Business not found.');
 
-        // ✅ Security: user ko business access hai?
         $belongs = $user->businesses()->where('business_id', $bid)->exists();
         abort_if(!$belongs, 403, 'You do not have access to this business.');
 
-        $invoiceQ  = Invoice::query();
-        $purchaseQ = Purchase::query();
-        $itemQ     = Item::query();
-        $rateQ     = MetalRate::query();
+        // =========================================
+        // ✅ DATE FILTERS (API)
+        // Query: ?from=YYYY-MM-DD&to=YYYY-MM-DD&preset=today|7d|month
+        // Default: month start -> today
+        // =========================================
+        $today      = Carbon::now($tz)->startOfDay();
+        $monthStart = Carbon::now($tz)->startOfMonth()->startOfDay();
 
-        if ($bid) {
-            $invoiceQ->where('business_id', $bid);
-            $purchaseQ->where('business_id', $bid);
-            $itemQ->where('business_id', $bid);
-            $rateQ->where('business_id', $bid);
+        $from = $request->filled('from')
+            ? Carbon::parse($request->query('from'), $tz)->startOfDay()
+            : $monthStart;
+
+        $to = $request->filled('to')
+            ? Carbon::parse($request->query('to'), $tz)->endOfDay()
+            : Carbon::now($tz)->endOfDay();
+
+        // preset override
+        $preset = strtolower(trim((string) $request->query('preset', '')));
+        if ($preset === 'today') {
+            $from = Carbon::now($tz)->startOfDay();
+            $to   = Carbon::now($tz)->endOfDay();
+        } elseif ($preset === '7d') {
+            $from = Carbon::now($tz)->subDays(6)->startOfDay();
+            $to   = Carbon::now($tz)->endOfDay();
+        } elseif ($preset === 'month') {
+            $from = Carbon::now($tz)->startOfMonth()->startOfDay();
+            $to   = Carbon::now($tz)->endOfDay();
         }
 
-        // ✅ SALES only invoice_type = 'tax' (optional null include)
+        // safety swap
+        if ($from->gt($to)) {
+            [$from, $to] = [$to->copy()->startOfDay(), $from->copy()->endOfDay()];
+        }
+
+        // =========================================
+        // ✅ Base Queries (business scoped)
+        // =========================================
+        $invoiceQ  = Invoice::query()->where('business_id', $bid);
+        $purchaseQ = Purchase::query()->where('business_id', $bid);
+        $itemQ     = Item::query()->where('business_id', $bid);
+        $rateQ     = MetalRate::query()->where('business_id', $bid);
+
+        // ✅ Sales only TAX
         $salesQ = (clone $invoiceQ)->where(function ($q) {
             $q->where('invoice_type', 'tax')
                 ->orWhereNull('invoice_type'); // optional
         });
 
-        // --- Sales (ONLY TAX) ---
+        // -----------------------------------------
+        // ✅ TODAY metrics (fixed today)
+        // -----------------------------------------
         $todaySalesAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('total');
         $todaySalesCount  = (clone $salesQ)->whereDate('invoice_date', $today)->count();
-        $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total');
+
+        $todayPurchasesAmount = (clone $purchaseQ)->whereDate('invoice_date', $today)->sum('total_amount');
+
+        $todayPendingAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('balance');
+
+        // -----------------------------------------
+        // ✅ RANGE metrics (from -> to)
+        // (month_* variables ab range based)
+        // -----------------------------------------
+        $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$from, $to])->sum('total');
         $totalSalesAmount = (clone $salesQ)->sum('total');
 
-        // --- Purchases ---
-        $todayPurchasesAmount = (clone $purchaseQ)->whereDate('invoice_date', $today)->sum('total_amount');
-        $monthPurchasesAmount = (clone $purchaseQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total_amount');
+        $monthPurchasesAmount = (clone $purchaseQ)->whereBetween('invoice_date', [$from, $to])->sum('total_amount');
         $totalPurchasesAmount = (clone $purchaseQ)->sum('total_amount');
 
-        // --- Items / stock ---
+        $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$from, $to])->sum('balance');
+        $totalPendingAmount = (clone $salesQ)->sum('balance');
+
+        // -----------------------------------------
+        // ✅ Items / stock (no date filter generally)
+        // -----------------------------------------
         $totalItems    = (clone $itemQ)->count();
         $totalStockQty = (clone $itemQ)->sum('stock_qty');
         $lowStockCount = (clone $itemQ)->where('stock_qty', '<=', 2)->count();
 
-        // --- Today metal rates ---
+        // -----------------------------------------
+        // ✅ Today metal rates (fixed today)
+        // -----------------------------------------
         $todayMetalRates = (clone $rateQ)
             ->whereDate('rate_date', $today)
             ->where('is_active', true)
             ->get();
 
-        // Base purities
         $baseGoldPurities   = ['24K', '22K', '20K', '18K'];
         $baseSilverPurities = ['999', '995', '925'];
 
         $goldPurities = collect($baseGoldPurities)
-            ->merge(
-                $todayMetalRates->where('metal_type', 'gold')->pluck('purity')->filter()
-            )
+            ->merge($todayMetalRates->where('metal_type', 'gold')->pluck('purity')->filter())
             ->unique()->values()->all();
 
         $silverPurities = collect($baseSilverPurities)
-            ->merge(
-                $todayMetalRates->where('metal_type', 'silver')->pluck('purity')->filter()
-            )
+            ->merge($todayMetalRates->where('metal_type', 'silver')->pluck('purity')->filter())
             ->unique()->values()->all();
 
-        // rate map
         $rateMap = $todayMetalRates
-            ->keyBy(function ($r) {
-                return strtolower($r->metal_type) . '|' . (string) ($r->purity ?? '');
-            })
-            ->map
-            ->rate_per_gram
+            ->keyBy(fn ($r) => strtolower($r->metal_type) . '|' . (string) ($r->purity ?? ''))
+            ->map->rate_per_gram
             ->toArray();
 
-        // Recent lists (same as dashboard view)
-        $recentInvoices = (clone $salesQ)->with('client')
-            ->latest('invoice_date')->latest('id')->limit(5)->get();
+        // -----------------------------------------
+        // ✅ Lists (range filtered)
+        // -----------------------------------------
+        $recentInvoices = (clone $salesQ)
+            ->whereBetween('invoice_date', [$from, $to])
+            ->with('client')
+            ->latest('invoice_date')->latest('id')
+            ->limit(5)->get();
 
-        $recentPurchases = (clone $purchaseQ)->with('supplier')
-            ->latest('invoice_date')->latest('id')->limit(5)->get();
+        $recentPurchases = (clone $purchaseQ)
+            ->whereBetween('invoice_date', [$from, $to])
+            ->with('supplier')
+            ->latest('invoice_date')->latest('id')
+            ->limit(5)->get();
 
-        $lowStockItems = (clone $itemQ)->with('category')
-            ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
-
-        // --- Pending / Balance ---
-        $todayPendingAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('balance');
-        $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('balance');
-        $totalPendingAmount = (clone $salesQ)->sum('balance');
+        $lowStockItems = (clone $itemQ)
+            ->with('category')
+            ->where('stock_qty', '<=', 5)
+            ->orderBy('stock_qty')
+            ->limit(5)->get();
 
         return response()->json([
             'ok' => true,
             'meta' => [
                 'today'       => $today->toDateString(),
                 'month_start' => $monthStart->toDateString(),
+
+                // ✅ filter meta
+                'from'        => $from->toDateString(),
+                'to'          => $to->toDateString(),
+                'preset'      => $preset ?: null,
+
                 'business_id' => $bid,
             ],
             'business' => $business,
@@ -282,13 +487,13 @@ class HomeController extends Controller
             'sales' => [
                 'today_amount' => (float) $todaySalesAmount,
                 'today_count'  => (int) $todaySalesCount,
-                'month_amount' => (float) $monthSalesAmount,
+                'month_amount' => (float) $monthSalesAmount, // range amount
                 'total_amount' => (float) $totalSalesAmount,
             ],
 
             'purchases' => [
                 'today_amount' => (float) $todayPurchasesAmount,
-                'month_amount' => (float) $monthPurchasesAmount,
+                'month_amount' => (float) $monthPurchasesAmount, // range amount
                 'total_amount' => (float) $totalPurchasesAmount,
             ],
 
@@ -313,11 +518,13 @@ class HomeController extends Controller
 
             'pending' => [
                 'today_amount' => (float) $todayPendingAmount,
-                'month_amount' => (float) $monthPendingAmount,
+                'month_amount' => (float) $monthPendingAmount, // range amount
                 'total_amount' => (float) $totalPendingAmount,
             ],
         ]);
     }
+
+
 
     public function myPermissions(Request $request)
     {
