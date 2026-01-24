@@ -19,6 +19,7 @@ Route::post('/login',  [HomeController::class, 'login']);
 Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     Route::post('/logout', [HomeController::class, 'logout']);
+    Route::post('/delete-account', [HomeController::class, 'deleteAccount']);
 
 
     Route::prefix('businesses')->group(function(){

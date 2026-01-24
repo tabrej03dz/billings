@@ -159,165 +159,6 @@ class HomeController extends Controller
     }
 
 
-//    public function index(Request $request)
-//    {
-//        $user = $request->user();
-//        abort_if(!$user, 401);
-//
-//        // ✅ user kisi business ko belong nahi karta
-//        if (!$user->businesses()->exists()) {
-//            return response()->json([
-//                'ok'      => false,
-//                'code'    => 'NO_BUSINESS',
-//                'message' => 'Please configure WhatsApp API and send PDFs directly.',
-//            ], 422);
-//        }
-//
-//        $today      = Carbon::today();
-//        $monthStart = Carbon::now()->startOfMonth();
-//
-//        // ✅ API me best practice: header se business id lo
-//        // fallback: current_business_id (aur last me session)
-//        $bid = (int) ($request->header('X-Business-Id')
-//            ?: ($user->current_business_id ?? session('active_business_id')));
-//
-//        abort_if(!$bid, 422, 'X-Business-Id required.');
-//
-//        $business = Business::find($bid);
-//        abort_if(!$business, 404, 'Business not found.');
-//
-//        // ✅ Security: user ko business access hai?
-//        $belongs = $user->businesses()->where('business_id', $bid)->exists();
-//        abort_if(!$belongs, 403, 'You do not have access to this business.');
-//
-//        $invoiceQ  = Invoice::query();
-//        $purchaseQ = Purchase::query();
-//        $itemQ     = Item::query();
-//        $rateQ     = MetalRate::query();
-//
-//        if ($bid) {
-//            $invoiceQ->where('business_id', $bid);
-//            $purchaseQ->where('business_id', $bid);
-//            $itemQ->where('business_id', $bid);
-//            $rateQ->where('business_id', $bid);
-//        }
-//
-//        // ✅ SALES only invoice_type = 'tax' (optional null include)
-//        $salesQ = (clone $invoiceQ)->where(function ($q) {
-//            $q->where('invoice_type', 'tax')
-//                ->orWhereNull('invoice_type'); // optional
-//        });
-//
-//        // --- Sales (ONLY TAX) ---
-//        $todaySalesAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('total');
-//        $todaySalesCount  = (clone $salesQ)->whereDate('invoice_date', $today)->count();
-//        $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total');
-//        $totalSalesAmount = (clone $salesQ)->sum('total');
-//
-//        // --- Purchases ---
-//        $todayPurchasesAmount = (clone $purchaseQ)->whereDate('invoice_date', $today)->sum('total_amount');
-//        $monthPurchasesAmount = (clone $purchaseQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('total_amount');
-//        $totalPurchasesAmount = (clone $purchaseQ)->sum('total_amount');
-//
-//        // --- Items / stock ---
-//        $totalItems    = (clone $itemQ)->count();
-//        $totalStockQty = (clone $itemQ)->sum('stock_qty');
-//        $lowStockCount = (clone $itemQ)->where('stock_qty', '<=', 2)->count();
-//
-//        // --- Today metal rates ---
-//        $todayMetalRates = (clone $rateQ)
-//            ->whereDate('rate_date', $today)
-//            ->where('is_active', true)
-//            ->get();
-//
-//        // Base purities
-//        $baseGoldPurities   = ['24K', '22K', '20K', '18K'];
-//        $baseSilverPurities = ['999', '995', '925'];
-//
-//        $goldPurities = collect($baseGoldPurities)
-//            ->merge(
-//                $todayMetalRates->where('metal_type', 'gold')->pluck('purity')->filter()
-//            )
-//            ->unique()->values()->all();
-//
-//        $silverPurities = collect($baseSilverPurities)
-//            ->merge(
-//                $todayMetalRates->where('metal_type', 'silver')->pluck('purity')->filter()
-//            )
-//            ->unique()->values()->all();
-//
-//        // rate map
-//        $rateMap = $todayMetalRates
-//            ->keyBy(function ($r) {
-//                return strtolower($r->metal_type) . '|' . (string) ($r->purity ?? '');
-//            })
-//            ->map
-//            ->rate_per_gram
-//            ->toArray();
-//
-//        // Recent lists (same as dashboard view)
-//        $recentInvoices = (clone $salesQ)->with('client')
-//            ->latest('invoice_date')->latest('id')->limit(5)->get();
-//
-//        $recentPurchases = (clone $purchaseQ)->with('supplier')
-//            ->latest('invoice_date')->latest('id')->limit(5)->get();
-//
-//        $lowStockItems = (clone $itemQ)->with('category')
-//            ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
-//
-//        // --- Pending / Balance ---
-//        $todayPendingAmount = (clone $salesQ)->whereDate('invoice_date', $today)->sum('balance');
-//        $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$monthStart, $today])->sum('balance');
-//        $totalPendingAmount = (clone $salesQ)->sum('balance');
-//
-//        return response()->json([
-//            'ok' => true,
-//            'meta' => [
-//                'today'       => $today->toDateString(),
-//                'month_start' => $monthStart->toDateString(),
-//                'business_id' => $bid,
-//            ],
-//            'business' => $business,
-//
-//            'sales' => [
-//                'today_amount' => (float) $todaySalesAmount,
-//                'today_count'  => (int) $todaySalesCount,
-//                'month_amount' => (float) $monthSalesAmount,
-//                'total_amount' => (float) $totalSalesAmount,
-//            ],
-//
-//            'purchases' => [
-//                'today_amount' => (float) $todayPurchasesAmount,
-//                'month_amount' => (float) $monthPurchasesAmount,
-//                'total_amount' => (float) $totalPurchasesAmount,
-//            ],
-//
-//            'items' => [
-//                'total_items'     => (int) $totalItems,
-//                'total_stock_qty' => (float) $totalStockQty,
-//                'low_stock_count' => (int) $lowStockCount,
-//            ],
-//
-//            'metal' => [
-//                'today_rates'     => $todayMetalRates,
-//                'gold_purities'   => $goldPurities,
-//                'silver_purities' => $silverPurities,
-//                'rate_map'        => $rateMap,
-//            ],
-//
-//            'lists' => [
-//                'recent_invoices'  => $recentInvoices,
-//                'recent_purchases' => $recentPurchases,
-//                'low_stock_items'  => $lowStockItems,
-//            ],
-//
-//            'pending' => [
-//                'today_amount' => (float) $todayPendingAmount,
-//                'month_amount' => (float) $monthPendingAmount,
-//                'total_amount' => (float) $totalPendingAmount,
-//            ],
-//        ]);
-//    }
 
     public function index(Request $request)
     {
@@ -540,4 +381,43 @@ class HomeController extends Controller
             'permissions' => $permissions,
         ], 200);
     }
+
+
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'password' => ['required','string'],
+        ]);
+
+        // ❌ wrong password
+        if (!Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['Incorrect password.'],
+            ]);
+        }
+
+        // 🔒 revoke all tokens
+        $user->tokens()->delete();
+
+        // 🗑️ delete avatar file
+        if (!empty($user->avatar) && Storage::disk('public')->exists($user->avatar)) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
+        // 🔗 detach from businesses (pivot)
+        if (method_exists($user, 'businesses')) {
+            $user->businesses()->detach();
+        }
+
+        // 🔥 finally delete user
+        $user->delete(); // agar softDeletes use ho rahe hain to soft delete hoga
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Your account has been permanently deleted.',
+        ], 200);
+    }
+
 }

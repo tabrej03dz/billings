@@ -13,44 +13,90 @@ use Spatie\Permission\Models\Permission;
 class UserController extends Controller
 {
     // List all users
+//    public function index(Request $request)
+//    {
+//        $user = $request->user();
+//
+//        // SUPER ADMIN → optional filter
+//        if ($user->hasRole('super admin') || $user->can('view all users')) {
+//            $businessId = $request->query('business_id'); // may be null for "All"
+//            $query = \App\Models\User::query();
+//
+//            if ($businessId) {
+//                $query->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
+//                    ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
+//            } else {
+//                // All businesses; keep a light relation for display
+//                $query->withCount('businesses');
+//            }
+//
+//            $users = $query->latest()->paginate(15)->withQueryString();
+//
+//            // super admin filter dropdown needs list of businesses
+//            $allBusinesses = \App\Models\Business::orderBy('name')->get();
+//
+//            return view('users.index', compact('users', 'allBusinesses', 'businessId'));
+//        }
+//
+//        // NON-SUPER: restrict to active business
+//        $activeId = $user->current_business_id ?? session('active_business_id')
+//            ?? $user->businesses()->value('business_id');
+//
+//        abort_if(!$activeId, 403, 'No business selected.');
+//
+//        $users = \App\Models\User::whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
+//            ->with(['businesses' => fn($q) => $q->where('business_id', $activeId)])
+//            ->latest()
+//            ->paginate(15);
+//
+//        return view('users.index', compact('users'));
+//    }
+
     public function index(Request $request)
     {
         $user = $request->user();
+        $show = $request->query('show'); // active | deleted
 
-        // SUPER ADMIN → optional filter
-        if ($user->hasRole('super admin') || $user->can('view all users')) {
-            $businessId = $request->query('business_id'); // may be null for "All"
-            $query = \App\Models\User::query();
+        $baseQuery = \App\Models\User::query();
 
-            if ($businessId) {
-                $query->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
-                    ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
-            } else {
-                // All businesses; keep a light relation for display
-                $query->withCount('businesses');
-            }
-
-            $users = $query->latest()->paginate(15)->withQueryString();
-
-            // super admin filter dropdown needs list of businesses
-            $allBusinesses = \App\Models\Business::orderBy('name')->get();
-
-            return view('users.index', compact('users', 'allBusinesses', 'businessId'));
+        if ($show === 'deleted') {
+            $baseQuery->onlyTrashed();
         }
 
-        // NON-SUPER: restrict to active business
+        // SUPER ADMIN
+        if ($user->hasRole('super admin') || $user->can('view all users')) {
+
+            $businessId = $request->query('business_id');
+
+            if ($businessId) {
+                $baseQuery->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
+                    ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
+            } else {
+                $baseQuery->withCount('businesses');
+            }
+
+            $users = $baseQuery->latest()->paginate(15)->withQueryString();
+            $allBusinesses = \App\Models\Business::orderBy('name')->get();
+
+            return view('users.index', compact('users', 'allBusinesses', 'businessId', 'show'));
+        }
+
+        // NON SUPER
         $activeId = $user->current_business_id ?? session('active_business_id')
             ?? $user->businesses()->value('business_id');
 
         abort_if(!$activeId, 403, 'No business selected.');
 
-        $users = \App\Models\User::whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
+        $users = $baseQuery
+            ->whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
             ->with(['businesses' => fn($q) => $q->where('business_id', $activeId)])
             ->latest()
             ->paginate(15);
 
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'show'));
     }
+
+
 
 
 
@@ -170,4 +216,21 @@ class UserController extends Controller
             'success' => 'Permission removed successfully'
         ]);
     }
+
+    public function restore($id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        $user->restore();
+
+        return back()->with('success', 'User restored successfully.');
+    }
+
+    public function forceDelete($id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        $user->forceDelete();
+
+        return back()->with('success', 'User permanently deleted.');
+    }
+
 }

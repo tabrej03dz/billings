@@ -13,6 +13,18 @@
                class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
                 + New User
             </a>
+            @if($show === 'deleted')
+                <a href="{{ route('users.index') }}"
+                   class="px-3 py-2 rounded bg-green-600 text-white">
+                    ← Back to Active
+                </a>
+            @else
+                <a href="{{ route('users.index', ['show' => 'deleted']) }}"
+                   class="px-3 py-2 rounded bg-red-600 text-white">
+                    Deleted
+                </a>
+            @endif
+
         </div>
 
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
@@ -32,14 +44,32 @@
                         <td class="px-6 py-3">{{ $u->email }}</td>
                         <td class="px-6 py-3">{{ $u->businesses_count }}</td>
                         <td class="px-6 py-3 space-x-2">
-                            <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 hover:underline p-2">Edit</a>
-                            <form action="{{ route('users.destroy', $u->id) }}" method="POST" class="inline-block"
-                                  onsubmit="return confirm('Delete this user?');">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="bg-red-600 hover:underline p-2">Delete</button>
-                            </form>
-                            <a href="{{ route('users.permissions', $u->id) }}" class="bg-sky-600 hover:underline p-2">Permissions</a>
+
+                            @if(!$u->trashed())
+                                <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 p-2 text-white">Edit</a>
+
+                                <form action="{{ route('users.destroy', $u->id) }}" method="POST" class="inline-block"
+                                      onsubmit="return confirm('Delete this user?');">
+                                    @csrf @method('DELETE')
+                                    <button class="bg-red-600 p-2 text-white">Delete</button>
+                                </form>
+
+                            @else
+                                <form action="{{ route('users.restore', $u->id) }}" method="POST" class="inline-block">
+                                    @csrf
+                                    <button class="bg-green-600 p-2 text-white">Restore</button>
+                                </form>
+
+                                <form action="{{ route('users.force', $u->id) }}" method="POST" class="inline-block"
+                                      onsubmit="return confirm('Permanently delete?');">
+                                    @csrf @method('DELETE')
+                                    <button class="bg-black p-2 text-white">Force Delete</button>
+                                </form>
+                            @endif
+
+                            <a href="{{ route('users.permissions', $u->id) }}" class="bg-sky-600 p-2 text-white">Permissions</a>
                         </td>
+
                     </tr>
                 @empty
                     <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No users found.</td></tr>

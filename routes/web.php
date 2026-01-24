@@ -229,6 +229,8 @@ Route::middleware(['auth'])->group(function () {
         Route::put('update/{user}', 'update')->name('update');
         Route::delete('destroy/{user}', 'destroy')->name('destroy');
         Route::get('permissions/{user}', 'permissions')->name('permissions');
+        Route::post('restore/{user}', 'restore')->name('restore');
+        Route::delete('force/{user}', 'forceDelete')->name('force');
         Route::get('permission/remove/{user}/{permission}', 'permissionRemove')->name('permission.remove');
     });
 
