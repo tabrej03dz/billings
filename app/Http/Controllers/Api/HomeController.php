@@ -11,7 +11,9 @@ use App\Models\Purchase;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -418,6 +420,76 @@ class HomeController extends Controller
             'status' => true,
             'message' => 'Your account has been permanently deleted.',
         ], 200);
+    }
+
+    public function register(Request $request)
+    {
+        $data = $request->validate([
+            'name'        => ['required','string','max:120'],
+            'email'       => ['required','email','max:190', 'unique:users,email'],
+            'password'    => ['required','string','min:6','confirmed'],
+            // confirmed => password_confirmation required
+
+            'phone'       => ['nullable','string','max:20'],
+            'avatar'      => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
+
+            // optional: business attach
+            'business_id' => ['nullable','integer','exists:businesses,id'],
+
+            'device_name' => ['nullable','string','max:100'],
+        ]);
+
+        return DB::transaction(function () use ($request, $data) {
+
+            // ✅ avatar upload (optional)
+            $avatarPath = null;
+            if ($request->hasFile('avatar')) {
+                $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            }
+
+            // ✅ create user
+            $user = User::create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'password' => Hash::make($data['password']),
+                'phone'    => $data['phone'] ?? null,
+                'avatar'   => $avatarPath,
+            ]);
+
+            // ✅ business attach (optional)
+            if (!empty($data['business_id'])) {
+                // pivot attach (assumes many-to-many relation exists)
+                $user->businesses()->attach($data['business_id']);
+
+                // optional: set current business id if your users table has this column
+                if (Schema::hasColumn('users', 'current_business_id')) {
+                    $user->current_business_id = $data['business_id'];
+                    $user->save();
+                }
+            }
+
+            // ✅ create token
+            $tokenName = $data['device_name'] ?? 'authToken';
+            $token = $user->createToken($tokenName)->plainTextToken;
+
+            // fresh businesses load
+            $user->load('businesses');
+
+            return response()->json([
+                'status'     => true,
+                'message'    => 'Register successful',
+                'token_type' => 'Bearer',
+                'token'      => $token,
+                'user'       => [
+                    'id'       => $user->id,
+                    'name'     => $user->name,
+                    'email'    => $user->email,
+                    'phone'    => $user->phone,
+                    'avatar'   => $user->avatar,
+                    'business' => $user->businesses,
+                ],
+            ], 201);
+        });
     }
 
 }

@@ -14,6 +14,7 @@ Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
 Route::get('/installment-reminders/run', [\App\Http\Controllers\InstallmentReminderController::class, 'run']);
 
 Route::post('/login',  [HomeController::class, 'login']);
+Route::post('/register',  [HomeController::class, 'register']);
 
 
 Route::middleware('auth:sanctum', 'active.business')->group(function () {
