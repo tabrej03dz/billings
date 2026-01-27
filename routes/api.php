@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BirthdayWishController;
 use App\Http\Controllers\Api\HomeController;
+use App\Http\Controllers\Api\InstallmentReminderController;
 
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
 
@@ -133,6 +134,19 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::delete('delete/{bank}', 'destroy');
         Route::get('show/{bank}', 'show');
 
+    });
+
+
+    Route::prefix('installment-reminders')->group(function () {
+        Route::get('/', [InstallmentReminderController::class, 'index']);          // list + filters
+        Route::post('store', [InstallmentReminderController::class, 'store']);         // create
+        Route::get('show/{reminder}', [InstallmentReminderController::class, 'show']); // detail
+        Route::put('update/{reminder}', [InstallmentReminderController::class, 'update']);// update
+        Route::delete('delete/{reminder}', [InstallmentReminderController::class, 'destroy']); // delete
+
+        Route::patch('status/{reminder}/status', [InstallmentReminderController::class, 'statusUpdate']); // status only
+
+        Route::post('/import', [InstallmentReminderController::class, 'import']); // excel import
     });
 
 

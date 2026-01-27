@@ -96,14 +96,14 @@ class BankAccountController extends Controller
     }
 
     // ✅ GET /api/bank-accounts/{bankAccount}
-    public function show(Request $request, BankAccount $bankAccount)
+    public function show(Request $request, BankAccount $bank)
     {
-        $bid = (int) $bankAccount->business_id;
+        $bid = (int) $bank->business_id;
         $this->ensureBusinessAccess($request, $bid);
 
         return response()->json([
             'success' => true,
-            'data' => $bankAccount,
+            'data' => $bank,
         ]);
     }
 
