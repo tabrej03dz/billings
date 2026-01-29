@@ -38,5 +38,8 @@ return [
     'whatapi' => [
         'webhook_url' => env('WHATAPI_WEBHOOK_URL'),
     ],
+    'google' => [
+        'drive_sa_json' => env('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON'),
+    ],
 
 ];

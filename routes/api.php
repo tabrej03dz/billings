@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\InstallmentReminderController;
 
 Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
 Route::get('/installment-reminders/run', [\App\Http\Controllers\InstallmentReminderController::class, 'run']);
+Route::get('/drive-scan-pdf/run', [\App\Http\Controllers\InstallmentReminderController::class, 'driveScanPdf']);
+
+
 
 Route::post('/login',  [HomeController::class, 'login']);
 Route::post('/register',  [HomeController::class, 'register']);

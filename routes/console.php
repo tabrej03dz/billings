@@ -16,11 +16,14 @@ Artisan::command('inspire', function () {
 
 
 
-Schedule::command('app:send-birthday-wishes')
-    ->everyMinute()
-    ->timezone('Asia/Kolkata')
-    ->withoutOverlapping();
+// Schedule::command('app:send-birthday-wishes')
+//     ->everyMinute()
+//     ->timezone('Asia/Kolkata')
+//     ->withoutOverlapping();
 
-Schedule::call(function () {
-    Log::info('SCHEDULER HIT at '.now());
-})->everyMinute();
+// Schedule::call(function () {
+//     Log::info('SCHEDULER HIT at '.now());
+// })->everyMinute();
+
+Schedule::command('app:drive-scan-pdfs')->everyMinute();
+Schedule::command('app:drive-dispatch-pending')->everyMinute();
