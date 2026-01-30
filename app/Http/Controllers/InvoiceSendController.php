@@ -284,7 +284,7 @@ class InvoiceSendController extends Controller
 
         // latest sends
         $latestSends = (clone $query)
-            ->latest('sent_at') // for admin some sent_at null will come last
+            // ->latest('sent_at') // for admin some sent_at null will come last
             ->with(['user', 'invoice'])
             ->paginate(30)
             ->withQueryString();
