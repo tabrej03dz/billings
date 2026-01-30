@@ -10,7 +10,7 @@ class GoogleDriveService
     public function drive(): Drive
     {
         $client = new Client();
-        $client->setAuthConfig(config('services.google.drive_sa_json'));
+        $client->setAuthConfig(base_path(env('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON')));
         $client->setScopes([Drive::DRIVE_READONLY]);
         return new Drive($client);
     }
