@@ -230,72 +230,110 @@ class InvoiceSendController extends Controller
 
 
 
-    public function index(Request $request, InvoiceSendService $sender)
+    // public function index(Request $request, InvoiceSendService $sender)
+    // {
+    //     $today      = Carbon::today();
+    //     $monthStart = Carbon::now()->startOfMonth();
+
+    //     $channel = $request->get('channel'); // whatsapp/email
+    //     $from    = $request->get('from') ?: $monthStart->toDateString();
+    //     $to      = $request->get('to')   ?: $today->toDateString();
+
+    //     $authUser = $request->user();
+
+    //     // ✅ 1) FIRST: Send all "uploaded" PDFs for this user
+    //     $result = $sender->sendUploadedForUser($authUser);
+
+    //     if (!empty($result['message'])) {
+    //         session()->flash('info', $result['message']);
+    //     } else {
+    //         if (($result['sentOk'] ?? 0) > 0) {
+    //             session()->flash(
+    //                 'success',
+    //                 ($result['sentOk'] ?? 0) . ' PDF sent successfully' . (($result['sentFail'] ?? 0) ? ', ' . ($result['sentFail'] ?? 0) . ' failed.' : '.')
+    //             );
+    //         } elseif (($result['sentFail'] ?? 0) > 0) {
+    //             session()->flash('error', ($result['sentFail'] ?? 0) . ' PDF send failed. Please retry.');
+    //         }
+    //     }
+
+    //     // -----------------------------
+    //     // ✅ 2) REPORT QUERY
+    //     // -----------------------------
+    //     $query = InvoiceSend::with('user');
+
+    //     // ✅ Normal user => only own data
+    //     if (! $authUser->hasRole('super admin')) {
+    //         $query->where('user_id', $authUser->id);
+
+    //         // normal user pe date filter apply (sent ones)
+    //         $query->whereBetween('sent_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+    //     }
+
+    //     // ✅ channel filter (both admin and user)
+    //     if ($channel) {
+    //         $query->where('channel', $channel);
+    //     }
+
+    //     // per-user aggregated
+    //     $perUser = (clone $query)
+    //         ->selectRaw('user_id, count(*) as total, sum(case when status = "success" then 1 else 0 end) as success_count')
+    //         ->groupBy('user_id')
+    //         ->with('user')
+    //         ->get();
+
+    //     // latest sends
+    //     $latestSends = (clone $query)
+    //         ->latest('sent_at') // for admin some sent_at null will come last
+    //         ->with(['user', 'invoice'])
+    //         ->paginate(30)
+    //         ->withQueryString();
+
+    //     return view('reports.invoice_sends', compact(
+    //         'perUser',
+    //         'latestSends',
+    //         'from',
+    //         'to',
+    //         'channel'
+    //     ));
+    // }
+
+
+    public function index(Request $request)
     {
         $today      = Carbon::today();
         $monthStart = Carbon::now()->startOfMonth();
 
-        $channel = $request->get('channel'); // whatsapp/email
+        $channel = $request->get('channel');
         $from    = $request->get('from') ?: $monthStart->toDateString();
         $to      = $request->get('to')   ?: $today->toDateString();
 
         $authUser = $request->user();
 
-        // ✅ 1) FIRST: Send all "uploaded" PDFs for this user
-        $result = $sender->sendUploadedForUser($authUser);
-
-        if (!empty($result['message'])) {
-            session()->flash('info', $result['message']);
-        } else {
-            if (($result['sentOk'] ?? 0) > 0) {
-                session()->flash(
-                    'success',
-                    ($result['sentOk'] ?? 0) . ' PDF sent successfully' . (($result['sentFail'] ?? 0) ? ', ' . ($result['sentFail'] ?? 0) . ' failed.' : '.')
-                );
-            } elseif (($result['sentFail'] ?? 0) > 0) {
-                session()->flash('error', ($result['sentFail'] ?? 0) . ' PDF send failed. Please retry.');
-            }
-        }
-
-        // -----------------------------
-        // ✅ 2) REPORT QUERY
-        // -----------------------------
         $query = InvoiceSend::with('user');
 
-        // ✅ Normal user => only own data
         if (! $authUser->hasRole('super admin')) {
             $query->where('user_id', $authUser->id);
-
-            // normal user pe date filter apply (sent ones)
-            $query->whereBetween('sent_at', [$from . ' 00:00:00', $to . ' 23:59:59']);
+            $query->whereBetween('sent_at', [$from.' 00:00:00', $to.' 23:59:59']);
         }
 
-        // ✅ channel filter (both admin and user)
         if ($channel) {
             $query->where('channel', $channel);
         }
 
-        // per-user aggregated
         $perUser = (clone $query)
             ->selectRaw('user_id, count(*) as total, sum(case when status = "success" then 1 else 0 end) as success_count')
             ->groupBy('user_id')
             ->with('user')
             ->get();
 
-        // latest sends
         $latestSends = (clone $query)
-            ->latest('sent_at') // for admin some sent_at null will come last
+            ->latest('sent_at')
             ->with(['user', 'invoice'])
             ->paginate(30)
             ->withQueryString();
 
-        return view('reports.invoice_sends', compact(
-            'perUser',
-            'latestSends',
-            'from',
-            'to',
-            'channel'
-        ));
+        return view('reports.invoice_sends', compact('perUser','latestSends','from','to','channel'));
     }
 
 

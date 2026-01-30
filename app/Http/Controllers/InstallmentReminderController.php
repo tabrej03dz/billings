@@ -207,4 +207,13 @@ class InstallmentReminderController extends Controller
             'output' => Artisan::output(),
         ]);
     }
+
+    public function sendUploadedInvoice(){
+        Artisan::call('app:send-uploaded-invoices');
+        return response()->json([
+            'ok' => true,
+            'message' => 'Send Uploaded Invoices executed',
+            'output' => Artisan::output(),
+        ]);
+    }
 }
