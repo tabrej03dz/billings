@@ -155,6 +155,8 @@ class DriveScanPdfs extends Command
 
         $users = User::whereNotNull('google_drive_folder_id')->get();
 
+        $totalUsers = 0;
+        $totalFiles = 0;
         foreach($users as $user){
             // $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
             $folderId = $user->google_drive_folder_id;
@@ -173,6 +175,7 @@ class DriveScanPdfs extends Command
             }
 
             $pageToken = null;
+            $totalUsers++;
             $newCount = 0;
 
             do {
@@ -213,6 +216,10 @@ class DriveScanPdfs extends Command
                         'caption'           => "Auto PDF: " . $fileName,
                         'status'            => 'pending',
                     ]);
+
+                    $newCount++;
+                    $totalFiles++;
+
 
                     // ✅ 3) InvoiceSend duplicate check (recommended)
                     $already = InvoiceSend::where('user_id', $userId)
@@ -274,7 +281,9 @@ class DriveScanPdfs extends Command
             // $this->info("Scan done. New files: {$newCount}");
             // return 0;
         }
-        $this->info("All users scanned.");
+        // $this->info("All users scanned.");
+        $this->info("Total users: {$totalUsers}");
+        $this->info("Total new PDFs: {$totalFiles}");
         return 0;
 
         
