@@ -66,9 +66,14 @@ class DriveScanPdfs extends Command
                 $modifiedRaw = $f->getModifiedTime(); // "2026-01-13T08:06:54.000Z"
                 $modified = $modifiedRaw ? Carbon::parse($modifiedRaw)->setTimezone('Asia/Kolkata') : null;
 
-                $fileName = $f->getName(); // "918423269465.pdf"
+               $fileName = $f->getName();
+                $nameOnly = pathinfo($fileName, PATHINFO_FILENAME);
 
-                $numberFromFile = pathinfo($fileName, PATHINFO_FILENAME);
+                // 10 to 13 digit (with or without 91)
+                preg_match('/\b\d{10,13}\b/', $nameOnly, $m);
+
+                $numberFromFile = $m[0] ?? env('DRIVE_SEND_DEFAULT_TO');
+
 
                 // ✅ 1) duplicate check (DrivePdfJob)
                 $exists = DrivePdfJob::where('drive_file_id', $driveId)->exists();
