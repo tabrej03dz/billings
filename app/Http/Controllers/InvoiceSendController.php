@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class InvoiceSendController extends Controller
 {
@@ -334,6 +335,26 @@ class InvoiceSendController extends Controller
             ->withQueryString();
 
         return view('reports.invoice_sends', compact('perUser','latestSends','from','to','channel'));
+    }
+
+    public function destroy(InvoiceSend $invoice)
+    {
+        try {
+            // agar file_url public storage ka hai
+            if ($invoice->file_url) {
+                $path = str_replace(Storage::disk('public')->url(''), '', $invoice->file_url);
+
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+
+            $invoice->delete();
+
+            return back()->with('success', 'Invoice deleted successfully.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Delete failed: ' . $e->getMessage());
+        }
     }
 
 

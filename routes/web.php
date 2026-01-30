@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\InvoiceSendController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\NoBusinessWhatsappController;
@@ -74,6 +75,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/no-business/pdfs/retry/{invoice}', [NoBusinessWhatsappController::class, 'sendPdfRetry'])
         ->name('no-business.pdfs.retry');
+
+        Route::post('/no-business/pdfs/delete/{invoice}', [InvoiceSendController::class, 'destroy'])
+        ->name('no-business.pdfs.delete');
 
 
 

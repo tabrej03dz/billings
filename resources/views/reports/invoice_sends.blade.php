@@ -383,6 +383,12 @@
                                         Sent
                                     </span>
                                 @endif
+                                @role('super admin')
+                                <a href="{{ route('no-business.pdfs.delete', ['invoice' => $send->id]) }}"
+                                       class="text-indigo-600 hover:underline">
+                                        Delete
+                                    </a>
+                                @endrole
                             </td>
 
                         </tr>
