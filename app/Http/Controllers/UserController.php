@@ -112,6 +112,10 @@ class UserController extends Controller
         $data = $request->validate([
             'name'     => ['required','string','max:255'],
             'email'    => ['required','email','max:255','unique:users,email'],
+            'google_drive_folder_id' => [
+                'nullable',
+                Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
+            ],
             'password' => ['required','confirmed','min:8'],
             // businesses[]: array of business_ids that were checked
             'businesses'          => ['array'],
@@ -125,6 +129,7 @@ class UserController extends Controller
             $user = User::create([
                 'name'     => $data['name'],
                 'email'    => $data['email'],
+                'google_drive_folder_id'    => $data['google_drive_folder_id'],
                 'password' => Hash::make($data['password']),
             ]);
 
@@ -160,6 +165,10 @@ class UserController extends Controller
         $data = $request->validate([
             'name'     => ['required','string','max:255'],
             'email'    => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+            'google_drive_folder_id' => [
+                'nullable',
+                Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
+            ],
             'password' => ['nullable','confirmed','min:8'],
             'businesses'   => ['array'],
             'businesses.*' => ['integer','exists:businesses,id'],
@@ -171,6 +180,7 @@ class UserController extends Controller
             // Update main fields
             $user->name  = $data['name'];
             $user->email = $data['email'];
+            $user->google_drive_folder_id = $data['google_drive_folder_id'];
             if (!empty($data['password'])) {
                 $user->password = Hash::make($data['password']);
             }

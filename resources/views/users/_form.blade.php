@@ -23,6 +23,14 @@
             @error('email') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
+        <div>
+            <label class="block text-sm font-medium mb-1">Google Drive Folder Id <span class="text-red-600">(Optional)</span></label>
+            <input type="google_drive_folder_id" name="google_drive_folder_id"
+                   value="{{ old('google_drive_folder_id', $user->google_drive_folder_id ?? '') }}"
+                   class="mt-1 w-full border rounded px-3 py-2  bg-slate-200 dark:bg-[#242833]">
+            @error('google_drive_folder_id') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+
         <div @class(['md:col-span-2' => true])>
             <label class="block text-sm font-medium mb-1">
                 {{ $isEdit ? 'Set New Password (optional)' : 'Password' }}
