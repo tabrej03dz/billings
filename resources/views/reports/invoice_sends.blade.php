@@ -384,11 +384,20 @@
                                     </span>
                                 @endif
                                 @role('super admin')
-                                <a href="{{ route('no-business.pdfs.delete', ['invoice' => $send->id]) }}"
-                                       class="text-indigo-600 hover:underline">
+                                <form action="{{ route('no-business.pdfs.delete', $send->id) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('Are you sure you want to delete this invoice?')"
+                                    class="inline">
+
+                                    @csrf
+
+                                    <button type="submit"
+                                            class="text-red-600 hover:underline">
                                         Delete
-                                    </a>
+                                    </button>
+                                </form>
                                 @endrole
+
                             </td>
 
                         </tr>
