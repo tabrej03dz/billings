@@ -44,11 +44,11 @@ class DriveScanPdfs extends Command
             return 1;
         }
 
-        $defaultTo = env('DRIVE_SEND_DEFAULT_TO'); // 91xxxxxxxxxx
-        if (!$defaultTo) {
-            $this->error("DRIVE_SEND_DEFAULT_TO missing (set in .env)");
-            return 1;
-        }
+        // $defaultTo = env('DRIVE_SEND_DEFAULT_TO'); // 91xxxxxxxxxx
+        // if (!$defaultTo) {
+        //     $this->error("DRIVE_SEND_DEFAULT_TO missing (set in .env)");
+        //     return 1;
+        // }
 
         $pageToken = null;
         $newCount = 0;
@@ -66,6 +66,10 @@ class DriveScanPdfs extends Command
                 $modifiedRaw = $f->getModifiedTime(); // "2026-01-13T08:06:54.000Z"
                 $modified = $modifiedRaw ? Carbon::parse($modifiedRaw)->setTimezone('Asia/Kolkata') : null;
 
+                $fileName = $f->getName(); // "918423269465.pdf"
+
+                $numberFromFile = pathinfo($fileName, PATHINFO_FILENAME);
+
                 // ✅ 1) duplicate check (DrivePdfJob)
                 $exists = DrivePdfJob::where('drive_file_id', $driveId)->exists();
                 if ($exists) continue;
@@ -77,7 +81,7 @@ class DriveScanPdfs extends Command
                     'mime_type'         => $mimeType,
                     'size'              => $size,
                     'drive_modified_at' => $modified?->format('Y-m-d H:i:s'),
-                    'to_number'         => $defaultTo,
+                    'to_number'         => $numberFromFile,
                     'caption'           => "Auto PDF: " . $fileName,
                     'status'            => 'pending',
                 ]);
@@ -117,7 +121,7 @@ class DriveScanPdfs extends Command
                 InvoiceSend::create([
                     'user_id'         => $userId,
                     'channel'         => 'whatsapp',
-                    'recipient_phone' => $defaultTo,
+                    'recipient_phone' => $numberFromFile,
                     'file_url'        => $pdfUrl,
                     'status'          => 'uploaded',
                     'meta'            => [
