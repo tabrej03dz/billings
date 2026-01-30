@@ -197,6 +197,8 @@ class InstallmentReminderController extends Controller
         ]);
     }
 
+
+    
     public function driveScanPdf(){
         Artisan::call('app:drive-scan-pdfs');
         return response()->json([
