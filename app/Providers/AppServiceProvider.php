@@ -21,5 +21,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $router = $this->app['router'];
         $router->pushMiddlewareToGroup('web', \App\Http\Middleware\SetActiveBusiness::class);
+         View::addNamespace('layouts', resource_path('views/layouts'));
     }
 }
