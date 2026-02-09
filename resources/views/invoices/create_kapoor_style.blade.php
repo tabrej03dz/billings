@@ -198,11 +198,15 @@
                                 class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm">
                         </div> --}}
 
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark: text-[#9AA0AC]">Kitchen Order Ticket</label>
-                            <input type="text" name="kot" x-model="hdr.kot"
-                                class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm">
-                        </div>
+                        @if(Str::contains(strtolower($businessName), 'krinoscco'))
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-[#9AA0AC]">
+                                    Kitchen Order Ticket
+                                </label>
+                                <input type="text" name="kot" x-model="hdr.kot"
+                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm">
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

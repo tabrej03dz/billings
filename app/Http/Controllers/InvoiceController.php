@@ -215,6 +215,7 @@ class InvoiceController extends Controller
             'businessState'      => $business->state,
             'businessStateCode'  => $business->state_code,
             'businessGstin'      => $business->gstin,
+            'businessName'      => $business->name,
 
             // ✅ NEW
             'docType'            => $docType,

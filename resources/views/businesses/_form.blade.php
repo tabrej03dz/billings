@@ -194,6 +194,11 @@
                     {{ $currentTemplate === 'pdf_rvg_format' ? 'selected' : '' }}>
                     RVG Format
                 </option>
+
+                <option value="pdf_rvg_format" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
+                    {{ $currentTemplate === 'pdf_krinoscco' ? 'selected' : '' }}>
+                    Krinoscco Format
+                </option>
             </select>
 
             @error('pdf_template_id')
