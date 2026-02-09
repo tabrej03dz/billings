@@ -75,7 +75,6 @@ class BirthdayWishLogController extends Controller
 
     public function resend(BirthdayWishLog $birthdayWishLog)
     {
-        dd($birthdayWishLog);
         try {
             // relations load (avoid null issues)
             $birthdayWishLog->loadMissing('birthdayRecord.user.api');
