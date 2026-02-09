@@ -87,6 +87,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('birthday-wish-logs/{birthdayWishLog}/success', [BirthdayWishLogController::class, 'markSuccess'])
         ->name('birthday-wish-logs.success');
 
+        Route::post('birthday-wish-logs/{birthdayWishLog}/resend', [BirthdayWishLogController::class, 'markSuccess'])
+        ->name('birthday-wish-logs.resend');
+
     Route::post('birthday-wish-logs/{birthdayWishLog}/failed', [BirthdayWishLogController::class, 'markFailed'])
         ->name('birthday-wish-logs.failed');
 
