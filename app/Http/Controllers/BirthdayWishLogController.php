@@ -70,6 +70,7 @@ class BirthdayWishLogController extends Controller
 
     public function resend(BirthdayWishLog $log, WhatApiWhatsappService $wa)
     {
+        dd($log->birthdayRecord);
         try {
             // yaha apna webhook url set karo (business wise ho to wahi use karo)
             $url = $log->birthdayRecord->user->api->wishes_api;
