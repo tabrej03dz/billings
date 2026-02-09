@@ -139,8 +139,8 @@ class BirthdayWishLogController extends Controller
             ]);
 
             // Existing log update
-            $log->status = 'failed';
-            $log->save();
+            $birthdayWishLog->status = 'failed';
+            $birthdayWishLog->save();
 
             return back()->with('success', 'Resend failed ❌ (exception)');
         }

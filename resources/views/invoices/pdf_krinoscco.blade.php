@@ -129,7 +129,8 @@
     }
 
     // Cashier line like image
-    $cashier = $inv->user->name;
+
+    $cashier = $inv->createdBy->name;
 
     // ======= COLUMNS (match image) =======
     // ItemName(22) Qty(4) Rate(7) Amount(9) => 42
