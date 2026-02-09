@@ -146,6 +146,13 @@
                                 @csrf @method('DELETE')
                                 <button type="submit" class="text-red-600 hover:underline">Delete</button>
                             </form>
+                            <form action="{{ route('birthday-wish-logs.resend', $log->id) }}" method="POST" class="inline-block"
+                                onsubmit="return confirm('Resend birthday wish to {{ $log->phone }}?');">
+                                @csrf
+                                <button type="submit" class="text-indigo-600 hover:underline">
+                                    Resend
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 @empty

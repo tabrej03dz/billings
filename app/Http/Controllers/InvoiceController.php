@@ -38,80 +38,6 @@ class InvoiceController extends Controller
     }
 
 
-//    public function index(\Illuminate\Http\Request $request)
-//    {
-//        $me  = $request->user();
-//
-//        // ✅ Active business resolve
-//        $bid = $me->current_business_id ?? session('active_business_id');
-//        if (!$bid) {
-//            $bid = $me->businesses()->pluck('businesses.id')->first();
-//        }
-//        if (!$bid) {
-//            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
-//        }
-//
-//        // ✅ Tab type (tax / proforma)
-//        $type = strtolower(trim((string) $request->get('type', 'tax')));
-//        if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
-//            $type = 'tax';
-//        }
-//
-//        // ✅ Filters
-//        $search   = trim((string)$request->get('search', ''));
-//        $fromDate = $request->get('from_date');
-//        $toDate   = $request->get('to_date');
-//        $status   = $request->get('status');
-//
-//        $q = \App\Models\Invoice::query()
-//            ->with(['client:id,name'])
-//            ->where('business_id', $bid)
-//            ->where('invoice_type', $type);
-//
-//        // ✅ Search (invoice_number OR client name)
-//        if ($search !== '') {
-//            $q->where(function ($w) use ($search) {
-//                $w->where('invoice_number', 'like', "%{$search}%")
-//                    ->orWhereHas('client', function ($c) use ($search) {
-//                        $c->where('name', 'like', "%{$search}%");
-//                    });
-//            });
-//        }
-//
-//        // ✅ Date filter
-//        if (!empty($fromDate)) $q->whereDate('invoice_date', '>=', $fromDate);
-//        if (!empty($toDate))   $q->whereDate('invoice_date', '<=', $toDate);
-//
-//        // ✅ Status filter
-//        if (!empty($status)) {
-//            if ($status === 'paid') {
-//                $q->where('balance', '<=', 0);
-//            } elseif ($status === 'unpaid') {
-//                $q->where('received_amount', '<=', 0);
-//            } elseif ($status === 'partial') {
-//                $q->where('received_amount', '>', 0)->where('balance', '>', 0);
-//            }
-//        }
-//
-//        // ✅ Counts for tab badges (optional but useful)
-//        $invoices = $q->orderByDesc('invoice_date')
-//            ->orderByDesc('id')
-//            ->paginate(20)
-//            ->withQueryString();
-//        $taxCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count();
-//        $proCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count();
-//        $quoCount = \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count();
-//
-//        return view('invoices.index', [
-//            'invoices'   => $invoices,
-//            'type'       => $type,
-//            'taxCount'   => $taxCount,
-//            'proCount'   => $proCount,
-//            'quoCount'   => $quoCount,
-//        ]);
-//    }
-
-
     public function index(\Illuminate\Http\Request $request)
     {
         $me  = $request->user();
@@ -655,6 +581,7 @@ class InvoiceController extends Controller
             'payment_method'  => ['nullable','string','max:255'],
             'bank_account_id' => ['nullable','integer'],
             'signature' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
+            'kots_json' => ['nullable','string','max:5000'],
         ]);
 
         // ✅ Proforma में payment validation skip
@@ -909,6 +836,23 @@ class InvoiceController extends Controller
             $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
         }
 
+        // ✅ KOT (multiple) parse
+        $kots = [];
+        if ($r->filled('kots_json')) {
+            $tmp = json_decode($r->input('kots_json'), true);
+
+            if (is_array($tmp)) {
+                $kots = collect($tmp)
+                    ->map(fn($v) => trim((string)$v))
+                    ->filter(fn($v) => $v !== '')
+                    ->unique()
+                    ->values()
+                    ->take(50) // safety
+                    ->all();
+            }
+        }
+
+
         $invoice = null;
 
         try {
@@ -919,7 +863,7 @@ class InvoiceController extends Controller
                 $discountTotal, $chargeTotal, $tcsPercent, $tcsAmount, $roundOff, $lessAmount,
                 $grandTotal, $receivedTotal, $balance,
                 $cash, $online, $card, $cheque, $credit, $advance,
-                $pay, $cleanRows, $normCode, $chargesArr, &$invoice, $stock, $signaturePath
+                $pay, $cleanRows, $normCode, $chargesArr, $kots, &$invoice, $stock, $signaturePath
             ) {
                 $biz    = Business::findOrFail($bid);
                 $client = Client::where('business_id', $bid)->findOrFail($data['client_id']);
@@ -993,6 +937,7 @@ class InvoiceController extends Controller
                     'signature_path'  => $signaturePath,
                     'created_by' => auth()->user()->id ?? null,
                     'updated_by' => auth()->user()->id ?? null,
+                    'kots_json' => json_encode($kots),
                 ]);
 
                 // additional charges rows
@@ -2176,6 +2121,7 @@ class InvoiceController extends Controller
 
 //        return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
         $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
+        // $view = 'invoices.' . ('pdf_krinoscco');
 
         return Pdf::loadView($view, $vm)
             ->setPaper('a4');

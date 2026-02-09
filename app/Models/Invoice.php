@@ -18,6 +18,7 @@ class Invoice extends Model
         'charges_json'   => 'array',   // if you store extra charges as json
         'items_json'     => 'array',   // if you store items as json (optional)
         'invoice_date'   => 'date',
+        'kots_json'      => 'array',
     ];
 
     public function client()

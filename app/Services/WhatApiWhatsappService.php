@@ -5,13 +5,15 @@ namespace App\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+
 
 class WhatApiWhatsappService
 {
     public function sendBirthdayWish(string $phone, $url): array
     {
-//        $url = config('services.whatapi.webhook_url');
-//        $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
+    //    $url = config('services.whatapi.webhook_url');
+    //    $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
 
         // ✅ Basic sanitation (only digits)
         $to = preg_replace('/\D+/', '', $phone);
@@ -22,7 +24,8 @@ class WhatApiWhatsappService
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
             'number'      => $to,
-            'Video' => asset('asset/video/birthday-wish.mp4'),
+            // 'Video' => asset('asset/video/birthday-wish.mp4'),
+            'Video' => url(Storage::url('videos/birthday-wish.mp4')),
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);

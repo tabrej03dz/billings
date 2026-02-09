@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\BirthdayWishLog;
+use App\Services\WhatApiWhatsappService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BirthdayWishLogController extends Controller
 {
@@ -63,6 +65,39 @@ class BirthdayWishLogController extends Controller
         $logs = $q->paginate($perPage)->withQueryString();
 
         return view('birthday_wish_logs.index', compact('logs'));
+    }
+
+
+    public function resend(BirthdayWishLog $log, WhatApiWhatsappService $wa)
+    {
+        try {
+            // yaha apna webhook url set karo (business wise ho to wahi use karo)
+            $url = $log->birthdayRecord->user->api->wishes_api;
+
+            // sending...
+            $res = $wa->sendBirthdayWish($log->phone, $url);
+
+            // update log status
+            $log->status = $res['ok'] ? 'success' : 'failed';
+
+            // optional fields (agar aapke table me columns hain)
+            if (isset($log->response_body)) $log->response_body = $res['body'] ?? null;
+            if (isset($log->response_status)) $log->response_status = $res['status'] ?? null;
+
+            $log->save();
+
+            return back()->with('success', $res['ok'] ? 'Resent successfully ✅' : 'Resend failed ❌');
+        } catch (\Throwable $e) {
+            Log::error('Birthday resend error', [
+                'log_id' => $log->id,
+                'err' => $e->getMessage(),
+            ]);
+
+            $log->status = 'failed';
+            $log->save();
+
+            return back()->with('success', 'Resend failed ❌ (exception)');
+        }
     }
 
 
