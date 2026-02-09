@@ -262,9 +262,16 @@
 @endif
 
 <div class="pre"></div>
-<div class="pre">{{ $line() }}</div>
-<div class="pre">{{ $padR('Bill Amount', $W-9) }}{{ $padL($money($billAmt), 9) }}</div>
-<div class="pre">{{ $line() }}</div>
+{{-- <div class="pre">{{ $line() }}</div> --}}
+<div class="flex flex-grow">
+    <div class="pre">{{ $padR('Bill Amount', $W-9) }}</div>
+  <div>
+    <div class="pre">{{$line()}}</div>
+   <div class="pre"> {{ $padL($money($billAmt), 9) }}</div>
+    <div class="pre">{{$line()}}</div>
+  </div>
+</div>
+{{-- <div class="pre">{{ $line() }}</div> --}}
 
 <div class="pre"></div>
 
@@ -280,10 +287,10 @@
 
 <div class="pre"></div>
 <div class="pre">{{ $padR('Settlements:', $W) }}</div>
-<div class="pre">{{ $line() }}</div>
+{{-- <div class="pre">{{ $line() }}</div> --}}
 
 <div class="pre">{{ $padR('Cash', $W-9) }}{{ $padL($money($received), 9) }}</div>
-<div class="pre">{{ $line() }}</div>
+{{-- <div class="pre">{{ $line() }}</div> --}}
 
 <div class="pre">{{ $padR('Total Settlement', $W-9) }}{{ $padL($money($received), 9) }}</div>
 <div class="pre">{{ $line() }}</div>
