@@ -195,7 +195,7 @@
                     RVG Format
                 </option>
 
-                <option value="pdf_rvg_format" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
+                <option value="pdf_krinoscco" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
                     {{ $currentTemplate === 'pdf_krinoscco' ? 'selected' : '' }}>
                     Krinoscco Format
                 </option>
