@@ -38,7 +38,7 @@
         <div class="hidden md:flex items-center gap-3">
 
             <a href="/login" class="text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition">
-                Login (Admin)
+                Login
             </a>
 
             <a href="{{route('no-business.whatsapp')}}" class="text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition">

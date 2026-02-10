@@ -1848,9 +1848,31 @@ class InvoiceController extends Controller
 
 
 
+    // public function export(Request $r)
+    // {
+    //     return Excel::download(new InvoicesExport($r->all()), $r->from. ' to '.$r->to.' invoices-report.xlsx');
+    // }
+
     public function export(Request $r)
     {
-        return Excel::download(new InvoicesExport($r->all()), 'invoices-report.xlsx');
+        // support both: from_date/to_date OR from/to
+        $from = $r->input('from_date') ?? $r->input('from');
+        $to   = $r->input('to_date')   ?? $r->input('to');
+
+        // ✅ If any one is missing → ALL records filename
+        if (empty($from) || empty($to)) {
+            $fileName = "all-invoice-records.xlsx";
+        } else {
+            $fromLabel = Carbon::parse($from)->format('d-m-Y');
+            $toLabel   = Carbon::parse($to)->format('d-m-Y');
+
+            $fileName = "{$fromLabel}_to_{$toLabel}_invoices-report.xlsx";
+        }
+
+        return Excel::download(
+            new InvoicesExport($r->all()),
+            $fileName
+        );
     }
 
     public function send(Invoice $invoice)
