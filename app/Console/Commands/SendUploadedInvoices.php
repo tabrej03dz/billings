@@ -25,41 +25,41 @@ class SendUploadedInvoices extends Command
     /**
      * Execute the console command.
      */
-public function handle(InvoiceSendService $sender)
-{
-    $this->info("Sending pending invoices (sent_at = NULL)...");
+    public function handle(InvoiceSendService $sender)
+    {
+        $this->info("Sending pending invoices (sent_at = NULL)...");
 
-    InvoiceSend::query()
-        ->whereNull('sent_at')
-        ->where('status', 'uploaded') // optional but recommended
-        ->orderBy('id')
-        ->chunkById(50, function ($invoices) use ($sender) {
+        InvoiceSend::query()
+            ->whereNull('sent_at')
+            ->where('status', 'uploaded') // optional but recommended
+            ->orderBy('id')
+            ->chunkById(50, function ($invoices) use ($sender) {
 
-            foreach ($invoices as $invoiceSend) {
-                $this->info("-> InvoiceSend #{$invoiceSend->id}");
+                foreach ($invoices as $invoiceSend) {
+                    $this->info("-> InvoiceSend #{$invoiceSend->id}");
 
-                try {
-                    // yahi main call
-                    $result = $sender->sendSingleInvoice($invoiceSend);
+                    try {
+                        // yahi main call
+                        $result = $sender->sendSingleInvoice($invoiceSend);
 
-                    $this->line(
-                        "   sentOk=" . ($result['sentOk'] ?? 0) .
-                        " sentFail=" . ($result['sentFail'] ?? 0)
-                    );
-                } catch (\Throwable $e) {
-                    $this->error("   ERROR: " . $e->getMessage());
+                        $this->line(
+                            "   sentOk=" . ($result['sentOk'] ?? 0) .
+                            " sentFail=" . ($result['sentFail'] ?? 0)
+                        );
+                    } catch (\Throwable $e) {
+                        $this->error("   ERROR: " . $e->getMessage());
 
-                    // optional: mark failed
-                    $invoiceSend->update([
-                        'status' => 'failed',
-                        'error'  => $e->getMessage(),
-                    ]);
+                        // optional: mark failed
+                        $invoiceSend->update([
+                            'status' => 'failed',
+                            'error'  => $e->getMessage(),
+                        ]);
+                    }
                 }
-            }
 
-        });
+            });
 
-    $this->info("All pending invoices processed.");
-    return self::SUCCESS;
-}
+        $this->info("All pending invoices processed.");
+        return self::SUCCESS;
+    }
 }

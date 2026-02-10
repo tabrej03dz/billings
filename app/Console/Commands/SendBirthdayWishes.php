@@ -72,7 +72,7 @@ class SendBirthdayWishes extends Command
                 $this->line("❌ Exception: {$r->phone} - ".$e->getMessage());
             }
 
-             sleep(3);   // 3 seconds delay before next API call
+             sleep(6);   // 3 seconds delay before next API call
         }
 
         return self::SUCCESS;
