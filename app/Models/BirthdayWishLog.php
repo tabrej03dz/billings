@@ -14,8 +14,8 @@ class BirthdayWishLog extends Model
         return $this->belongsTo(BirthdayRecord::class, 'birthday_record_id');
     }
 
-    public function birthdayRecod(){
-        return $this->belongsTo(BirthdayRecord::class, 'birthday_record_id');
-    }
+    // public function birthdayRecod(){
+    //     return $this->belongsTo(BirthdayRecord::class, 'birthday_record_id');
+    // }
 
 }

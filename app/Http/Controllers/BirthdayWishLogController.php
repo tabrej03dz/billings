@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApiKey;
+use App\Models\BirthdayRecord;
 use App\Models\BirthdayWishLog;
 use App\Services\WhatApiWhatsappService;
 use Carbon\Carbon;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 
 class BirthdayWishLogController extends Controller
@@ -155,12 +158,20 @@ class BirthdayWishLogController extends Controller
 
     public function resend(BirthdayWishLog $birthdayWishLog)
 {
+
     try {
         // relations load (avoid null issues)
-        $birthdayWishLog->loadMissing('birthdayRecord.user.api');
+        // $birthdayWishLog->loadMissing('birthdayRecord.user.api');
+
+        
 
         // webhook url
-        $url = optional(optional(optional($birthdayWishLog->birthdayRecord)->user)->api)->wishes_api;
+        // $url = optional(optional(optional($birthdayWishLog->birthdayRecord)->user)->api)->wishes_api;
+
+        $id = $birthdayWishLog->birthday_record_id;
+
+        $raw = DB::table('birthday_records')->where('id', $id)->first();
+        $url = ApiKey::where('user_id', $raw->user_id)->first()?->wishes_api;
 
         if (!$url) {
             $birthdayWishLog->status = 'failed';
