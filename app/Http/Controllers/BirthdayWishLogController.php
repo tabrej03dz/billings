@@ -108,7 +108,13 @@ class BirthdayWishLogController extends Controller
                 'payload' => $payload,
             ]);
 
-            $res = Http::timeout(60)->acceptJson()->post($url, $payload);
+            // $res = Http::timeout(60)->acceptJson()->post($url, $payload);
+
+            $abs = Storage::disk('public')->path('videos/birthday-wish.mp4');
+
+            $res = Http::timeout(120)
+                ->attach('Video', fopen($abs, 'r'), 'birthday-wish.mp4')  // key provider ke hisab se change
+                ->post($url, ['number' => $to]);
 
             Log::info('WA RESEND RES', [
                 'log_id' => $birthdayWishLog->id,
@@ -134,7 +140,7 @@ class BirthdayWishLogController extends Controller
         } catch (\Throwable $e) {
 
             Log::error('Birthday resend error', [
-                'log_id' => $log->id ?? null,
+                'log_id' => $birthdayWishLog->id ?? null,
                 'err' => $e->getMessage(),
             ]);
 
