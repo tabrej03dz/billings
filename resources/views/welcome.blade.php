@@ -79,7 +79,7 @@
             <a href="#contact" class="py-1 hover:text-emerald-400">Contact</a>
 
             <a href="/login" class="py-2 px-3 rounded-lg border border-slate-600 text-center hover:border-emerald-400 hover:text-emerald-400">
-                Login (Admin)
+                Login
             </a>
 
             <a href="/register" class="py-2 px-3 rounded-lg bg-cyan-500 text-slate-900 text-center font-semibold">
@@ -333,7 +333,7 @@
                     <h3 class="text-lg font-semibold mb-1">Starter</h3>
                     <p class="text-xs text-slate-400 mb-4">Single jewellery shop • Basic billing</p>
                     <div class="flex items-baseline gap-1">
-                        <span class="text-2xl font-bold">₹X,XXX</span>
+                        <span class="text-2xl font-bold">₹999</span>
                         <span class="text-xs text-slate-400">/ year</span>
                     </div>
                     <ul class="mt-4 space-y-2 text-sm text-slate-300">
@@ -342,9 +342,12 @@
                         <li>• Customer master & item master</li>
                         <li>• PDF invoice download</li>
                     </ul>
-                    <button class="mt-6 text-sm w-full py-2.5 rounded-xl border border-slate-700 hover:border-emerald-400 hover:text-emerald-300 transition">
-                        Choose Starter
-                    </button>
+                    <a href="https://api.whatsapp.com/send/?phone=917753800444&text&type=phone_number&app_absent=0"><button class="mt-6 text-sm w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 border border-slate-700 hover:border-emerald-400  text-black transition">
+                        Enquiry
+                    </button></a>
+                     <a href="tel:917753800444"><button class="mt-4 text-sm w-full py-2.5 rounded-xl border border-slate-700 hover:border-emerald-400 hover:text-emerald-300 transition">
+                        Call Now
+                    </button></a>
                 </div>
 
                 <!-- Recommended Plan -->
@@ -355,7 +358,7 @@
                     <h3 class="text-lg font-semibold mb-1">Growth</h3>
                     <p class="text-xs text-slate-300 mb-4">Growing jewellery brand • WhatsApp + reports</p>
                     <div class="flex items-baseline gap-1">
-                        <span class="text-2xl font-bold">₹Y,YYY</span>
+                        <span class="text-2xl font-bold">₹1,999</span>
                         <span class="text-xs text-slate-300">/ year</span>
                     </div>
                     <ul class="mt-4 space-y-2 text-sm text-slate-100">
@@ -365,9 +368,12 @@
                         <li>• Basic stock & item tracking</li>
                         <li>• Priority support</li>
                     </ul>
-                    <button class="mt-6 text-sm w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold transition">
-                        Choose Growth
-                    </button>
+                    <a href="https://api.whatsapp.com/send/?phone=917753800444&text&type=phone_number&app_absent=0"><button class="mt-6 text-sm w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold transition">
+                        Enquiry
+                    </button></a>
+                        <a href="tel:917753800444"><button class="mt-4 text-sm w-full py-2.5 rounded-xl border border-slate-700 hover:border-emerald-400 hover:text-emerald-300 transition">
+                            Call Now
+                        </button></a>
                 </div>
 
                 <!-- Premium Plan -->
@@ -383,9 +389,12 @@
                         <li>• Custom reports & integration</li>
                         <li>• Dedicated account manager</li>
                     </ul>
-                    <button class="mt-6 text-sm w-full py-2.5 rounded-xl border border-slate-700 hover:border-emerald-400 hover:text-emerald-300 transition">
-                        Talk to Sales
-                    </button>
+                   <a href="https://api.whatsapp.com/send/?phone=917753800444&text&type=phone_number&app_absent=0"><button class="mt-6 text-sm w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold transition">
+                        Enquiry
+                    </button></a>
+                        <a href="tel:917753800444"><button class="mt-4 text-sm w-full py-2.5 rounded-xl border border-slate-700 hover:border-emerald-400 hover:text-emerald-300 transition">
+                            Call Now
+                        </button></a>
                 </div>
             </div>
 

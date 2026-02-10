@@ -144,14 +144,24 @@
 <html>
 <head>
     <meta charset="utf-8">
+     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @page { margin: 8px 10px; }
+        @page { margin: 8px 10px;
+        padding: 8px 10px;
+        }
         body{
             font-family: "DejaVu Sans Mono", "Courier New", monospace;
             font-size: 11px;
             color:#000;
         }
-        .pre{ white-space: pre; line-height: 1.25; }
+        .pre{ white-space: pre; line-height: 1.0; }
+
+        .pr {
+  white-space:pre;
+
+}
+
+
     </style>
 </head>
 <body>
@@ -173,8 +183,11 @@
 <div class="pre">{{ $line() }}</div>
 
 {{-- Bill No / Bill Date line EXACT style --}}
-<div class="pre">
-{{ $padR('Bill No: '.$billNo, 18) }}{{ $space(2) }}{{ $padR('Bill Date: '.$billDate.'  '.$billTime, 22) }}
+<div class="bill no">
+{{ $padR('Bill No: '.$billNo, 18) }}
+</div>
+<div class="bill date">
+    {{ $padR('Bill Date: '.$billDate.'  '.$billTime, 22) }}
 </div>
 
 <div class="pre">{{ $line() }}</div>
@@ -261,19 +274,37 @@
 <div class="pre">{{ $padR('Round Off', $W-9) }}{{ $padL($money($roundOff), 9) }}</div>
 @endif
 
-<div class="pre"></div>
-{{-- <div class="pre">{{ $line() }}</div> --}}
-<div class="flex flex-grow">
-    <div class="pre">{{ $padR('Bill Amount', $W-9) }}</div>
-  <div>
-    <div class="pre">{{$line()}}</div>
-   <div class="pre"> {{ $padL($money($billAmt), 9) }}</div>
-    <div class="pre">{{$line()}}</div>
-  </div>
+{{-- <div class="pre"></div> --}}
+<div class=" text-sm leading-none">
+
+  <!-- Top dashed line -->
+  <span class="pr block leading-none" style="padding: 0px; margin: 0px;">
+  {{ str_repeat(' ', 32) }}{{ str_repeat('-', 8) }}
+</span>
+
+  <!-- Main line -->
+ <div class="pr " style="padding-top: 0px; margin-top: 0px;">
+  {{ $padR('Bill Amount', 30) }}{{ $padL($money($billAmt), 8) }}
 </div>
+
+
+  <!-- Bottom dashed line -->
+ <span class="pr block leading-none " style="padding: 0px; margin: 0px;">
+  {{ str_repeat(' ', 32) }}{{ str_repeat('-', 8) }}
+</span>
+
+</div>
+
+
+
+{{-- <div class="pre">{{ $padR('Bill Amount', $W-9) }}
+
+    {{ $padL($money($billAmt), 9) }}
+</div> --}}
+
 {{-- <div class="pre">{{ $line() }}</div> --}}
 
-<div class="pre"></div>
+{{-- <div class="pre"></div> --}}
 
 {{-- Amount in words EXACT line breaks like image --}}
 @php
@@ -281,25 +312,42 @@
     $w1 = 'Amount In Words : RS '.$words.' Only.';
     $wLines = $wrap($w1, $W);
 @endphp
+
+<div class="pre"></div>
+<div class="pre"></div>
+
 @foreach($wLines as $wl)
-<div class="pre">{{ $wl }}</div>
+<div class="pre ">{{ $wl }}</div>
 @endforeach
 
 <div class="pre"></div>
-<div class="pre">{{ $padR('Settlements:', $W) }}</div>
+<div class="pre"></div>
+
+<div class="pre "></div>
+<div class="pr">{{ $padR('Settlements:', $W) }}</div>
+ <span class="pre block leading-none m-0 p-0">
+  {{ str_repeat(' ', 0) }}{{ str_repeat('-', 12) }}
+</span>
+
 {{-- <div class="pre">{{ $line() }}</div> --}}
 
 <div class="pre">{{ $padR('Cash', $W-9) }}{{ $padL($money($received), 9) }}</div>
 {{-- <div class="pre">{{ $line() }}</div> --}}
+ <span class="pr block" style="padding: 0px; margin: 0px;;">
+  {{ str_repeat(' ', 30) }}{{ str_repeat('-', 12) }}
+</span>
 
-<div class="pre">{{ $padR('Total Settlement', $W-9) }}{{ $padL($money($received), 9) }}</div>
-<div class="pre">{{ $line() }}</div>
+<div class="pr">{{ $padR('Total Settlement', $W-9) }}{{ $padL($money($received), 9) }}</div>
+ <span class="pre block " style="padding:0px; margin:0px;">
+  {{ str_repeat(' ', 30) }}{{ str_repeat('-', 12) }}
+</span>
+{{-- <div class="pre">{{ $line() }}</div> --}}
 
-<div class="pre">{{ $padR('Balance', $W-9) }}{{ $padL($money($balance), 9) }}</div>
+<div class="pre  mb-12" style="padding-bottom: 30px;">{{ $padR('Balance', $W-9) }}{{ $padL($money($balance), 9) }}</div>
 
-<div class="pre"></div>
+<div class="pre "></div>
 
-<div class="pre">Cashier: {{ $cashier }}Guest Signature</div>
+<div class="pre ">Cashier: {{ $cashier }}Guest Signature</div>
 <div class="pre">Reprint(1)</div>
 <div class="pre">{{ $line() }}</div>
 
