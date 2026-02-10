@@ -65,7 +65,7 @@
                             </label>
                             <input :value="computedPrefix" readonly
                                    class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                          bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                                          bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-neutral-200 text-sm">
                             <input type="hidden" name="invoice_prefix" :value="computedPrefix">
                         </div>
 
@@ -477,7 +477,7 @@
 
             <div class="text-right">
                 <button @click="$refs.form.requestSubmit()"
-                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+                        class="mt-3 px-4 py-2 rounded text-black bg-blue-600 dark:text-white hover:bg-blue-700">
                     Save
                 </button>
             </div>
