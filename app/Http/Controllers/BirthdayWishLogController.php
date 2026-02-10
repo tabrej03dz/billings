@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ApiKey;
+use App\Models\BirthdayRecord;
 use App\Models\BirthdayWishLog;
 use App\Services\WhatApiWhatsappService;
 use Carbon\Carbon;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 
 class BirthdayWishLogController extends Controller
@@ -73,79 +76,233 @@ class BirthdayWishLogController extends Controller
     }
 
 
-    public function resend(BirthdayWishLog $birthdayWishLog)
-    {
-        try {
-            // relations load (avoid null issues)
-            $birthdayWishLog->loadMissing('birthdayRecord.user.api');
+    // public function resend(BirthdayWishLog $birthdayWishLog)
+    // {
+    //     try {
+    //         // relations load (avoid null issues)
+    //         $birthdayWishLog->loadMissing('birthdayRecord.user.api');
 
-            // webhook url
-            $url = optional(optional(optional($birthdayWishLog->birthdayRecord)->user)->api)->wishes_api;
+    //         // webhook url
+    //         $url = optional(optional(optional($birthdayWishLog->birthdayRecord)->user)->api)->wishes_api;
         
 
-            if (!$url) {
-                return back()->with('success', 'Resend failed ❌ (Webhook URL missing)');
-            }
+    //         if (!$url) {
+    //             return back()->with('success', 'Resend failed ❌ (Webhook URL missing)');
+    //         }
 
-            // ✅ Basic sanitation (only digits)
-            $to = preg_replace('/\D+/', '', (string)$birthdayWishLog->phone);
+    //         // ✅ Basic sanitation (only digits)
+    //         $to = preg_replace('/\D+/', '', (string)$birthdayWishLog->phone);
 
-            // If 10 digit => add 91 (India)
-            if (strlen($to) === 10) $to = '91' . $to;
+    //         // If 10 digit => add 91 (India)
+    //         if (strlen($to) === 10) $to = '91' . $to;
 
-            // ✅ Video public URL
-            $videoUrl = url(Storage::url('videos/birthday-wish.mp4'));
+    //         // ✅ Video public URL
+    //         $videoUrl = url(Storage::url('videos/birthday-wish.mp4'));
 
-            // ✅ Payload
-            $payload = [
-                'number' => $to,
-                'Video'  => $videoUrl,
-            ];
+    //         // ✅ Payload
+    //         $payload = [
+    //             'number' => $to,
+    //             'Video'  => $videoUrl,
+    //         ];
 
-            Log::info('WA RESEND REQ', [
-                'log_id' => $birthdayWishLog->id,
-                'url' => $url,
-                'payload' => $payload,
-            ]);
+    //         Log::info('WA RESEND REQ', [
+    //             'log_id' => $birthdayWishLog->id,
+    //             'url' => $url,
+    //             'payload' => $payload,
+    //         ]);
 
-            $res = Http::timeout(60)->acceptJson()->post($url, $payload);
+    //         // $res = Http::timeout(60)->acceptJson()->post($url, $payload);
 
-            Log::info('WA RESEND RES', [
-                'log_id' => $birthdayWishLog->id,
-                'status' => $res->status(),
-                'body'   => $res->body(),
-            ]);
+    //         $abs = Storage::disk('public')->path('videos/birthday-wish.mp4');
 
-            // ✅ Update existing log only (NO create)
-            $birthdayWishLog->status = $res->successful() ? 'success' : 'failed';
+    //         $res = Http::timeout(120)
+    //             ->attach('Video', fopen($abs, 'r'), 'birthday-wish.mp4')  // key provider ke hisab se change
+    //             ->post($url, ['number' => $to]);
 
-            // save response fields only if columns exist
-            if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_body')) {
-                $birthdayWishLog->response_body = $res->body();
-            }
-            if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_status')) {
-                $birthdayWishLog->response_status = $res->status();
-            }
+    //         Log::info('WA RESEND RES', [
+    //             'log_id' => $birthdayWishLog->id,
+    //             'status' => $res->status(),
+    //             'body'   => $res->body(),
+    //         ]);
 
+    //         // ✅ Update existing log only (NO create)
+    //         $birthdayWishLog->status = $res->successful() ? 'success' : 'failed';
+
+    //         // save response fields only if columns exist
+    //         if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_body')) {
+    //             $birthdayWishLog->response_body = $res->body();
+    //         }
+    //         if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_status')) {
+    //             $birthdayWishLog->response_status = $res->status();
+    //         }
+
+    //         $birthdayWishLog->save();
+
+    //         return back()->with('success', $res->successful() ? 'Resent successfully ✅' : 'Resend failed ❌');
+
+    //     } catch (\Throwable $e) {
+
+    //         Log::error('Birthday resend error', [
+    //             'log_id' => $birthdayWishLog->id ?? null,
+    //             'err' => $e->getMessage(),
+    //         ]);
+
+    //         // Existing log update
+    //         $birthdayWishLog->status = 'failed';
+    //         $birthdayWishLog->save();
+
+    //         return back()->with('success', 'Resend failed ❌ (exception)');
+    //     }
+    // }
+
+
+    public function resend(BirthdayWishLog $birthdayWishLog)
+{
+
+    try {
+        // relations load (avoid null issues)
+        // $birthdayWishLog->loadMissing('birthdayRecord.user.api');
+
+        
+
+        // webhook url
+        // $url = optional(optional(optional($birthdayWishLog->birthdayRecord)->user)->api)->wishes_api;
+
+        $id = $birthdayWishLog->birthday_record_id;
+
+        $raw = DB::table('birthday_records')->where('id', $id)->first();
+        $url = ApiKey::where('user_id', $raw->user_id)->first()?->wishes_api;
+
+        if (!$url) {
+            $birthdayWishLog->status = 'failed';
             $birthdayWishLog->save();
+            return back()->with('success', 'Resend failed ❌ (Webhook URL missing)');
+        }
 
-            return back()->with('success', $res->successful() ? 'Resent successfully ✅' : 'Resend failed ❌');
+        // ✅ Basic sanitation (only digits)
+        $to = preg_replace('/\D+/', '', (string) $birthdayWishLog->phone);
 
-        } catch (\Throwable $e) {
+        // If 10 digit => add 91 (India)
+        if (strlen($to) === 10) $to = '91' . $to;
 
-            Log::error('Birthday resend error', [
-                'log_id' => $log->id ?? null,
-                'err' => $e->getMessage(),
-            ]);
+        // video relative path on public disk
+        $videoRelPath = 'videos/birthday-wish.mp4';
 
-            // Existing log update
+        // ✅ ensure file exists
+        if (!Storage::disk('public')->exists($videoRelPath)) {
             $birthdayWishLog->status = 'failed';
             $birthdayWishLog->save();
 
-            return back()->with('success', 'Resend failed ❌ (exception)');
+            return back()->with('success', 'Resend failed ❌ (Video missing: storage/app/public/videos/birthday-wish.mp4)');
         }
-    }
 
+        // ✅ Public URL (works if provider supports fetching by URL)
+        // prefer asset('storage/...') for correct domain/path
+        $videoUrl = asset('storage/' . $videoRelPath);
+
+        // ✅ absolute path for attach
+        $abs = Storage::disk('public')->path($videoRelPath);
+
+        Log::info('WA RESEND REQ', [
+            'log_id'   => $birthdayWishLog->id,
+            'url'      => $url,
+            'number'   => $to,
+            'videoUrl' => $videoUrl,
+            'abs'      => $abs,
+        ]);
+
+        /**
+         * 1) First try: URL payload (some providers accept url)
+         */
+        $res = Http::timeout(60)
+            ->acceptJson()
+            ->asJson()
+            ->post($url, [
+                'number' => $to,
+                'Video'  => $videoUrl, // if provider expects different key, change here
+            ]);
+
+        /**
+         * 2) If failed, fallback to multipart upload
+         */
+        if (!$res->successful()) {
+
+            // open stream safely
+            $fh = fopen($abs, 'r');
+            if ($fh === false) {
+                $birthdayWishLog->status = 'failed';
+                $birthdayWishLog->save();
+                return back()->with('success', 'Resend failed ❌ (Could not open video file)');
+            }
+
+            try {
+                $res = Http::timeout(120)
+                    ->acceptJson()
+                    ->asMultipart() // important for some servers
+                    ->attach('Video', $fh, 'birthday-wish.mp4') // key may be video/file/media
+                    ->post($url, [
+                        'number' => $to,
+                    ]);
+            } finally {
+                // ensure handle is closed
+                fclose($fh);
+            }
+        }
+
+        $status = $res->status();
+        $body   = $res->body();
+
+        Log::info('WA RESEND RES', [
+            'log_id' => $birthdayWishLog->id,
+            'status' => $status,
+            'body'   => $body,
+        ]);
+
+        // ✅ Update existing log only (NO create)
+        $birthdayWishLog->status = $res->successful() ? 'success' : 'failed';
+
+        // save response fields only if columns exist
+        if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_body')) {
+            $birthdayWishLog->response_body = $body;
+        }
+        if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_status')) {
+            $birthdayWishLog->response_status = $status;
+        }
+
+        $birthdayWishLog->save();
+
+        // show exact reason if failed
+        if (!$res->successful()) {
+            return back()->with('success', "Resend failed ❌ | {$status} | {$body}");
+        }
+
+        return back()->with('success', 'Resent successfully ✅');
+
+    } catch (\Throwable $e) {
+
+        Log::error('Birthday resend error', [
+            'log_id' => $birthdayWishLog->id ?? null,
+            'err'    => $e->getMessage(),
+            'trace'  => $e->getTraceAsString(),
+        ]);
+
+        // Existing log update
+        if ($birthdayWishLog) {
+            $birthdayWishLog->status = 'failed';
+
+            if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_body')) {
+                $birthdayWishLog->response_body = $e->getMessage();
+            }
+            if (Schema::hasColumn($birthdayWishLog->getTable(), 'response_status')) {
+                $birthdayWishLog->response_status = 0;
+            }
+
+            $birthdayWishLog->save();
+        }
+
+        return back()->with('success', 'Resend failed ❌ (exception): ' . $e->getMessage());
+    }
+}
 
     /**
      * GET /birthday-wish-logs/{log}

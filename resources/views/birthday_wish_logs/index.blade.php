@@ -97,6 +97,7 @@
 {{--                    <th class="px-6 py-3">Business</th>--}}
 {{--                    <th class="px-6 py-3">Record ID</th>--}}
                     <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3">Wish At</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
                 </thead>
@@ -135,6 +136,10 @@
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs border {{ $badge }}">
                                 {{ strtoupper($log->status) }}
                             </span>
+                        </td>
+
+                        <td class="px-6 py-3">
+                            {{$log->created_at}}
                         </td>
 
                         <td class="px-6 py-3 space-x-3">

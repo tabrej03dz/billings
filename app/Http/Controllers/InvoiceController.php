@@ -215,6 +215,7 @@ class InvoiceController extends Controller
             'businessState'      => $business->state,
             'businessStateCode'  => $business->state_code,
             'businessGstin'      => $business->gstin,
+            'businessName'      => $business->name,
 
             // ✅ NEW
             'docType'            => $docType,
@@ -1847,9 +1848,31 @@ class InvoiceController extends Controller
 
 
 
+    // public function export(Request $r)
+    // {
+    //     return Excel::download(new InvoicesExport($r->all()), $r->from. ' to '.$r->to.' invoices-report.xlsx');
+    // }
+
     public function export(Request $r)
     {
-        return Excel::download(new InvoicesExport($r->all()), 'invoices-report.xlsx');
+        // support both: from_date/to_date OR from/to
+        $from = $r->input('from_date') ?? $r->input('from');
+        $to   = $r->input('to_date')   ?? $r->input('to');
+
+        // ✅ If any one is missing → ALL records filename
+        if (empty($from) || empty($to)) {
+            $fileName = "all-invoice-records.xlsx";
+        } else {
+            $fromLabel = Carbon::parse($from)->format('d-m-Y');
+            $toLabel   = Carbon::parse($to)->format('d-m-Y');
+
+            $fileName = "{$fromLabel}_to_{$toLabel}_invoices-report.xlsx";
+        }
+
+        return Excel::download(
+            new InvoicesExport($r->all()),
+            $fileName
+        );
     }
 
     public function send(Invoice $invoice)
@@ -2120,8 +2143,8 @@ class InvoiceController extends Controller
         // $vm['letter_head'] = null;
 
 //        return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
-        // $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
-        $view = 'invoices.' . ('pdf_krinoscco');
+        $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
+        // $view = 'invoices.' . ('pdf_krinoscco');
 
         return Pdf::loadView($view, $vm)
             ->setPaper('a4');

@@ -51,9 +51,9 @@ class SendBirthdayWishes extends Command
                 'message'            => $message,
             ]);
             $url = $r->user->api->wishes_api;
-//            if (!$url){
-//                $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
-//            }
+            //      if (!$url){
+            //       $url = 'https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4';
+            //      }
             try {
                 $resp = $sender->sendBirthdayWish($r->phone, $url);
 
@@ -71,6 +71,8 @@ class SendBirthdayWishes extends Command
                 ]);
                 $this->line("❌ Exception: {$r->phone} - ".$e->getMessage());
             }
+
+             sleep(3);   // 3 seconds delay before next API call
         }
 
         return self::SUCCESS;

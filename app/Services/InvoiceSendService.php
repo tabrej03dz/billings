@@ -110,6 +110,7 @@ class InvoiceSendService
                     ]);
                     $sentFail++;
                 }
+                sleep(2);
             }
 
             return ['sentOk' => $sentOk, 'sentFail' => $sentFail, 'message' => null];

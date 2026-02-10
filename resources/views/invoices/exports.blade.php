@@ -12,6 +12,7 @@
         <th>Payment Terms (days)</th>
 
         <th>Client Name</th>
+        <th>GSTIN</th>
 
         {{-- Money / totals --}}
         <th>Subtotal</th>
@@ -54,6 +55,7 @@
 
             {{-- Client --}}
             <td>{{ optional($inv->client)->name }}</td>
+            <td>{{ optional($inv->client)->gstin }}</td>
 
             {{-- Money / totals --}}
             <td>{{ $inv->subtotal }}</td>
