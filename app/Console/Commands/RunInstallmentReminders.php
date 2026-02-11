@@ -60,7 +60,6 @@ class RunInstallmentReminders extends Command
             }
 
             $name = trim((string)($r->name ?? 'Dear'));
-            $message = "🎉 Happy Birthday {$name}! 🎂\nGod bless you with health, happiness & success.\n\n— Real Victory Groups";
 
             // ✅ safe api url (null-safe)
 //            $url = "https://webhooks.1automations.com/webhook/694e1e278849903df2fd8ff4";
@@ -78,7 +77,8 @@ class RunInstallmentReminders extends Command
                     'status'   => 'failed',
                     'response' => 'wishes_api missing',
                 ]);
-                continue;
+                 sleep(2); // ✅ delay
+                 continue;
             }
 
             try {
@@ -102,6 +102,7 @@ class RunInstallmentReminders extends Command
 
                 $this->line("❌ Exception: {$phone} - ".$e->getMessage());
             }
+            sleep(2); // ✅ FINAL — har iteration ke baad 2 sec wait
         }
 
         return self::SUCCESS;
