@@ -53,6 +53,7 @@ class BusinessController extends Controller
             'signature'    => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'state'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
                 'pdf_template_id'   => ['required', 'string', 'max:100'],
+                'invoice_base_prefix'   => ['nullable', 'string', 'max:100'],
         ]);
 
         // ✅ Split state_code & state_name
@@ -130,6 +131,7 @@ class BusinessController extends Controller
             'state'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
             'pdf_template_id'   => ['required', 'string', 'max:100'], // "09,Uttar Pradesh"
             'type' => ['required', 'string', 'max:100'],
+            'invoice_base_prefix'   => ['nullable', 'string', 'max:100'],
         ]);
 
         // ✅ Split state_code & state_name
