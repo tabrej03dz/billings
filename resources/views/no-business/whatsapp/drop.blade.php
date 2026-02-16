@@ -200,7 +200,7 @@
         const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         // ✅ CHANGE THIS if you want different URL
-        const INVOICE_SENDS_URL = "{{ url('invoice-sends') }}";
+        const INVOICE_SENDS_URL = "{{ url('no-business/whatsapp') }}";
         // or: const INVOICE_SENDS_URL = "{{ route('invoice-sends.index') }}";
 
         const dz = new Dropzone("#pdfDropzone", {

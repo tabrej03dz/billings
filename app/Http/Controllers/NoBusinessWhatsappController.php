@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
+use App\Services\MediaManagerService;
 
 
 
@@ -43,6 +44,7 @@ class NoBusinessWhatsappController extends Controller
             ->whereNull('business_id')
             ->latest('id')
             ->first();
+
 
         return view('no-business.whatsapp.drop', compact('apiKey'));
     }
@@ -405,72 +407,163 @@ class NoBusinessWhatsappController extends Controller
     }
 
 
-    public function uploadPdfQueue(Request $request)
-    {
-        $user = $request->user();
+    // public function uploadPdfQueue(Request $request)
+    // {
+    //     $user = $request->user();
 
 
-        $request->validate([
-            'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB
-            'phone' => ['nullable', 'string', 'max:20'],
-        ]);
+    //     $request->validate([
+    //         'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB
+    //         'phone' => ['nullable', 'string', 'max:20'],
+    //     ]);
 
-        $pdfFile = $request->file('pdf');
+    //     $pdfFile = $request->file('pdf');
 
-        // ✅ phone decide: input > filename
-        $phone = preg_replace('/\D+/', '', (string)($request->phone ?? ''));
+    //     // ✅ phone decide: input > filename
+    //     $phone = preg_replace('/\D+/', '', (string)($request->phone ?? ''));
 
-        if (empty($phone)) {
-            $originalName = $pdfFile->getClientOriginalName(); // 9876543210.pdf
-            $nameNoExt    = pathinfo($originalName, PATHINFO_FILENAME);
-            $phoneFromFile = preg_replace('/\D+/', '', $nameNoExt);
+    //     if (empty($phone)) {
+    //         $originalName = $pdfFile->getClientOriginalName(); // 9876543210.pdf
+    //         $nameNoExt    = pathinfo($originalName, PATHINFO_FILENAME);
+    //         $phoneFromFile = preg_replace('/\D+/', '', $nameNoExt);
 
-            if (strlen($phoneFromFile) === 10) {
-                $phoneFromFile = '91' . $phoneFromFile;
-            }
-            $phone = $phoneFromFile;
+    //         if (strlen($phoneFromFile) === 10) {
+    //             $phoneFromFile = '91' . $phoneFromFile;
+    //         }
+    //         $phone = $phoneFromFile;
+    //     }
+
+    //     if (empty($phone) || strlen($phone) < 10) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Valid phone not found. Provide phone input or name file as 10/12 digit number.',
+    //         ], 422);
+    //     }
+
+    //     // ✅ store pdf
+    //     $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
+    //     $pdfUrl  = asset('storage/' . $pdfPath);
+
+    //     // ✅ ONLY QUEUE RECORD (no API call)
+    //     $row = InvoiceSend::create([
+    //         'business_id'         => null,
+    //         'user_id'             => $user->id,
+    //         'invoice_id'          => null,
+    //         'channel'             => 'whatsapp',
+    //         'recipient_phone'     => $phone,
+    //         'recipient_email'     => null,
+    //         'file_url'            => $pdfUrl,
+    //         'status' => 'uploaded',    // ✅ important
+    //         'response_code'       => null,
+    //         'provider_message_id' => null,
+    //         'error_message'       => null,
+    //         'meta'                => [
+    //             'pdf_path'    => $pdfPath,
+    //             'pdf_url'     => $pdfUrl,
+    //             'source_name' => $pdfFile->getClientOriginalName(),
+    //         ],
+    //         'sent_at'             => null,
+    //     ]);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Uploaded & queued',
+    //         'id'      => $row->id,
+    //         'phone'   => $phone,
+    //         'pdf_url' => $pdfUrl,
+    //     ]);
+    // }
+
+
+    public function uploadPdfQueue(Request $request, MediaManagerService $mm)
+{
+    $user = $request->user();
+
+    $request->validate([
+        'pdf'   => ['required', 'file', 'mimes:pdf', 'max:5120'], // 5MB
+        'phone' => ['nullable', 'string', 'max:20'],
+    ]);
+
+    $pdfFile = $request->file('pdf');
+
+    // ✅ phone decide: input > filename
+    $phone = preg_replace('/\D+/', '', (string)($request->phone ?? ''));
+
+    if (empty($phone)) {
+        $originalName  = $pdfFile->getClientOriginalName(); // 9876543210.pdf
+        $nameNoExt     = pathinfo($originalName, PATHINFO_FILENAME);
+        $phoneFromFile = preg_replace('/\D+/', '', $nameNoExt);
+
+        if (strlen($phoneFromFile) === 10) {
+            $phoneFromFile = '91' . $phoneFromFile;
         }
-
-        if (empty($phone) || strlen($phone) < 10) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Valid phone not found. Provide phone input or name file as 10/12 digit number.',
-            ], 422);
-        }
-
-        // ✅ store pdf
-        $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
-        $pdfUrl  = asset('storage/' . $pdfPath);
-
-        // ✅ ONLY QUEUE RECORD (no API call)
-        $row = InvoiceSend::create([
-            'business_id'         => null,
-            'user_id'             => $user->id,
-            'invoice_id'          => null,
-            'channel'             => 'whatsapp',
-            'recipient_phone'     => $phone,
-            'recipient_email'     => null,
-            'file_url'            => $pdfUrl,
-            'status' => 'uploaded',    // ✅ important
-            'response_code'       => null,
-            'provider_message_id' => null,
-            'error_message'       => null,
-            'meta'                => [
-                'pdf_path'    => $pdfPath,
-                'pdf_url'     => $pdfUrl,
-                'source_name' => $pdfFile->getClientOriginalName(),
-            ],
-            'sent_at'             => null,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Uploaded & queued',
-            'id'      => $row->id,
-            'phone'   => $phone,
-            'pdf_url' => $pdfUrl,
-        ]);
+        $phone = $phoneFromFile;
     }
+
+    if (empty($phone) || strlen($phone) < 10) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Valid phone not found. Provide phone input or name file as 10/12 digit number.',
+        ], 422);
+    }
+
+    // ✅ store pdf (local)
+    $pdfPath = $pdfFile->store('no-business-pdfs', 'public');
+    $pdfUrl  = asset('storage/' . $pdfPath);
+
+    // ✅ absolute path for upload
+    $absolutePath = Storage::disk('public')->path($pdfPath);
+
+    // ✅ Media Manager upload
+    $mmRes = $mm->upload($absolutePath);
+    $mediaManagerUrl = ($mmRes['ok'] ?? false) ? ($mmRes['remote_url'] ?? null) : null;
+
+    // ✅ create queue record (save media manager live url too)
+    $row = InvoiceSend::create([
+        'business_id'             => null,
+        'user_id'                 => $user->id,
+        'invoice_id'              => null,
+        'channel'                 => 'whatsapp',
+        'recipient_phone'         => $phone,
+        'recipient_email'         => null,
+
+        // local url
+        'file_url'                => $pdfUrl,
+
+        // ✅ NEW: media manager live url
+        'media_manager_file_url'  => $mediaManagerUrl,
+
+        'status'                  => 'uploaded',
+        'response_code'           => null,
+        'provider_message_id'     => null,
+
+        // if upload failed, store message (optional)
+        'error_message'           => ($mmRes['ok'] ?? false) ? null : (($mmRes['raw'] ?? null) ?: 'Media manager upload failed'),
+
+        'meta'                    => [
+            'pdf_path'      => $pdfPath,
+            'pdf_url'       => $pdfUrl,
+            'source_name'   => $pdfFile->getClientOriginalName(),
+
+            // extra debug
+            'mm_ok'         => $mmRes['ok'] ?? false,
+            'mm_status'     => $mmRes['status'] ?? null,
+            'mm_headers'    => $mmRes['used_headers'] ?? null,
+            // 'mm_raw'      => $mmRes['raw'] ?? null, // (optional) heavy log
+        ],
+        'sent_at'                 => null,
+    ]);
+
+    return response()->json([
+        'success'          => true,
+        'message'          => 'Uploaded & queued',
+        'id'               => $row->id,
+        'phone'            => $phone,
+        'pdf_url'          => $pdfUrl,
+        'media_manager_url'=> $mediaManagerUrl,
+        'mm_ok'            => $mmRes['ok'] ?? false,
+    ]);
+}
 
 
     public function sendQueuedPdfs(Request $request)

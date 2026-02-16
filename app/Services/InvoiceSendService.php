@@ -49,7 +49,7 @@ class InvoiceSendService
 
             foreach ($uploadedPdfs as $pdf) {
                 $phone  = preg_replace('/\D+/', '', (string) $pdf->recipient_phone);
-                $pdfUrl = (string) $pdf->file_url;
+                $pdfUrl = (string) ($pdf->media_manager_file_url ?? $pdf->file_url);
 
                 if (!$phone || !$pdfUrl) {
                     $pdf->update([

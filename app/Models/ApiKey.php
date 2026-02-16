@@ -11,6 +11,10 @@ class ApiKey extends Model
 
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'birthday_wish_video_url_updated_on' => 'date',
+    ];
+
     public function business()
     {
         return $this->belongsTo(\App\Models\Business::class);
