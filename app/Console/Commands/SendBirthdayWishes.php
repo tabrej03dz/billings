@@ -89,7 +89,7 @@ class SendBirthdayWishes extends Command
 
 
 
-    public function handle(WhatApiWhatsappService $sender, MediaManagerService $mm)
+public function handle(WhatApiWhatsappService $sender, MediaManagerService $mm)
 {
     $today = Carbon::now()->timezone(config('app.timezone'));
     $month = (int) $today->format('m');
@@ -99,7 +99,7 @@ class SendBirthdayWishes extends Command
     $records = BirthdayRecord::query()
         ->whereMonth('date_of_birth', $month)
         ->whereDay('date_of_birth', $day)
-        ->with(['user.api']) // ✅
+        ->with(['user.api'])
         ->get();
 
     $this->info("Found: {$records->count()} birthdays for ".$today->toDateString());
@@ -142,40 +142,71 @@ class SendBirthdayWishes extends Command
             continue;
         }
 
-        // ✅ 1) Absolute path
+        // ✅ Absolute path
         $absolutePath = public_path('asset/video/birthday-wish.mp4');
 
-        // ✅ 2) Upload to Media Manager
-        $mmRes = $mm->upload($absolutePath);
-        $liveUrl = ($mmRes['ok'] ?? false) ? ($mmRes['remote_url'] ?? null) : null;
+        // ✅ Decide: upload only if > 5 days OR missing
+        $needUpload = false;
 
-        // ✅ 3) Save in api_keys table
-        if (!empty($liveUrl)) {
-
-            $update = [
-                'birthday_wish_media_manager_video_url' => $liveUrl,
-                'birthday_wish_video_url_updated_on'    => $today->toDateString(),
-            ];
-
-            // ✅ save absolute path only if null
-            if (empty($apiKey->birthday_wish_video_absolute_path)) {
-                $update['birthday_wish_video_absolute_path'] = $absolutePath;
-            }
-
-            $apiKey->update($update);
-        } else {
-            // optional: log in wish log response for debug
-            $log->update([
-                'response' => 'MediaManager upload failed: '.(($mmRes['raw'] ?? '') ?: 'unknown'),
-            ]);
+        if (empty($apiKey->birthday_wish_media_manager_video_url)) {
+            $needUpload = true;
         }
 
-        // ✅ Now decide which video url to use for sending (prefer live url)
+        if (!$needUpload) {
+            if (empty($apiKey->birthday_wish_video_url_updated_on)) {
+                $needUpload = true;
+            } else {
+                try {
+                    $last = Carbon::parse($apiKey->birthday_wish_video_url_updated_on, config('app.timezone'));
+                    if ($last->diffInDays($today) > 5) {
+                        $needUpload = true;
+                    }
+                } catch (\Throwable $e) {
+                    $needUpload = true;
+                }
+            }
+        }
+
+        // ✅ Default: use old url
+        $liveUrl = $apiKey->birthday_wish_media_manager_video_url;
+
+        // ✅ Upload only when needed
+        if ($needUpload) {
+            $mmRes = $mm->upload($absolutePath);
+            $newUrl = ($mmRes['ok'] ?? false) ? ($mmRes['remote_url'] ?? null) : null;
+
+            if (!empty($newUrl)) {
+                $liveUrl = $newUrl;
+
+                $update = [
+                    'birthday_wish_media_manager_video_url' => $liveUrl,
+                    'birthday_wish_video_url_updated_on'    => $today->toDateString(),
+                ];
+
+                // ✅ save absolute path only if null
+                if (empty($apiKey->birthday_wish_video_absolute_path)) {
+                    $update['birthday_wish_video_absolute_path'] = $absolutePath;
+                }
+
+                $apiKey->update($update);
+
+            } else {
+                $log->update([
+                    'response' => 'MediaManager upload failed: '.(($mmRes['raw'] ?? '') ?: 'unknown'),
+                ]);
+            }
+        } else {
+            // ✅ ensure absolute path saved if null (no upload case)
+            if (empty($apiKey->birthday_wish_video_absolute_path)) {
+                $apiKey->update(['birthday_wish_video_absolute_path' => $absolutePath]);
+            }
+        }
+
+        // ✅ Send using media manager url (fallback local asset)
         $publicVideo = $liveUrl ?: asset('asset/video/birthday-wish.mp4');
 
         try {
-            // NOTE: if your sendBirthdayWish supports video/text, pass it
-            $resp = $sender->sendBirthdayWish($r->phone, $url, $publicVideo, $message);
+            $resp = $sender->sendBirthdayWish($r->phone, $url, $publicVideo);
 
             $log->update([
                 'status'   => ($resp['ok'] ?? false) ? 'success' : 'failed',
@@ -197,6 +228,7 @@ class SendBirthdayWishes extends Command
 
     return self::SUCCESS;
 }
+
 
 
 }
