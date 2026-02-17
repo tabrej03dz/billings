@@ -314,32 +314,32 @@
 
 
                                         {{-- ✅ Convert to Tax Invoice Button --}}
-@if(in_array(strtolower($inv->invoice_type), ['quotation','proforma']))
+                                        @if(in_array(strtolower($inv->invoice_type), ['quotation','proforma']))
 
-<form action="{{ route('invoices.convertToTax', $inv->id) }}" method="POST"
-      onsubmit="return confirm('Are you sure you want to convert this to Tax Invoice?');"
-      class="inline-block">
+                                        <form action="{{ route('invoices.convertToTax', $inv->id) }}" method="POST"
+                                            onsubmit="return confirm('Are you sure you want to convert this to Tax Invoice?');"
+                                            class="inline-block">
 
-    @csrf
+                                            @csrf
 
-    <button type="submit"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg
-               bg-[#46837d] text-white text-sm font-semibold
-               hover:bg-[#35655f] transition shadow">
+                                            <button type="submit"
+                                                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg
+                                                    bg-[#46837d] text-white text-sm font-semibold
+                                                    hover:bg-[#35655f] transition shadow">
 
-        {{-- icon --}}
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-             viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 17v-6h13M9 5v6h13M5 5h.01M5 17h.01"/>
-        </svg>
+                                                {{-- icon --}}
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                                                    viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M9 17v-6h13M9 5v6h13M5 5h.01M5 17h.01"/>
+                                                </svg>
 
-        Convert to Tax Invoice
-    </button>
+                                                Convert to Tax Invoice
+                                            </button>
 
-</form>
+                                        </form>
 
-@endif
+                                        @endif
 
 
 

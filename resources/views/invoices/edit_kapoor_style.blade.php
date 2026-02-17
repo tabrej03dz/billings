@@ -3,7 +3,6 @@
    NOTE: SAME as create_kapoor_style.blade.php (full copy)
    FIX: ✅ Edit page par Client + Items selected show honge (Alpine select binding fix)
 ========================================== --}}
-
 <x-layouts.app :title="__('Edit Sales Invoice')">
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4" style="margin: -35px">
 
@@ -244,17 +243,17 @@
                             <tr>
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
-                                <td class="px-3 py-2">
-                                    <div class="flex items-center gap-2 mb-2">
+                                {{-- <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2 mb-2"> --}}
 
                                         {{-- ✅ FIX: select now uses x-model (so edit value always selected) --}}
-{{--                                        <select--}}
-{{--                                            class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"--}}
-{{--                                            x-model="row.item_id"--}}
-{{--                                            @change="pickItem(i, row.item_id)"--}}
-{{--                                        >--}}
+                                        {{--     <select--}}
+                                        {{--      class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"--}}
+                                        {{--        x-model="row.item_id"--}}
+                                        {{--      @change="pickItem(i, row.item_id)"--}}
+                                        {{--      >--}}
 
-                                        <div class="flex-1 relative"
+                                        {{-- <div class="flex-1 relative"
                                              @click.outside="closeItemDD(i)">
 
                                             <input type="text"
@@ -301,24 +300,24 @@
                                                     </div>
                                                 </template>
                                             </div>
-                                        </div>
+                                        </div> --}}
 
 
-{{--                                        <option value="">-- Select Item --</option>--}}
-{{--                                            <template x-for="it in itemsData" :key="it.id">--}}
-{{--                                                <option :value="String(it.id)"--}}
-{{--                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>--}}
-{{--                                            </template>--}}
-{{--                                        </select>--}}
+                                        {{--                                        <option value="">-- Select Item --</option>--}}
+                                        {{--                                            <template x-for="it in itemsData" :key="it.id">--}}
+                                        {{--                                                <option :value="String(it.id)"--}}
+                                        {{--                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>--}}
+                                        {{--                                            </template>--}}
+                                        {{--                                        </select>--}}
 
-                                        <button type="button"
+                                        {{-- <button type="button"
                                                 class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap hover:bg-gray-50 dark:hover:bg-neutral-800"
                                                 @click="openItemModal(i)">
                                             + New
                                         </button>
-                                    </div>
+                                    </div> --}}
 
-                                    <textarea x-model="row.description" required rows="2"
+                                    {{-- <textarea x-model="row.description" required rows="2"
                                               class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
                                                  bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs
                                                  resize-y leading-tight"
@@ -326,7 +325,108 @@
                                     <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
                                          x-show="row.item_type"
                                          x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>
+                                </td> --}}
+
+
+                                <td class="px-3 py-2">
+                                    <div class="flex items-center gap-2 mb-2">
+
+                                        <div class="flex-1 relative" @click.outside="closeItemDD(i)">
+
+                                            <input type="text"
+                                                class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
+                                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
+                                                placeholder="Search item..."
+                                                x-model="row.search"
+                                                @focus="openItemDD(i)"
+                                                @input.debounce.50ms="openItemDD(i)"
+                                                @keydown.escape.prevent="closeItemDD(i)"
+                                                @keydown.arrow-down.prevent="itemDDDown(i)"
+                                                @keydown.arrow-up.prevent="itemDDUp(i)"
+                                                @keydown.enter.prevent="itemDDPick(i)"
+                                            >
+
+                                            <!-- backend hidden value -->
+                                            <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
+
+                                            <!-- dropdown -->
+                                            <div x-show="row.ddOpen"
+                                                x-transition.opacity
+                                                class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
+                                                        bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
+                                                        overflow-hidden"
+                                                :style="row.ddStyle + ';width:900px;max-width:95vw;'"
+                                                style="display:none;"
+                                                @mousedown.prevent.stop>
+
+                                                <div class="grid grid-cols-12 h-72">
+
+                                                    <!-- LEFT: list -->
+                                                    <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
+
+                                                        <template x-if="filteredItems(row.search).length === 0">
+                                                            <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                                                                No results
+                                                            </div>
+                                                        </template>
+
+                                                        <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
+                                                            <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3
+                                                                        hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                                :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                                @mouseenter="
+                                                                    row.ddHi = idx;
+                                                                    row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                                                                    row.ddPreview = it.description || it.desc || it.long_description || '';
+                                                                "
+                                                                @mousedown.prevent.stop="selectItemFromDD(i, it)">
+
+                                                                <!-- NAME (no truncate) -->
+                                                                <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
+                                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
+
+                                                                <!-- TYPE / PRICE (right aligned) -->
+                                                                <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[110px] text-right"
+                                                                    x-text="(it.type || '').toUpperCase()"></div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+
+                                                    <!-- RIGHT: preview -->
+                                                    <div class="col-span-5 p-3 overflow-auto">
+                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
+
+                                                        <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
+                                                            x-text="row.ddPreviewName || 'Hover on an item'"></div>
+
+                                                        <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
+                                                            x-text="row.ddPreview || 'No description available'"></div>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button type="button"
+                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap
+                                                    hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                @click="openItemModal(i)">
+                                            + New
+                                        </button>
+                                    </div>
+
+                                    <!-- textarea (height increased) -->
+                                    <textarea x-model="row.description" required rows="6"
+                                            class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
+                                                    bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs
+                                                    resize-y leading-tight min-h-[120px]"
+                                            placeholder="Enter description..."></textarea>
+
+                                    <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
+                                        x-show="row.item_type"
+                                        x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>
                                 </td>
+
 
                                 <td class="px-3 py-2">
                                     <input x-model="row.hsn"

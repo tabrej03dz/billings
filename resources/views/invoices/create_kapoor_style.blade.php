@@ -4,7 +4,6 @@
    NOTE: Amount field editable (Manual override)
    UI UPDATE: ✅ Screenshot-like dropdown (Party + Item)
 ========================================== --}}
-
 <x-layouts.app :title="__('Create Sales Invoice')">
 
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl  px-3 sm:px-6 py-4"
@@ -259,78 +258,71 @@
                                                     @keydown.arrow-up.prevent="itemDDUp(i)"
                                                     @keydown.enter.prevent="itemDDEnter(i)"
                                                     class="flex-1 border rounded px-2 py-1
-                      border-gray-300 dark:border-neutral-700
-                      bg-white dark:bg-[#242833]
-                      text-gray-900 dark:text-neutral-100 text-xs" />
+                                                    border-gray-300 dark:border-neutral-700
+                                                    bg-white dark:bg-[#242833]
+                                                    text-gray-900 dark:text-neutral-100 text-xs" />
 
                                                 <button type="button"
                                                     class="px-3 py-1 rounded border
-                       border-gray-300 dark:border-neutral-700
-                       text-xs whitespace-nowrap
-                       hover:bg-gray-50 dark bg-sky-600 dark:hover:bg-sky-800"
+                                                    border-gray-300 dark:border-neutral-700
+                                                    text-xs whitespace-nowrap
+                                                    hover:bg-gray-50 dark bg-sky-600 dark:hover:bg-sky-800"
                                                     @click="openItemModal(i)">
                                                     + New
                                                 </button>
                                             </div>
 
-                                            <!-- ✅ DROPDOWN (absolute overlay) -->
-                                            {{--                                        <div x-show="row.ddOpen" --}}
-                                            {{--                                             x-transition.opacity --}}
-                                            {{--                                             class="absolute left-0 right-0 mt-1 rounded border border-gray-200 dark:border-neutral-700 --}}
-                                            {{--                                                bg-white dark:bg-neutral-900 shadow-2xl --}}
-                                            {{--                                                z-[999999] isolate --}}
-                                            {{--                                                max-h-56 overflow-auto" --}}
-                                            {{--                                             style="display:none; transform: translateZ(0);" --}}
-                                            {{--                                             @mousedown.prevent> --}}
-
-                                            {{--                                        <template x-if="filteredItems(row.search).length === 0"> --}}
-                                            {{--                                                <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400"> --}}
-                                            {{--                                                    No results --}}
-                                            {{--                                                </div> --}}
-                                            {{--                                            </template> --}}
-
-                                            {{--                                            <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id"> --}}
-                                            {{--                                                <div --}}
-                                            {{--                                                    class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3 --}}
-                                            {{--                       hover:bg-gray-100 dark:hover:bg-neutral-800" --}}
-                                            {{--                                                    :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''" --}}
-                                            {{--                                                    @mouseenter="row.ddHi = idx" --}}
-                                            {{--                                                    @click="selectItemFromDD(i, it)" --}}
-                                            {{--                                                > --}}
-                                            {{--                                                    <div class="truncate" --}}
-                                            {{--                                                         x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div> --}}
-
-                                            {{--                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap" --}}
-                                            {{--                                                         x-text="it.price ? it.price : ''"></div> --}}
-                                            {{--                                                </div> --}}
-                                            {{--                                            </template> --}}
-                                            {{--                                        </div> --}}
-                                            <!-- ✅ DROPDOWN (FIXED: no clipping inside overflow-x-auto) -->
+    
                                             <div x-show="row.ddOpen" x-transition.opacity
                                                 class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
-            bg-white dark:bg-[#242833] shadow-2xl
-            z-[999999] max-h-56 overflow-auto"
-                                                :style="row.ddStyle" style="display:none;" @mousedown.prevent>
-                                                <template x-if="filteredItems(row.search).length === 0">
-                                                    <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
-                                                        No results
-                                                    </div>
-                                                </template>
+                                                        bg-white dark:bg-[#242833] shadow-2xl z-[999999]
+                                                        max-h-56 overflow-hidden"
+                                                :style="row.ddStyle + ';width:900px;max-width:95vw;'" style="display:none;" @mousedown.prevent>
 
-                                                <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)"
-                                                    :key="it.id">
-                                                    <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
-                    hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                <div class="grid grid-cols-12 h-56">
+                                                    
+                                                    <!-- LEFT: list -->
+                                                    <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
+                                                    <template x-if="filteredItems(row.search).length === 0">
+                                                        <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
+                                                    </template>
+
+                                                    <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">
+                                                        <div
+                                                        class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3
+                                                                hover:bg-gray-100 dark:hover:bg-neutral-800"
                                                         :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-[#242833]' : ''"
-                                                        @mouseenter="row.ddHi = idx" @click="selectItemFromDD(i, it)">
-                                                        <div class="truncate"
-                                                            x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name">
-                                                        </div>
-                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
+                                                        @mouseenter="
+                                                            row.ddHi = idx;
+                                                            row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                                                            row.ddPreview = it.description || it.desc || it.long_description || '';
+                                                        "
+                                                        @click="selectItemFromDD(i, it)"
+                                                        >
+                                                        <!-- NAME (no truncate) -->
+                                                        <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
+                                                            x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
+
+                                                        <!-- PRICE -->
+                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[90px] text-right"
                                                             x-text="it.price ? it.price : ''"></div>
+                                                        </div>
+                                                    </template>
                                                     </div>
-                                                </template>
-                                            </div>
+
+                                                    <!-- RIGHT: preview -->
+                                                    <div class="col-span-5 p-3 overflow-auto">
+                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
+                                                    <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
+                                                        x-text="row.ddPreviewName || 'Hover on an item'"></div>
+
+                                                    <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
+                                                        x-text="row.ddPreview || 'No description available'"></div>
+                                                    </div>
+
+                                                </div>
+                                                </div>
+
 
                                         </div>
 
@@ -339,9 +331,10 @@
                                             :name="'items[' + i + '][item_id]'" :value="row.item_id">
 
 
-                                        <textarea x-model="row.description" required rows="2"
-                                            class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-xs resize-none"
-                                            placeholder="Enter description..."></textarea>
+                                        <textarea x-model="row.description" rows="5"
+                                        class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833]
+                                                text-gray-900 dark:text-neutral-100 text-xs resize-y min-h-[160px]"
+                                        placeholder="Enter description..."></textarea>
 
                                         <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-show="row.item_type"
