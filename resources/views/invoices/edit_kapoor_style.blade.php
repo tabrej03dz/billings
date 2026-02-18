@@ -1744,8 +1744,10 @@
                             r.tax_percent = Number(it.tax_percent || 0);
 
                             const amt = Number(it.amount || 0);
-                            r.manual_amount = amt;
-                            r.amount_mode = (amt > 0) ? 'manual' : 'auto';
+                        //    r.manual_amount = amt;
+                        //    r.amount_mode = (amt > 0) ? 'manual' : 'auto';
+                        r.amount_mode = 'auto';
+                        r.manual_amount = 0; 
 
                             const c = this.clients.find(x => String(x.id) === String(this.clientId));
                             this.clientSearch = c ? (c.mobile ? `${c.name} (${c.mobile})` : c.name) : '';
