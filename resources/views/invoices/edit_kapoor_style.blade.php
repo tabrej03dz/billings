@@ -1740,7 +1740,11 @@
                             r.gemstone_wt = Number(it.gemstone_wt || 0);
                             r.diamond_wt = Number(it.diamond_wt || 0);
 
-                            r.service_rate = Number(it.service_rate || 0);
+                            //r.service_rate = Number(it.service_rate || 0);
+
+                            // r.service_rate = Number(it.service_rate ?? it.making_charge ?? 0);
+                            r.service_rate = Number(it.service_rate ?? it.making_rate ?? 0);
+
                             r.tax_percent = Number(it.tax_percent || 0);
 
                             const amt = Number(it.amount || 0);
@@ -1771,8 +1775,11 @@
                                     r.hsn = (r.item_type === 'service') ? (it.sac || '') : (it.hsn || it.sac || '');
                                 }
 
-                                if(r.item_type === 'service'){
-                                    if(!r.service_rate) r.service_rate = Number(it.price ?? 0);
+                                if (r.item_type === 'service') {
+                                    // NOTE: invoice saved rate should win always
+                                    if (Number(r.service_rate ?? 0) <= 0) {
+                                        r.service_rate = Number(it.price ?? 0);
+                                    }
                                 }else{
                                     if(!r.gold_rate){
                                         const gp = r.gold_purity || (it.gold_purity ?? it.purity ?? '');

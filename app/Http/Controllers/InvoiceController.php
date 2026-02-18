@@ -348,7 +348,12 @@ class InvoiceController extends Controller
                     'gemstone_wt' => (float)($it->gemstone_wt ?? 0),
                     'diamond_wt' => (float)($it->diamond_wt ?? 0),
 
-                    'service_rate' => (float)($it->service_rate ?? 0),
+                    // 'service_rate' => (float)($it->service_rate ?? 0),
+
+                   'service_rate' => 
+                 (float)($it->rate ?? $it->making_charge ?? 0),
+                   
+
                     'tax_percent' => (float)($it->tax_percent ?? 0),
 
                     // for edit screen: amount final (tax included)
@@ -356,6 +361,7 @@ class InvoiceController extends Controller
                 ];
             })->values(),
         ];
+
 
         return view('invoices.edit_kapoor_style', [
             'invoice'            => $invoice,
