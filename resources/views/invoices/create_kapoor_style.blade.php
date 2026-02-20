@@ -70,7 +70,7 @@
                         @keydown.arrow-down.prevent="clientDD.down()" @keydown.arrow-up.prevent="clientDD.up()"
                         @keydown.enter.prevent="clientDD.enter()" @click.outside="clientDD.close()">
 
-                        <input type="text" x-model="clientDD.q" placeholder="Search party by name or number"
+                        <input type="text" x-model="clientDD.q" placeholder="Search party by name or number or GSTIN"
                             @focus="clientDD.open()" @input="clientDD.open()"
                             class="mb-2 w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
                                       bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm">
@@ -2448,15 +2448,36 @@
       open() { this.isOpen = true; this.hi = 0; },
       close() { this.isOpen = false; },
 
+      //filtered() {
+      //  const q = lower(this.q).trim();
+      //  const list = ctx.clients || [];
+      //  if (!q) return list;
+
+      //  return list.filter(c => {
+      //    const name = lower(c.name);
+      //    const mob = lower(c.mobile);
+      //   return name.includes(q) || mob.includes(q);
+      //  });
+      //},
+
+
       filtered() {
         const q = lower(this.q).trim();
         const list = ctx.clients || [];
         if (!q) return list;
 
         return list.filter(c => {
-          const name = lower(c.name);
-          const mob = lower(c.mobile);
-          return name.includes(q) || mob.includes(q);
+            const name  = lower(c.name);
+            const mob   = lower(c.mobile);
+            const gstin = lower(c.gstin);
+            const code  = lower(c.state_code);
+
+            return (
+            name.includes(q) ||
+            mob.includes(q) ||
+            gstin.includes(q) ||        // ✅ GSTIN search
+            code.includes(q)            // ✅ optional: state code search
+            );
         });
       },
 

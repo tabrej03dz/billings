@@ -18,7 +18,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     #[Validate('required|string')]
     public string $password = '';
 
-    public bool $remember = false;
+    public bool $remember = true;
 
     /**
      * Handle an incoming authentication request.
@@ -112,6 +112,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         <!-- Remember Me -->
         <flux:checkbox wire:model="remember" :label="__('Remember me')" />
+
 
         <div class="flex items-center justify-end">
             <flux:button variant="primary" type="submit" class="w-full">{{ __('Log in') }}</flux:button>
