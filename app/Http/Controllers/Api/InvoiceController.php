@@ -893,49 +893,96 @@ class InvoiceController extends Controller
         ]);
     }
 
+    // public function show(Request $request, Invoice $invoice)
+    // {
+    //     // invoice number safe for filename
+    //     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+
+    //     // Always use fresh relations for PDF
+    //     $invoice = $invoice->fresh(['client', 'items', 'business']);
+
+    //     // ✅ If PDF already saved in DB and exists in storage → return it
+    //     if (!empty($invoice->pdf_url)) {
+    //         $path = $invoice->pdf_url; // relative path stored
+
+    //         if ($path && Storage::disk('public')->exists($path)) {
+    //             return response()->file(
+    //                 Storage::disk('public')->path($path),
+    //                 [
+    //                     'Content-Type'        => 'application/pdf',
+    //                     'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+    //                 ]
+    //             );
+    //         }
+    //     }
+
+    //     // ✅ PDF missing → generate + save + update db
+    //     $pdf = $this->simplePdfBuild($invoice);
+
+    //     $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+    //     Storage::disk('public')->put($fileName, $pdf->output());
+
+    //     $invoice->update([
+    //         'pdf_url' => $fileName,
+    //     ]);
+
+    //     return response()->file(
+    //         Storage::disk('public')->path($fileName),
+    //         [
+    //             'Content-Type'        => 'application/pdf',
+    //             'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+    //         ]
+    //     );
+    // }
+
+
     public function show(Request $request, Invoice $invoice)
     {
         // invoice number safe for filename
-        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+        $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
 
         // Always use fresh relations for PDF
         $invoice = $invoice->fresh(['client', 'items', 'business']);
 
-        // ✅ If PDF already saved in DB and exists in storage → return it
-        if (!empty($invoice->pdf_url)) {
-            $path = $invoice->pdf_url; // relative path stored
+        $disk = Storage::disk('public');
 
-            if ($path && Storage::disk('public')->exists($path)) {
-                return response()->file(
-                    Storage::disk('public')->path($path),
-                    [
-                        'Content-Type'        => 'application/pdf',
-                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
-                    ]
-                );
-            }
+        // ✅ If PDF url exists AND file exists -> return it
+        if (!empty($invoice->pdf_url) && $disk->exists($invoice->pdf_url)) {
+            return response()->file(
+                $disk->path($invoice->pdf_url),
+                [
+                    'Content-Type'        => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+                ]
+            );
         }
 
-        // ✅ PDF missing → generate + save + update db
+        // ✅ If DB has pdf_url but file missing -> (optional) reset db so it doesn't point to dead file
+        if (!empty($invoice->pdf_url) && !$disk->exists($invoice->pdf_url)) {
+            $invoice->update(['pdf_url' => null]);
+        }
+
+        // ✅ Generate fresh PDF + save + update DB
         $pdf = $this->simplePdfBuild($invoice);
 
         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
-
-        Storage::disk('public')->put($fileName, $pdf->output());
+        $disk->put($fileName, $pdf->output());
 
         $invoice->update([
             'pdf_url' => $fileName,
         ]);
 
         return response()->file(
-            Storage::disk('public')->path($fileName),
+            $disk->path($fileName),
             [
                 'Content-Type'        => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
+                'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
             ]
         );
     }
 
+    
     /**
      * Build invoice PDF (same controller)
      */
