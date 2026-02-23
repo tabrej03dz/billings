@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Services\StockService;
+use Illuminate\Support\Facades\Log;
 
 class InvoiceController extends Controller
 {
@@ -939,97 +940,93 @@ class InvoiceController extends Controller
 
 public function show(Request $request, Invoice $invoice)
 {
-    $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
-    $invoice = $invoice->fresh(['client', 'items', 'business']);
+    // (Optional) auth check if needed:
+    // $user = $request->user();
+    // if (!$user) return response()->json(['status'=>false,'message'=>'Unauthenticated'], 401);
 
+    $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
     $disk = Storage::disk('public');
 
-    // 1) If exists -> return
+    // Always use fresh relations for PDF
+    $invoice = $invoice->fresh(['client', 'items', 'business']);
+
     try {
+        // ✅ 1) If DB has pdf_url and file exists => return file content
         if (!empty($invoice->pdf_url)) {
-            $path = ltrim((string) $invoice->pdf_url, '/'); // normalize
+            $path = $this->normalizePdfPath($invoice->pdf_url);
 
-            if ($disk->exists($path)) {
-                // NOTE: path() only works on local driver
-                if (method_exists($disk, 'path')) {
-                    return response()->file(
-                        $disk->path($path),
-                        [
-                            'Content-Type'        => 'application/pdf',
-                            'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
-                        ]
-                    );
-                }
+            if ($path && $disk->exists($path)) {
+                $content = $disk->get($path);
 
-                // fallback if path() not supported (s3 etc.)
-                return response($disk->get($path), 200, [
+                return response($content, 200, [
                     'Content-Type'        => 'application/pdf',
                     'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
                 ]);
             }
 
-            // file missing -> reset db
+            // file missing but db has path -> reset
             $invoice->update(['pdf_url' => null]);
         }
-    } catch (\Throwable $e) {
-        Log::error('Invoice PDF read failed', [
-            'invoice_id' => $invoice->id,
-            'pdf_url'    => $invoice->pdf_url,
-            'error'      => $e->getMessage(),
-        ]);
-        // continue to generate
-    }
 
-    // 2) Generate + Save
-    try {
-        // ensure directory exists
-        if (!$disk->exists('invoices')) {
-            $disk->makeDirectory('invoices');
-        }
-
+        // ✅ 2) Generate fresh pdf
         $pdf = $this->simplePdfBuild($invoice);
 
         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
-        $ok = $disk->put($fileName, $pdf->output());
-
-        if (!$ok) {
-            Log::error('Invoice PDF save failed (put returned false)', [
-                'invoice_id' => $invoice->id,
-                'fileName'   => $fileName,
-                'disk'       => 'public',
-            ]);
-
-            // ✅ at least show pdf (without saving)
-            return $pdf->stream('Invoice-' . $safeNumber . '.pdf');
+        // ensure folder exists
+        if (!$disk->exists('invoices')) {
+            $disk->makeDirectory('invoices');
         }
 
+        // save
+        $disk->put($fileName, $pdf->output());
+
+        // update db
         $invoice->update(['pdf_url' => $fileName]);
 
-        // return saved file
-        if (method_exists($disk, 'path')) {
-            return response()->file(
-                $disk->path($fileName),
-                [
-                    'Content-Type'        => 'application/pdf',
-                    'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
-                ]
-            );
-        }
-
-        return response($disk->get($fileName), 200, [
+        // return inline
+        return response($pdf->output(), 200, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
         ]);
     } catch (\Throwable $e) {
-        Log::error('Invoice PDF generate failed', [
-            'invoice_id' => $invoice->id,
+        Log::error('API Invoice PDF failed', [
+            'invoice_id' => $invoice->id ?? null,
             'error'      => $e->getMessage(),
         ]);
 
-        // show error to you (dev)
-        abort(500, 'PDF generate failed: ' . $e->getMessage());
+        return response()->json([
+            'status'  => false,
+            'message' => 'PDF generate failed',
+            'error'   => $e->getMessage(), // production me remove
+        ], 500);
     }
+}
+
+/**
+ * Normalize stored path (handles "storage/..", leading slash, full url cases)
+ */
+protected function normalizePdfPath(?string $pdfUrl): ?string
+{
+    if (!$pdfUrl) return null;
+
+    $p = trim($pdfUrl);
+
+    // if full url => extract path after /storage/
+    if (preg_match('~^https?://~i', $p)) {
+        $pos = stripos($p, '/storage/');
+        if ($pos !== false) $p = substr($p, $pos + strlen('/storage/'));
+    }
+
+    $p = str_replace('\\', '/', $p);
+    $p = ltrim($p, '/');
+
+    // if starts with storage/ => remove it for public disk
+    if (str_starts_with($p, 'storage/')) {
+        $p = substr($p, strlen('storage/'));
+    }
+
+    return $p ?: null;
 }
 
     
