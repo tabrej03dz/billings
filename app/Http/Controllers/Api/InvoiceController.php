@@ -1029,6 +1029,63 @@ protected function normalizePdfPath(?string $pdfUrl): ?string
     return $p ?: null;
 }
 
+use Illuminate\Support\Facades\Storage;
+
+protected function imageDataUri(?string $pathOrUrl): ?string
+{
+    if (!$pathOrUrl) return null;
+
+    $value = trim((string) $pathOrUrl);
+
+    // Already data URI
+    if (str_starts_with($value, 'data:image/')) {
+        return $value;
+    }
+
+    // If full URL -> try to convert to relative storage path
+    if (preg_match('~^https?://~i', $value)) {
+        $pos = stripos($value, '/storage/');
+        if ($pos !== false) {
+            $value = substr($value, $pos + strlen('/storage/')); // after /storage/
+        } else {
+            // Remote URL -> don't fetch (dompdf often fails). Just skip.
+            return null;
+        }
+    }
+
+    $value = str_replace('\\', '/', $value);
+    $value = ltrim($value, '/');
+
+    // normalize for public disk
+    if (str_starts_with($value, 'storage/')) {
+        $value = substr($value, strlen('storage/'));
+    }
+
+    $disk = Storage::disk('public');
+
+    if (!$disk->exists($value)) {
+        return null;
+    }
+
+    $absPath = $disk->path($value);
+    $ext = strtolower(pathinfo($absPath, PATHINFO_EXTENSION));
+
+    $mime = match ($ext) {
+        'png'  => 'image/png',
+        'jpg', 'jpeg' => 'image/jpeg',
+        'webp' => 'image/webp',
+        'svg'  => 'image/svg+xml',
+        default => null,
+    };
+
+    if (!$mime) return null;
+
+    $data = file_get_contents($absPath);
+    if ($data === false) return null;
+
+    return "data:{$mime};base64," . base64_encode($data);
+}
+
     
     /**
      * Build invoice PDF (same controller)
