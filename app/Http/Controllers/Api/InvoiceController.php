@@ -937,20 +937,79 @@ class InvoiceController extends Controller
     // }
 
 
-    public function show(Request $request, Invoice $invoice)
-    {
-        // invoice number safe for filename
-        $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
+public function show(Request $request, Invoice $invoice)
+{
+    $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
+    $invoice = $invoice->fresh(['client', 'items', 'business']);
 
-        // Always use fresh relations for PDF
-        $invoice = $invoice->fresh(['client', 'items', 'business']);
+    $disk = Storage::disk('public');
 
-        $disk = Storage::disk('public');
+    // 1) If exists -> return
+    try {
+        if (!empty($invoice->pdf_url)) {
+            $path = ltrim((string) $invoice->pdf_url, '/'); // normalize
 
-        // ✅ If PDF url exists AND file exists -> return it
-        if (!empty($invoice->pdf_url) && $disk->exists($invoice->pdf_url)) {
+            if ($disk->exists($path)) {
+                // NOTE: path() only works on local driver
+                if (method_exists($disk, 'path')) {
+                    return response()->file(
+                        $disk->path($path),
+                        [
+                            'Content-Type'        => 'application/pdf',
+                            'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+                        ]
+                    );
+                }
+
+                // fallback if path() not supported (s3 etc.)
+                return response($disk->get($path), 200, [
+                    'Content-Type'        => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+                ]);
+            }
+
+            // file missing -> reset db
+            $invoice->update(['pdf_url' => null]);
+        }
+    } catch (\Throwable $e) {
+        Log::error('Invoice PDF read failed', [
+            'invoice_id' => $invoice->id,
+            'pdf_url'    => $invoice->pdf_url,
+            'error'      => $e->getMessage(),
+        ]);
+        // continue to generate
+    }
+
+    // 2) Generate + Save
+    try {
+        // ensure directory exists
+        if (!$disk->exists('invoices')) {
+            $disk->makeDirectory('invoices');
+        }
+
+        $pdf = $this->simplePdfBuild($invoice);
+
+        $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+        $ok = $disk->put($fileName, $pdf->output());
+
+        if (!$ok) {
+            Log::error('Invoice PDF save failed (put returned false)', [
+                'invoice_id' => $invoice->id,
+                'fileName'   => $fileName,
+                'disk'       => 'public',
+            ]);
+
+            // ✅ at least show pdf (without saving)
+            return $pdf->stream('Invoice-' . $safeNumber . '.pdf');
+        }
+
+        $invoice->update(['pdf_url' => $fileName]);
+
+        // return saved file
+        if (method_exists($disk, 'path')) {
             return response()->file(
-                $disk->path($invoice->pdf_url),
+                $disk->path($fileName),
                 [
                     'Content-Type'        => 'application/pdf',
                     'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
@@ -958,29 +1017,20 @@ class InvoiceController extends Controller
             );
         }
 
-        // ✅ If DB has pdf_url but file missing -> (optional) reset db so it doesn't point to dead file
-        if (!empty($invoice->pdf_url) && !$disk->exists($invoice->pdf_url)) {
-            $invoice->update(['pdf_url' => null]);
-        }
-
-        // ✅ Generate fresh PDF + save + update DB
-        $pdf = $this->simplePdfBuild($invoice);
-
-        $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
-        $disk->put($fileName, $pdf->output());
-
-        $invoice->update([
-            'pdf_url' => $fileName,
+        return response($disk->get($fileName), 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+        ]);
+    } catch (\Throwable $e) {
+        Log::error('Invoice PDF generate failed', [
+            'invoice_id' => $invoice->id,
+            'error'      => $e->getMessage(),
         ]);
 
-        return response()->file(
-            $disk->path($fileName),
-            [
-                'Content-Type'        => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
-            ]
-        );
+        // show error to you (dev)
+        abort(500, 'PDF generate failed: ' . $e->getMessage());
     }
+}
 
     
     /**
