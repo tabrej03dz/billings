@@ -94,10 +94,30 @@ class InvoiceController extends Controller
             ->where('business_id', $bid)
             ->where('invoice_type', $type);
 
+        // if ($search !== '') {
+        //     $q->where(function ($w) use ($search) {
+        //         $w->where('invoice_number', 'like', "%{$search}%")
+        //             ->orWhereHas('client', fn($c) => $c->where('name', 'like', "%{$search}%"));
+        //     });
+        // }
+
         if ($search !== '') {
             $q->where(function ($w) use ($search) {
+
+                // ✅ invoice number
                 $w->where('invoice_number', 'like', "%{$search}%")
-                    ->orWhereHas('client', fn($c) => $c->where('name', 'like', "%{$search}%"));
+
+                // ✅ client fields
+                ->orWhereHas('client', function ($c) use ($search) {
+                    $c->where(function ($cc) use ($search) {
+                        $cc->where('name', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('gstin', 'like', "%{$search}%")
+                        ->orWhere('pan', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                    });
+                });
+
             });
         }
 

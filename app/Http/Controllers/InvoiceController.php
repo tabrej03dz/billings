@@ -38,7 +38,7 @@ class InvoiceController extends Controller
     }
 
 
-    public function index(\Illuminate\Http\Request $request)
+    public function index(Request $request)
     {
         $me  = $request->user();
 
@@ -84,12 +84,31 @@ class InvoiceController extends Controller
             ->where('invoice_type', $type);
 
         // ✅ Search (invoice_number OR client name)
+        // if ($search !== '') {
+        //     $q->where(function ($w) use ($search) {
+        //         $w->where('invoice_number', 'like', "%{$search}%")
+        //             ->orWhereHas('client', function ($c) use ($search) {
+        //                 $c->where('name', 'like', "%{$search}%");
+        //             });
+        //     });
+        // }
+
+
         if ($search !== '') {
             $q->where(function ($w) use ($search) {
+
+                // invoice number search
                 $w->where('invoice_number', 'like', "%{$search}%")
-                    ->orWhereHas('client', function ($c) use ($search) {
-                        $c->where('name', 'like', "%{$search}%");
-                    });
+
+                // client details search
+                ->orWhereHas('client', function ($c) use ($search) {
+                    $c->where('name', 'like', "%{$search}%")
+                    ->orWhere('mobile', 'like', "%{$search}%")
+                    ->orWhere('gstin', 'like', "%{$search}%")
+                    ->orWhere('pan', 'like', "%{$search}%")
+                    ->orWhere('address', 'like', "%{$search}%");
+                });
+
             });
         }
 
