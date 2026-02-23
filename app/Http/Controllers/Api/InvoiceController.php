@@ -107,6 +107,11 @@ class InvoiceController extends Controller
                 // ✅ invoice number
                 $w->where('invoice_number', 'like', "%{$search}%")
 
+                // ✅ amount search
+                ->orWhere('total', 'like', "%{$search}%")
+                ->orWhere('balance', 'like', "%{$search}%")
+                ->orWhere('received_amount', 'like', "%{$search}%")
+
                 // ✅ client fields
                 ->orWhereHas('client', function ($c) use ($search) {
                     $c->where(function ($cc) use ($search) {
