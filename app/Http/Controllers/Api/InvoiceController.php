@@ -1029,7 +1029,6 @@ protected function normalizePdfPath(?string $pdfUrl): ?string
     return $p ?: null;
 }
 
-use Illuminate\Support\Facades\Storage;
 
 protected function imageDataUri(?string $pathOrUrl): ?string
 {
