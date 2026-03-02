@@ -154,26 +154,16 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     public function store(Request $request, string $docType)
     {
-//        return response($request->all());
         $me      = $request->user();
         $bid     = $this->activeBusinessId($request);
         $docType = $this->normalizeDocType($docType);
 
-        // Permission
-//        $createPerm = match($docType){
-//            'tax' => 'create invoices',
-//            'proforma' => 'create proformas',
-//            'quotation' => 'create quotations',
-//            default => 'create invoices'
-//        };
-//        if (!$me->can($createPerm)) {
-//            return response()->json(['ok'=>false,'message'=>'Permission denied'], 403);
-//        }
 
         $data = $request->validate([
             'client_id'      => ['required','integer'],
             'invoice_date'   => ['required','date'],
             'invoice_prefix' => ['nullable','string','max:255'],
+            'invoice_number' => ['nullable','string','max:255'],
 
             'transport_mode' => ['nullable','string','max:255'],
             'gst_no'         => ['nullable','string','max:50'],
@@ -784,18 +774,20 @@ class InvoiceController extends Controller
         $digits = (int) $request->input('digits', $request->query('digits', 3));
         if ($digits < 1 || $digits > 6) $digits = 3;
 
-        $bid = (int) $request->input('business_id', $request->query('business_id', 0));
+        // $bid = (int) $request->input('business_id', $request->query('business_id', 0));
 
-        if ($bid <= 0) {
-            $bid = (int) ($user->current_business_id ?? session('active_business_id') ?? 0);
-        }
-        if ($bid <= 0) {
-            $bid = (int) ($user->businesses()->pluck('businesses.id')->first() ?? 0);
-        }
-        if ($bid <= 0) {
-            return response()->json(['ok' => false, 'msg' => 'Active business not found.'], 422);
-        }
+        // if ($bid <= 0) {
+        //     $bid = (int) ($user->current_business_id ?? session('active_business_id') ?? 0);
+        // }
+        // if ($bid <= 0) {
+        //     $bid = (int) ($user->businesses()->pluck('businesses.id')->first() ?? 0);
+        // }
+        // if ($bid <= 0) {
+        //     return response()->json(['ok' => false, 'msg' => 'Active business not found.'], 422);
+        // }
 
+        $bid = DB::table('business_user')->where('user_id', $user->id)->first()?->business_id;
+        
         $business = Business::find($bid);
         if (!$business) {
             return response()->json(['ok' => false, 'msg' => 'Business not found.'], 404);
