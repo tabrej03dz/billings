@@ -155,7 +155,7 @@ class InvoiceController extends Controller
     public function store(Request $request, string $docType)
     {
         $user      = $request->user();
-        $bid     = $this->activeBusinessId($request);
+        // $bid     = $this->activeBusinessId($request);
         $docType = $this->normalizeDocType($docType);
 
 
