@@ -154,7 +154,7 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     public function store(Request $request, string $docType)
     {
-        $me      = $request->user();
+        $user      = $request->user();
         $bid     = $this->activeBusinessId($request);
         $docType = $this->normalizeDocType($docType);
 
@@ -216,7 +216,10 @@ class InvoiceController extends Controller
         }
 
         // Resolve business + client within business
-        $biz    = Business::findOrFail($bid);
+        // $biz    = Business::findOrFail($bid);
+        $bid = DB::table('business_user')->where('user_id', $user->id)->first()?->business_id;
+        
+        $biz = Business::find($bid);
         $client = Client::where('business_id', $bid)->findOrFail((int)$data['client_id']);
 
         $invoiceDate = now()->parse($data['invoice_date'])->toDateString();
