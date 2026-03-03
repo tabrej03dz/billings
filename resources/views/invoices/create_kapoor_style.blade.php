@@ -173,7 +173,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark: text-[#9AA0AC]">Bill No.</label>
-                            <input :value="invoiceNo" readonly
+                            <input :value="invoiceNo" name="invoice_number"
                                 class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-[#242833] text-gray-700 dark: text-[#9AA0AC] text-sm">
                         </div>
                         <div class="md:col-span-2">

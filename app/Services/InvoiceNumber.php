@@ -468,4 +468,81 @@ class InvoiceNumber
             return ['full' => $full, 'prefix' => $series, 'seq' => $seq];
         });
     }
+
+    public static function syncNextSeqIfMatches(
+        int $businessId,
+        string $invoiceDate,
+        string $fullInvoiceNumber,
+        int $pad = 3,
+        string $invoiceType = 'tax' // tax | proforma | quotation
+    ): void
+    {
+        $invoiceType = strtolower(trim((string)$invoiceType));
+        if (!in_array($invoiceType, ['tax','proforma','quotation'], true)) {
+            $invoiceType = 'tax';
+        }
+
+        $full = trim($fullInvoiceNumber);
+
+        // extract last digits as seq
+        if (!preg_match('/(\d+)\s*$/', $full, $m)) {
+            return; // invoice number end me digits nahi -> sequence touch mat karo
+        }
+
+        $seq = (int)$m[1];
+        if ($seq < 1) return;
+
+        // series = full minus trailing digits
+        $series = preg_replace('/\d+\s*$/', '', $full);
+        $series = trim((string)$series);
+
+        // ensure series ends with '/' or '-'
+        if (!Str::endsWith($series, ['/', '-'])) {
+            $series = rtrim($series, '/') . '/';
+        }
+
+        $fy = self::fyFromDate($invoiceDate);
+
+        DB::transaction(function () use ($businessId, $invoiceType, $fy, $series, $seq) {
+
+            $row = DB::table('invoice_sequences')
+                ->where('business_id', $businessId)
+                ->where('invoice_type', $invoiceType)
+                ->where('fy', $fy)
+                ->where('series', $series)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$row) {
+                // no row -> create synced next_seq = seq+1
+                DB::table('invoice_sequences')->insert([
+                    'business_id'  => $businessId,
+                    'invoice_type' => $invoiceType,
+                    'fy'           => $fy,
+                    'series'       => $series,
+                    'next_seq'     => $seq + 1,
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
+                ]);
+                return;
+            }
+
+            $currentNext = (int)$row->next_seq;
+
+           // ✅ increment if request seq is greater OR equal
+            if ($seq >= $currentNext) {
+                DB::table('invoice_sequences')
+                    ->where('business_id', $businessId)
+                    ->where('invoice_type', $invoiceType)
+                    ->where('fy', $fy)
+                    ->where('series', $series)
+                    ->update([
+                        'next_seq'   => $seq + 1,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            // else: DO NOTHING (aapki requirement)
+        });
+    }
 }
