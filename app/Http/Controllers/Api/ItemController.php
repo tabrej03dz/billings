@@ -15,9 +15,40 @@ use Illuminate\Validation\ValidationException;
 
 class ItemController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $bid = $this->resolveBusinessId($request);
+
+    //     $q           = trim((string) $request->get('q', ''));
+    //     $category_id = $request->integer('category_id');
+    //     $active      = $request->get('active'); // '1' | '0' | null
+    //     $perPage     = (int) ($request->get('per_page', 15));
+    //     $perPage     = ($perPage > 0 && $perPage <= 100) ? $perPage : 15;
+
+    //     $items = Item::query()
+    //         ->with('category:id,name')
+    //         ->where('business_id', $bid)
+    //         ->when($q !== '', function ($w) use ($q) {
+    //             $w->where(function ($s) use ($q) {
+    //                 $s->where('name', 'like', "%{$q}%")
+    //                     ->orWhere('sku', 'like', "%{$q}%")
+    //                     ->orWhere('description', 'like', "%{$q}%");
+    //             });
+    //         })
+    //         ->when($category_id, fn ($w) => $w->where('category_id', $category_id))
+    //         ->when($active !== null && $active !== '', fn ($w) => $w->where('is_active', (bool) $active))
+    //         ->latest()
+    //         ->paginate($perPage);
+
+    //     return response()->json([
+    //         'ok'   => true,
+    //         'data' => $items,
+    //     ]);
+    // }
+
     public function index(Request $request)
     {
-        $bid = $this->resolveBusinessId($request);
+        $bid = DB::table('business_user')->where('user_id', 1)->first()?->business_id;
 
         $q           = trim((string) $request->get('q', ''));
         $category_id = $request->integer('category_id');
@@ -25,19 +56,34 @@ class ItemController extends Controller
         $perPage     = (int) ($request->get('per_page', 15));
         $perPage     = ($perPage > 0 && $perPage <= 100) ? $perPage : 15;
 
+        // ✅ sold summary subquery
+        $soldSub = DB::table('invoice_items')
+            ->selectRaw('item_id, SUM(quantity) as total_sold')
+            ->groupBy('item_id');
+
         $items = Item::query()
             ->with('category:id,name')
-            ->where('business_id', $bid)
+            ->where('items.business_id', $bid)
+
+            // ✅ join with subquery
+            ->leftJoinSub($soldSub, 'sold', function ($join) {
+                $join->on('sold.item_id', '=', 'items.id');
+            })
+            ->addSelect('items.*')
+            ->addSelect(DB::raw('COALESCE(sold.total_sold,0) as total_sold'))
+
             ->when($q !== '', function ($w) use ($q) {
                 $w->where(function ($s) use ($q) {
-                    $s->where('name', 'like', "%{$q}%")
-                        ->orWhere('sku', 'like', "%{$q}%")
-                        ->orWhere('description', 'like', "%{$q}%");
+                    $s->where('items.name', 'like', "%{$q}%")
+                    ->orWhere('items.sku', 'like', "%{$q}%")
+                    ->orWhere('items.description', 'like', "%{$q}%");
                 });
             })
-            ->when($category_id, fn ($w) => $w->where('category_id', $category_id))
-            ->when($active !== null && $active !== '', fn ($w) => $w->where('is_active', (bool) $active))
-            ->latest()
+            ->when($category_id, fn ($w) => $w->where('items.category_id', $category_id))
+            ->when($active !== null && $active !== '', fn ($w) => $w->where('items.is_active', (bool) $active))
+
+            ->orderByDesc('total_sold')
+            ->orderByDesc('items.id')
             ->paginate($perPage);
 
         return response()->json([
@@ -394,6 +440,7 @@ class ItemController extends Controller
     private function resolveBusinessId(Request $request): int
     {
         $user = $request->user();
+
 
         $bid = $user?->current_business_id ?? session('active_business_id');
 

@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\BirthdayWishController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstallmentReminderController;
+use App\Http\Controllers\Api\ItemController;
 
+Route::get('items/', [ItemController::class, 'index']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
 
 Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
@@ -60,12 +62,12 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
        Route::delete('delete/{category}', 'destroy');
     });
 
-    Route::prefix('items')->controller(\App\Http\Controllers\Api\ItemController::class)->group(function(){
-        Route::get('/', 'index');
-        Route::post('store', 'store');
-        Route::post('update/{item}', 'update');
-        Route::delete('delete/{item}', 'destroy');
-    });
+    // Route::prefix('items')->controller(\App\Http\Controllers\Api\ItemController::class)->group(function(){
+    //     Route::get('/', 'index');
+    //     Route::post('store', 'store');
+    //     Route::post('update/{item}', 'update');
+    //     Route::delete('delete/{item}', 'destroy');
+    // });
 
 
 

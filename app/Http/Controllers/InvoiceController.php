@@ -197,17 +197,62 @@ class InvoiceController extends Controller
             ->get(['id','name','mobile','address','state','state_code','gstin']);
 
         // ✅ Items
-        $items = Item::where('business_id', $bid)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get([
-                'id','name','type','sku','description','tax_rate','making_charge','sac',
-                'gold_weight','gold_purity',
-                'silver_weight','silver_purity',
-                'stone_weight','stone_charges',
-                'diamond_weight','diamond_charges',
-                'price'
-            ]);
+        // $items = Item::where('business_id', $bid)
+        //     ->where('is_active', true)
+        //     ->orderBy('name')
+        //     ->get([
+        //         'id','name','type','sku','description','tax_rate','making_charge','sac',
+        //         'gold_weight','gold_purity',
+        //         'silver_weight','silver_purity',
+        //         'stone_weight','stone_charges',
+        //         'diamond_weight','diamond_charges',
+        //         'price'
+        //     ]);
+
+        $items = Item::where('items.business_id', $bid)
+    ->where('items.is_active', true)
+    ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
+    ->select(
+        'items.id',
+        'items.name',
+        'items.type',
+        'items.sku',
+        'items.description',
+        'items.tax_rate',
+        'items.making_charge',
+        'items.sac',
+        'items.gold_weight',
+        'items.gold_purity',
+        'items.silver_weight',
+        'items.silver_purity',
+        'items.stone_weight',
+        'items.stone_charges',
+        'items.diamond_weight',
+        'items.diamond_charges',
+        'items.price',
+        DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
+    )
+    ->groupBy(
+        'items.id',
+        'items.name',
+        'items.type',
+        'items.sku',
+        'items.description',
+        'items.tax_rate',
+        'items.making_charge',
+        'items.sac',
+        'items.gold_weight',
+        'items.gold_purity',
+        'items.silver_weight',
+        'items.silver_purity',
+        'items.stone_weight',
+        'items.stone_charges',
+        'items.diamond_weight',
+        'items.diamond_charges',
+        'items.price'
+    )
+    ->orderByDesc('total_sold') // 🔥 Most sold first
+    ->get();
 
         // ✅ Metal rates
         $metalRates = MetalRate::where('business_id', $bid)
@@ -296,18 +341,62 @@ class InvoiceController extends Controller
             ->get(['id','name','mobile','address','state','state_code','gstin','pincode']);
 
         // ✅ Items master
-        $items = \App\Models\Item::where('business_id', $bid)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get([
-                'id','name','type','sku','description','tax_rate','making_charge','sac',
-                'gold_weight','gold_purity',
-                'silver_weight','silver_purity',
-                'stone_weight','stone_charges',
-                'diamond_weight','diamond_charges',
-                'price'
-            ]);
+        // $items = \App\Models\Item::where('business_id', $bid)
+        //     ->where('is_active', true)
+        //     ->orderBy('name')
+        //     ->get([
+        //         'id','name','type','sku','description','tax_rate','making_charge','sac',
+        //         'gold_weight','gold_purity',
+        //         'silver_weight','silver_purity',
+        //         'stone_weight','stone_charges',
+        //         'diamond_weight','diamond_charges',
+        //         'price'
+        //     ]);
 
+        $items = Item::where('items.business_id', $bid)
+        ->where('items.is_active', true)
+        ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
+        ->select(
+            'items.id',
+            'items.name',
+            'items.type',
+            'items.sku',
+            'items.description',
+            'items.tax_rate',
+            'items.making_charge',
+            'items.sac',
+            'items.gold_weight',
+            'items.gold_purity',
+            'items.silver_weight',
+            'items.silver_purity',
+            'items.stone_weight',
+            'items.stone_charges',
+            'items.diamond_weight',
+            'items.diamond_charges',
+            'items.price',
+            DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
+        )
+        ->groupBy(
+            'items.id',
+            'items.name',
+            'items.type',
+            'items.sku',
+            'items.description',
+            'items.tax_rate',
+            'items.making_charge',
+            'items.sac',
+            'items.gold_weight',
+            'items.gold_purity',
+            'items.silver_weight',
+            'items.silver_purity',
+            'items.stone_weight',
+            'items.stone_charges',
+            'items.diamond_weight',
+            'items.diamond_charges',
+            'items.price'
+        )
+        ->orderByDesc('total_sold') // 🔥 Most sold first
+        ->get();
         // ✅ Metal rates
         $metalRates = \App\Models\MetalRate::where('business_id', $bid)
             ->whereDate('rate_date', $today)
