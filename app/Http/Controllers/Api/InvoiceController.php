@@ -817,6 +817,484 @@ class InvoiceController extends Controller
     // }
 
 
+    // public function store(Request $request, string $docType)
+    // {
+    //     $user = $request->user();
+    //     $docType = $this->normalizeDocType($docType);
+
+    //     $data = $request->validate([
+    //         'client_id'      => ['required', 'integer'],
+    //         'invoice_date'   => ['required', 'date'],
+    //         'invoice_prefix' => ['nullable', 'string', 'max:255'],
+    //         'invoice_number' => ['required', 'string', 'max:255'],
+
+    //         'transport_mode' => ['nullable', 'string', 'max:255'],
+    //         'gst_no'         => ['nullable', 'string', 'max:50'],
+    //         'reverse_charge' => ['nullable'],
+
+    //         'notes'          => ['nullable', 'string', 'max:2000'],
+    //         'terms'          => ['nullable', 'string', 'max:2000'],
+
+    //         'items_json'     => ['nullable', 'string'],
+    //         'items'          => ['nullable', 'array', 'min:1'],
+
+    //         'charges_json'   => ['nullable', 'string'],
+    //         'discount_total' => ['nullable', 'numeric', 'min:0'],
+    //         'charge_total'   => ['nullable', 'numeric', 'min:0'],
+    //         'tcs_percent'    => ['nullable', 'numeric', 'min:0'],
+    //         'tcs_amount'     => ['nullable', 'numeric', 'min:0'],
+    //         'round_off'      => ['nullable', 'numeric'],
+    //         'less_amount'    => ['nullable', 'numeric', 'min:0'],
+
+    //         'payment_method'  => ['nullable', 'string', 'max:255'],
+    //         'bank_account_id' => ['nullable', 'integer'],
+    //     ]);
+
+    //     $itemsJson = $data['items_json'] ?? null;
+    //     if (!$itemsJson && !empty($data['items'])) {
+    //         $itemsJson = json_encode($data['items'], JSON_UNESCAPED_UNICODE);
+    //     }
+
+    //     if (!$itemsJson) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'items_json or items is required',
+    //         ], 422);
+    //     }
+
+    //     $pay = [];
+    //     if ($docType === 'tax') {
+    //         $pay = $request->validate([
+    //             'pay_cash'            => ['nullable', 'numeric', 'min:0'],
+    //             'pay_upi'             => ['nullable', 'numeric', 'min:0'],
+    //             'pay_card'            => ['nullable', 'numeric', 'min:0'],
+    //             'pay_cheque'          => ['nullable', 'numeric', 'min:0'],
+    //             'credit_sales_excess' => ['nullable', 'numeric', 'min:0'],
+    //             'advance_amount'      => ['nullable', 'numeric', 'min:0'],
+
+    //             'online_mode'         => ['nullable', 'string', 'max:30'],
+    //             'online_ref'          => ['nullable', 'string', 'max:100'],
+    //             'upi_id'              => ['nullable', 'string', 'max:100'],
+    //             'card_last4'          => ['nullable', 'string', 'max:4'],
+    //             'card_ref'            => ['nullable', 'string', 'max:100'],
+    //             'cheque_no'           => ['nullable', 'string', 'max:50'],
+    //             'bank_name'           => ['nullable', 'string', 'max:100'],
+    //             'pay_notes'           => ['nullable', 'string', 'max:2000'],
+    //         ]);
+    //     }
+
+    //     $bid = DB::table('business_user')
+    //         ->where('user_id', $user->id)
+    //         ->value('business_id');
+
+    //     if (!$bid) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Business not mapped with logged in user',
+    //         ], 422);
+    //     }
+
+    //     $biz = Business::find($bid);
+    //     if (!$biz) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Business not found',
+    //         ], 404);
+    //     }
+
+    //     $client = Client::where('business_id', $bid)->find((int) $data['client_id']);
+    //     if (!$client) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Client not found for this business',
+    //         ], 404);
+    //     }
+
+    //     $invoiceDate = \Carbon\Carbon::parse($data['invoice_date'])->toDateString();
+
+    //     $prefix = trim((string) ($data['invoice_prefix'] ?? ''));
+    //     if ($prefix === '') {
+    //         $base = $docType === 'proforma'
+    //             ? 'PF'
+    //             : ($docType === 'quotation'
+    //                 ? 'QT'
+    //                 : ($biz->invoice_base_prefix ?? 'INV'));
+
+    //         $prefix = InvoiceNumber::previewPrefix($invoiceDate, $base);
+    //         if (!$prefix) {
+    //             $prefix = $this->computePrefix($invoiceDate, $base);
+    //         }
+    //     }
+
+    //     $rows = json_decode($itemsJson, true);
+    //     if (!is_array($rows) || count($rows) < 1) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Items invalid',
+    //         ], 422);
+    //     }
+
+    //     $subtotal = 0.0;
+    //     $weightedTax = 0.0;
+    //     $itemsTaxTotal = 0.0;
+    //     $cleanRows = [];
+
+    //     foreach ($rows as $i => $row) {
+    //         $rowNo = $i + 1;
+
+    //         $itemId = $row['item_id'] ?? null;
+    //         if (!$itemId) {
+    //             return response()->json([
+    //                 'ok' => false,
+    //                 'message' => "Row {$rowNo} item_id missing",
+    //             ], 422);
+    //         }
+
+    //         $itemType = strtolower(trim((string) ($row['item_type'] ?? 'product')));
+    //         if (!in_array($itemType, ['product', 'service'], true)) {
+    //             $itemType = 'product';
+    //         }
+
+    //         $desc = trim((string) ($row['description'] ?? ''));
+    //         if ($desc === '') {
+    //             return response()->json([
+    //                 'ok' => false,
+    //                 'message' => "Row {$rowNo} description missing",
+    //             ], 422);
+    //         }
+
+    //         $hsn = trim((string) ($row['hsn'] ?? ''));
+    //         $qty = (int) ($row['qty'] ?? $row['quantity'] ?? 1);
+    //         $qty = $qty < 1 ? 1 : $qty;
+
+    //         $taxPct = round((float) ($row['tax_percent'] ?? 0), 2);
+    //         if ($taxPct < 0 || $taxPct > 100) {
+    //             return response()->json([
+    //                 'ok' => false,
+    //                 'message' => "Row {$rowNo} tax_percent invalid",
+    //             ], 422);
+    //         }
+
+    //         if ($itemType === 'service') {
+    //             $serviceRate = round((float) ($row['service_rate'] ?? 0), 2);
+    //             if ($serviceRate < 0) {
+    //                 return response()->json([
+    //                     'ok' => false,
+    //                     'message' => "Row {$rowNo} service_rate invalid",
+    //                 ], 422);
+    //             }
+
+    //             $lineBase = round($serviceRate * $qty, 2);
+    //             $lineTax  = round($lineBase * ($taxPct / 100), 2);
+
+    //             $subtotal += $lineBase;
+    //             $weightedTax += ($lineBase * $taxPct);
+    //             $itemsTaxTotal += $lineTax;
+
+    //             $cleanRows[] = [
+    //                 'item_id'       => (int) $itemId,
+    //                 'item_type'     => 'service',
+    //                 'description'   => $desc,
+    //                 'hsn'           => $hsn,
+    //                 'qty'           => $qty,
+    //                 'tax_percent'   => $taxPct,
+    //                 'service_rate'  => $serviceRate,
+    //                 'rate'          => $lineBase,
+    //                 'tax_amount'    => $lineTax,
+    //                 'amount'        => round($lineBase + $lineTax, 2),
+    //                 'gold_wt'       => 0,
+    //                 'silver_wt'     => 0,
+    //                 'gold_rate'     => 0,
+    //                 'silver_rate'   => 0,
+    //                 'gemstone_wt'   => 0,
+    //                 'diamond_wt'    => 0,
+    //                 'making_rate'   => 0,
+    //             ];
+
+    //             continue;
+    //         }
+
+    //         $goldWt      = round((float) ($row['gold_wt'] ?? 0), 3);
+    //         $silverWt    = round((float) ($row['silver_wt'] ?? 0), 3);
+    //         $goldRate    = round((float) ($row['gold_rate'] ?? 0), 2);
+    //         $silverRate  = round((float) ($row['silver_rate'] ?? 0), 2);
+    //         $makingRate  = round((float) ($row['making_rate'] ?? 0), 2);
+    //         $gemstoneWt  = round((float) ($row['gemstone_wt'] ?? 0), 3);
+    //         $diamondWt   = round((float) ($row['diamond_wt'] ?? 0), 3);
+
+    //         $lineBase = round((($goldWt * $goldRate) + ($silverWt * $silverRate) + $makingRate) * $qty, 2);
+    //         $lineTax  = round($lineBase * ($taxPct / 100), 2);
+
+    //         $subtotal += $lineBase;
+    //         $weightedTax += ($lineBase * $taxPct);
+    //         $itemsTaxTotal += $lineTax;
+
+    //         $cleanRows[] = [
+    //             'item_id'      => (int) $itemId,
+    //             'item_type'    => 'product',
+    //             'description'  => $desc,
+    //             'hsn'          => $hsn,
+    //             'qty'          => $qty,
+    //             'tax_percent'  => $taxPct,
+    //             'gold_wt'      => $goldWt,
+    //             'silver_wt'    => $silverWt,
+    //             'gold_rate'    => $goldRate,
+    //             'silver_rate'  => $silverRate,
+    //             'gemstone_wt'  => $gemstoneWt,
+    //             'diamond_wt'   => $diamondWt,
+    //             'making_rate'  => $makingRate,
+    //             'rate'         => $lineBase,
+    //             'tax_amount'   => $lineTax,
+    //             'amount'       => round($lineBase + $lineTax, 2),
+    //         ];
+    //     }
+
+    //     $subtotal = round($subtotal, 2);
+    //     $itemsTaxTotal = round($itemsTaxTotal, 2);
+
+    //     $avgTaxPercent = $subtotal > 0
+    //         ? round($weightedTax / $subtotal, 2)
+    //         : 0.00;
+
+    //     $discountTotal = round((float) ($data['discount_total'] ?? 0), 2);
+    //     $chargeTotal   = round((float) ($data['charge_total'] ?? 0), 2);
+    //     $roundOff      = round((float) ($data['round_off'] ?? 0), 2);
+
+    //     $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
+
+    //     // Tax calculation:
+    //     // discount/charge ke baad taxable amount par tax recalc kar rahe hain
+    //     $taxAmount = $avgTaxPercent > 0
+    //         ? round($taxableAmount * ($avgTaxPercent / 100), 2)
+    //         : 0.00;
+
+    //     $tcsPercent = round((float) ($data['tcs_percent'] ?? 0), 2);
+    //     $tcsAmount  = round((float) ($data['tcs_amount'] ?? 0), 2);
+
+    //     // manual amount ko priority
+    //     if ($tcsAmount <= 0 && $tcsPercent > 0) {
+    //         $tcsAmount = round($taxableAmount * ($tcsPercent / 100), 2);
+    //     }
+
+    //     $lessAmount = round((float) ($data['less_amount'] ?? $discountTotal), 2);
+
+    //     $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
+
+    //     $cash = $online = $card = $cheque = $credit = $advance = 0.0;
+    //     $receivedTotal = 0.0;
+    //     $balance = $grandTotal;
+
+    //     if ($docType === 'tax') {
+    //         $cash    = round((float) ($pay['pay_cash'] ?? 0), 2);
+    //         $online  = round((float) ($pay['pay_upi'] ?? 0), 2);
+    //         $card    = round((float) ($pay['pay_card'] ?? 0), 2);
+    //         $cheque  = round((float) ($pay['pay_cheque'] ?? 0), 2);
+    //         $credit  = round((float) ($pay['credit_sales_excess'] ?? 0), 2);
+    //         $advance = round((float) ($pay['advance_amount'] ?? 0), 2);
+
+    //         $receivedTotal = round($cash + $online + $card + $cheque, 2);
+    //         $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
+    //     }
+
+    //     // intra/inter GST split
+    //     $bizCode   = $this->normCode($biz->state_code ?? '');
+    //     $partyCode = $this->normCode($client->state_code ?? '');
+
+    //     $isIntra = false;
+
+    //     if ($bizCode !== '' && $partyCode !== '') {
+    //         $isIntra = ($bizCode === $partyCode);
+    //     } else {
+    //         $bizState   = strtolower(trim((string) ($biz->state ?? '')));
+    //         $partyState = strtolower(trim((string) ($client->state ?? '')));
+    //         if ($bizState !== '' && $partyState !== '') {
+    //             $isIntra = ($bizState === $partyState);
+    //         }
+    //     }
+
+    //     $cgstPercent = $isIntra ? round($avgTaxPercent / 2, 2) : 0.00;
+    //     $sgstPercent = $isIntra ? round($avgTaxPercent / 2, 2) : 0.00;
+    //     $igstPercent = $isIntra ? 0.00 : round($avgTaxPercent, 2);
+
+    //     $cgst = $isIntra ? round($taxAmount / 2, 2) : 0.00;
+    //     $sgst = $isIntra ? round($taxAmount / 2, 2) : 0.00;
+    //     $igst = $isIntra ? 0.00 : round($taxAmount, 2);
+
+    //     $reqInvoiceNo = trim((string) ($data['invoice_number'] ?? ''));
+    //     if ($reqInvoiceNo === '') {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'invoice_number is required',
+    //         ], 422);
+    //     }
+
+    //     if (Invoice::where('business_id', $bid)
+    //         ->where('invoice_number', $reqInvoiceNo)
+    //         ->exists()) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Invoice number already exists',
+    //             'invoice_number' => $reqInvoiceNo,
+    //         ], 409);
+    //     }
+
+    //     InvoiceNumber::syncNextSeqIfMatches((int) $bid, $invoiceDate, $reqInvoiceNo, 3, $docType);
+
+    //     $invoice = null;
+
+    //     DB::transaction(function () use (
+    //         &$invoice,
+    //         $bid,
+    //         $data,
+    //         $client,
+    //         $invoiceDate,
+    //         $prefix,
+    //         $docType,
+    //         $reqInvoiceNo,
+    //         $subtotal,
+    //         $discountTotal,
+    //         $chargeTotal,
+    //         $lessAmount,
+    //         $taxAmount,
+    //         $cgstPercent,
+    //         $sgstPercent,
+    //         $igstPercent,
+    //         $cgst,
+    //         $sgst,
+    //         $igst,
+    //         $tcsPercent,
+    //         $tcsAmount,
+    //         $roundOff,
+    //         $grandTotal,
+    //         $receivedTotal,
+    //         $balance,
+    //         $cleanRows,
+    //         $cash,
+    //         $online,
+    //         $card,
+    //         $cheque,
+    //         $credit,
+    //         $advance,
+    //         $pay
+    //     ) {
+    //         $invoice = Invoice::create([
+    //             'business_id'          => $bid,
+    //             'client_id'            => (int) $data['client_id'],
+    //             'invoice_date'         => $invoiceDate,
+
+    //             'invoice_prefix'       => $prefix,
+    //             'invoice_number'       => $reqInvoiceNo,
+    //             'invoice_type'         => $docType,
+
+    //             'subtotal'             => $subtotal,
+    //             'discount_total'       => $discountTotal,
+    //             'charge_total'         => $chargeTotal,
+    //             'less_amount'          => $lessAmount,
+
+    //             'tax_amount'           => $taxAmount,
+
+    //             'cgst_percent'         => $cgstPercent,
+    //             'cgst_amount'          => $cgst,
+    //             'sgst_percent'         => $sgstPercent,
+    //             'sgst_amount'          => $sgst,
+    //             'igst_percent'         => $igstPercent,
+    //             'igst_amount'          => $igst,
+
+    //             'tcs_percent'          => $tcsPercent,
+    //             'tcs_amount'           => $tcsAmount,
+    //             'round_off'            => $roundOff,
+
+    //             'total'                => $grandTotal,
+    //             'received_amount'      => $docType === 'tax' ? $receivedTotal : 0,
+    //             'balance'              => $docType === 'tax' ? $balance : $grandTotal,
+
+    //             'payment_method'       => $data['payment_method'] ?? null,
+    //             'gst_no'               => $data['gst_no'] ?: null,
+    //             'transport_mode'       => !empty($data['transport_mode']) ? $data['transport_mode'] : null,
+    //             'reverse_charge'       => !empty($data['reverse_charge']) ? 1 : 0,
+
+    //             'place_of_supply_state'=> $client->state ?? null,
+    //             'place_of_supply_code' => $client->state_code ?? null,
+
+    //             'notes'                => $data['notes'] ?? null,
+    //             'terms'                => $data['terms'] ?? null,
+
+    //             'charges_json'         => $data['charges_json'] ?? null,
+    //             'items_json'           => json_encode($cleanRows, JSON_UNESCAPED_UNICODE),
+    //             'amount_in_words'      => '',
+    //         ]);
+
+    //         foreach ($cleanRows as $row) {
+    //             InvoiceItem::create([
+    //                 'invoice_id'       => $invoice->id,
+    //                 'item_id'          => $row['item_id'],
+    //                 'description'      => $row['description'],
+    //                 'hsn_code'         => $row['hsn'] ?: null,
+    //                 'quantity'         => (int) $row['qty'],
+
+    //                 'gold_wt'          => (float) ($row['gold_wt'] ?? 0),
+    //                 'silver_wt'        => (float) ($row['silver_wt'] ?? 0),
+    //                 'gold_rate'        => (float) ($row['gold_rate'] ?? 0),
+    //                 'silver_rate'      => (float) ($row['silver_rate'] ?? 0),
+    //                 'gemstone_wt_ct'   => (float) ($row['gemstone_wt'] ?? 0),
+    //                 'diamond_wt_ct'    => (float) ($row['diamond_wt'] ?? 0),
+
+    //                 'making_rate'      => $row['item_type'] === 'product'
+    //                     ? (float) ($row['making_rate'] ?? 0)
+    //                     : null,
+
+    //                 'making_charge'    => $row['item_type'] === 'service'
+    //                     ? (float) ($row['service_rate'] ?? 0)
+    //                     : null,
+
+    //                 'tax_percent'      => (float) ($row['tax_percent'] ?? 0),
+    //                 'rate'             => (float) ($row['rate'] ?? 0),
+    //                 'amount'           => (float) ($row['amount'] ?? 0),
+    //             ]);
+    //         }
+
+    //         if ($docType === 'tax') {
+    //             InvoicePayment::create([
+    //                 'business_id'                 => $bid,
+    //                 'invoice_id'                  => $invoice->id,
+    //                 'client_id'                   => (int) $data['client_id'],
+    //                 'total_value'                 => $grandTotal,
+
+    //                 'cash_amount'                 => $cash,
+    //                 'online_amount'               => $online,
+    //                 'card_amount'                 => $card,
+    //                 'cheque_amount'               => $cheque,
+
+    //                 'online_mode'                 => $pay['online_mode'] ?? null,
+    //                 'online_ref'                  => $pay['online_ref'] ?? null,
+    //                 'upi_id'                      => $pay['upi_id'] ?? null,
+    //                 'card_last4'                  => $pay['card_last4'] ?? null,
+    //                 'card_ref'                    => $pay['card_ref'] ?? null,
+    //                 'cheque_no'                   => $pay['cheque_no'] ?? null,
+    //                 'bank_name'                   => $pay['bank_name'] ?? null,
+
+    //                 'credit_sales_excess_amount' => $credit,
+    //                 'advance_amount'              => $advance,
+    //                 'received_total'              => $receivedTotal,
+    //                 'notes'                       => $pay['pay_notes'] ?? null,
+    //                 'paid_at'                     => $receivedTotal > 0 ? now() : null,
+    //             ]);
+    //         }
+    //     });
+
+    //     if ($docType === 'tax') {
+    //         $invoice->load('items');
+    //         $this->stock->recordSale($invoice);
+    //     }
+
+    //     return response()->json([
+    //         'ok'      => true,
+    //         'message' => ucfirst($docType) . ' created',
+    //         'invoice' => $invoice->fresh(['client', 'items', 'business']),
+    //     ], 201);
+    // }
+
+
     public function store(Request $request, string $docType)
     {
         $user = $request->user();
@@ -835,10 +1313,11 @@ class InvoiceController extends Controller
             'notes'          => ['nullable', 'string', 'max:2000'],
             'terms'          => ['nullable', 'string', 'max:2000'],
 
-            'items_json'     => ['nullable', 'string'],
+            // items_json can come as string OR array from Flutter
+            'items_json'     => ['nullable'],
             'items'          => ['nullable', 'array', 'min:1'],
 
-            'charges_json'   => ['nullable', 'string'],
+            'charges_json'   => ['nullable'],
             'discount_total' => ['nullable', 'numeric', 'min:0'],
             'charge_total'   => ['nullable', 'numeric', 'min:0'],
             'tcs_percent'    => ['nullable', 'numeric', 'min:0'],
@@ -850,8 +1329,20 @@ class InvoiceController extends Controller
             'bank_account_id' => ['nullable', 'integer'],
         ]);
 
-        $itemsJson = $data['items_json'] ?? null;
-        if (!$itemsJson && !empty($data['items'])) {
+        // Handle items_json from Flutter / Postman / web
+        $itemsJsonInput = $request->input('items_json');
+        $itemsJson = null;
+
+        if (is_string($itemsJsonInput)) {
+            $itemsJson = $itemsJsonInput;
+        } elseif (is_array($itemsJsonInput)) {
+            // If single object came, convert to array of rows
+            $isAssoc = array_keys($itemsJsonInput) !== range(0, count($itemsJsonInput) - 1);
+            $rowsToEncode = $isAssoc ? [$itemsJsonInput] : $itemsJsonInput;
+            $itemsJson = json_encode($rowsToEncode, JSON_UNESCAPED_UNICODE);
+        }
+
+        if (!$itemsJson && !empty($data['items']) && is_array($data['items'])) {
             $itemsJson = json_encode($data['items'], JSON_UNESCAPED_UNICODE);
         }
 
@@ -860,6 +1351,16 @@ class InvoiceController extends Controller
                 'ok' => false,
                 'message' => 'items_json or items is required',
             ], 422);
+        }
+
+        // Handle charges_json from string / array
+        $chargesJsonInput = $request->input('charges_json');
+        $chargesJson = null;
+
+        if (is_string($chargesJsonInput)) {
+            $chargesJson = $chargesJsonInput;
+        } elseif (is_array($chargesJsonInput)) {
+            $chargesJson = json_encode($chargesJsonInput, JSON_UNESCAPED_UNICODE);
         }
 
         $pay = [];
@@ -1062,8 +1563,6 @@ class InvoiceController extends Controller
 
         $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
 
-        // Tax calculation:
-        // discount/charge ke baad taxable amount par tax recalc kar rahe hain
         $taxAmount = $avgTaxPercent > 0
             ? round($taxableAmount * ($avgTaxPercent / 100), 2)
             : 0.00;
@@ -1071,7 +1570,6 @@ class InvoiceController extends Controller
         $tcsPercent = round((float) ($data['tcs_percent'] ?? 0), 2);
         $tcsAmount  = round((float) ($data['tcs_amount'] ?? 0), 2);
 
-        // manual amount ko priority
         if ($tcsAmount <= 0 && $tcsPercent > 0) {
             $tcsAmount = round($taxableAmount * ($tcsPercent / 100), 2);
         }
@@ -1096,7 +1594,6 @@ class InvoiceController extends Controller
             $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
         }
 
-        // intra/inter GST split
         $bizCode   = $this->normCode($biz->state_code ?? '');
         $partyCode = $this->normCode($client->state_code ?? '');
 
@@ -1175,81 +1672,82 @@ class InvoiceController extends Controller
             $cheque,
             $credit,
             $advance,
-            $pay
+            $pay,
+            $chargesJson
         ) {
             $invoice = Invoice::create([
-                'business_id'          => $bid,
-                'client_id'            => (int) $data['client_id'],
-                'invoice_date'         => $invoiceDate,
+                'business_id'           => $bid,
+                'client_id'             => (int) $data['client_id'],
+                'invoice_date'          => $invoiceDate,
 
-                'invoice_prefix'       => $prefix,
-                'invoice_number'       => $reqInvoiceNo,
-                'invoice_type'         => $docType,
+                'invoice_prefix'        => $prefix,
+                'invoice_number'        => $reqInvoiceNo,
+                'invoice_type'          => $docType,
 
-                'subtotal'             => $subtotal,
-                'discount_total'       => $discountTotal,
-                'charge_total'         => $chargeTotal,
-                'less_amount'          => $lessAmount,
+                'subtotal'              => $subtotal,
+                'discount_total'        => $discountTotal,
+                'charge_total'          => $chargeTotal,
+                'less_amount'           => $lessAmount,
 
-                'tax_amount'           => $taxAmount,
+                'tax_amount'            => $taxAmount,
 
-                'cgst_percent'         => $cgstPercent,
-                'cgst_amount'          => $cgst,
-                'sgst_percent'         => $sgstPercent,
-                'sgst_amount'          => $sgst,
-                'igst_percent'         => $igstPercent,
-                'igst_amount'          => $igst,
+                'cgst_percent'          => $cgstPercent,
+                'cgst_amount'           => $cgst,
+                'sgst_percent'          => $sgstPercent,
+                'sgst_amount'           => $sgst,
+                'igst_percent'          => $igstPercent,
+                'igst_amount'           => $igst,
 
-                'tcs_percent'          => $tcsPercent,
-                'tcs_amount'           => $tcsAmount,
-                'round_off'            => $roundOff,
+                'tcs_percent'           => $tcsPercent,
+                'tcs_amount'            => $tcsAmount,
+                'round_off'             => $roundOff,
 
-                'total'                => $grandTotal,
-                'received_amount'      => $docType === 'tax' ? $receivedTotal : 0,
-                'balance'              => $docType === 'tax' ? $balance : $grandTotal,
+                'total'                 => $grandTotal,
+                'received_amount'       => $docType === 'tax' ? $receivedTotal : 0,
+                'balance'               => $docType === 'tax' ? $balance : $grandTotal,
 
-                'payment_method'       => $data['payment_method'] ?? null,
-                'gst_no'               => $data['gst_no'] ?: null,
-                'transport_mode'       => !empty($data['transport_mode']) ? $data['transport_mode'] : null,
-                'reverse_charge'       => !empty($data['reverse_charge']) ? 1 : 0,
+                'payment_method'        => $data['payment_method'] ?? null,
+                'gst_no'                => $data['gst_no'] ?: null,
+                'transport_mode'        => !empty($data['transport_mode']) ? $data['transport_mode'] : null,
+                'reverse_charge'        => !empty($data['reverse_charge']) ? 1 : 0,
 
-                'place_of_supply_state'=> $client->state ?? null,
-                'place_of_supply_code' => $client->state_code ?? null,
+                'place_of_supply_state' => $client->state ?? null,
+                'place_of_supply_code'  => $client->state_code ?? null,
 
-                'notes'                => $data['notes'] ?? null,
-                'terms'                => $data['terms'] ?? null,
+                'notes'                 => $data['notes'] ?? null,
+                'terms'                 => $data['terms'] ?? null,
 
-                'charges_json'         => $data['charges_json'] ?? null,
-                'items_json'           => json_encode($cleanRows, JSON_UNESCAPED_UNICODE),
-                'amount_in_words'      => '',
+                'charges_json'          => $chargesJson,
+                'items_json'            => json_encode($cleanRows, JSON_UNESCAPED_UNICODE),
+                'amount_in_words'       => '',
             ]);
 
             foreach ($cleanRows as $row) {
                 InvoiceItem::create([
-                    'invoice_id'       => $invoice->id,
-                    'item_id'          => $row['item_id'],
-                    'description'      => $row['description'],
-                    'hsn_code'         => $row['hsn'] ?: null,
-                    'quantity'         => (int) $row['qty'],
+                    'invoice_id'      => $invoice->id,
+                    'item_id'         => $row['item_id'],
+                    'description'     => $row['description'],
+                    'hsn_code'        => $row['hsn'] ?: null,
+                    'quantity'        => (int) $row['qty'],
 
-                    'gold_wt'          => (float) ($row['gold_wt'] ?? 0),
-                    'silver_wt'        => (float) ($row['silver_wt'] ?? 0),
-                    'gold_rate'        => (float) ($row['gold_rate'] ?? 0),
-                    'silver_rate'      => (float) ($row['silver_rate'] ?? 0),
-                    'gemstone_wt_ct'   => (float) ($row['gemstone_wt'] ?? 0),
-                    'diamond_wt_ct'    => (float) ($row['diamond_wt'] ?? 0),
+                    'gold_wt'         => (float) ($row['gold_wt'] ?? 0),
+                    'silver_wt'       => (float) ($row['silver_wt'] ?? 0),
+                    'gold_rate'       => (float) ($row['gold_rate'] ?? 0),
+                    'silver_rate'     => (float) ($row['silver_rate'] ?? 0),
+                    'gemstone_wt_ct'  => (float) ($row['gemstone_wt'] ?? 0),
+                    'diamond_wt_ct'   => (float) ($row['diamond_wt'] ?? 0),
 
-                    'making_rate'      => $row['item_type'] === 'product'
+                    'making_rate'     => $row['item_type'] === 'product'
                         ? (float) ($row['making_rate'] ?? 0)
                         : null,
 
-                    'making_charge'    => $row['item_type'] === 'service'
+                    'making_charge'   => $row['item_type'] === 'service'
                         ? (float) ($row['service_rate'] ?? 0)
                         : null,
 
-                    'tax_percent'      => (float) ($row['tax_percent'] ?? 0),
-                    'rate'             => (float) ($row['rate'] ?? 0),
-                    'amount'           => (float) ($row['amount'] ?? 0),
+                    'tax_percent'     => (float) ($row['tax_percent'] ?? 0),
+                    'rate'            => (float) ($row['rate'] ?? 0),
+                    'amount'          => (float) ($row['amount'] ?? 0),
                 ]);
             }
 
@@ -1293,7 +1791,6 @@ class InvoiceController extends Controller
             'invoice' => $invoice->fresh(['client', 'items', 'business']),
         ], 201);
     }
-
 
     // ------------------------------------------------------------
     // PUT /api/invoices/{invoice}
