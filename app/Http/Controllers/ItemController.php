@@ -7,6 +7,8 @@ use App\Models\Item;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class ItemController extends Controller
@@ -62,7 +64,7 @@ class ItemController extends Controller
                 'nullable', 'string', 'max:100',
                 Rule::unique('items', 'sku')->where(fn($q) => $q->where('business_id', $bid)),
             ],
-            'category_id' => ['nullable', 'integer'],
+            'category_id' => ['required', 'integer'],
             'type'        => ['required', Rule::in(['product', 'service'])],
 
             // service fields
@@ -102,6 +104,8 @@ class ItemController extends Controller
             'stock_qty.required_if' => 'Stock Qty is required for Product.',
         ]);
 
+
+        
         // ✅ category business-scope check
         if (!empty($data['category_id'])) {
             $ok = Category::where('id', $data['category_id'])
@@ -234,8 +238,9 @@ class ItemController extends Controller
     //         ->with('success', 'Item updated successfully and stock adjusted.');
     // }
 
-    public function update(Request $request, Item $item, StockService $stock)
-    {
+public function update(Request $request, Item $item, StockService $stock)
+{
+    try {
         $bid = $request->user()->current_business_id ?? session('active_business_id');
 
         if (!$bid) {
@@ -246,34 +251,33 @@ class ItemController extends Controller
         abort_unless((int) $item->business_id === (int) $bid, 403, 'Unauthorized item.');
 
         $data = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'sku'         => [
-                'nullable', 'string', 'max:100',
+            'name' => ['required', 'string', 'max:255'],
+
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
                 Rule::unique('items', 'sku')
                     ->ignore($item->id)
-                    ->where(fn($q) => $q->where('business_id', $bid)),
+                    ->where(fn ($q) => $q->where('business_id', $bid)),
             ],
+
             'category_id' => ['nullable', 'integer'],
             'type'        => ['required', Rule::in(['product', 'service'])],
 
-            // service fields
             'sac'         => ['nullable', 'string', 'max:32', 'required_if:type,service'],
-
             'description' => ['nullable', 'string', 'max:2000'],
 
-            // pricing
             'price'         => ['nullable', 'numeric', 'min:0'],
             'cost_price'    => ['nullable', 'numeric', 'min:0'],
             'making_charge' => ['nullable', 'numeric', 'min:0'],
 
-            // stock
-            'stock_qty'   => ['nullable', 'integer', 'min:0', 'required_if:type,product'],
-            'unit'        => ['nullable', 'string', 'max:50'],
+            'stock_qty' => ['nullable', 'integer', 'min:0', 'required_if:type,product'],
+            'unit'      => ['nullable', 'string', 'max:50'],
 
-            'tax_rate'    => ['required', 'numeric', 'min:0', 'max:100'],
-            'is_active'   => ['nullable'],
+            'tax_rate'  => ['required', 'numeric', 'min:0', 'max:100'],
+            'is_active' => ['nullable'],
 
-            // metals/weights
             'metal_type'    => ['nullable', Rule::in(['gold', 'silver', 'other'])],
             'purity'        => ['nullable', 'string', 'max:50'],
 
@@ -294,50 +298,72 @@ class ItemController extends Controller
         ]);
 
         if (!empty($data['category_id'])) {
-            $ok = Category::where('id', $data['category_id'])
+            $categoryBelongsToBusiness = Category::where('id', $data['category_id'])
                 ->where('business_id', $bid)
                 ->exists();
 
-            abort_unless($ok, 422, 'Invalid category for this business.');
+            if (! $categoryBelongsToBusiness) {
+                return back()
+                    ->withErrors(['category_id' => 'Selected category does not belong to active business.'])
+                    ->withInput();
+            }
         }
 
-        $type = $data['type'];
+        DB::beginTransaction();
 
-        $finalQty = ($type === 'product') ? (int)($data['stock_qty'] ?? 0) : 0;
+        $type = $data['type'];
+        $finalQty = $type === 'product' ? (int) ($data['stock_qty'] ?? 0) : 0;
 
         $payload = Arr::except($data, ['stock_qty']);
         $payload['is_active'] = $request->boolean('is_active');
 
-        // service => clear product-only fields
         if ($type === 'service') {
             $payload['making_charge'] = null;
             $payload['unit']          = null;
 
             $payload['metal_type']    = null;
             $payload['purity']        = null;
-
             $payload['gross_weight']  = null;
             $payload['metal_weight']  = null;
             $payload['stone_weight']  = null;
             $payload['stone_charges'] = null;
-
-            $payload['gold_weight']     = null;
-            $payload['gold_purity']     = null;
-            $payload['silver_weight']   = null;
-            $payload['silver_purity']   = null;
-            $payload['diamond_weight']  = null;
+            $payload['gold_weight']   = null;
+            $payload['gold_purity']   = null;
+            $payload['silver_weight'] = null;
+            $payload['silver_purity'] = null;
+            $payload['diamond_weight'] = null;
             $payload['diamond_charges'] = null;
+        } else {
+            $payload['sac'] = null;
         }
 
         $item->update($payload);
 
-        // stock sync
-        $stock->setStockTo($item, $finalQty, 'Stock updated from item edit');
+        if ($type === 'product') {
+            $stock->setStockTo($item, $finalQty, 'Stock updated from item edit');
+        }
+
+        DB::commit();
 
         return redirect()
             ->route('items.index')
             ->with('success', 'Item updated successfully.');
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        Log::error('Item update failed', [
+            'item_id' => $item->id ?? null,
+            'user_id' => auth()->id(),
+            'message' => $e->getMessage(),
+            'line'    => $e->getLine(),
+            'file'    => $e->getFile(),
+        ]);
+
+        return back()
+            ->withErrors(['general' => 'Update failed: ' . $e->getMessage()])
+            ->withInput();
     }
+}
 
 
     public function destroy(Item $item)
