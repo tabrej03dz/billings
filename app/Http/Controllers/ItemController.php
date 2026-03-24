@@ -163,75 +163,180 @@ class ItemController extends Controller
         return view('items.edit', compact('item','categories'));
     }
 
+    // public function update(Request $request, Item $item, StockService $stock)
+    // {
+    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
+    //     if (!$bid) {
+    //         $bid = $request->user()->businesses()->pluck('businesses.id')->first();
+    //     }
+    //     abort_unless($bid, 422, 'Active business not found.');
+    //     abort_unless((int)$item->business_id === (int)$bid, 403, 'Unauthorized item.');
+
+    //     $data = $request->validate([
+    //         'name'          => ['required','string','max:255'],
+    //         'sku'           => [
+    //             'nullable','string','max:100',
+    //             Rule::unique('items','sku')
+    //                 ->ignore($item->id)
+    //                 ->where(fn($q) => $q->where('business_id', $bid)),
+    //         ],
+    //         'category_id'   => ['nullable','integer'],
+    //         'sac'           => ['nullable','string','max:32'],
+    //         'description'   => ['nullable','string','max:2000'],
+
+    //         'price'         => ['nullable','numeric','min:0'],
+    //         'cost_price'    => ['nullable','numeric','min:0'],
+    //         'making_charge' => ['nullable','numeric','min:0'],
+
+    //         'stock_qty'     => ['required','integer','min:0'], // 👈 final stock
+    //         'unit'          => ['nullable','string','max:50'],
+    //         'weight'        => ['nullable','numeric','min:0'],
+
+    //         'tax_rate'      => ['required','numeric','min:0','max:100'],
+    //         'is_active'     => ['nullable'],
+
+    //         'metal_type'    => ['nullable', Rule::in(['gold','silver','other'])],
+    //         'purity'        => ['nullable','string','max:50'],
+
+    //         'gross_weight'  => ['nullable','numeric','min:0'],
+    //         'metal_weight'  => ['nullable','numeric','min:0'],
+    //         'stone_weight'  => ['nullable','numeric','min:0'],
+    //         'stone_charges' => ['nullable','numeric','min:0'],
+
+    //         'gold_weight'     => ['nullable','numeric','min:0'],
+    //         'gold_purity'     => ['nullable','string','max:50'],
+    //         'silver_weight'   => ['nullable','numeric','min:0'],
+    //         'silver_purity'   => ['nullable','string','max:50'],
+    //         'diamond_weight'  => ['nullable','numeric','min:0'],
+    //         'diamond_charges' => ['nullable','numeric','min:0'],
+    //     ]);
+
+    //     if (!empty($data['category_id'])) {
+    //         $ok = Category::where('id', $data['category_id'])
+    //             ->where('business_id', $bid)
+    //             ->exists();
+    //         abort_unless($ok, 422, 'Invalid category for this business.');
+    //     }
+
+    //     $finalQty = (int) $data['stock_qty'];
+
+    //     // ❗ stock_qty directly update nahi hoga
+    //     $payload = Arr::except($data, ['stock_qty']);
+    //     $payload['is_active'] = $request->boolean('is_active');
+
+    //     $item->update($payload);
+
+    //     // ✅ stock difference adjustment
+    //     $stock->setStockTo($item, $finalQty, 'Stock updated from item edit');
+
+    //     return redirect()
+    //         ->route('items.index')
+    //         ->with('success', 'Item updated successfully and stock adjusted.');
+    // }
+
     public function update(Request $request, Item $item, StockService $stock)
     {
         $bid = $request->user()->current_business_id ?? session('active_business_id');
+
         if (!$bid) {
             $bid = $request->user()->businesses()->pluck('businesses.id')->first();
         }
+
         abort_unless($bid, 422, 'Active business not found.');
-        abort_unless((int)$item->business_id === (int)$bid, 403, 'Unauthorized item.');
+        abort_unless((int) $item->business_id === (int) $bid, 403, 'Unauthorized item.');
 
         $data = $request->validate([
-            'name'          => ['required','string','max:255'],
-            'sku'           => [
-                'nullable','string','max:100',
-                Rule::unique('items','sku')
+            'name'        => ['required', 'string', 'max:255'],
+            'sku'         => [
+                'nullable', 'string', 'max:100',
+                Rule::unique('items', 'sku')
                     ->ignore($item->id)
                     ->where(fn($q) => $q->where('business_id', $bid)),
             ],
-            'category_id'   => ['nullable','integer'],
-            'sac'           => ['nullable','string','max:32'],
-            'description'   => ['nullable','string','max:2000'],
+            'category_id' => ['nullable', 'integer'],
+            'type'        => ['required', Rule::in(['product', 'service'])],
 
-            'price'         => ['nullable','numeric','min:0'],
-            'cost_price'    => ['nullable','numeric','min:0'],
-            'making_charge' => ['nullable','numeric','min:0'],
+            // service fields
+            'sac'         => ['nullable', 'string', 'max:32', 'required_if:type,service'],
 
-            'stock_qty'     => ['required','integer','min:0'], // 👈 final stock
-            'unit'          => ['nullable','string','max:50'],
-            'weight'        => ['nullable','numeric','min:0'],
+            'description' => ['nullable', 'string', 'max:2000'],
 
-            'tax_rate'      => ['required','numeric','min:0','max:100'],
-            'is_active'     => ['nullable'],
+            // pricing
+            'price'         => ['nullable', 'numeric', 'min:0'],
+            'cost_price'    => ['nullable', 'numeric', 'min:0'],
+            'making_charge' => ['nullable', 'numeric', 'min:0'],
 
-            'metal_type'    => ['nullable', Rule::in(['gold','silver','other'])],
-            'purity'        => ['nullable','string','max:50'],
+            // stock
+            'stock_qty'   => ['nullable', 'integer', 'min:0', 'required_if:type,product'],
+            'unit'        => ['nullable', 'string', 'max:50'],
 
-            'gross_weight'  => ['nullable','numeric','min:0'],
-            'metal_weight'  => ['nullable','numeric','min:0'],
-            'stone_weight'  => ['nullable','numeric','min:0'],
-            'stone_charges' => ['nullable','numeric','min:0'],
+            'tax_rate'    => ['required', 'numeric', 'min:0', 'max:100'],
+            'is_active'   => ['nullable'],
 
-            'gold_weight'     => ['nullable','numeric','min:0'],
-            'gold_purity'     => ['nullable','string','max:50'],
-            'silver_weight'   => ['nullable','numeric','min:0'],
-            'silver_purity'   => ['nullable','string','max:50'],
-            'diamond_weight'  => ['nullable','numeric','min:0'],
-            'diamond_charges' => ['nullable','numeric','min:0'],
+            // metals/weights
+            'metal_type'    => ['nullable', Rule::in(['gold', 'silver', 'other'])],
+            'purity'        => ['nullable', 'string', 'max:50'],
+
+            'gross_weight'  => ['nullable', 'numeric', 'min:0'],
+            'metal_weight'  => ['nullable', 'numeric', 'min:0'],
+            'stone_weight'  => ['nullable', 'numeric', 'min:0'],
+            'stone_charges' => ['nullable', 'numeric', 'min:0'],
+
+            'gold_weight'     => ['nullable', 'numeric', 'min:0'],
+            'gold_purity'     => ['nullable', 'string', 'max:50'],
+            'silver_weight'   => ['nullable', 'numeric', 'min:0'],
+            'silver_purity'   => ['nullable', 'string', 'max:50'],
+            'diamond_weight'  => ['nullable', 'numeric', 'min:0'],
+            'diamond_charges' => ['nullable', 'numeric', 'min:0'],
+        ], [
+            'sac.required_if'       => 'SAC Code is required for Service.',
+            'stock_qty.required_if' => 'Stock Qty is required for Product.',
         ]);
 
         if (!empty($data['category_id'])) {
             $ok = Category::where('id', $data['category_id'])
                 ->where('business_id', $bid)
                 ->exists();
+
             abort_unless($ok, 422, 'Invalid category for this business.');
         }
 
-        $finalQty = (int) $data['stock_qty'];
+        $type = $data['type'];
 
-        // ❗ stock_qty directly update nahi hoga
+        $finalQty = ($type === 'product') ? (int)($data['stock_qty'] ?? 0) : 0;
+
         $payload = Arr::except($data, ['stock_qty']);
         $payload['is_active'] = $request->boolean('is_active');
 
+        // service => clear product-only fields
+        if ($type === 'service') {
+            $payload['making_charge'] = null;
+            $payload['unit']          = null;
+
+            $payload['metal_type']    = null;
+            $payload['purity']        = null;
+
+            $payload['gross_weight']  = null;
+            $payload['metal_weight']  = null;
+            $payload['stone_weight']  = null;
+            $payload['stone_charges'] = null;
+
+            $payload['gold_weight']     = null;
+            $payload['gold_purity']     = null;
+            $payload['silver_weight']   = null;
+            $payload['silver_purity']   = null;
+            $payload['diamond_weight']  = null;
+            $payload['diamond_charges'] = null;
+        }
+
         $item->update($payload);
 
-        // ✅ stock difference adjustment
+        // stock sync
         $stock->setStockTo($item, $finalQty, 'Stock updated from item edit');
 
         return redirect()
             ->route('items.index')
-            ->with('success', 'Item updated successfully and stock adjusted.');
+            ->with('success', 'Item updated successfully.');
     }
 
 
