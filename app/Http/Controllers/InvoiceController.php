@@ -6,6 +6,7 @@ use App\Exports\InvoicesExport;
 use App\Models\AdditionalCharge;
 use App\Models\BankAccount;
 use App\Models\Business;
+use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\Client;
 use App\Models\InvoiceCharge;
@@ -254,6 +255,9 @@ class InvoiceController extends Controller
         ->orderByDesc('total_sold') // 🔥 Most sold first
         ->get();
 
+        $categories = Category::where('business_id', $bid)
+            ->orderBy('name')
+            ->get(['id', 'name']);
         // ✅ Metal rates
         $metalRates = MetalRate::where('business_id', $bid)
             ->whereDate('rate_date', $today)
@@ -271,6 +275,7 @@ class InvoiceController extends Controller
             'today'              => $today,
             'clientsJson'        => $clients->values()->toJson(),
             'itemsJson'          => $items->values()->toJson(),
+            'categoriesJson' => $categories->values()->toJson(),
             'metalRatesJson'     => $metalRates->values()->toJson(),
             'banksJson'          => $banks->values()->toJson(),
 

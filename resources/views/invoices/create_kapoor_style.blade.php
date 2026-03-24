@@ -34,6 +34,7 @@
         {{-- JSON payloads --}}
         <script type="application/json" id="clients-json">{!! $clientsJson !!}</script>
         <script type="application/json" id="items-json">{!! $itemsJson !!}</script>
+        <script type="application/json" id="categories-json">{!! $categoriesJson !!}</script>
         <script type="application/json" id="metal-rates-json">{!! $metalRatesJson !!}</script>
 
         <div class="flex items-center justify-between bg-[#BFE0E0] dark:bg-[#354A54] p-6">
@@ -878,6 +879,17 @@
                                 class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
                                 <option value="product">Product</option>
                                 <option value="service">Service</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Category</label>
+                            <select x-model="newItem.category_id"
+                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+                                <option value="">-- Select Category --</option>
+                                <template x-for="cat in categories" :key="cat.id">
+                                    <option :value="cat.id" x-text="cat.name"></option>
+                                </template>
                             </select>
                         </div>
 
@@ -2307,6 +2319,8 @@
     const METAL_RATES = readJSON('metal-rates-json', []);
     const BANKS = readJSON('banks-json', []);
 
+    const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
+
     const BIZ_STATE_CODE = @js($businessStateCode ?? '');
     const BIZ_GSTIN = @js($businessGstin ?? '');
 
@@ -2510,6 +2524,7 @@
       // DATA
       clients: CLIENTS,
       itemsData: ITEMS,
+      categories: CATEGORIES,
       metalRates: METAL_RATES,
       banks: BANKS,
       states: STATES,
@@ -2570,7 +2585,7 @@
 
       newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' },
       newItem: {
-        type: 'product', name:'', sku:'', description:'',
+        type: 'product', name:'', sku:'', description:'', category_id: '',
         tax_rate: 0, hsn:'', sac:'', price: 0,
         making_charge: 0, gold_weight: 0, gold_purity: '',
         silver_weight: 0, silver_purity: '',
@@ -3081,7 +3096,7 @@
         this.newItemError = '';
         this.itemAutoSelect = true;
         this.newItem = {
-          type:'product', name:'', sku:'', description:'',
+          type:'product', name:'', sku:'', description:'', category_id: '',
           tax_rate:0, hsn:'', sac:'', price:0,
           making_charge:0, gold_weight:0, gold_purity:'',
           silver_weight:0, silver_purity:'',
@@ -3133,44 +3148,106 @@
         }
       },
 
-      async saveItem() {
-        this.newItemError = '';
+    //   async saveItem() {
+    //     this.newItemError = '';
 
-        if (!s(this.newItem.name).trim()) { this.newItemError = 'Item name is required.'; return; }
-        if (this.newItem.type === 'service' && n(this.newItem.price) <= 0) { this.newItemError = 'Service price is required.'; return; }
+    //     if (!s(this.newItem.name).trim()) { this.newItemError = 'Item name is required.'; return; }
+    //     if (this.newItem.type === 'service' && n(this.newItem.price) <= 0) { this.newItemError = 'Service price is required.'; return; }
 
-        try {
-          this.savingItem = true;
+    //     try {
+    //       this.savingItem = true;
 
-          const res = await fetch(@js(route('items.store.ajax')), {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-TOKEN': this.csrf(),
-              'X-Requested-With': 'XMLHttpRequest',
-              'Accept': 'application/json',
-            },
-            body: JSON.stringify({ ...this.newItem, is_save: this.itemAutoSelect ? 1 : 0 })
-          });
+    //       const res = await fetch(@js(route('items.store.ajax')), {
+    //         method: 'POST',
+    //         credentials: 'same-origin',
+    //         headers: {
+    //           'Content-Type': 'application/json',
+    //           'X-CSRF-TOKEN': this.csrf(),
+    //           'X-Requested-With': 'XMLHttpRequest',
+    //           'Accept': 'application/json',
+    //         },
+    //         body: JSON.stringify({ ...this.newItem, is_save: this.itemAutoSelect ? 1 : 0 })
+    //       });
 
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) { this.newItemError = data?.message || 'Failed to save item.'; return; }
+    //       const data = await res.json().catch(() => ({}));
+    //       if (!res.ok) { this.newItemError = data?.message || 'Failed to save item.'; return; }
 
-          this.itemsData.unshift(data.item);
+    //       this.itemsData.unshift(data.item);
 
-          if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
-            this.pickItem(this.activeRowIndex, data.item.id);
-          }
+    //       if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
+    //         this.pickItem(this.activeRowIndex, data.item.id);
+    //       }
 
-          this.modals.item = false;
-        } catch (e) {
-          this.newItemError = 'Network error.';
-        } finally {
-          this.savingItem = false;
-        }
-      },
+    //       this.modals.item = false;
+    //     } catch (e) {
+    //       this.newItemError = 'Network error.';
+    //     } finally {
+    //       this.savingItem = false;
+    //     }
+    //   },
 
+
+
+        async saveItem() {
+            this.newItemError = '';
+
+            if (!String(this.newItem.name || '').trim()) {
+                this.newItemError = 'Item name is required.';
+                return;
+            }
+
+            if (!this.newItem.category_id) {
+                this.newItemError = 'Please select category.';
+                return;
+            }
+
+            if (this.newItem.type === 'service' && Number(this.newItem.price || 0) <= 0) {
+                this.newItemError = 'Service price is required.';
+                return;
+            }
+
+            try {
+                this.savingItem = true;
+
+                const res = await fetch(@js(route('items.store.ajax')), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf(),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...this.newItem,
+                        is_save: this.itemAutoSelect ? 1 : 0
+                    })
+                });
+
+                const data = await res.json().catch(() => ({}));
+
+                if (!res.ok) {
+                    if (data?.errors?.category_id?.length) {
+                        this.newItemError = data.errors.category_id[0];
+                    } else {
+                        this.newItemError = data?.message || 'Failed to save item.';
+                    }
+                    return;
+                }
+
+                this.itemsData.unshift(data.item);
+
+                if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
+                    this.pickItem(this.activeRowIndex, data.item.id);
+                }
+
+                this.modals.item = false;
+            } catch (e) {
+                this.newItemError = 'Network error.';
+            } finally {
+                this.savingItem = false;
+            }
+        },
       // ---------- FINAL SUBMIT ----------
       calc() { return this.totalPayable(); },
 

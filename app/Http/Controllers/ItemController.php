@@ -386,64 +386,129 @@ public function update(Request $request, Item $item, StockService $stock)
     }
 
 
-    public function storeAjax(\Illuminate\Http\Request $r)
+    // public function storeAjax(\Illuminate\Http\Request $r)
+    // {
+    //     $data = $r->validate([
+    //         'type' => ['required','in:product,service'],
+    //         'name' => ['required','string','max:255'],
+    //         'sku'  => ['nullable','string','max:100'],
+    //         'description' => ['nullable','string','max:500'],
+
+    //         'tax_rate' => ['nullable','numeric','min:0','max:100'],
+    //         'hsn' => ['nullable','string','max:50'],
+    //         'sac' => ['nullable','string','max:50'],
+
+    //         // service
+    //         'price' => ['nullable','numeric','min:0'],
+
+    //         // product
+    //         'making_charge' => ['nullable','numeric','min:0'],
+    //         'gold_weight' => ['nullable','numeric','min:0'],
+    //         'gold_purity' => ['nullable','string','max:50'],
+    //         'silver_weight' => ['nullable','numeric','min:0'],
+    //         'silver_purity' => ['nullable','string','max:50'],
+    //         'stone_weight' => ['nullable','numeric','min:0'],
+    //         'diamond_weight' => ['nullable','numeric','min:0'],
+    //     ]);
+
+    //     $bid = $r->user()->current_business_id ?? session('active_business_id');
+
+    //     $item = \App\Models\Item::create([
+    //         'business_id' => $bid,
+    //         'type' => $data['type'],
+    //         'name' => $data['name'],
+    //         'sku'  => $data['sku'] ?? null,
+    //         'description' => $data['description'] ?? null,
+
+    //         'tax_rate' => (float)($data['tax_rate'] ?? 0),
+    //         'hsn' => $data['hsn'] ?? null,
+    //         'sac' => $data['sac'] ?? null,
+
+    //         // service price (used in your pickItem for service_rate)
+    //         'price' => (float)($data['price'] ?? 0),
+
+    //         // product fields
+    //         'making_charge' => (float)($data['making_charge'] ?? 0),
+    //         'gold_weight' => (float)($data['gold_weight'] ?? 0),
+    //         'gold_purity' => $data['gold_purity'] ?? null,
+    //         'silver_weight' => (float)($data['silver_weight'] ?? 0),
+    //         'silver_purity' => $data['silver_purity'] ?? null,
+    //         'stone_weight' => (float)($data['stone_weight'] ?? 0),
+    //         'diamond_weight' => (float)($data['diamond_weight'] ?? 0),
+    //     ]);
+
+    //     // ✅ return in same shape your itemsJson expects
+    //     return response()->json([
+    //         'item' => $item->only([
+    //             'id','type','name','sku','description','tax_rate','hsn','sac','price',
+    //             'making_charge','gold_weight','gold_purity','silver_weight','silver_purity',
+    //             'stone_weight','diamond_weight'
+    //         ])
+    //     ]);
+    // }
+
+    public function storeAjax(Request $request)
     {
-        $data = $r->validate([
-            'type' => ['required','in:product,service'],
-            'name' => ['required','string','max:255'],
-            'sku'  => ['nullable','string','max:100'],
-            'description' => ['nullable','string','max:500'],
+        $bid = $request->user()->current_business_id ?? session('active_business_id');
 
-            'tax_rate' => ['nullable','numeric','min:0','max:100'],
-            'hsn' => ['nullable','string','max:50'],
-            'sac' => ['nullable','string','max:50'],
+        if (!$bid) {
+            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
+        }
 
-            // service
-            'price' => ['nullable','numeric','min:0'],
+        abort_unless($bid, 422, 'Active business not found.');
 
-            // product
-            'making_charge' => ['nullable','numeric','min:0'],
-            'gold_weight' => ['nullable','numeric','min:0'],
-            'gold_purity' => ['nullable','string','max:50'],
-            'silver_weight' => ['nullable','numeric','min:0'],
-            'silver_purity' => ['nullable','string','max:50'],
-            'stone_weight' => ['nullable','numeric','min:0'],
-            'diamond_weight' => ['nullable','numeric','min:0'],
+        $data = $request->validate([
+            'name'            => ['required', 'string', 'max:255'],
+            'sku'             => ['nullable', 'string', 'max:100'],
+            'category_id'     => ['required', 'integer', Rule::exists('categories', 'id')->where(fn ($q) => $q->where('business_id', $bid))],
+            'type'            => ['required', Rule::in(['product', 'service'])],
+            'description'     => ['nullable', 'string'],
+            'tax_rate'        => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'hsn'             => ['nullable', 'string', 'max:50'],
+            'sac'             => ['nullable', 'string', 'max:50'],
+            'price'           => ['nullable', 'numeric', 'min:0'],
+            'making_charge'   => ['nullable', 'numeric', 'min:0'],
+            'gold_weight'     => ['nullable', 'numeric', 'min:0'],
+            'gold_purity'     => ['nullable', 'string', 'max:50'],
+            'silver_weight'   => ['nullable', 'numeric', 'min:0'],
+            'silver_purity'   => ['nullable', 'string', 'max:50'],
+            'stone_weight'    => ['nullable', 'numeric', 'min:0'],
+            'diamond_weight'  => ['nullable', 'numeric', 'min:0'],
+            'is_save'         => ['nullable', 'boolean'],
         ]);
 
-        $bid = $r->user()->current_business_id ?? session('active_business_id');
+        if ($data['type'] === 'service' && (float) ($data['price'] ?? 0) <= 0) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors'  => ['price' => ['Service price is required.']],
+            ], 422);
+        }
 
-        $item = \App\Models\Item::create([
-            'business_id' => $bid,
-            'type' => $data['type'],
-            'name' => $data['name'],
-            'sku'  => $data['sku'] ?? null,
-            'description' => $data['description'] ?? null,
-
-            'tax_rate' => (float)($data['tax_rate'] ?? 0),
-            'hsn' => $data['hsn'] ?? null,
-            'sac' => $data['sac'] ?? null,
-
-            // service price (used in your pickItem for service_rate)
-            'price' => (float)($data['price'] ?? 0),
-
-            // product fields
-            'making_charge' => (float)($data['making_charge'] ?? 0),
-            'gold_weight' => (float)($data['gold_weight'] ?? 0),
-            'gold_purity' => $data['gold_purity'] ?? null,
-            'silver_weight' => (float)($data['silver_weight'] ?? 0),
-            'silver_purity' => $data['silver_purity'] ?? null,
-            'stone_weight' => (float)($data['stone_weight'] ?? 0),
-            'diamond_weight' => (float)($data['diamond_weight'] ?? 0),
+        $item = Item::create([
+            'business_id'      => $bid,
+            'category_id'      => $data['category_id'],
+            'name'             => $data['name'],
+            'sku'              => $data['sku'] ?? null,
+            'type'             => $data['type'],
+            'description'      => $data['description'] ?? null,
+            'tax_rate'         => $data['tax_rate'] ?? 0,
+            'hsn'              => $data['hsn'] ?? null,
+            'sac'              => $data['sac'] ?? null,
+            'price'            => $data['price'] ?? 0,
+            'making_charge'    => $data['making_charge'] ?? 0,
+            'gold_weight'      => $data['gold_weight'] ?? 0,
+            'gold_purity'      => $data['gold_purity'] ?? null,
+            'silver_weight'    => $data['silver_weight'] ?? 0,
+            'silver_purity'    => $data['silver_purity'] ?? null,
+            'stone_weight'     => $data['stone_weight'] ?? 0,
+            'diamond_weight'   => $data['diamond_weight'] ?? 0,
+            'is_active'        => true,
+            'is_save'          => (bool) ($data['is_save'] ?? false),
         ]);
 
-        // ✅ return in same shape your itemsJson expects
         return response()->json([
-            'item' => $item->only([
-                'id','type','name','sku','description','tax_rate','hsn','sac','price',
-                'making_charge','gold_weight','gold_purity','silver_weight','silver_purity',
-                'stone_weight','diamond_weight'
-            ])
+            'message' => 'Item created successfully.',
+            'item'    => $item,
         ]);
     }
 
