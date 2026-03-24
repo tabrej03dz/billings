@@ -45,7 +45,11 @@
                 Send Invoice
             </a>
 
-            <a href="/register" class="text-sm px-3 py-1.5 rounded-lg border border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-slate-900 transition">
+            {{-- <a href="/register" class="text-sm px-3 py-1.5 rounded-lg border border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-slate-900 transition">
+                Register
+            </a> --}}
+
+            <a href="user-register" class="text-sm px-3 py-1.5 rounded-lg border border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-slate-900 transition">
                 Register
             </a>
 

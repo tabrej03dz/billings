@@ -21,6 +21,11 @@ Route::get('/', function (){
     return view('welcome');
 })->name('index');
 
+Route::get('user-register', function (){
+    return view('user-register');
+})->name('index');
+Route::post('/register', [HomeController::class, 'store'])->name('register.store');
+
 Route::get('/welcome', function () {
     return view('welcome');
 })->name('home');
