@@ -244,15 +244,23 @@
 
                                     <div>
                                         <label class="block text-xs text-slate-400 mb-1">Business Type</label>
-                                        <input
-                                            type="text"
+                                        <select
                                             name="type"
-                                            value="{{ old('type') }}"
-                                            class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3 py-2.5 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                                            placeholder="Jewellery / Retail / Wholesale"
+                                            class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3 py-2.5 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 text-slate-100"
+                                            required
                                         >
+                                            <option value="" class="bg-slate-900 text-slate-300">Select Business Type</option>
+                                            <option value="Jewellery" {{ old('type') == 'Jewellery' ? 'selected' : '' }} class="bg-slate-900">Jewellery</option>
+                                            <option value="Gold Jewellery" {{ old('type') == 'Gold Jewellery' ? 'selected' : '' }} class="bg-slate-900">Gold Jewellery</option>
+                                            <option value="Silver Jewellery" {{ old('type') == 'Silver Jewellery' ? 'selected' : '' }} class="bg-slate-900">Silver Jewellery</option>
+                                            <option value="Diamond Jewellery" {{ old('type') == 'Diamond Jewellery' ? 'selected' : '' }} class="bg-slate-900">Diamond Jewellery</option>
+                                            <option value="Retail" {{ old('type') == 'Retail' ? 'selected' : '' }} class="bg-slate-900">Retail</option>
+                                            <option value="Wholesale" {{ old('type') == 'Wholesale' ? 'selected' : '' }} class="bg-slate-900">Wholesale</option>
+                                            <option value="Manufacturer" {{ old('type') == 'Manufacturer' ? 'selected' : '' }} class="bg-slate-900">Manufacturer</option>
+                                            <option value="Other" {{ old('type') == 'Other' ? 'selected' : '' }} class="bg-slate-900">Other</option>
+                                        </select>
                                     </div>
-                                </div>
+                                                                    </div>
 
                                 <div class="mt-4">
                                     <label class="block text-xs text-slate-400 mb-1">Address</label>
