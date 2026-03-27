@@ -443,7 +443,9 @@
         <tbody>
         @foreach($items as $it)
             @php
-                $desc = trim((string)($it->description ?? $it->name ?? ''));
+                $name = $it->item->name ?? '';
+                $desc = $it->description ?? '';
+                $note = trim((string)($it->note ?? $it->extra_line ?? ''));
                 $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
                 $qty  = (float)($it->quantity ?? 1);
                 $qty  = $qty > 0 ? $qty : 1;
@@ -474,12 +476,24 @@
                 if ($single && $lineTotal <= 0) $lineTotal = $finalTotal;
             @endphp
             <tr>
-                <td>
+                {{-- <td>
                     <div class="bold">{{ $desc ?: '-' }}</div>
                     @if(!empty($it->note))
                         <div class="descSmall">{{ $it->note }}</div>
                     @else
                         <div class="descSmall">{{ $it->extra_line ?? '' }}</div>
+                    @endif
+                </td> --}}
+
+                <td>
+                    <div class="bold">{{ $name ?: '-' }}</div>
+
+                    @if(!empty($desc))
+                        <div class="descSmall">{{ $desc }}</div>
+                    @endif
+
+                    @if(!empty($note))
+                        <div class="descSmall">{{ $note }}</div>
                     @endif
                 </td>
                 <td>{{ $sac }}</td>

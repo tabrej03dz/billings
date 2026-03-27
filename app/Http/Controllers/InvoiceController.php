@@ -2735,8 +2735,10 @@ class InvoiceController extends Controller
 
     protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
     {
-        $invoice->load(['client','items','business']);
+        // $invoice->load(['client','items','business']);
 
+        $invoice->load(['client','items.item','business']);
+        
         $inv    = $invoice;
         $biz    = $invoice->business;
         $client = $invoice->client;
