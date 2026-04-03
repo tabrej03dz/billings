@@ -43,13 +43,13 @@
         @endif
 
         {{-- ========================= FILTER BAR ========================= --}}
-        @php
+       @php
             $from    = request('from', now()->startOfMonth()->toDateString());
             $to      = request('to', now()->toDateString());
             $status  = request('status');
             $qtext   = request('q');
+            $userId  = request('user_id');
 
-            // Summary (current page items) - aap chahe to controller se proper totals pass kara do
             $totalRows = $reminders->total();
             $uploaded  = \Illuminate\Support\Arr::get($reminders->getCollection()->groupBy('status')->map->count(), 'uploaded', 0);
             $sent      = \Illuminate\Support\Arr::get($reminders->getCollection()->groupBy('status')->map->count(), 'sent', 0);
@@ -57,7 +57,7 @@
         @endphp
 
         <div class="rounded-2xl shadow-sm border border-slate-100 bg-white dark:bg-slate-900 dark:border-slate-800 p-4 sm:p-5">
-            <form method="GET" action="{{ url()->current() }}" class="grid gap-4 md:grid-cols-6 items-end">
+            <form method="GET" action="{{ url()->current() }}" class="grid gap-4 md:grid-cols-7 items-end">
                 <div>
                     <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">From Date</label>
                     <input type="date" name="from" value="{{ $from }}"
@@ -94,6 +94,23 @@
                                   focus:ring-indigo-500 focus:border-indigo-500
                                   dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400">
                 </div>
+
+                @if(auth()->user()->hasRole('super admin'))
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">User</label>
+                    <select name="user_id"
+                            class="w-full rounded-lg border border-slate-200 bg-white text-sm text-slate-900
+                                focus:ring-indigo-500 focus:border-indigo-500
+                                dark:bg-slate-950 dark:text-slate-100 dark:border-slate-700 dark:focus:border-indigo-400">
+                        <option value="">All Users</option>
+                        @foreach($users as $u)
+                            <option value="{{ $u->id }}" {{ (string)$userId === (string)$u->id ? 'selected' : '' }}>
+                                {{ $u->name }}{{ $u->phone ? ' (' . $u->phone . ')' : '' }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
 
                 <div class="flex gap-2 justify-end">
                     <button type="submit"
@@ -151,6 +168,7 @@
                     <thead class="bg-slate-50 dark:bg-slate-800/60">
                     <tr>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">#</th>
+                        <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">User</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Contact</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">SNME</th>
                         <th class="px-3 sm:px-4 py-2 text-left font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wide text-[11px]">Reminder</th>
@@ -175,6 +193,10 @@
                         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40">
                             <td class="px-3 sm:px-4 py-2 text-slate-500 dark:text-slate-400">
                                 {{ $reminders->firstItem() + $i }}
+                            </td>
+
+                            <td class="px-3 sm:px-4 py-2 text-slate-700 dark:text-slate-200">
+                                {{ $r->user->name ?? '—' }}
                             </td>
 
                             <td class="px-3 sm:px-4 py-2">

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Imports\InstallmentReminderImport;
 use App\Models\InstallmentReminder;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -50,8 +51,19 @@ class InstallmentReminderController extends Controller
 
     public function index(Request $request)
     {
-        $q = InstallmentReminder::query()
-            ->where('user_id', auth()->id()); // sirf login user ka data
+        $user = auth()->user();
+
+        $q = InstallmentReminder::query();
+
+        // super admin sab dekh sakega, baaki sirf apna
+        if (!$user->hasRole('super admin')) {
+            $q->where('user_id', $user->id);
+        }
+
+        // super admin ke liye user wise filter
+        if ($user->hasRole('super admin') && $request->filled('user_id')) {
+            $q->where('user_id', $request->user_id);
+        }
 
         if ($request->filled('status')) {
             $q->where('status', $request->status);
@@ -80,9 +92,15 @@ class InstallmentReminderController extends Controller
         ->orderBy('reminder_date', 'asc')
         ->orderBy('reminder_time', 'asc');
 
+        // super admin ke dropdown ke liye users bhejo
+        $users = collect();
+        if ($user->hasRole('super admin')) {
+            $users = User::orderBy('name')->get(['id', 'name']);
+        }
+
         $reminders = $q->paginate(20)->withQueryString();
 
-        return view('installment_reminders.index', compact('reminders'));
+        return view('installment_reminders.index', compact('reminders', 'users'));
     }
 
     // ✅ Form page
