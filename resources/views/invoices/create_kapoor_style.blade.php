@@ -1034,1429 +1034,415 @@
                 </div>
             </div>
 
+            {{-- =================== PREVIOUS INVOICE CONFIRM MODAL =================== --}}
+            <div x-show="confirmLoadModal" x-transition.opacity
+                class="fixed inset-0 z-[9999] flex items-center justify-center px-3"
+                style="display:none;">
+
+                <div class="absolute inset-0 bg-black/50" @click="cancelApplyLastInvoice()"></div>
+
+                <div class="relative w-full max-w-4xl bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-gray-200 dark:border-neutral-700 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-neutral-100">
+                            Previous Invoice Found
+                        </h3>
+                        <button type="button"
+                            class="text-2xl leading-none text-gray-500 hover:text-red-600"
+                            @click="cancelApplyLastInvoice()">×</button>
+                    </div>
+
+                    <template x-if="pendingInvoicePreview">
+                        <div class="space-y-4">
+                            <div class="grid md:grid-cols-4 gap-3 text-sm">
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Invoice No</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100"
+                                        x-text="pendingInvoicePreview.invoice_number || '-'"></div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Invoice Date</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100"
+                                        x-text="pendingInvoicePreview.invoice_date || '-'"></div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Items Count</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100"
+                                        x-text="pendingInvoicePreview.items_count || 0"></div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Round Off</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100">
+                                        ₹ <span x-text="Number(pendingInvoicePreview.round_off || 0).toFixed(2)"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="border rounded-xl border-gray-200 dark:border-neutral-700 p-3 max-h-72 overflow-auto">
+                                <div class="text-sm font-semibold mb-3 text-gray-900 dark:text-neutral-100">Previous Items</div>
+
+                                <template x-if="pendingInvoicePreview.items && pendingInvoicePreview.items.length">
+                                    <div class="space-y-2">
+                                        <template x-for="(it, idx) in pendingInvoicePreview.items" :key="idx">
+                                            <div class="border-b border-gray-200 dark:border-neutral-700 pb-2">
+                                                <div class="font-medium text-sm text-gray-900 dark:text-neutral-100"
+                                                    x-text="(idx + 1) + '. ' + (it.description || '-')"></div>
+
+                                                <div class="text-xs text-gray-500 dark:text-neutral-400 mt-1">
+                                                    Type:
+                                                    <span x-text="it.item_type || '-'"></span>
+                                                    |
+                                                    Qty:
+                                                    <span x-text="it.quantity || 0"></span>
+                                                    |
+                                                    Tax:
+                                                    <span x-text="it.tax_percent || 0"></span>%
+                                                    |
+                                                    Amount:
+                                                    ₹<span x-text="Number(it.manual_amount || 0).toFixed(2)"></span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <template x-if="!pendingInvoicePreview.items || pendingInvoicePreview.items.length === 0">
+                                    <div class="text-sm text-gray-500 dark:text-neutral-400">No previous items found.</div>
+                                </template>
+                            </div>
+
+                            <div class="grid md:grid-cols-3 gap-3 text-sm">
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Discount</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100">
+                                        ₹ <span x-text="Number(pendingInvoicePreview.discount_total || 0).toFixed(2)"></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Charges</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100">
+                                        ₹ <span x-text="Number(pendingInvoicePreview.charge_total || 0).toFixed(2)"></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">TCS</div>
+                                    <div class="font-semibold text-gray-900 dark:text-neutral-100">
+                                        <span x-text="Number(pendingInvoicePreview.tcs_percent || 0).toFixed(2)"></span>%
+                                        /
+                                        ₹ <span x-text="Number(pendingInvoicePreview.tcs_amount || 0).toFixed(2)"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Payment Summary</div>
+                                    <div class="font-medium text-gray-900 dark:text-neutral-100 leading-6">
+                                        Cash: ₹<span x-text="Number(pendingInvoicePreview.pay_cash || 0).toFixed(2)"></span>,
+                                        UPI: ₹<span x-text="Number(pendingInvoicePreview.pay_upi || 0).toFixed(2)"></span>,
+                                        Card: ₹<span x-text="Number(pendingInvoicePreview.pay_card || 0).toFixed(2)"></span>,
+                                        Cheque: ₹<span x-text="Number(pendingInvoicePreview.pay_cheque || 0).toFixed(2)"></span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="text-gray-500 dark:text-neutral-400">Terms</div>
+                                    <div class="font-medium text-gray-900 dark:text-neutral-100 whitespace-pre-line"
+                                        x-text="pendingInvoicePreview.terms || '-'"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end gap-2 pt-2">
+                                <button type="button"
+                                    class="px-4 py-2 rounded-xl border border-gray-300 dark:border-neutral-700 text-gray-700 dark:text-neutral-200"
+                                    @click="cancelApplyLastInvoice()">
+                                    No, Not Now
+                                </button>
+
+                                <button type="button"
+                                    class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                                    @click="confirmApplyLastInvoice()">
+                                    Continieu With These Details
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
         </form>
     </div>
 
     <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
 
 
-{{-- <script>
-    function invoiceForm() {
-        // ---------- SAFE JSON READ ----------
-        const readJSON = (id, fallback) => {
-        try {
-            const el = document.getElementById(id);
-            return JSON.parse(el?.textContent || JSON.stringify(fallback));
-        } catch (e) {
-            return fallback;
-        }
-        };
-
-        const CLIENTS = readJSON('clients-json', []);
-        const ITEMS = readJSON('items-json', []);
-        const METAL_RATES = readJSON('metal-rates-json', []);
-        const BANKS = readJSON('banks-json', []);
-
-        const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
-
-        const BIZ_STATE_CODE = @js($businessStateCode ?? '');
-        const BIZ_GSTIN = @js($businessGstin ?? '');
-
-        // ---------- HELPERS ----------
-        const n = (v, d = 0) => {
-        const x = Number(v);
-        return Number.isFinite(x) ? x : d;
-        };
-        const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-        const s = (v) => (v ?? '').toString();
-        const lower = (v) => s(v).toLowerCase();
-        const money = (v) => '₹ ' + n(v).toFixed(2);
-
-        const normalizeGstin = (v) => s(v).toUpperCase().replace(/[^0-9A-Z]/g, '').trim();
-
-        const validateGstinLocal = (gstin) => {
-        const g = normalizeGstin(gstin);
-        if (!g) return { ok: true, empty: true, message: '' };
-
-        if (g.length !== 15) return { ok: false, empty: false, message: 'GSTIN must be 15 characters.' };
-
-        const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-        if (!re.test(g)) return { ok: false, empty: false, message: 'GSTIN format is invalid (check state/PAN/etc).' };
-
-        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const mod = 36;
-        const codePoint = (c) => chars.indexOf(c);
-
-        let sum = 0;
-        let f = 2;
-        for (let i = 13; i >= 0; i--) {
-            const v = codePoint(g[i]);
-            if (v === -1) return { ok: false, empty: false, message: 'GSTIN has invalid characters.' };
-            const p = v * f;
-            f = (f === 2) ? 1 : 2;
-            sum += Math.floor(p / mod) + (p % mod);
-        }
-
-        const checkCodePoint = (mod - (sum % mod)) % mod;
-        const expected = chars[checkCodePoint];
-        const actual = g[14];
-
-        if (expected !== actual) return { ok: false, empty: false, message: 'GSTIN checksum mismatch (likely wrong GSTIN).' };
-        return { ok: true, empty: false, message: 'GSTIN looks valid.' };
-        };
-
-        const keyCode = (v) => s(v).trim().replace(/^0+/, '');
-
-        // ---------- CONSTANTS ----------
-        const STATES = [
-        { code: '01', name: 'Jammu and Kashmir' },
-        { code: '02', name: 'Himachal Pradesh' },
-        { code: '03', name: 'Punjab' },
-        { code: '04', name: 'Chandigarh' },
-        { code: '05', name: 'Uttarakhand' },
-        { code: '06', name: 'Haryana' },
-        { code: '07', name: 'Delhi' },
-        { code: '08', name: 'Rajasthan' },
-        { code: '09', name: 'Uttar Pradesh' },
-        { code: '10', name: 'Bihar' },
-        { code: '11', name: 'Sikkim' },
-        { code: '12', name: 'Arunachal Pradesh' },
-        { code: '13', name: 'Nagaland' },
-        { code: '14', name: 'Manipur' },
-        { code: '15', name: 'Mizoram' },
-        { code: '16', name: 'Tripura' },
-        { code: '17', name: 'Meghalaya' },
-        { code: '18', name: 'Assam' },
-        { code: '19', name: 'West Bengal' },
-        { code: '20', name: 'Jharkhand' },
-        { code: '21', name: 'Odisha' },
-        { code: '22', name: 'Chhattisgarh' },
-        { code: '23', name: 'Madhya Pradesh' },
-        { code: '24', name: 'Gujarat' },
-        { code: '26', name: 'Dadra and Nagar Haveli and Daman and Diu' },
-        { code: '27', name: 'Maharashtra' },
-        { code: '29', name: 'Karnataka' },
-        { code: '30', name: 'Goa' },
-        { code: '31', name: 'Lakshadweep' },
-        { code: '32', name: 'Kerala' },
-        { code: '33', name: 'Tamil Nadu' },
-        { code: '34', name: 'Puducherry' },
-        { code: '35', name: 'Andaman and Nicobar Islands' },
-        { code: '36', name: 'Telangana' },
-        { code: '37', name: 'Andhra Pradesh' },
-        { code: '38', name: 'Ladakh' },
-        ];
-
-        // ---------- FACTORIES ----------
-        const blankParty = () => ({
-        name: '', address: '', state: '', state_code: '', mobile: '', gstin: '', pincode: ''
-        });
-
-        const rowTemplate = () => ({
-        _k: Date.now() + Math.random(),
-        item_id: null,
-        item_type: null,
-
-        search: '',
-        ddOpen: false,
-        ddHi: 0,
-        ddStyle: '',
-        ddPreviewName: '',
-        ddPreview: '',
-
-        description: '',
-        hsn: '',
-        quantity: 1,
-
-        making_rate: 0,
-        gold_purity: null,
-        silver_purity: null,
-        gold_rate: 0,
-        silver_rate: 0,
-        silver_wt: 0,
-        gold_wt: 0,
-        gemstone_wt: 0,
-        diamond_wt: 0,
-
-        service_rate: 0,
-        tax_percent: 0,
-
-        amount_mode: 'auto',
-        manual_amount: 0,
-        });
-
-        const chargeTemplate = () => ({
-        _k: Date.now() + Math.random(),
-        name: '',
-        amount: 0,
-        });
-
-        // ---------- CLIENT DROPDOWN CONTROLLER ----------
-        const createClientDD = (ctx) => ({
-        isOpen: false,
-        q: '',
-        hi: 0,
-
-        open() { this.isOpen = true; this.hi = 0; },
-        close() { this.isOpen = false; },
-
-
-        filtered() {
-            const q = lower(this.q).trim();
-            const list = ctx.clients || [];
-            if (!q) return list;
-
-            return list.filter(c => {
-                const name  = lower(c.name);
-                const mob   = lower(c.mobile);
-                const gstin = lower(c.gstin);
-                const code  = lower(c.state_code);
-
-                return (
-                name.includes(q) ||
-                mob.includes(q) ||
-                gstin.includes(q) ||        // ✅ GSTIN search
-                code.includes(q)            // ✅ optional: state code search
-                );
-            });
-        },
-
-        down() {
-            if (!this.isOpen) this.open();
-            const list = this.filtered();
-            if (!list.length) return;
-            this.hi = Math.min(list.length - 1, this.hi + 1);
-        },
-        up() {
-            if (!this.isOpen) this.open();
-            const list = this.filtered();
-            if (!list.length) return;
-            this.hi = Math.max(0, this.hi - 1);
-        },
-        enter() {
-            const list = this.filtered();
-            if (!this.isOpen || !list.length) return;
-            this.select(list[this.hi]);
-        },
-        select(c) {
-            ctx.clientId = c.id;
-            this.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
-            this.close();
-        }
-        });
-
-        // ---------- MAIN RETURN ----------
-        return {
-        // DATA
-        clients: CLIENTS,
-        itemsData: ITEMS,
-        categories: CATEGORIES,
-        metalRates: METAL_RATES,
-        banks: BANKS,
-        states: STATES,
-
-        clientId: '',
-        party: blankParty(),
-
-        clientDD: null, // init me create hoga
-
-        hdr: {
-            date: @js($today),
-            transport_mode: 'By Hand',
-            gst_no: BIZ_GSTIN,
-            reverse_charge: false,
-
-            kot_input: '',
-            kots: [],
-        },
-
-        basePrefix: @js($basePrefix),
-        computedPrefix: @js($suggestedPrefix),
-        invoiceNo: @js($initialInvoiceNo),
-
-        payment: { received: 0, mode: 'cash', markFullyPaid: false, bank_account_id: '' },
-
-        // backend compatible payment split
-        pay: {
-            cash: 0, upi: 0, card: 0, cheque: 0,
-            credit_excess: 0, advance: 0,
-            online_mode: '', online_ref: '', upi_id: '',
-            card_last4: '', card_ref: '',
-            cheque_no: '', bank_name: '',
-        },
-
-        ui: { showCharges: false, showDiscount: false },
-
-        charges: [],
-        discount: { type: 'flat', value: 0 },
-        tcs: { apply: false, percent: 0 },
-        roundOff: { enabled: false },
-
-        items: [],
-
-        // STATUS
-        saving: false,
-        savingClient: false,
-        savingItem: false,
-        newClientError: '',
-        newItemError: '',
-        activeRowIndex: null,
-        clientAutoSelect: true,
-        itemAutoSelect: true,
-
-        gstin: { status: 'idle', message: '', value: '' },
-        clientGstin: { status: 'idle', message: '', value: '' },
-
-        modals: { client: false, item: false },
-
-        newClient: { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' },
-        newItem: {
-            type: 'product', name:'', sku:'', description:'', category_id: '',
-            tax_rate: 0, hsn:'', sac:'', price: 0,
-            making_charge: 0, gold_weight: 0, gold_purity: '',
-            silver_weight: 0, silver_purity: '',
-            stone_weight: 0, diamond_weight: 0
-        },
-
-        // ---------- UTILS ----------
-        csrf() {
-            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        },
-        money,
-
-        // ---------- FILTER ITEMS ----------
-        filteredItems(q) {
-            const query = lower(q).trim();
-            const list = this.itemsData || [];
-            if (!query) return list;
-
-            return list.filter(it => {
-            const name = lower(it.name);
-            const sku = lower(it.sku);
-            const desc = lower(it.description || it.desc || it.long_description);
-            return name.includes(query) || sku.includes(query) || desc.includes(query);
-            });
-        },
-
-        // ---------- INIT ----------
-        init() {
-            this.clientDD = createClientDD(this);
-
-            this.$watch('clientId', () => this.syncParty());
-
-            if (!this.items.length) this.items.push(rowTemplate());
-            if (!this.charges.length) this.charges.push(chargeTemplate());
-
-            this.syncParty();
-            this.onReceivedInput();
-            this.calc();
-
-            const reposition = () => {
-            for (let idx = 0; idx < this.items.length; idx++) {
-                if (this.items[idx]?.ddOpen) this.setItemDDPos(idx);
-            }
+    {{-- <script>
+        function invoiceForm() {
+            // ---------- SAFE JSON READ ----------
+            const readJSON = (id, fallback) => {
+                try {
+                    const el = document.getElementById(id);
+                    return JSON.parse(el?.textContent || JSON.stringify(fallback));
+                } catch (e) {
+                    return fallback;
+                }
             };
-            window.addEventListener('scroll', reposition, true);
-            window.addEventListener('resize', reposition);
-        },
 
-        // ---------- PARTY ----------
-        syncParty() {
-            const c = (this.clients || []).find(x => String(x.id) === String(this.clientId));
-            this.party = c ? {
-            name: c.name ?? '',
-            mobile: c.mobile ?? '',
-            address: c.address ?? '',
-            state: c.state ?? '',
-            state_code: c.state_code ?? '',
-            gstin: c.gstin ?? '',
-            pincode: c.pincode ?? '',
-            } : blankParty();
-
-            if (c) this.clientDD.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
-
-            this.calc();
-        },
-
-        isIntra() {
-            const bizCode = keyCode(BIZ_STATE_CODE);
-            const partyCode = keyCode(this.party.state_code);
-            if (!bizCode || !partyCode) return false;
-            return bizCode === partyCode;
-        },
-
-        hasProduct() { return (this.items || []).some(r => r.item_type === 'product'); },
-        hasService() { return (this.items || []).some(r => r.item_type === 'service'); },
-
-        // ---------- METAL RATE ----------
-        findMetalRate(type, purity) {
-            const t = lower(type).trim();
-            const pRaw = s(purity).trim();
-            if (!t) return 0;
-
-            const candidates = [];
-            if (pRaw) {
-            candidates.push(pRaw);
-            candidates.push(pRaw.split('(')[0].trim());
-            candidates.push(pRaw.split(' ')[0].trim());
-            const m = pRaw.match(/\(([^)]+)\)/);
-            if (m?.[1]) candidates.push(s(m[1]).trim());
-            }
-            const uniq = [...new Set(candidates.filter(Boolean))];
-
-            const rec = (this.metalRates || []).find(r => {
-            const rt = lower(r.metal_type).trim();
-            if (rt !== t) return false;
-            const rp = s(r.purity).trim();
-            if (!rp) return false;
-
-            const rpBase = rp.split('(')[0].trim();
-            const rpFirst = rp.split(' ')[0].trim();
-            const rpParen = (rp.match(/\(([^)]+)\)/) || [])[1] ? s((rp.match(/\(([^)]+)\)/) || [])[1]).trim() : '';
-
-            return uniq.includes(rp) || uniq.includes(rpBase) || uniq.includes(rpFirst) || (rpParen && uniq.includes(rpParen));
-            });
-
-            return rec ? n(rec.rate_per_gram ?? rec.rate ?? 0) : 0;
-        },
-
-        // ---------- ROW ACTIONS ----------
-        add() {
-            this.items.push(rowTemplate());
-            this.calc();
-        },
-        remove(i) {
-            this.items.splice(i, 1);
-            if (!this.items.length) this.items.push(rowTemplate());
-            this.calc();
-        },
-
-        pickItem(i, id) {
-            const it = (this.itemsData || []).find(x => String(x.id) === String(id));
-            if (!it) return;
-
-            const r = this.items[i];
-            if (!r) return;
-
-            r.item_id = it.id;
-            r.item_type = lower(it.type).trim() || 'product';
-
-            r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-            r.description = it.description || it.name || '';
-            r.tax_percent = n(it.tax_rate, 0);
-
-            r.amount_mode = 'auto';
-            r.manual_amount = 0;
-
-            if (r.item_type === 'service') {
-            r.hsn = it.sac || '';
-            r.quantity = Math.max(1, n(r.quantity, 1));
-            r.service_rate = n(it.price, 0);
-
-            // reset product fields
-            r.making_rate = 0;
-            r.gold_purity = null;
-            r.silver_purity = null;
-            r.gold_rate = 0;
-            r.silver_rate = 0;
-            r.gold_wt = 0;
-            r.silver_wt = 0;
-            r.gemstone_wt = 0;
-            r.diamond_wt = 0;
-
-            r.manual_amount = this.lineAmount(r);
-            this.calc();
-            return;
-            }
-
-            // PRODUCT
-            r.hsn = it.hsn || it.sac || '';
-            r.quantity = n(it.quantity, 1) || 1;
-            r.service_rate = 0;
-
-            r.gold_wt = n(it.gold_weight ?? it.gold_wt, 0);
-            r.silver_wt = n(it.silver_weight ?? it.silver_wt, 0);
-
-            r.gold_purity = s(it.gold_purity ?? it.purity).trim() || null;
-            r.silver_purity = s(it.silver_purity).trim() || null;
-
-            r.gemstone_wt = n(it.stone_weight ?? it.gemstone_wt, 0);
-            r.diamond_wt = n(it.diamond_weight ?? it.diamond_wt, 0);
-
-            r.making_rate = n(it.making_charge ?? it.making_rate, 0);
-
-            r.gold_rate = this.findMetalRate('gold', r.gold_purity);
-            r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
-
-            r.manual_amount = this.lineAmount(r);
-            this.calc();
-        },
-
-        onAmountEdit(r) {
-            const total = n(r.manual_amount, 0);
-            r.amount_mode = (total > 0) ? 'manual' : 'auto';
-
-            if (r.item_type === 'service') {
-            const qty = Math.max(1, n(r.quantity, 1));
-            const pct = n(r.tax_percent, 0);
-            const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-            r.service_rate = n((base / qty).toFixed(2), 0);
-            }
-
-            this.calc();
-        },
-
-        onAutoChange(r) {
-            if (r.amount_mode !== 'manual') {
-            r.manual_amount = this.lineAmount(r);
-            } else {
-            if (r.item_type === 'service') {
-                const total = n(r.manual_amount, 0);
-                const qty = Math.max(1, n(r.quantity, 1));
-                const pct = n(r.tax_percent, 0);
-                const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                r.service_rate = n((base / qty).toFixed(2), 0);
-            }
-            }
-            this.calc();
-        },
-
-        // ---------- LINE CALCS ----------
-        lineBase(r) {
-            const qty = Math.max(1, n(r.quantity, 1));
-            const pct = n(r.tax_percent, 0);
-
-            if (r.amount_mode === 'manual') {
-            const total = n(r.manual_amount, 0);
-            const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-            return Math.max(0, n(base.toFixed(2), 0));
-            }
-
-            if (r.item_type === 'service') {
-            const rate = n(r.service_rate, 0);
-            return Math.max(0, n((rate * qty).toFixed(2), 0));
-            }
-
-            const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
-            const silvAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
-            const making = n(r.making_rate, 0);
-
-            return Math.max(0, n(((goldAmt + silvAmt + making) * qty).toFixed(2), 0));
-        },
-
-        lineTax(r) {
-            const pct = n(r.tax_percent, 0);
-            const base = this.lineBase(r);
-            return n((base * (pct / 100)).toFixed(2), 0);
-        },
-
-        lineAmount(r) {
-            if (r.amount_mode === 'manual') return n(n(r.manual_amount, 0).toFixed(2), 0);
-            return n((this.lineBase(r) + this.lineTax(r)).toFixed(2), 0);
-        },
-
-        subtotal() {
-            return n((this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0).toFixed(2), 0);
-        },
-
-        avgTaxPercentRaw() {
-            const baseSum = (this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0);
-            if (baseSum <= 0) return 0;
-
-            const weighted = (this.items || []).reduce((sum, r) => sum + (this.lineBase(r) * n(r.tax_percent, 0)), 0);
-            return (weighted / baseSum);
-        },
-        avgTaxPercent() { return n(this.avgTaxPercentRaw().toFixed(2), 0); },
-
-        itemsTaxTotal() {
-            return n((this.items || []).reduce((sum, r) => sum + this.lineTax(r), 0).toFixed(2), 0);
-        },
-
-        chargesTotal() {
-            return n((this.charges || []).reduce((sum, c) => sum + n(c.amount, 0), 0).toFixed(2), 0);
-        },
-
-        chargesTaxTotal() {
-            const pct = this.avgTaxPercentRaw();
-            return n((this.chargesTotal() * (pct / 100)).toFixed(2), 0);
-        },
-
-        discountAmount() {
-            const base = this.subtotal();
-            const v = n(this.discount.value, 0);
-            if (this.discount.type === 'percent') return n((base * (v / 100)).toFixed(2), 0);
-            return n(v.toFixed(2), 0);
-        },
-
-        taxableAmount() {
-            const val = this.subtotal() + this.chargesTotal() - this.discountAmount();
-            return n(Math.max(0, val).toFixed(2), 0);
-        },
-
-        taxOnTaxable() {
-            return n((this.itemsTaxTotal() + this.chargesTaxTotal()).toFixed(2), 0);
-        },
-
-        cgst() { return this.isIntra() ? n((this.taxOnTaxable() / 2).toFixed(2), 0) : 0; },
-        sgst() { return this.isIntra() ? n((this.taxOnTaxable() / 2).toFixed(2), 0) : 0; },
-        igst() { return this.isIntra() ? 0 : n(this.taxOnTaxable().toFixed(2), 0); },
-
-        tcsAmount() {
-            if (!this.tcs.apply) return 0;
-            const pct = n(this.tcs.percent, 0);
-            if (pct <= 0) return 0;
-            const base = this.taxableAmount();
-            return n((base * (pct / 100)).toFixed(2), 0);
-        },
-
-        totalBeforeRound() {
-            return n((this.taxableAmount() + this.taxOnTaxable() + this.tcsAmount()).toFixed(2), 0);
-        },
-
-        roundOffAmount() {
-            if (!this.roundOff.enabled) return 0;
-            const raw = this.totalBeforeRound();
-            const rounded = Math.round(raw);
-            return n((rounded - raw).toFixed(2), 0);
-        },
-
-        totalPayable() {
-            return n((this.totalBeforeRound() + this.roundOffAmount()).toFixed(2), 0);
-        },
-
-        // ---------- PAYMENT ----------
-        toggleFullyPaid() {
-            if (this.payment.markFullyPaid) this.payment.received = this.totalPayable();
-            this.onReceivedInput();
-        },
-
-        onReceivedInput() {
-            const amt = n(this.payment.received, 0);
-
-            this.pay.cash = 0; this.pay.upi = 0; this.pay.card = 0; this.pay.cheque = 0;
-
-            if (this.payment.mode === 'cash') this.pay.cash = amt;
-            if (this.payment.mode === 'upi') this.pay.upi = amt;
-            if (this.payment.mode === 'card') this.pay.card = amt;
-            if (this.payment.mode === 'cheque') this.pay.cheque = amt;
-            if (this.payment.mode === 'bank') this.pay.upi = amt;
-
-            if (this.payment.mode === 'cash') this.payment.bank_account_id = '';
-
-            this.calc();
-        },
-
-        receivedTotal() {
-            const t = n(this.pay.cash) + n(this.pay.upi) + n(this.pay.card) + n(this.pay.cheque);
-            return n(t.toFixed(2), 0);
-        },
-
-        balanceAmount() {
-            const paid = this.receivedTotal() + n(this.pay.credit_excess) + n(this.pay.advance);
-            const bal = this.totalPayable() - paid;
-            return n(Math.max(0, bal).toFixed(2), 0);
-        },
-
-        // ---------- CHARGES ----------
-        blankCharge() { return chargeTemplate(); },
-        addCharge() {
-            this.charges.push(chargeTemplate());
-            this.calc();
-        },
-        removeCharge(i) {
-            this.charges.splice(i, 1);
-            this.calc();
-        },
-        chargesPayload() {
-            return (this.charges || [])
-            .filter(c => s(c.name).trim() || n(c.amount) > 0)
-            .map(c => ({ name: s(c.name).trim(), amount: n(c.amount) }));
-        },
-
-        // ---------- GST INPUT ----------
-        normalizeGstin,
-        validateGstinLocal,
-
-        onGstinInput(scope) {
-            if (scope === 'hdr') {
-            const g = normalizeGstin(this.hdr.gst_no);
-            this.hdr.gst_no = g;
-
-            const res = validateGstinLocal(g);
-            if (res.empty) { this.gstin = { status:'idle', message:'', value:'' }; return; }
-
-            this.gstin = {
-                status: res.ok ? 'valid' : 'invalid',
-                message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
-                value: g
+            const CLIENTS = readJSON('clients-json', []);
+            const ITEMS = readJSON('items-json', []);
+            const METAL_RATES = readJSON('metal-rates-json', []);
+            const BANKS = readJSON('banks-json', []);
+            const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
+
+            const BIZ_STATE_CODE = @js($businessStateCode ?? '');
+            const BIZ_GSTIN = @js($businessGstin ?? '');
+            const DEFAULT_TERMS = @js($defaultTerms);
+            const TODAY = @js($today);
+            const DOC_TYPE = @js($docType);
+            const LAST_CLIENT_INVOICE_BASE_URL = @js(url('/invoices/client'));
+
+            // ---------- HELPERS ----------
+            const n = (v, d = 0) => {
+                const x = Number(v);
+                return Number.isFinite(x) ? x : d;
             };
-            return;
-            }
 
-            if (scope === 'client') {
-            const g = normalizeGstin(this.newClient.gstin);
-            this.newClient.gstin = g;
+            const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+            const s = (v) => (v ?? '').toString();
+            const lower = (v) => s(v).toLowerCase();
+            const money = (v) => '₹ ' + n(v).toFixed(2);
 
-            const res = validateGstinLocal(g);
-            if (res.empty) { this.clientGstin = { status:'idle', message:'', value:'' }; return; }
+            const normalizeGstin = (v) => s(v).toUpperCase().replace(/[^0-9A-Z]/g, '').trim();
 
-            this.clientGstin = {
-                status: res.ok ? 'valid' : 'invalid',
-                message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
-                value: g
-            };
-            }
-        },
+            const validateGstinLocal = (gstin) => {
+                const g = normalizeGstin(gstin);
+                if (!g) return { ok: true, empty: true, message: '' };
 
-        // ---------- ITEM DROPDOWN ----------
-        openItemDD(i) {
-            const r = this.items[i];
-            if (!r) return;
-            r.ddOpen = true;
-            r.ddHi = 0;
-            this.$nextTick(() => this.setItemDDPos(i));
-        },
+                if (g.length !== 15) {
+                    return { ok: false, empty: false, message: 'GSTIN must be 15 characters.' };
+                }
 
-        closeItemDD(i, keepText = true) {
-            const r = this.items[i];
-            if (!r) return;
-            r.ddOpen = false;
+                const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
+                if (!re.test(g)) {
+                    return { ok: false, empty: false, message: 'GSTIN format is invalid (check state/PAN/etc).' };
+                }
 
-            if (keepText && r.item_id) {
-            const it = (this.itemsData || []).find(x => String(x.id) === String(r.item_id));
-            if (it) r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-            }
-        },
+                const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const mod = 36;
+                const codePoint = (c) => chars.indexOf(c);
 
-        selectItemFromDD(i, it) {
-            const r = this.items[i];
-            if (!r || !it) return;
-            r.item_id = it.id;
-            this.pickItem(i, it.id);
-            r.ddOpen = false;
+                let sum = 0;
+                let f = 2;
 
-            this.$nextTick(() => {
-            const el = document.getElementById('item_search_' + i);
-            if (el) el.focus({ preventScroll: true });
-            });
-        },
-
-        itemDDDown(i) {
-            const r = this.items[i];
-            if (!r) return;
-            const list = this.filteredItems(r.search);
-            if (!r.ddOpen) r.ddOpen = true;
-            if (!list.length) return;
-            r.ddHi = Math.min(list.length - 1, (r.ddHi || 0) + 1);
-        },
-
-        itemDDUp(i) {
-            const r = this.items[i];
-            if (!r) return;
-            const list = this.filteredItems(r.search);
-            if (!r.ddOpen) r.ddOpen = true;
-            if (!list.length) return;
-            r.ddHi = Math.max(0, (r.ddHi || 0) - 1);
-        },
-
-        itemDDEnter(i) {
-            const r = this.items[i];
-            if (!r) return;
-            const list = this.filteredItems(r.search);
-            if (!r.ddOpen || !list.length) return;
-            const it = list[r.ddHi || 0];
-            if (it) this.selectItemFromDD(i, it);
-        },
-
-        setItemDDPos(i) {
-            const r = this.items[i];
-            if (!r) return;
-
-            const input = document.getElementById('item_search_' + i);
-            if (!input) return;
-
-            const rect = input.getBoundingClientRect();
-            const top = rect.bottom + 4;
-            const left = rect.left;
-            const width = rect.width;
-            const maxH = clamp(window.innerHeight - top - 12, 160, 280);
-
-            r.ddStyle = `top:${top}px; left:${left}px; width:${width}px; max-height:${maxH}px;`;
-        },
-
-        // ---------- KOT ----------
-        syncKotsFromInput() {
-            const raw = s(this.hdr.kot_input).trim();
-            if (!raw) { this.hdr.kots = []; return; }
-
-            const parts = raw.split(/[, \n\t]+/).map(x => x.trim()).filter(Boolean);
-            const seen = new Set();
-            this.hdr.kots = parts.filter(x => !seen.has(x) && seen.add(x));
-            this.hdr.kot_input = this.hdr.kots.join(', ');
-        },
-
-        removeKot(idx) {
-            this.hdr.kots.splice(idx, 1);
-            this.hdr.kot_input = this.hdr.kots.join(', ');
-        },
-
-        // ---------- MODALS (same logic as yours) ----------
-        openClientModal() {
-            this.newClientError = '';
-            this.newClient = { name:'', mobile:'', address:'', state:'', state_code:'', gstin:'', pincode:'', state_pick:'' };
-            this.clientAutoSelect = true;
-            this.modals.client = true;
-        },
-        closeClientModal() { this.modals.client = false; },
-
-        applyClientState() {
-            const v = s(this.newClient.state_pick).trim();
-            if (!v) { this.newClient.state=''; this.newClient.state_code=''; return; }
-            const parts = v.split(',');
-            this.newClient.state_code = s(parts[0]).trim();
-            this.newClient.state = s(parts.slice(1).join(',')).trim();
-        },
-
-        openItemModal(rowIndex = null) {
-            this.activeRowIndex = rowIndex;
-            this.newItemError = '';
-            this.itemAutoSelect = true;
-            this.newItem = {
-            type:'product', name:'', sku:'', description:'', category_id: '',
-            tax_rate:0, hsn:'', sac:'', price:0,
-            making_charge:0, gold_weight:0, gold_purity:'',
-            silver_weight:0, silver_purity:'',
-            stone_weight:0, diamond_weight:0
-            };
-            this.modals.item = true;
-        },
-        closeItemModal() { this.modals.item = false; this.activeRowIndex = null; },
-
-        async saveClient() {
-            this.newClientError = '';
-
-            if (!s(this.newClient.name).trim()) { this.newClientError = 'Name is required.'; return; }
-
-            const mob = s(this.newClient.mobile).replace(/\D/g, '');
-            if (mob && mob.length < 10) { this.newClientError = 'Mobile must be 10 digits (optional).'; return; }
-            this.newClient.mobile = mob;
-
-            try {
-            this.savingClient = true;
-
-            const res = await fetch(@js(route('clients.quick-store')), {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.csrf(),
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-                },
-                body: JSON.stringify({ ...this.newClient, is_save: this.clientAutoSelect ? 1 : 0 })
-            });
-
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) { this.newClientError = data?.message || 'Failed to save client.'; return; }
-
-            this.clients.unshift(data.client);
-
-            if (this.clientAutoSelect) {
-                this.clientId = data.client.id;
-                this.clientDD.q = data.client.mobile ? (data.client.name + ' (' + data.client.mobile + ')') : data.client.name;
-            }
-
-            this.modals.client = false;
-            } catch (e) {
-            this.newClientError = 'Network error.';
-            } finally {
-            this.savingClient = false;
-            }
-        },
-
-        async saveItem() {
-            this.newItemError = '';
-
-            if (!String(this.newItem.name || '').trim()) {
-                this.newItemError = 'Item name is required.';
-                return;
-            }
-
-            if (!this.newItem.category_id) {
-                this.newItemError = 'Please select category.';
-                return;
-            }
-
-            if (this.newItem.type === 'service' && Number(this.newItem.price || 0) <= 0) {
-                this.newItemError = 'Service price is required.';
-                return;
-            }
-
-            try {
-                this.savingItem = true;
-
-                const res = await fetch(@js(route('items.store.ajax')), {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': this.csrf(),
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        ...this.newItem,
-                        is_save: this.itemAutoSelect ? 1 : 0
-                    })
-                });
-
-                const data = await res.json().catch(() => ({}));
-
-                if (!res.ok) {
-                    if (data?.errors?.category_id?.length) {
-                        this.newItemError = data.errors.category_id[0];
-                    } else {
-                        this.newItemError = data?.message || 'Failed to save item.';
+                for (let i = 13; i >= 0; i--) {
+                    const v = codePoint(g[i]);
+                    if (v === -1) {
+                        return { ok: false, empty: false, message: 'GSTIN has invalid characters.' };
                     }
-                    return;
+
+                    const p = v * f;
+                    f = (f === 2) ? 1 : 2;
+                    sum += Math.floor(p / mod) + (p % mod);
                 }
 
-                this.itemsData.unshift(data.item);
+                const checkCodePoint = (mod - (sum % mod)) % mod;
+                const expected = chars[checkCodePoint];
+                const actual = g[14];
 
-                if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
-                    this.pickItem(this.activeRowIndex, data.item.id);
+                if (expected !== actual) {
+                    return { ok: false, empty: false, message: 'GSTIN checksum mismatch (likely wrong GSTIN).' };
                 }
 
-                this.modals.item = false;
-            } catch (e) {
-                this.newItemError = 'Network error.';
-            } finally {
-                this.savingItem = false;
-            }
-        },
-        // ---------- FINAL SUBMIT ----------
-        calc() { return this.totalPayable(); },
+                return { ok: true, empty: false, message: 'GSTIN looks valid.' };
+            };
 
-        beforeSubmit() {
-            const payload = (this.items || []).map(r => ({
-            item_id: r.item_id ?? null,
-            item_type: r.item_type ?? null,
-            description: r.description || '',
-            hsn: r.hsn || '',
-            quantity: Math.max(1, n(r.quantity, 1)),
+            const keyCode = (v) => s(v).trim().replace(/^0+/, '');
 
-            making_rate: n(r.making_rate),
-            gold_purity: r.gold_purity || null,
-            silver_purity: r.silver_purity || null,
-            gold_rate: n(r.gold_rate),
-            silver_rate: n(r.silver_rate),
-            silver_wt: n(r.silver_wt),
-            gold_wt: n(r.gold_wt),
-            gemstone_wt: n(r.gemstone_wt),
-            diamond_wt: n(r.diamond_wt),
+            // ---------- CONSTANTS ----------
+            const STATES = [
+                { code: '01', name: 'Jammu and Kashmir' },
+                { code: '02', name: 'Himachal Pradesh' },
+                { code: '03', name: 'Punjab' },
+                { code: '04', name: 'Chandigarh' },
+                { code: '05', name: 'Uttarakhand' },
+                { code: '06', name: 'Haryana' },
+                { code: '07', name: 'Delhi' },
+                { code: '08', name: 'Rajasthan' },
+                { code: '09', name: 'Uttar Pradesh' },
+                { code: '10', name: 'Bihar' },
+                { code: '11', name: 'Sikkim' },
+                { code: '12', name: 'Arunachal Pradesh' },
+                { code: '13', name: 'Nagaland' },
+                { code: '14', name: 'Manipur' },
+                { code: '15', name: 'Mizoram' },
+                { code: '16', name: 'Tripura' },
+                { code: '17', name: 'Meghalaya' },
+                { code: '18', name: 'Assam' },
+                { code: '19', name: 'West Bengal' },
+                { code: '20', name: 'Jharkhand' },
+                { code: '21', name: 'Odisha' },
+                { code: '22', name: 'Chhattisgarh' },
+                { code: '23', name: 'Madhya Pradesh' },
+                { code: '24', name: 'Gujarat' },
+                { code: '26', name: 'Dadra and Nagar Haveli and Daman and Diu' },
+                { code: '27', name: 'Maharashtra' },
+                { code: '29', name: 'Karnataka' },
+                { code: '30', name: 'Goa' },
+                { code: '31', name: 'Lakshadweep' },
+                { code: '32', name: 'Kerala' },
+                { code: '33', name: 'Tamil Nadu' },
+                { code: '34', name: 'Puducherry' },
+                { code: '35', name: 'Andaman and Nicobar Islands' },
+                { code: '36', name: 'Telangana' },
+                { code: '37', name: 'Andhra Pradesh' },
+                { code: '38', name: 'Ladakh' },
+            ];
 
-            service_rate: n(r.service_rate),
-
-            discount: 0,
-            tax_percent: n(r.tax_percent),
-
-            rate: this.lineBase(r),
-            tax_amount: this.lineTax(r),
-            amount: this.lineAmount(r),
-            }));
-
-            document.getElementById('items_json').value = JSON.stringify(payload);
-
-            this.onReceivedInput();
-            this.$refs.form.submit();
-        },
-
-        submitForm() {
-            if (this.saving) return;
-
-            const g = normalizeGstin(this.hdr.gst_no);
-            const res = validateGstinLocal(g);
-
-            if (g && !res.ok) {
-            const ok = confirm("⚠️ GSTIN invalid lag raha hai.\n\n" + res.message + "\n\nPhir bhi Save karna hai?");
-            if (!ok) return;
-            }
-
-            this.saving = true;
-            this.$refs.form.requestSubmit();
-        },
-
-        // ---------- COMPAT ALIASES (in case old calls exist) ----------
-        blankRow() { return rowTemplate(); },
-        blankCharge() { return chargeTemplate(); },
-        scrollItemDDIntoView() {},
-        };
-    }
-</script> --}}
-
-{{-- <script>
-    function invoiceForm() {
-        // ---------- SAFE JSON READ ----------
-        const readJSON = (id, fallback) => {
-            try {
-                const el = document.getElementById(id);
-                return JSON.parse(el?.textContent || JSON.stringify(fallback));
-            } catch (e) {
-                return fallback;
-            }
-        };
-
-        const CLIENTS = readJSON('clients-json', []);
-        const ITEMS = readJSON('items-json', []);
-        const METAL_RATES = readJSON('metal-rates-json', []);
-        const BANKS = readJSON('banks-json', []);
-        const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
-
-        const BIZ_STATE_CODE = @js($businessStateCode ?? '');
-        const BIZ_GSTIN = @js($businessGstin ?? '');
-        const DEFAULT_TERMS = @js($defaultTerms);
-        const TODAY = @js($today);
-        const DOC_TYPE = @js($docType);
-        const LAST_CLIENT_INVOICE_BASE_URL = @js(url('/invoices/client'));
-
-        // ---------- HELPERS ----------
-        const n = (v, d = 0) => {
-            const x = Number(v);
-            return Number.isFinite(x) ? x : d;
-        };
-
-        const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
-        const s = (v) => (v ?? '').toString();
-        const lower = (v) => s(v).toLowerCase();
-        const money = (v) => '₹ ' + n(v).toFixed(2);
-
-        const normalizeGstin = (v) => s(v).toUpperCase().replace(/[^0-9A-Z]/g, '').trim();
-
-        const validateGstinLocal = (gstin) => {
-            const g = normalizeGstin(gstin);
-            if (!g) return { ok: true, empty: true, message: '' };
-
-            if (g.length !== 15) {
-                return { ok: false, empty: false, message: 'GSTIN must be 15 characters.' };
-            }
-
-            const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-            if (!re.test(g)) {
-                return { ok: false, empty: false, message: 'GSTIN format is invalid (check state/PAN/etc).' };
-            }
-
-            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            const mod = 36;
-            const codePoint = (c) => chars.indexOf(c);
-
-            let sum = 0;
-            let f = 2;
-
-            for (let i = 13; i >= 0; i--) {
-                const v = codePoint(g[i]);
-                if (v === -1) {
-                    return { ok: false, empty: false, message: 'GSTIN has invalid characters.' };
-                }
-
-                const p = v * f;
-                f = (f === 2) ? 1 : 2;
-                sum += Math.floor(p / mod) + (p % mod);
-            }
-
-            const checkCodePoint = (mod - (sum % mod)) % mod;
-            const expected = chars[checkCodePoint];
-            const actual = g[14];
-
-            if (expected !== actual) {
-                return { ok: false, empty: false, message: 'GSTIN checksum mismatch (likely wrong GSTIN).' };
-            }
-
-            return { ok: true, empty: false, message: 'GSTIN looks valid.' };
-        };
-
-        const keyCode = (v) => s(v).trim().replace(/^0+/, '');
-
-        // ---------- CONSTANTS ----------
-        const STATES = [
-            { code: '01', name: 'Jammu and Kashmir' },
-            { code: '02', name: 'Himachal Pradesh' },
-            { code: '03', name: 'Punjab' },
-            { code: '04', name: 'Chandigarh' },
-            { code: '05', name: 'Uttarakhand' },
-            { code: '06', name: 'Haryana' },
-            { code: '07', name: 'Delhi' },
-            { code: '08', name: 'Rajasthan' },
-            { code: '09', name: 'Uttar Pradesh' },
-            { code: '10', name: 'Bihar' },
-            { code: '11', name: 'Sikkim' },
-            { code: '12', name: 'Arunachal Pradesh' },
-            { code: '13', name: 'Nagaland' },
-            { code: '14', name: 'Manipur' },
-            { code: '15', name: 'Mizoram' },
-            { code: '16', name: 'Tripura' },
-            { code: '17', name: 'Meghalaya' },
-            { code: '18', name: 'Assam' },
-            { code: '19', name: 'West Bengal' },
-            { code: '20', name: 'Jharkhand' },
-            { code: '21', name: 'Odisha' },
-            { code: '22', name: 'Chhattisgarh' },
-            { code: '23', name: 'Madhya Pradesh' },
-            { code: '24', name: 'Gujarat' },
-            { code: '26', name: 'Dadra and Nagar Haveli and Daman and Diu' },
-            { code: '27', name: 'Maharashtra' },
-            { code: '29', name: 'Karnataka' },
-            { code: '30', name: 'Goa' },
-            { code: '31', name: 'Lakshadweep' },
-            { code: '32', name: 'Kerala' },
-            { code: '33', name: 'Tamil Nadu' },
-            { code: '34', name: 'Puducherry' },
-            { code: '35', name: 'Andaman and Nicobar Islands' },
-            { code: '36', name: 'Telangana' },
-            { code: '37', name: 'Andhra Pradesh' },
-            { code: '38', name: 'Ladakh' },
-        ];
-
-        // ---------- FACTORIES ----------
-        const blankParty = () => ({
-            name: '',
-            address: '',
-            state: '',
-            state_code: '',
-            mobile: '',
-            gstin: '',
-            pincode: ''
-        });
-
-        const rowTemplate = () => ({
-            _k: Date.now() + Math.random(),
-            item_id: null,
-            item_type: null,
-
-            search: '',
-            ddOpen: false,
-            ddHi: 0,
-            ddStyle: '',
-            ddPreviewName: '',
-            ddPreview: '',
-
-            description: '',
-            hsn: '',
-            quantity: 1,
-
-            making_rate: 0,
-            gold_purity: null,
-            silver_purity: null,
-            gold_rate: 0,
-            silver_rate: 0,
-            silver_wt: 0,
-            gold_wt: 0,
-            gemstone_wt: 0,
-            diamond_wt: 0,
-
-            service_rate: 0,
-            tax_percent: 0,
-
-            amount_mode: 'auto',
-            manual_amount: 0,
-        });
-
-        const chargeTemplate = () => ({
-            _k: Date.now() + Math.random(),
-            name: '',
-            amount: 0,
-        });
-
-        // ---------- CLIENT DROPDOWN CONTROLLER ----------
-        const createClientDD = (ctx) => ({
-            isOpen: false,
-            q: '',
-            hi: 0,
-
-            open() {
-                this.isOpen = true;
-                this.hi = 0;
-            },
-            close() {
-                this.isOpen = false;
-            },
-
-            filtered() {
-                const q = lower(this.q).trim();
-                const list = ctx.clients || [];
-                if (!q) return list;
-
-                return list.filter(c => {
-                    const name = lower(c.name);
-                    const mob = lower(c.mobile);
-                    const gstin = lower(c.gstin);
-                    const code = lower(c.state_code);
-
-                    return (
-                        name.includes(q) ||
-                        mob.includes(q) ||
-                        gstin.includes(q) ||
-                        code.includes(q)
-                    );
-                });
-            },
-
-            down() {
-                if (!this.isOpen) this.open();
-                const list = this.filtered();
-                if (!list.length) return;
-                this.hi = Math.min(list.length - 1, this.hi + 1);
-            },
-
-            up() {
-                if (!this.isOpen) this.open();
-                const list = this.filtered();
-                if (!list.length) return;
-                this.hi = Math.max(0, this.hi - 1);
-            },
-
-            enter() {
-                const list = this.filtered();
-                if (!this.isOpen || !list.length) return;
-                this.select(list[this.hi]);
-            },
-
-            select(c) {
-                ctx.clientId = c.id;
-                this.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
-                this.close();
-            }
-        });
-
-        // ---------- MAIN RETURN ----------
-        return {
-            // DATA
-            clients: CLIENTS,
-            itemsData: ITEMS,
-            categories: CATEGORIES,
-            metalRates: METAL_RATES,
-            banks: BANKS,
-            states: STATES,
-
-            clientId: '',
-            party: blankParty(),
-            clientDD: null,
-
-            hdr: {
-                date: TODAY,
-                transport_mode: 'By Hand',
-                gst_no: BIZ_GSTIN,
-                reverse_charge: false,
-                terms: DEFAULT_TERMS,
-                kot_input: '',
-                kots: [],
-            },
-
-            basePrefix: @js($basePrefix),
-            computedPrefix: @js($suggestedPrefix),
-            invoiceNo: @js($initialInvoiceNo),
-
-            payment: {
-                received: 0,
-                mode: 'cash',
-                markFullyPaid: false,
-                bank_account_id: ''
-            },
-
-            pay: {
-                cash: 0,
-                upi: 0,
-                card: 0,
-                cheque: 0,
-                credit_excess: 0,
-                advance: 0,
-                online_mode: '',
-                online_ref: '',
-                upi_id: '',
-                card_last4: '',
-                card_ref: '',
-                cheque_no: '',
-                bank_name: '',
-            },
-
-            ui: {
-                showCharges: false,
-                showDiscount: false
-            },
-
-            charges: [],
-            discount: {
-                type: 'flat',
-                value: 0
-            },
-            tcs: {
-                apply: false,
-                percent: 0
-            },
-            roundOff: {
-                enabled: false
-            },
-
-            items: [],
-
-            saving: false,
-            savingClient: false,
-            savingItem: false,
-            newClientError: '',
-            newItemError: '',
-            activeRowIndex: null,
-            clientAutoSelect: true,
-            itemAutoSelect: true,
-
-            gstin: {
-                status: 'idle',
-                message: '',
-                value: ''
-            },
-            clientGstin: {
-                status: 'idle',
-                message: '',
-                value: ''
-            },
-
-            modals: {
-                client: false,
-                item: false
-            },
-
-            lastInvoiceInfo: {
-                found: false,
-                invoice_number: '',
-                invoice_id: null,
-            },
-
-            loadingLastInvoice: false,
-
-            newClient: {
+            // ---------- FACTORIES ----------
+            const blankParty = () => ({
                 name: '',
-                mobile: '',
                 address: '',
                 state: '',
                 state_code: '',
+                mobile: '',
                 gstin: '',
-                pincode: '',
-                state_pick: ''
-            },
+                pincode: ''
+            });
 
-            newItem: {
-                type: 'product',
-                name: '',
-                sku: '',
+            const rowTemplate = () => ({
+                _k: Date.now() + Math.random(),
+                item_id: null,
+                item_type: null,
+
+                search: '',
+                ddOpen: false,
+                ddHi: 0,
+                ddStyle: '',
+                ddPreviewName: '',
+                ddPreview: '',
+
                 description: '',
-                category_id: '',
-                tax_rate: 0,
                 hsn: '',
-                sac: '',
-                price: 0,
-                making_charge: 0,
-                gold_weight: 0,
-                gold_purity: '',
-                silver_weight: 0,
-                silver_purity: '',
-                stone_weight: 0,
-                diamond_weight: 0
-            },
+                quantity: 1,
 
-            // ---------- UTILS ----------
-            csrf() {
-                return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            },
+                making_rate: 0,
+                gold_purity: null,
+                silver_purity: null,
+                gold_rate: 0,
+                silver_rate: 0,
+                silver_wt: 0,
+                gold_wt: 0,
+                gemstone_wt: 0,
+                diamond_wt: 0,
 
-            money,
+                service_rate: 0,
+                tax_percent: 0,
 
-            filteredItems(q) {
-                const query = lower(q).trim();
-                const list = this.itemsData || [];
-                if (!query) return list;
+                amount_mode: 'auto',
+                manual_amount: 0,
+            });
 
-                return list.filter(it => {
-                    const name = lower(it.name);
-                    const sku = lower(it.sku);
-                    const desc = lower(it.description || it.desc || it.long_description);
-                    return name.includes(query) || sku.includes(query) || desc.includes(query);
-                });
-            },
+            const chargeTemplate = () => ({
+                _k: Date.now() + Math.random(),
+                name: '',
+                amount: 0,
+            });
 
-            getItemSearchLabel(itemId) {
-                const it = (this.itemsData || []).find(x => String(x.id) === String(itemId));
-                if (!it) return '';
-                return it.sku ? `${it.name} (${it.sku})` : (it.name || '');
-            },
+            // ---------- CLIENT DROPDOWN CONTROLLER ----------
+            const createClientDD = (ctx) => ({
+                isOpen: false,
+                q: '',
+                hi: 0,
 
-            // ---------- INIT ----------
-            init() {
-                this.clientDD = createClientDD(this);
+                open() {
+                    this.isOpen = true;
+                    this.hi = 0;
+                },
+                close() {
+                    this.isOpen = false;
+                },
 
-                this.$watch('clientId', () => this.syncParty());
+                filtered() {
+                    const q = lower(this.q).trim();
+                    const list = ctx.clients || [];
+                    if (!q) return list;
 
-                if (!this.items.length) this.items.push(rowTemplate());
-                if (!this.charges.length) this.charges.push(chargeTemplate());
+                    return list.filter(c => {
+                        const name = lower(c.name);
+                        const mob = lower(c.mobile);
+                        const gstin = lower(c.gstin);
+                        const code = lower(c.state_code);
 
-                this.syncParty();
-                this.onReceivedInput();
-                this.calc();
+                        return (
+                            name.includes(q) ||
+                            mob.includes(q) ||
+                            gstin.includes(q) ||
+                            code.includes(q)
+                        );
+                    });
+                },
 
-                const reposition = () => {
-                    for (let idx = 0; idx < this.items.length; idx++) {
-                        if (this.items[idx]?.ddOpen) this.setItemDDPos(idx);
-                    }
-                };
+                down() {
+                    if (!this.isOpen) this.open();
+                    const list = this.filtered();
+                    if (!list.length) return;
+                    this.hi = Math.min(list.length - 1, this.hi + 1);
+                },
 
-                window.addEventListener('scroll', reposition, true);
-                window.addEventListener('resize', reposition);
-            },
+                up() {
+                    if (!this.isOpen) this.open();
+                    const list = this.filtered();
+                    if (!list.length) return;
+                    this.hi = Math.max(0, this.hi - 1);
+                },
 
-            // ---------- PARTY ----------
-            async syncParty() {
-                const c = (this.clients || []).find(x => String(x.id) === String(this.clientId));
+                enter() {
+                    const list = this.filtered();
+                    if (!this.isOpen || !list.length) return;
+                    this.select(list[this.hi]);
+                },
 
-                this.party = c ? {
-                    name: c.name ?? '',
-                    mobile: c.mobile ?? '',
-                    address: c.address ?? '',
-                    state: c.state ?? '',
-                    state_code: c.state_code ?? '',
-                    gstin: c.gstin ?? '',
-                    pincode: c.pincode ?? '',
-                } : blankParty();
-
-                if (c && this.clientDD) {
-                    this.clientDD.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
+                select(c) {
+                    ctx.clientId = c.id;
+                    this.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
+                    this.close();
                 }
+            });
 
-                this.calc();
-                await this.loadLastInvoiceForClient();
-            },
+            return {
+                // DATA
+                clients: CLIENTS,
+                itemsData: ITEMS,
+                categories: CATEGORIES,
+                metalRates: METAL_RATES,
+                banks: BANKS,
+                states: STATES,
 
-            isIntra() {
-                const bizCode = keyCode(BIZ_STATE_CODE);
-                const partyCode = keyCode(this.party.state_code);
-                if (!bizCode || !partyCode) return false;
-                return bizCode === partyCode;
-            },
+                clientId: '',
+                party: blankParty(),
+                clientDD: null,
 
-            hasProduct() {
-                return (this.items || []).some(r => r.item_type === 'product');
-            },
+                hdr: {
+                    date: TODAY,
+                    transport_mode: 'By Hand',
+                    gst_no: BIZ_GSTIN,
+                    reverse_charge: false,
+                    terms: DEFAULT_TERMS,
+                    kot_input: '',
+                    kots: [],
+                },
 
-            hasService() {
-                return (this.items || []).some(r => r.item_type === 'service');
-            },
+                basePrefix: @js($basePrefix),
+                computedPrefix: @js($suggestedPrefix),
+                invoiceNo: @js($initialInvoiceNo),
 
-            // ---------- LAST INVOICE AUTO FILL ----------
-            resetInvoiceDataKeepParty() {
-                this.items = [rowTemplate()];
-                this.charges = [chargeTemplate()];
+                payment: {
+                    received: 0,
+                    mode: 'cash',
+                    markFullyPaid: false,
+                    bank_account_id: ''
+                },
 
-                this.discount = { type: 'flat', value: 0 };
-                this.tcs = { apply: false, percent: 0 };
-                this.roundOff = { enabled: false };
-
-                this.pay = {
+                pay: {
                     cash: 0,
                     upi: 0,
                     card: 0,
@@ -2470,660 +1456,62 @@
                     card_ref: '',
                     cheque_no: '',
                     bank_name: '',
-                };
+                },
 
-                this.payment = {
-                    received: 0,
-                    mode: 'cash',
-                    markFullyPaid: false,
-                    bank_account_id: ''
-                };
+                ui: {
+                    showCharges: false,
+                    showDiscount: false
+                },
 
-                this.hdr.date = TODAY;
-                this.hdr.reverse_charge = false;
-                this.hdr.terms = DEFAULT_TERMS;
+                charges: [],
+                discount: {
+                    type: 'flat',
+                    value: 0
+                },
+                tcs: {
+                    apply: false,
+                    percent: 0
+                },
+                roundOff: {
+                    enabled: false
+                },
 
-                this.lastInvoiceInfo = {
+                items: [],
+
+                saving: false,
+                savingClient: false,
+                savingItem: false,
+                newClientError: '',
+                newItemError: '',
+                activeRowIndex: null,
+                clientAutoSelect: true,
+                itemAutoSelect: true,
+
+                gstin: {
+                    status: 'idle',
+                    message: '',
+                    value: ''
+                },
+                clientGstin: {
+                    status: 'idle',
+                    message: '',
+                    value: ''
+                },
+
+                modals: {
+                    client: false,
+                    item: false
+                },
+
+                lastInvoiceInfo: {
                     found: false,
                     invoice_number: '',
                     invoice_id: null,
-                };
+                },
 
-                this.onReceivedInput();
-                this.calc();
-            },
+                loadingLastInvoice: false,
 
-            async loadLastInvoiceForClient() {
-                if (!this.clientId) {
-                    this.resetInvoiceDataKeepParty();
-                    return;
-                }
-
-                try {
-                    this.loadingLastInvoice = true;
-
-                    const url = `${LAST_CLIENT_INVOICE_BASE_URL}/${this.clientId}/last?doc_type=${encodeURIComponent(DOC_TYPE)}`;
-
-                    const res = await fetch(url, {
-                        method: 'GET',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                        }
-                    });
-
-                    const data = await res.json().catch(() => ({}));
-
-                    if (!res.ok || !data?.found || !data?.invoice) {
-                        this.resetInvoiceDataKeepParty();
-                        return;
-                    }
-
-                    const inv = data.invoice;
-
-                    this.lastInvoiceInfo = {
-                        found: true,
-                        invoice_number: inv.invoice_number || '',
-                        invoice_id: inv.id || null,
-                    };
-
-                    this.hdr.date = TODAY;
-                    this.hdr.reverse_charge = !!inv.reverse_charge;
-                    this.hdr.terms = inv.terms || DEFAULT_TERMS;
-
-                    this.pay.cash = Number(inv.pay_cash || 0);
-                    this.pay.upi = Number(inv.pay_upi || 0);
-                    this.pay.card = Number(inv.pay_card || 0);
-                    this.pay.cheque = Number(inv.pay_cheque || 0);
-                    this.pay.credit_excess = Number(inv.credit_sales_excess || 0);
-                    this.pay.advance = Number(inv.advance_amount || 0);
-                    this.pay.online_mode = inv.online_mode || '';
-                    this.pay.online_ref = inv.online_ref || '';
-                    this.pay.upi_id = inv.upi_id || '';
-                    this.pay.card_last4 = inv.card_last4 || '';
-                    this.pay.card_ref = inv.card_ref || '';
-                    this.pay.cheque_no = inv.cheque_no || '';
-                    this.pay.bank_name = inv.bank_name || '';
-
-                    const received =
-                        Number(inv.pay_cash || 0) +
-                        Number(inv.pay_upi || 0) +
-                        Number(inv.pay_card || 0) +
-                        Number(inv.pay_cheque || 0);
-
-                    this.payment.received = received;
-                    this.payment.markFullyPaid = false;
-                    this.payment.bank_account_id = inv.bank_account_id || '';
-
-                    if (Number(inv.pay_cash || 0) > 0) this.payment.mode = 'cash';
-                    else if (Number(inv.pay_upi || 0) > 0) this.payment.mode = 'upi';
-                    else if (Number(inv.pay_card || 0) > 0) this.payment.mode = 'card';
-                    else if (Number(inv.pay_cheque || 0) > 0) this.payment.mode = 'cheque';
-                    else this.payment.mode = 'cash';
-
-                    this.discount = {
-                        type: 'flat',
-                        value: Number(inv.discount_total || 0),
-                    };
-
-                    const oldCharges = Array.isArray(inv.charges_json) ? inv.charges_json : [];
-                    this.charges = oldCharges.length
-                        ? oldCharges.map(c => ({
-                            _k: Date.now() + Math.random(),
-                            name: c.name || '',
-                            amount: Number(c.amount || 0),
-                        }))
-                        : [chargeTemplate()];
-
-                    this.tcs.apply = Number(inv.tcs_percent || 0) > 0;
-                    this.tcs.percent = Number(inv.tcs_percent || 0);
-                    this.roundOff.enabled = Number(inv.round_off || 0) !== 0;
-
-                    const oldItems = Array.isArray(inv.items) ? inv.items : [];
-                    this.items = oldItems.length
-                        ? oldItems.map(it => ({
-                            _k: Date.now() + Math.random(),
-                            item_id: it.item_id ?? null,
-                            item_type: it.item_type ?? null,
-
-                            search: this.getItemSearchLabel(it.item_id),
-                            ddOpen: false,
-                            ddHi: 0,
-                            ddStyle: '',
-                            ddPreviewName: '',
-                            ddPreview: '',
-
-                            description: it.description || '',
-                            hsn: it.hsn || '',
-                            quantity: Number(it.quantity || 1),
-
-                            making_rate: Number(it.making_rate || 0),
-                            gold_purity: it.gold_purity || null,
-                            silver_purity: it.silver_purity || null,
-                            gold_rate: Number(it.gold_rate || 0),
-                            silver_rate: Number(it.silver_rate || 0),
-                            silver_wt: Number(it.silver_wt || 0),
-                            gold_wt: Number(it.gold_wt || 0),
-                            gemstone_wt: Number(it.gemstone_wt || 0),
-                            diamond_wt: Number(it.diamond_wt || 0),
-
-                            service_rate: Number(it.service_rate || 0),
-                            tax_percent: Number(it.tax_percent || 0),
-
-                            amount_mode: 'manual',
-                            manual_amount: Number(it.manual_amount || 0),
-                        }))
-                        : [rowTemplate()];
-
-                    this.onReceivedInput();
-                    this.calc();
-                } catch (e) {
-                    console.error('Failed to load previous invoice:', e);
-                    this.resetInvoiceDataKeepParty();
-                } finally {
-                    this.loadingLastInvoice = false;
-                }
-            },
-
-            // ---------- METAL RATE ----------
-            findMetalRate(type, purity) {
-                const t = lower(type).trim();
-                const pRaw = s(purity).trim();
-                if (!t) return 0;
-
-                const candidates = [];
-                if (pRaw) {
-                    candidates.push(pRaw);
-                    candidates.push(pRaw.split('(')[0].trim());
-                    candidates.push(pRaw.split(' ')[0].trim());
-                    const m = pRaw.match(/\(([^)]+)\)/);
-                    if (m?.[1]) candidates.push(s(m[1]).trim());
-                }
-
-                const uniq = [...new Set(candidates.filter(Boolean))];
-
-                const rec = (this.metalRates || []).find(r => {
-                    const rt = lower(r.metal_type).trim();
-                    if (rt !== t) return false;
-
-                    const rp = s(r.purity).trim();
-                    if (!rp) return false;
-
-                    const rpBase = rp.split('(')[0].trim();
-                    const rpFirst = rp.split(' ')[0].trim();
-                    const rpParen = (rp.match(/\(([^)]+)\)/) || [])[1]
-                        ? s((rp.match(/\(([^)]+)\)/) || [])[1]).trim()
-                        : '';
-
-                    return uniq.includes(rp) || uniq.includes(rpBase) || uniq.includes(rpFirst) || (rpParen && uniq.includes(rpParen));
-                });
-
-                return rec ? n(rec.rate_per_gram ?? rec.rate ?? 0) : 0;
-            },
-
-            // ---------- ROW ACTIONS ----------
-            add() {
-                this.items.push(rowTemplate());
-                this.calc();
-            },
-
-            remove(i) {
-                this.items.splice(i, 1);
-                if (!this.items.length) this.items.push(rowTemplate());
-                this.calc();
-            },
-
-            pickItem(i, id) {
-                const it = (this.itemsData || []).find(x => String(x.id) === String(id));
-                if (!it) return;
-
-                const r = this.items[i];
-                if (!r) return;
-
-                r.item_id = it.id;
-                r.item_type = this.inferItemType(it);
-
-                r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                r.description = it.description || it.name || '';
-                r.tax_percent = n(it.tax_rate, 0);
-
-                r.amount_mode = 'auto';
-                r.manual_amount = 0;
-
-                if (r.item_type === 'service') {
-                    r.hsn = it.sac || '';
-                    r.quantity = Math.max(1, n(r.quantity, 1));
-                    r.service_rate = n(it.price, 0);
-
-                    r.making_rate = 0;
-                    r.gold_purity = null;
-                    r.silver_purity = null;
-                    r.gold_rate = 0;
-                    r.silver_rate = 0;
-                    r.gold_wt = 0;
-                    r.silver_wt = 0;
-                    r.gemstone_wt = 0;
-                    r.diamond_wt = 0;
-
-                    r.manual_amount = this.lineAmount(r);
-                    this.calc();
-                    return;
-                }
-
-                r.hsn = it.hsn || it.sac || '';
-                r.quantity = n(it.quantity, 1) || 1;
-                r.service_rate = 0;
-
-                r.gold_wt = n(it.gold_weight ?? it.gold_wt, 0);
-                r.silver_wt = n(it.silver_weight ?? it.silver_wt, 0);
-
-                r.gold_purity = s(it.gold_purity ?? it.purity).trim() || null;
-                r.silver_purity = s(it.silver_purity).trim() || null;
-
-                r.gemstone_wt = n(it.stone_weight ?? it.gemstone_wt, 0);
-                r.diamond_wt = n(it.diamond_weight ?? it.diamond_wt, 0);
-
-                r.making_rate = n(it.making_charge ?? it.making_rate, 0);
-                r.gold_rate = this.findMetalRate('gold', r.gold_purity);
-                r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
-
-                r.manual_amount = this.lineAmount(r);
-                this.calc();
-            },
-
-
-            inferItemType(it) {
-                const explicitType = (it?.type || it?.item_type || '').toString().toLowerCase().trim();
-                if (explicitType === 'service' || explicitType === 'product') {
-                    return explicitType;
-                }
-
-                const hasServicePrice =
-                    Number(it?.price || 0) > 0 &&
-                    Number(it?.gold_weight ?? it?.gold_wt ?? 0) <= 0 &&
-                    Number(it?.silver_weight ?? it?.silver_wt ?? 0) <= 0 &&
-                    Number(it?.making_charge ?? it?.making_rate ?? 0) <= 0;
-
-                if (hasServicePrice) {
-                    return 'service';
-                }
-
-                const hasProductData =
-                    Number(it?.gold_weight ?? it?.gold_wt ?? 0) > 0 ||
-                    Number(it?.silver_weight ?? it?.silver_wt ?? 0) > 0 ||
-                    Number(it?.stone_weight ?? it?.gemstone_wt ?? 0) > 0 ||
-                    Number(it?.diamond_weight ?? it?.diamond_wt ?? 0) > 0 ||
-                    Number(it?.making_charge ?? it?.making_rate ?? 0) > 0 ||
-                    !!(it?.gold_purity) ||
-                    !!(it?.silver_purity);
-
-                if (hasProductData) {
-                    return 'product';
-                }
-
-                // SAC hai aur HSN nahi hai to service maan lo
-                if ((it?.sac || '') && !(it?.hsn || '')) {
-                    return 'service';
-                }
-
-                return 'service';
-            },
-
-
-            onAmountEdit(r) {
-                const total = n(r.manual_amount, 0);
-                r.amount_mode = (total > 0) ? 'manual' : 'auto';
-
-                if (r.item_type === 'service') {
-                    const qty = Math.max(1, n(r.quantity, 1));
-                    const pct = n(r.tax_percent, 0);
-                    const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                    r.service_rate = n((base / qty).toFixed(2), 0);
-                }
-
-                this.calc();
-            },
-
-            onAutoChange(r) {
-                if (r.amount_mode !== 'manual') {
-                    r.manual_amount = this.lineAmount(r);
-                } else if (r.item_type === 'service') {
-                    const total = n(r.manual_amount, 0);
-                    const qty = Math.max(1, n(r.quantity, 1));
-                    const pct = n(r.tax_percent, 0);
-                    const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                    r.service_rate = n((base / qty).toFixed(2), 0);
-                }
-
-                this.calc();
-            },
-
-            // ---------- LINE CALCS ----------
-            lineBase(r) {
-                const qty = Math.max(1, n(r.quantity, 1));
-                const pct = n(r.tax_percent, 0);
-
-                if (r.amount_mode === 'manual') {
-                    const total = n(r.manual_amount, 0);
-                    const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                    return Math.max(0, n(base.toFixed(2), 0));
-                }
-
-                if (r.item_type === 'service') {
-                    const rate = n(r.service_rate, 0);
-                    return Math.max(0, n((rate * qty).toFixed(2), 0));
-                }
-
-                const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
-                const silvAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
-                const making = n(r.making_rate, 0);
-
-                return Math.max(0, n(((goldAmt + silvAmt + making) * qty).toFixed(2), 0));
-            },
-
-            lineTax(r) {
-                const pct = n(r.tax_percent, 0);
-                const base = this.lineBase(r);
-                return n((base * (pct / 100)).toFixed(2), 0);
-            },
-
-            lineAmount(r) {
-                if (r.amount_mode === 'manual') {
-                    return n(n(r.manual_amount, 0).toFixed(2), 0);
-                }
-                return n((this.lineBase(r) + this.lineTax(r)).toFixed(2), 0);
-            },
-
-            subtotal() {
-                return n((this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0).toFixed(2), 0);
-            },
-
-            avgTaxPercentRaw() {
-                const baseSum = (this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0);
-                if (baseSum <= 0) return 0;
-
-                const weighted = (this.items || []).reduce((sum, r) => sum + (this.lineBase(r) * n(r.tax_percent, 0)), 0);
-                return (weighted / baseSum);
-            },
-
-            avgTaxPercent() {
-                return n(this.avgTaxPercentRaw().toFixed(2), 0);
-            },
-
-            itemsTaxTotal() {
-                return n((this.items || []).reduce((sum, r) => sum + this.lineTax(r), 0).toFixed(2), 0);
-            },
-
-            chargesTotal() {
-                return n((this.charges || []).reduce((sum, c) => sum + n(c.amount, 0), 0).toFixed(2), 0);
-            },
-
-            chargesTaxTotal() {
-                const pct = this.avgTaxPercentRaw();
-                return n((this.chargesTotal() * (pct / 100)).toFixed(2), 0);
-            },
-
-            discountAmount() {
-                const base = this.subtotal();
-                const v = n(this.discount.value, 0);
-                if (this.discount.type === 'percent') {
-                    return n((base * (v / 100)).toFixed(2), 0);
-                }
-                return n(v.toFixed(2), 0);
-            },
-
-            taxableAmount() {
-                const val = this.subtotal() + this.chargesTotal() - this.discountAmount();
-                return n(Math.max(0, val).toFixed(2), 0);
-            },
-
-            taxOnTaxable() {
-                return n((this.itemsTaxTotal() + this.chargesTaxTotal()).toFixed(2), 0);
-            },
-
-            cgst() {
-                return this.isIntra() ? n((this.taxOnTaxable() / 2).toFixed(2), 0) : 0;
-            },
-
-            sgst() {
-                return this.isIntra() ? n((this.taxOnTaxable() / 2).toFixed(2), 0) : 0;
-            },
-
-            igst() {
-                return this.isIntra() ? 0 : n(this.taxOnTaxable().toFixed(2), 0);
-            },
-
-            tcsAmount() {
-                if (!this.tcs.apply) return 0;
-                const pct = n(this.tcs.percent, 0);
-                if (pct <= 0) return 0;
-                const base = this.taxableAmount();
-                return n((base * (pct / 100)).toFixed(2), 0);
-            },
-
-            totalBeforeRound() {
-                return n((this.taxableAmount() + this.taxOnTaxable() + this.tcsAmount()).toFixed(2), 0);
-            },
-
-            roundOffAmount() {
-                if (!this.roundOff.enabled) return 0;
-                const raw = this.totalBeforeRound();
-                const rounded = Math.round(raw);
-                return n((rounded - raw).toFixed(2), 0);
-            },
-
-            totalPayable() {
-                return n((this.totalBeforeRound() + this.roundOffAmount()).toFixed(2), 0);
-            },
-
-            // ---------- PAYMENT ----------
-            toggleFullyPaid() {
-                if (this.payment.markFullyPaid) {
-                    this.payment.received = this.totalPayable();
-                }
-                this.onReceivedInput();
-            },
-
-            onReceivedInput() {
-                const amt = n(this.payment.received, 0);
-
-                this.pay.cash = 0;
-                this.pay.upi = 0;
-                this.pay.card = 0;
-                this.pay.cheque = 0;
-
-                if (this.payment.mode === 'cash') this.pay.cash = amt;
-                if (this.payment.mode === 'upi') this.pay.upi = amt;
-                if (this.payment.mode === 'card') this.pay.card = amt;
-                if (this.payment.mode === 'cheque') this.pay.cheque = amt;
-                if (this.payment.mode === 'bank') this.pay.upi = amt;
-
-                if (this.payment.mode === 'cash') {
-                    this.payment.bank_account_id = '';
-                }
-
-                this.calc();
-            },
-
-            receivedTotal() {
-                const t = n(this.pay.cash) + n(this.pay.upi) + n(this.pay.card) + n(this.pay.cheque);
-                return n(t.toFixed(2), 0);
-            },
-
-            balanceAmount() {
-                const paid = this.receivedTotal() + n(this.pay.credit_excess) + n(this.pay.advance);
-                const bal = this.totalPayable() - paid;
-                return n(Math.max(0, bal).toFixed(2), 0);
-            },
-
-            // ---------- CHARGES ----------
-            blankCharge() {
-                return chargeTemplate();
-            },
-
-            addCharge() {
-                this.charges.push(chargeTemplate());
-                this.calc();
-            },
-
-            removeCharge(i) {
-                this.charges.splice(i, 1);
-                this.calc();
-            },
-
-            chargesPayload() {
-                return (this.charges || [])
-                    .filter(c => s(c.name).trim() || n(c.amount) > 0)
-                    .map(c => ({
-                        name: s(c.name).trim(),
-                        amount: n(c.amount)
-                    }));
-            },
-
-            // ---------- GST INPUT ----------
-            normalizeGstin,
-            validateGstinLocal,
-
-            onGstinInput(scope) {
-                if (scope === 'hdr') {
-                    const g = normalizeGstin(this.hdr.gst_no);
-                    this.hdr.gst_no = g;
-
-                    const res = validateGstinLocal(g);
-                    if (res.empty) {
-                        this.gstin = { status: 'idle', message: '', value: '' };
-                        return;
-                    }
-
-                    this.gstin = {
-                        status: res.ok ? 'valid' : 'invalid',
-                        message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
-                        value: g
-                    };
-                    return;
-                }
-
-                if (scope === 'client') {
-                    const g = normalizeGstin(this.newClient.gstin);
-                    this.newClient.gstin = g;
-
-                    const res = validateGstinLocal(g);
-                    if (res.empty) {
-                        this.clientGstin = { status: 'idle', message: '', value: '' };
-                        return;
-                    }
-
-                    this.clientGstin = {
-                        status: res.ok ? 'valid' : 'invalid',
-                        message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
-                        value: g
-                    };
-                }
-            },
-
-            // ---------- ITEM DROPDOWN ----------
-            openItemDD(i) {
-                const r = this.items[i];
-                if (!r) return;
-                r.ddOpen = true;
-                r.ddHi = 0;
-                this.$nextTick(() => this.setItemDDPos(i));
-            },
-
-            closeItemDD(i, keepText = true) {
-                const r = this.items[i];
-                if (!r) return;
-                r.ddOpen = false;
-
-                if (keepText && r.item_id) {
-                    const it = (this.itemsData || []).find(x => String(x.id) === String(r.item_id));
-                    if (it) {
-                        r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                    }
-                }
-            },
-
-            selectItemFromDD(i, it) {
-                const r = this.items[i];
-                if (!r || !it) return;
-
-                r.item_id = it.id;
-                this.pickItem(i, it.id);
-                r.ddOpen = false;
-
-                this.$nextTick(() => {
-                    const el = document.getElementById('item_search_' + i);
-                    if (el) el.focus({ preventScroll: true });
-                });
-            },
-
-            itemDDDown(i) {
-                const r = this.items[i];
-                if (!r) return;
-                const list = this.filteredItems(r.search);
-                if (!r.ddOpen) r.ddOpen = true;
-                if (!list.length) return;
-                r.ddHi = Math.min(list.length - 1, (r.ddHi || 0) + 1);
-            },
-
-            itemDDUp(i) {
-                const r = this.items[i];
-                if (!r) return;
-                const list = this.filteredItems(r.search);
-                if (!r.ddOpen) r.ddOpen = true;
-                if (!list.length) return;
-                r.ddHi = Math.max(0, (r.ddHi || 0) - 1);
-            },
-
-            itemDDEnter(i) {
-                const r = this.items[i];
-                if (!r) return;
-                const list = this.filteredItems(r.search);
-                if (!r.ddOpen || !list.length) return;
-                const it = list[r.ddHi || 0];
-                if (it) this.selectItemFromDD(i, it);
-            },
-
-            setItemDDPos(i) {
-                const r = this.items[i];
-                if (!r) return;
-
-                const input = document.getElementById('item_search_' + i);
-                if (!input) return;
-
-                const rect = input.getBoundingClientRect();
-                const top = rect.bottom + 4;
-                const left = rect.left;
-                const width = rect.width;
-                const maxH = clamp(window.innerHeight - top - 12, 160, 280);
-
-                r.ddStyle = `top:${top}px; left:${left}px; width:${width}px; max-height:${maxH}px;`;
-            },
-
-            // ---------- KOT ----------
-            syncKotsFromInput() {
-                const raw = s(this.hdr.kot_input).trim();
-                if (!raw) {
-                    this.hdr.kots = [];
-                    return;
-                }
-
-                const parts = raw.split(/[, \n\t]+/).map(x => x.trim()).filter(Boolean);
-                const seen = new Set();
-                this.hdr.kots = parts.filter(x => !seen.has(x) && seen.add(x));
-                this.hdr.kot_input = this.hdr.kots.join(', ');
-            },
-
-            removeKot(idx) {
-                this.hdr.kots.splice(idx, 1);
-                this.hdr.kot_input = this.hdr.kots.join(', ');
-            },
-
-            // ---------- MODALS ----------
-            openClientModal() {
-                this.newClientError = '';
-                this.newClient = {
+                newClient: {
                     name: '',
                     mobile: '',
                     address: '',
@@ -3132,34 +1520,9 @@
                     gstin: '',
                     pincode: '',
                     state_pick: ''
-                };
-                this.clientAutoSelect = true;
-                this.modals.client = true;
-            },
+                },
 
-            closeClientModal() {
-                this.modals.client = false;
-            },
-
-            applyClientState() {
-                const v = s(this.newClient.state_pick).trim();
-                if (!v) {
-                    this.newClient.state = '';
-                    this.newClient.state_code = '';
-                    return;
-                }
-
-                const parts = v.split(',');
-                this.newClient.state_code = s(parts[0]).trim();
-                this.newClient.state = s(parts.slice(1).join(',')).trim();
-            },
-
-            openItemModal(rowIndex = null) {
-                this.activeRowIndex = rowIndex;
-                this.newItemError = '';
-                this.itemAutoSelect = true;
-
-                this.newItem = {
+                newItem: {
                     type: 'product',
                     name: '',
                     sku: '',
@@ -3176,199 +1539,1039 @@
                     silver_purity: '',
                     stone_weight: 0,
                     diamond_weight: 0
-                };
+                },
 
-                this.modals.item = true;
-            },
+                // ---------- UTILS ----------
+                csrf() {
+                    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                },
 
-            closeItemModal() {
-                this.modals.item = false;
-                this.activeRowIndex = null;
-            },
+                money,
 
-            async saveClient() {
-                this.newClientError = '';
+                filteredItems(q) {
+                    const query = lower(q).trim();
+                    const list = this.itemsData || [];
+                    if (!query) return list;
 
-                if (!s(this.newClient.name).trim()) {
-                    this.newClientError = 'Name is required.';
-                    return;
-                }
-
-                const mob = s(this.newClient.mobile).replace(/\D/g, '');
-                if (mob && mob.length < 10) {
-                    this.newClientError = 'Mobile must be 10 digits (optional).';
-                    return;
-                }
-
-                this.newClient.mobile = mob;
-
-                try {
-                    this.savingClient = true;
-
-                    const res = await fetch(@js(route('clients.quick-store')), {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': this.csrf(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            ...this.newClient,
-                            is_save: this.clientAutoSelect ? 1 : 0
-                        })
+                    return list.filter(it => {
+                        const name = lower(it.name);
+                        const sku = lower(it.sku);
+                        const desc = lower(it.description || it.desc || it.long_description);
+                        return name.includes(query) || sku.includes(query) || desc.includes(query);
                     });
+                },
 
-                    const data = await res.json().catch(() => ({}));
+                getItemSearchLabel(itemId) {
+                    const it = (this.itemsData || []).find(x => String(x.id) === String(itemId));
+                    if (!it) return '';
+                    return it.sku ? `${it.name} (${it.sku})` : (it.name || '');
+                },
 
-                    if (!res.ok) {
-                        this.newClientError = data?.message || 'Failed to save client.';
-                        return;
+                normalizeItemType(v) {
+                    const t = s(v).toLowerCase().trim();
+                    return (t === 'product' || t === 'service') ? t : 'service';
+                },
+
+                inferItemType(it) {
+                    const explicitType = this.normalizeItemType(it?.type || it?.item_type || '');
+
+                    if (explicitType === 'product' || explicitType === 'service') {
+                        return explicitType;
                     }
 
-                    this.clients.unshift(data.client);
+                    const hasServicePrice =
+                        Number(it?.price || 0) > 0 &&
+                        Number(it?.gold_weight ?? it?.gold_wt ?? 0) <= 0 &&
+                        Number(it?.silver_weight ?? it?.silver_wt ?? 0) <= 0 &&
+                        Number(it?.making_charge ?? it?.making_rate ?? 0) <= 0;
 
-                    if (this.clientAutoSelect) {
-                        this.clientId = data.client.id;
-                        this.clientDD.q = data.client.mobile
-                            ? (data.client.name + ' (' + data.client.mobile + ')')
-                            : data.client.name;
+                    if (hasServicePrice) {
+                        return 'service';
                     }
 
-                    this.modals.client = false;
-                } catch (e) {
-                    this.newClientError = 'Network error.';
-                } finally {
-                    this.savingClient = false;
-                }
-            },
+                    const hasProductData =
+                        Number(it?.gold_weight ?? it?.gold_wt ?? 0) > 0 ||
+                        Number(it?.silver_weight ?? it?.silver_wt ?? 0) > 0 ||
+                        Number(it?.stone_weight ?? it?.gemstone_wt ?? 0) > 0 ||
+                        Number(it?.diamond_weight ?? it?.diamond_wt ?? 0) > 0 ||
+                        Number(it?.making_charge ?? it?.making_rate ?? 0) > 0 ||
+                        !!(it?.gold_purity) ||
+                        !!(it?.silver_purity);
 
-            async saveItem() {
-                this.newItemError = '';
+                    if (hasProductData) {
+                        return 'product';
+                    }
 
-                if (!String(this.newItem.name || '').trim()) {
-                    this.newItemError = 'Item name is required.';
-                    return;
-                }
+                    if ((it?.sac || '') && !(it?.hsn || '')) {
+                        return 'service';
+                    }
 
-                if (!this.newItem.category_id) {
-                    this.newItemError = 'Please select category.';
-                    return;
-                }
+                    return 'service';
+                },
 
-                if (this.newItem.type === 'service' && Number(this.newItem.price || 0) <= 0) {
-                    this.newItemError = 'Service price is required.';
-                    return;
-                }
+                resetRowForService(r) {
+                    r.making_rate = 0;
+                    r.gold_purity = null;
+                    r.silver_purity = null;
+                    r.gold_rate = 0;
+                    r.silver_rate = 0;
+                    r.gold_wt = 0;
+                    r.silver_wt = 0;
+                    r.gemstone_wt = 0;
+                    r.diamond_wt = 0;
+                },
 
-                try {
-                    this.savingItem = true;
+                resetRowForProduct(r) {
+                    r.service_rate = 0;
+                },
 
-                    const res = await fetch(@js(route('items.store.ajax')), {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': this.csrf(),
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            ...this.newItem,
-                            is_save: this.itemAutoSelect ? 1 : 0
-                        })
-                    });
+                init() {
+                    this.clientDD = createClientDD(this);
 
-                    const data = await res.json().catch(() => ({}));
+                    this.$watch('clientId', () => this.syncParty());
 
-                    if (!res.ok) {
-                        if (data?.errors?.category_id?.length) {
-                            this.newItemError = data.errors.category_id[0];
-                        } else {
-                            this.newItemError = data?.message || 'Failed to save item.';
+                    if (!this.items.length) this.items.push(rowTemplate());
+                    if (!this.charges.length) this.charges.push(chargeTemplate());
+
+                    this.syncParty();
+                    this.onReceivedInput();
+                    this.calc();
+
+                    const reposition = () => {
+                        for (let idx = 0; idx < this.items.length; idx++) {
+                            if (this.items[idx]?.ddOpen) this.setItemDDPos(idx);
                         }
+                    };
+
+                    window.addEventListener('scroll', reposition, true);
+                    window.addEventListener('resize', reposition);
+                },
+
+                // ---------- PARTY ----------
+                async syncParty() {
+                    const c = (this.clients || []).find(x => String(x.id) === String(this.clientId));
+
+                    this.party = c ? {
+                        name: c.name ?? '',
+                        mobile: c.mobile ?? '',
+                        address: c.address ?? '',
+                        state: c.state ?? '',
+                        state_code: c.state_code ?? '',
+                        gstin: c.gstin ?? '',
+                        pincode: c.pincode ?? '',
+                    } : blankParty();
+
+                    if (c && this.clientDD) {
+                        this.clientDD.q = c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name;
+                    }
+
+                    this.calc();
+                    await this.loadLastInvoiceForClient();
+                },
+
+                isIntra() {
+                    const bizCode = keyCode(BIZ_STATE_CODE);
+                    const partyCode = keyCode(this.party.state_code);
+                    if (!bizCode || !partyCode) return false;
+                    return bizCode === partyCode;
+                },
+
+                hasProduct() {
+                    return (this.items || []).some(r => this.normalizeItemType(r.item_type) === 'product');
+                },
+
+                hasService() {
+                    return (this.items || []).some(r => this.normalizeItemType(r.item_type) === 'service');
+                },
+
+                // ---------- LAST INVOICE AUTO FILL ----------
+                resetInvoiceDataKeepParty() {
+                    this.items = [rowTemplate()];
+                    this.charges = [chargeTemplate()];
+
+                    this.discount = { type: 'flat', value: 0 };
+                    this.tcs = { apply: false, percent: 0 };
+                    this.roundOff = { enabled: false };
+
+                    this.pay = {
+                        cash: 0,
+                        upi: 0,
+                        card: 0,
+                        cheque: 0,
+                        credit_excess: 0,
+                        advance: 0,
+                        online_mode: '',
+                        online_ref: '',
+                        upi_id: '',
+                        card_last4: '',
+                        card_ref: '',
+                        cheque_no: '',
+                        bank_name: '',
+                    };
+
+                    this.payment = {
+                        received: 0,
+                        mode: 'cash',
+                        markFullyPaid: false,
+                        bank_account_id: ''
+                    };
+
+                    this.hdr.date = TODAY;
+                    this.hdr.reverse_charge = false;
+                    this.hdr.terms = DEFAULT_TERMS;
+
+                    this.lastInvoiceInfo = {
+                        found: false,
+                        invoice_number: '',
+                        invoice_id: null,
+                    };
+
+                    this.onReceivedInput();
+                    this.calc();
+                },
+
+                async loadLastInvoiceForClient() {
+                    if (!this.clientId) {
+                        this.resetInvoiceDataKeepParty();
                         return;
                     }
 
-                    data.item.type = data.item.type || this.newItem.type;
-                    this.itemsData.unshift(data.item);
+                    try {
+                        this.loadingLastInvoice = true;
 
-                    if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
-                        this.pickItem(this.activeRowIndex, data.item.id);
+                        const url = `${LAST_CLIENT_INVOICE_BASE_URL}/${this.clientId}/last?doc_type=${encodeURIComponent(DOC_TYPE)}`;
+
+                        const res = await fetch(url, {
+                            method: 'GET',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            }
+                        });
+
+                        const data = await res.json().catch(() => ({}));
+
+                        if (!res.ok || !data?.found || !data?.invoice) {
+                            this.resetInvoiceDataKeepParty();
+                            return;
+                        }
+
+                        const inv = data.invoice;
+
+                        this.lastInvoiceInfo = {
+                            found: true,
+                            invoice_number: inv.invoice_number || '',
+                            invoice_id: inv.id || null,
+                        };
+
+                        this.hdr.date = TODAY;
+                        this.hdr.reverse_charge = !!inv.reverse_charge;
+                        this.hdr.terms = inv.terms || DEFAULT_TERMS;
+
+                        this.pay.cash = Number(inv.pay_cash || 0);
+                        this.pay.upi = Number(inv.pay_upi || 0);
+                        this.pay.card = Number(inv.pay_card || 0);
+                        this.pay.cheque = Number(inv.pay_cheque || 0);
+                        this.pay.credit_excess = Number(inv.credit_sales_excess || 0);
+                        this.pay.advance = Number(inv.advance_amount || 0);
+                        this.pay.online_mode = inv.online_mode || '';
+                        this.pay.online_ref = inv.online_ref || '';
+                        this.pay.upi_id = inv.upi_id || '';
+                        this.pay.card_last4 = inv.card_last4 || '';
+                        this.pay.card_ref = inv.card_ref || '';
+                        this.pay.cheque_no = inv.cheque_no || '';
+                        this.pay.bank_name = inv.bank_name || '';
+
+                        const received =
+                            Number(inv.pay_cash || 0) +
+                            Number(inv.pay_upi || 0) +
+                            Number(inv.pay_card || 0) +
+                            Number(inv.pay_cheque || 0);
+
+                        this.payment.received = received;
+                        this.payment.markFullyPaid = false;
+                        this.payment.bank_account_id = inv.bank_account_id || '';
+
+                        if (Number(inv.pay_cash || 0) > 0) this.payment.mode = 'cash';
+                        else if (Number(inv.pay_upi || 0) > 0) this.payment.mode = 'upi';
+                        else if (Number(inv.pay_card || 0) > 0) this.payment.mode = 'card';
+                        else if (Number(inv.pay_cheque || 0) > 0) this.payment.mode = 'cheque';
+                        else this.payment.mode = 'cash';
+
+                        this.discount = {
+                            type: 'flat',
+                            value: Number(inv.discount_total || 0),
+                        };
+
+                        const oldCharges = Array.isArray(inv.charges_json) ? inv.charges_json : [];
+                        this.charges = oldCharges.length
+                            ? oldCharges.map(c => ({
+                                _k: Date.now() + Math.random(),
+                                name: c.name || '',
+                                amount: Number(c.amount || 0),
+                            }))
+                            : [chargeTemplate()];
+
+                        this.tcs.apply = Number(inv.tcs_percent || 0) > 0;
+                        this.tcs.percent = Number(inv.tcs_percent || 0);
+                        this.roundOff.enabled = Number(inv.round_off || 0) !== 0;
+
+                        const oldItems = Array.isArray(inv.items) ? inv.items : [];
+                        this.items = oldItems.length
+                            ? oldItems.map(it => {
+                                const type = this.normalizeItemType(it.item_type);
+
+                                const row = {
+                                    _k: Date.now() + Math.random(),
+                                    item_id: it.item_id ?? null,
+                                    item_type: type,
+
+                                    search: this.getItemSearchLabel(it.item_id),
+                                    ddOpen: false,
+                                    ddHi: 0,
+                                    ddStyle: '',
+                                    ddPreviewName: '',
+                                    ddPreview: '',
+
+                                    description: it.description || '',
+                                    hsn: it.hsn || '',
+                                    quantity: Number(it.quantity || 1),
+
+                                    making_rate: Number(it.making_rate || 0),
+                                    gold_purity: it.gold_purity || null,
+                                    silver_purity: it.silver_purity || null,
+                                    gold_rate: Number(it.gold_rate || 0),
+                                    silver_rate: Number(it.silver_rate || 0),
+                                    silver_wt: Number(it.silver_wt || 0),
+                                    gold_wt: Number(it.gold_wt || 0),
+                                    gemstone_wt: Number(it.gemstone_wt || 0),
+                                    diamond_wt: Number(it.diamond_wt || 0),
+
+                                    service_rate: Number(it.service_rate || 0),
+                                    tax_percent: Number(it.tax_percent || 0),
+
+                                    amount_mode: 'manual',
+                                    manual_amount: Number(it.manual_amount || 0),
+                                };
+
+                                if (type === 'service') {
+                                    this.resetRowForService(row);
+                                } else {
+                                    this.resetRowForProduct(row);
+                                }
+
+                                return row;
+                            })
+                            : [rowTemplate()];
+
+                        this.onReceivedInput();
+                        this.calc();
+                    } catch (e) {
+                        console.error('Failed to load previous invoice:', e);
+                        this.resetInvoiceDataKeepParty();
+                    } finally {
+                        this.loadingLastInvoice = false;
+                    }
+                },
+
+                // ---------- METAL RATE ----------
+                findMetalRate(type, purity) {
+                    const t = lower(type).trim();
+                    const pRaw = s(purity).trim();
+                    if (!t) return 0;
+
+                    const candidates = [];
+                    if (pRaw) {
+                        candidates.push(pRaw);
+                        candidates.push(pRaw.split('(')[0].trim());
+                        candidates.push(pRaw.split(' ')[0].trim());
+                        const m = pRaw.match(/\(([^)]+)\)/);
+                        if (m?.[1]) candidates.push(s(m[1]).trim());
                     }
 
+                    const uniq = [...new Set(candidates.filter(Boolean))];
+
+                    const rec = (this.metalRates || []).find(r => {
+                        const rt = lower(r.metal_type).trim();
+                        if (rt !== t) return false;
+
+                        const rp = s(r.purity).trim();
+                        if (!rp) return false;
+
+                        const rpBase = rp.split('(')[0].trim();
+                        const rpFirst = rp.split(' ')[0].trim();
+                        const rpParen = (rp.match(/\(([^)]+)\)/) || [])[1]
+                            ? s((rp.match(/\(([^)]+)\)/) || [])[1]).trim()
+                            : '';
+
+                        return uniq.includes(rp) || uniq.includes(rpBase) || uniq.includes(rpFirst) || (rpParen && uniq.includes(rpParen));
+                    });
+
+                    return rec ? n(rec.rate_per_gram ?? rec.rate ?? 0) : 0;
+                },
+
+                // ---------- ROW ACTIONS ----------
+                add() {
+                    this.items.push(rowTemplate());
+                    this.calc();
+                },
+
+                remove(i) {
+                    this.items.splice(i, 1);
+                    if (!this.items.length) this.items.push(rowTemplate());
+                    this.calc();
+                },
+
+                pickItem(i, id) {
+                    const it = (this.itemsData || []).find(x => String(x.id) === String(id));
+                    if (!it) return;
+
+                    const r = this.items[i];
+                    if (!r) return;
+
+                    r.item_id = it.id;
+                    r.item_type = this.inferItemType(it);
+
+                    r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                    r.description = it.description || it.name || '';
+                    r.tax_percent = n(it.tax_rate, 0);
+
+                    r.amount_mode = 'auto';
+                    r.manual_amount = 0;
+
+                    if (r.item_type === 'service') {
+                        r.hsn = it.sac || '';
+                        r.quantity = Math.max(1, n(r.quantity, 1));
+                        r.service_rate = n(it.price, 0);
+
+                        this.resetRowForService(r);
+
+                        r.manual_amount = this.lineAmount(r);
+                        this.calc();
+                        return;
+                    }
+
+                    r.hsn = it.hsn || it.sac || '';
+                    r.quantity = n(it.quantity, 1) || 1;
+
+                    this.resetRowForProduct(r);
+
+                    r.gold_wt = n(it.gold_weight ?? it.gold_wt, 0);
+                    r.silver_wt = n(it.silver_weight ?? it.silver_wt, 0);
+
+                    r.gold_purity = s(it.gold_purity ?? it.purity).trim() || null;
+                    r.silver_purity = s(it.silver_purity).trim() || null;
+
+                    r.gemstone_wt = n(it.stone_weight ?? it.gemstone_wt, 0);
+                    r.diamond_wt = n(it.diamond_weight ?? it.diamond_wt, 0);
+
+                    r.making_rate = n(it.making_charge ?? it.making_rate, 0);
+                    r.gold_rate = this.findMetalRate('gold', r.gold_purity);
+                    r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
+
+                    r.manual_amount = this.lineAmount(r);
+                    this.calc();
+                },
+
+                onAmountEdit(r) {
+                    const total = n(r.manual_amount, 0);
+                    r.amount_mode = (total > 0) ? 'manual' : 'auto';
+
+                    if (r.item_type === 'service') {
+                        const qty = Math.max(1, n(r.quantity, 1));
+                        const pct = n(r.tax_percent, 0);
+                        const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+                        r.service_rate = n((base / qty).toFixed(2), 0);
+                    }
+
+                    this.calc();
+                },
+
+                onAutoChange(r) {
+                    if (r.amount_mode !== 'manual') {
+                        r.manual_amount = this.lineAmount(r);
+                    } else if (r.item_type === 'service') {
+                        const total = n(r.manual_amount, 0);
+                        const qty = Math.max(1, n(r.quantity, 1));
+                        const pct = n(r.tax_percent, 0);
+                        const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+                        r.service_rate = n((base / qty).toFixed(2), 0);
+                    }
+
+                    this.calc();
+                },
+
+                // ---------- LINE CALCS ----------
+                lineBase(r) {
+                    const qty = Math.max(1, n(r.quantity, 1));
+                    const pct = n(r.tax_percent, 0);
+
+                    if (r.amount_mode === 'manual') {
+                        const total = n(r.manual_amount, 0);
+                        const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+                        return Math.max(0, n(base.toFixed(2), 0));
+                    }
+
+                    if (r.item_type === 'service') {
+                        const rate = n(r.service_rate, 0);
+                        return Math.max(0, n((rate * qty).toFixed(2), 0));
+                    }
+
+                    const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
+                    const silvAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
+                    const making = n(r.making_rate, 0);
+
+                    return Math.max(0, n(((goldAmt + silvAmt + making) * qty).toFixed(2), 0));
+                },
+
+                lineTax(r) {
+                    const pct = n(r.tax_percent, 0);
+                    const base = this.lineBase(r);
+                    return n((base * (pct / 100)).toFixed(2), 0);
+                },
+
+                lineAmount(r) {
+                    if (r.amount_mode === 'manual') {
+                        return n(n(r.manual_amount, 0).toFixed(2), 0);
+                    }
+                    return n((this.lineBase(r) + this.lineTax(r)).toFixed(2), 0);
+                },
+
+                subtotal() {
+                    return n((this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0).toFixed(2), 0);
+                },
+
+                avgTaxPercentRaw() {
+                    const baseSum = (this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0);
+                    if (baseSum <= 0) return 0;
+
+                    const weighted = (this.items || []).reduce((sum, r) => sum + (this.lineBase(r) * n(r.tax_percent, 0)), 0);
+                    return (weighted / baseSum);
+                },
+
+                avgTaxPercent() {
+                    return n(this.avgTaxPercentRaw().toFixed(2), 0);
+                },
+
+                itemsTaxTotal() {
+                    return n((this.items || []).reduce((sum, r) => sum + this.lineTax(r), 0).toFixed(2), 0);
+                },
+
+                chargesTotal() {
+                    return n((this.charges || []).reduce((sum, c) => sum + n(c.amount, 0), 0).toFixed(2), 0);
+                },
+
+                chargesTaxTotal() {
+                    const pct = this.avgTaxPercentRaw();
+                    return n((this.chargesTotal() * (pct / 100)).toFixed(2), 0);
+                },
+
+                discountAmount() {
+                    const base = this.subtotal();
+                    const v = n(this.discount.value, 0);
+                    if (this.discount.type === 'percent') {
+                        return n((base * (v / 100)).toFixed(2), 0);
+                    }
+                    return n(v.toFixed(2), 0);
+                },
+
+                taxableAmount() {
+                    const val = this.subtotal() + this.chargesTotal() - this.discountAmount();
+                    return n(Math.max(0, val).toFixed(2), 0);
+                },
+
+                taxOnTaxable() {
+                    return n((this.itemsTaxTotal() + this.chargesTaxTotal()).toFixed(2), 0);
+                },
+
+                cgst() {
+                    return this.isIntra() ? n((this.taxOnTaxable() / 2).toFixed(2), 0) : 0;
+                },
+
+                sgst() {
+                    return this.isIntra() ? n((this.taxOnTaxable() / 2).toFixed(2), 0) : 0;
+                },
+
+                igst() {
+                    return this.isIntra() ? 0 : n(this.taxOnTaxable().toFixed(2), 0);
+                },
+
+                tcsAmount() {
+                    if (!this.tcs.apply) return 0;
+                    const pct = n(this.tcs.percent, 0);
+                    if (pct <= 0) return 0;
+                    const base = this.taxableAmount();
+                    return n((base * (pct / 100)).toFixed(2), 0);
+                },
+
+                totalBeforeRound() {
+                    return n((this.taxableAmount() + this.taxOnTaxable() + this.tcsAmount()).toFixed(2), 0);
+                },
+
+                roundOffAmount() {
+                    if (!this.roundOff.enabled) return 0;
+                    const raw = this.totalBeforeRound();
+                    const rounded = Math.round(raw);
+                    return n((rounded - raw).toFixed(2), 0);
+                },
+
+                totalPayable() {
+                    return n((this.totalBeforeRound() + this.roundOffAmount()).toFixed(2), 0);
+                },
+
+                // ---------- PAYMENT ----------
+                toggleFullyPaid() {
+                    if (this.payment.markFullyPaid) {
+                        this.payment.received = this.totalPayable();
+                    }
+                    this.onReceivedInput();
+                },
+
+                onReceivedInput() {
+                    const amt = n(this.payment.received, 0);
+
+                    this.pay.cash = 0;
+                    this.pay.upi = 0;
+                    this.pay.card = 0;
+                    this.pay.cheque = 0;
+
+                    if (this.payment.mode === 'cash') this.pay.cash = amt;
+                    if (this.payment.mode === 'upi') this.pay.upi = amt;
+                    if (this.payment.mode === 'card') this.pay.card = amt;
+                    if (this.payment.mode === 'cheque') this.pay.cheque = amt;
+                    if (this.payment.mode === 'bank') this.pay.upi = amt;
+
+                    if (this.payment.mode === 'cash') {
+                        this.payment.bank_account_id = '';
+                    }
+
+                    this.calc();
+                },
+
+                receivedTotal() {
+                    const t = n(this.pay.cash) + n(this.pay.upi) + n(this.pay.card) + n(this.pay.cheque);
+                    return n(t.toFixed(2), 0);
+                },
+
+                balanceAmount() {
+                    const paid = this.receivedTotal() + n(this.pay.credit_excess) + n(this.pay.advance);
+                    const bal = this.totalPayable() - paid;
+                    return n(Math.max(0, bal).toFixed(2), 0);
+                },
+
+                // ---------- CHARGES ----------
+                blankCharge() {
+                    return chargeTemplate();
+                },
+
+                addCharge() {
+                    this.charges.push(chargeTemplate());
+                    this.calc();
+                },
+
+                removeCharge(i) {
+                    this.charges.splice(i, 1);
+                    this.calc();
+                },
+
+                chargesPayload() {
+                    return (this.charges || [])
+                        .filter(c => s(c.name).trim() || n(c.amount) > 0)
+                        .map(c => ({
+                            name: s(c.name).trim(),
+                            amount: n(c.amount)
+                        }));
+                },
+
+                // ---------- GST INPUT ----------
+                normalizeGstin,
+                validateGstinLocal,
+
+                onGstinInput(scope) {
+                    if (scope === 'hdr') {
+                        const g = normalizeGstin(this.hdr.gst_no);
+                        this.hdr.gst_no = g;
+
+                        const res = validateGstinLocal(g);
+                        if (res.empty) {
+                            this.gstin = { status: 'idle', message: '', value: '' };
+                            return;
+                        }
+
+                        this.gstin = {
+                            status: res.ok ? 'valid' : 'invalid',
+                            message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
+                            value: g
+                        };
+                        return;
+                    }
+
+                    if (scope === 'client') {
+                        const g = normalizeGstin(this.newClient.gstin);
+                        this.newClient.gstin = g;
+
+                        const res = validateGstinLocal(g);
+                        if (res.empty) {
+                            this.clientGstin = { status: 'idle', message: '', value: '' };
+                            return;
+                        }
+
+                        this.clientGstin = {
+                            status: res.ok ? 'valid' : 'invalid',
+                            message: res.ok ? '✅ ' + res.message : '⚠️ ' + res.message,
+                            value: g
+                        };
+                    }
+                },
+
+                // ---------- ITEM DROPDOWN ----------
+                openItemDD(i) {
+                    const r = this.items[i];
+                    if (!r) return;
+                    r.ddOpen = true;
+                    r.ddHi = 0;
+                    this.$nextTick(() => this.setItemDDPos(i));
+                },
+
+                closeItemDD(i, keepText = true) {
+                    const r = this.items[i];
+                    if (!r) return;
+                    r.ddOpen = false;
+
+                    if (keepText && r.item_id) {
+                        const it = (this.itemsData || []).find(x => String(x.id) === String(r.item_id));
+                        if (it) {
+                            r.search = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                        }
+                    }
+                },
+
+                selectItemFromDD(i, it) {
+                    const r = this.items[i];
+                    if (!r || !it) return;
+
+                    r.item_id = it.id;
+                    this.pickItem(i, it.id);
+                    r.ddOpen = false;
+
+                    this.$nextTick(() => {
+                        const el = document.getElementById('item_search_' + i);
+                        if (el) el.focus({ preventScroll: true });
+                    });
+                },
+
+                itemDDDown(i) {
+                    const r = this.items[i];
+                    if (!r) return;
+                    const list = this.filteredItems(r.search);
+                    if (!r.ddOpen) r.ddOpen = true;
+                    if (!list.length) return;
+                    r.ddHi = Math.min(list.length - 1, (r.ddHi || 0) + 1);
+                },
+
+                itemDDUp(i) {
+                    const r = this.items[i];
+                    if (!r) return;
+                    const list = this.filteredItems(r.search);
+                    if (!r.ddOpen) r.ddOpen = true;
+                    if (!list.length) return;
+                    r.ddHi = Math.max(0, (r.ddHi || 0) - 1);
+                },
+
+                itemDDEnter(i) {
+                    const r = this.items[i];
+                    if (!r) return;
+                    const list = this.filteredItems(r.search);
+                    if (!r.ddOpen || !list.length) return;
+                    const it = list[r.ddHi || 0];
+                    if (it) this.selectItemFromDD(i, it);
+                },
+
+                setItemDDPos(i) {
+                    const r = this.items[i];
+                    if (!r) return;
+
+                    const input = document.getElementById('item_search_' + i);
+                    if (!input) return;
+
+                    const rect = input.getBoundingClientRect();
+                    const top = rect.bottom + 4;
+                    const left = rect.left;
+                    const width = rect.width;
+                    const maxH = clamp(window.innerHeight - top - 12, 160, 280);
+
+                    r.ddStyle = `top:${top}px; left:${left}px; width:${width}px; max-height:${maxH}px;`;
+                },
+
+                // ---------- KOT ----------
+                syncKotsFromInput() {
+                    const raw = s(this.hdr.kot_input).trim();
+                    if (!raw) {
+                        this.hdr.kots = [];
+                        return;
+                    }
+
+                    const parts = raw.split(/[, \n\t]+/).map(x => x.trim()).filter(Boolean);
+                    const seen = new Set();
+                    this.hdr.kots = parts.filter(x => !seen.has(x) && seen.add(x));
+                    this.hdr.kot_input = this.hdr.kots.join(', ');
+                },
+
+                removeKot(idx) {
+                    this.hdr.kots.splice(idx, 1);
+                    this.hdr.kot_input = this.hdr.kots.join(', ');
+                },
+
+                // ---------- MODALS ----------
+                openClientModal() {
+                    this.newClientError = '';
+                    this.newClient = {
+                        name: '',
+                        mobile: '',
+                        address: '',
+                        state: '',
+                        state_code: '',
+                        gstin: '',
+                        pincode: '',
+                        state_pick: ''
+                    };
+                    this.clientAutoSelect = true;
+                    this.modals.client = true;
+                },
+
+                closeClientModal() {
+                    this.modals.client = false;
+                },
+
+                applyClientState() {
+                    const v = s(this.newClient.state_pick).trim();
+                    if (!v) {
+                        this.newClient.state = '';
+                        this.newClient.state_code = '';
+                        return;
+                    }
+
+                    const parts = v.split(',');
+                    this.newClient.state_code = s(parts[0]).trim();
+                    this.newClient.state = s(parts.slice(1).join(',')).trim();
+                },
+
+                openItemModal(rowIndex = null) {
+                    this.activeRowIndex = rowIndex;
+                    this.newItemError = '';
+                    this.itemAutoSelect = true;
+
+                    this.newItem = {
+                        type: 'product',
+                        name: '',
+                        sku: '',
+                        description: '',
+                        category_id: '',
+                        tax_rate: 0,
+                        hsn: '',
+                        sac: '',
+                        price: 0,
+                        making_charge: 0,
+                        gold_weight: 0,
+                        gold_purity: '',
+                        silver_weight: 0,
+                        silver_purity: '',
+                        stone_weight: 0,
+                        diamond_weight: 0
+                    };
+
+                    this.modals.item = true;
+                },
+
+                closeItemModal() {
                     this.modals.item = false;
-                } catch (e) {
-                    this.newItemError = 'Network error.';
-                } finally {
-                    this.savingItem = false;
-                }
-            },
+                    this.activeRowIndex = null;
+                },
 
-            // ---------- FINAL SUBMIT ----------
-            calc() {
-                return this.totalPayable();
-            },
+                async saveClient() {
+                    this.newClientError = '';
 
-            beforeSubmit() {
-                const payload = (this.items || []).map(r => ({
-                    item_id: r.item_id ?? null,
-                    item_type: r.item_type ?? null,
-                    description: r.description || '',
-                    hsn: r.hsn || '',
-                    quantity: Math.max(1, n(r.quantity, 1)),
+                    if (!s(this.newClient.name).trim()) {
+                        this.newClientError = 'Name is required.';
+                        return;
+                    }
 
-                    making_rate: n(r.making_rate),
-                    gold_purity: r.gold_purity || null,
-                    silver_purity: r.silver_purity || null,
-                    gold_rate: n(r.gold_rate),
-                    silver_rate: n(r.silver_rate),
-                    silver_wt: n(r.silver_wt),
-                    gold_wt: n(r.gold_wt),
-                    gemstone_wt: n(r.gemstone_wt),
-                    diamond_wt: n(r.diamond_wt),
+                    const mob = s(this.newClient.mobile).replace(/\D/g, '');
+                    if (mob && mob.length < 10) {
+                        this.newClientError = 'Mobile must be 10 digits (optional).';
+                        return;
+                    }
 
-                    service_rate: n(r.service_rate),
+                    this.newClient.mobile = mob;
 
-                    discount: 0,
-                    tax_percent: n(r.tax_percent),
+                    try {
+                        this.savingClient = true;
 
-                    rate: this.lineBase(r),
-                    tax_amount: this.lineTax(r),
-                    amount: this.lineAmount(r),
-                }));
+                        const res = await fetch(@js(route('clients.quick-store')), {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': this.csrf(),
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                ...this.newClient,
+                                is_save: this.clientAutoSelect ? 1 : 0
+                            })
+                        });
 
-                document.getElementById('items_json').value = JSON.stringify(payload);
+                        const data = await res.json().catch(() => ({}));
 
-                this.onReceivedInput();
-                this.$refs.form.submit();
-            },
+                        if (!res.ok) {
+                            this.newClientError = data?.message || 'Failed to save client.';
+                            return;
+                        }
 
-            submitForm() {
-                if (this.saving) return;
+                        this.clients.unshift(data.client);
 
-                const g = normalizeGstin(this.hdr.gst_no);
-                const res = validateGstinLocal(g);
+                        if (this.clientAutoSelect) {
+                            this.clientId = data.client.id;
+                            this.clientDD.q = data.client.mobile
+                                ? (data.client.name + ' (' + data.client.mobile + ')')
+                                : data.client.name;
+                        }
 
-                if (g && !res.ok) {
-                    const ok = confirm("⚠️ GSTIN invalid lag raha hai.\n\n" + res.message + "\n\nPhir bhi Save karna hai?");
-                    if (!ok) return;
-                }
+                        this.modals.client = false;
+                    } catch (e) {
+                        this.newClientError = 'Network error.';
+                    } finally {
+                        this.savingClient = false;
+                    }
+                },
 
-                this.saving = true;
-                this.$refs.form.requestSubmit();
-            },
+                async saveItem() {
+                    this.newItemError = '';
 
-            // ---------- COMPAT ----------
-            blankRow() {
-                return rowTemplate();
-            },
+                    if (!String(this.newItem.name || '').trim()) {
+                        this.newItemError = 'Item name is required.';
+                        return;
+                    }
 
-            scrollItemDDIntoView() {},
-        };
-    }
-</script> --}}
+                    if (!this.newItem.category_id) {
+                        this.newItemError = 'Please select category.';
+                        return;
+                    }
+
+                    if (this.newItem.type === 'service' && Number(this.newItem.price || 0) <= 0) {
+                        this.newItemError = 'Service price is required.';
+                        return;
+                    }
+
+                    try {
+                        this.savingItem = true;
+
+                        const res = await fetch(@js(route('items.store.ajax')), {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': this.csrf(),
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                ...this.newItem,
+                                is_save: this.itemAutoSelect ? 1 : 0
+                            })
+                        });
+
+                        const data = await res.json().catch(() => ({}));
+
+                        if (!res.ok) {
+                            if (data?.errors?.category_id?.length) {
+                                this.newItemError = data.errors.category_id[0];
+                            } else {
+                                this.newItemError = data?.message || 'Failed to save item.';
+                            }
+                            return;
+                        }
+
+                        data.item.type = data.item.type || this.newItem.type;
+                        this.itemsData.unshift(data.item);
+
+                        if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
+                            this.pickItem(this.activeRowIndex, data.item.id);
+                        }
+
+                        this.modals.item = false;
+                    } catch (e) {
+                        this.newItemError = 'Network error.';
+                    } finally {
+                        this.savingItem = false;
+                    }
+                },
+
+                // ---------- FINAL SUBMIT ----------
+                calc() {
+                    return this.totalPayable();
+                },
+
+                beforeSubmit() {
+                    const payload = (this.items || []).map(r => ({
+                        item_id: r.item_id ?? null,
+                        item_type: r.item_type ?? null,
+                        description: r.description || '',
+                        hsn: r.hsn || '',
+                        quantity: Math.max(1, n(r.quantity, 1)),
+
+                        making_rate: n(r.making_rate),
+                        gold_purity: r.gold_purity || null,
+                        silver_purity: r.silver_purity || null,
+                        gold_rate: n(r.gold_rate),
+                        silver_rate: n(r.silver_rate),
+                        silver_wt: n(r.silver_wt),
+                        gold_wt: n(r.gold_wt),
+                        gemstone_wt: n(r.gemstone_wt),
+                        diamond_wt: n(r.diamond_wt),
+
+                        service_rate: n(r.service_rate),
+
+                        discount: 0,
+                        tax_percent: n(r.tax_percent),
+
+                        rate: this.lineBase(r),
+                        tax_amount: this.lineTax(r),
+                        amount: this.lineAmount(r),
+                    }));
+
+                    document.getElementById('items_json').value = JSON.stringify(payload);
+
+                    this.onReceivedInput();
+                    this.$refs.form.submit();
+                },
+
+                submitForm() {
+                    if (this.saving) return;
+
+                    const g = normalizeGstin(this.hdr.gst_no);
+                    const res = validateGstinLocal(g);
+
+                    if (g && !res.ok) {
+                        const ok = confirm("⚠️ GSTIN invalid lag raha hai.\n\n" + res.message + "\n\nPhir bhi Save karna hai?");
+                        if (!ok) return;
+                    }
+
+                    this.saving = true;
+                    this.$refs.form.requestSubmit();
+                },
+
+                // ---------- COMPAT ----------
+                blankRow() {
+                    return rowTemplate();
+                },
+
+                scrollItemDDIntoView() {},
+            };
+        }
+    </script> --}}
 
 
 <script>
@@ -3707,6 +2910,10 @@
 
             loadingLastInvoice: false,
 
+            confirmLoadModal: false,
+            pendingInvoicePreview: null,
+            pendingInvoiceData: null,
+
             newClient: {
                 name: '',
                 mobile: '',
@@ -3862,7 +3069,7 @@
                 }
 
                 this.calc();
-                await this.loadLastInvoiceForClient();
+                await this.previewLastInvoiceForClient();
             },
 
             isIntra() {
@@ -3880,7 +3087,7 @@
                 return (this.items || []).some(r => this.normalizeItemType(r.item_type) === 'service');
             },
 
-            // ---------- LAST INVOICE AUTO FILL ----------
+            // ---------- LAST INVOICE PREVIEW / APPLY ----------
             resetInvoiceDataKeepParty() {
                 this.items = [rowTemplate()];
                 this.charges = [chargeTemplate()];
@@ -3926,9 +3133,12 @@
                 this.calc();
             },
 
-            async loadLastInvoiceForClient() {
+            async previewLastInvoiceForClient() {
                 if (!this.clientId) {
                     this.resetInvoiceDataKeepParty();
+                    this.pendingInvoicePreview = null;
+                    this.pendingInvoiceData = null;
+                    this.confirmLoadModal = false;
                     return;
                 }
 
@@ -3950,125 +3160,176 @@
 
                     if (!res.ok || !data?.found || !data?.invoice) {
                         this.resetInvoiceDataKeepParty();
+                        this.pendingInvoicePreview = null;
+                        this.pendingInvoiceData = null;
+                        this.confirmLoadModal = false;
                         return;
                     }
 
                     const inv = data.invoice;
 
-                    this.lastInvoiceInfo = {
-                        found: true,
+                    this.pendingInvoiceData = inv;
+                    this.pendingInvoicePreview = {
                         invoice_number: inv.invoice_number || '',
-                        invoice_id: inv.id || null,
+                        invoice_date: inv.invoice_date || '',
+                        terms: inv.terms || '',
+                        reverse_charge: !!inv.reverse_charge,
+                        pay_cash: Number(inv.pay_cash || 0),
+                        pay_upi: Number(inv.pay_upi || 0),
+                        pay_card: Number(inv.pay_card || 0),
+                        pay_cheque: Number(inv.pay_cheque || 0),
+                        credit_sales_excess: Number(inv.credit_sales_excess || 0),
+                        advance_amount: Number(inv.advance_amount || 0),
+                        discount_total: Number(inv.discount_total || 0),
+                        charge_total: Number(inv.charge_total || 0),
+                        tcs_percent: Number(inv.tcs_percent || 0),
+                        tcs_amount: Number(inv.tcs_amount || 0),
+                        round_off: Number(inv.round_off || 0),
+                        items_count: Array.isArray(inv.items) ? inv.items.length : 0,
+                        items: Array.isArray(inv.items) ? inv.items : [],
                     };
 
-                    this.hdr.date = TODAY;
-                    this.hdr.reverse_charge = !!inv.reverse_charge;
-                    this.hdr.terms = inv.terms || DEFAULT_TERMS;
-
-                    this.pay.cash = Number(inv.pay_cash || 0);
-                    this.pay.upi = Number(inv.pay_upi || 0);
-                    this.pay.card = Number(inv.pay_card || 0);
-                    this.pay.cheque = Number(inv.pay_cheque || 0);
-                    this.pay.credit_excess = Number(inv.credit_sales_excess || 0);
-                    this.pay.advance = Number(inv.advance_amount || 0);
-                    this.pay.online_mode = inv.online_mode || '';
-                    this.pay.online_ref = inv.online_ref || '';
-                    this.pay.upi_id = inv.upi_id || '';
-                    this.pay.card_last4 = inv.card_last4 || '';
-                    this.pay.card_ref = inv.card_ref || '';
-                    this.pay.cheque_no = inv.cheque_no || '';
-                    this.pay.bank_name = inv.bank_name || '';
-
-                    const received =
-                        Number(inv.pay_cash || 0) +
-                        Number(inv.pay_upi || 0) +
-                        Number(inv.pay_card || 0) +
-                        Number(inv.pay_cheque || 0);
-
-                    this.payment.received = received;
-                    this.payment.markFullyPaid = false;
-                    this.payment.bank_account_id = inv.bank_account_id || '';
-
-                    if (Number(inv.pay_cash || 0) > 0) this.payment.mode = 'cash';
-                    else if (Number(inv.pay_upi || 0) > 0) this.payment.mode = 'upi';
-                    else if (Number(inv.pay_card || 0) > 0) this.payment.mode = 'card';
-                    else if (Number(inv.pay_cheque || 0) > 0) this.payment.mode = 'cheque';
-                    else this.payment.mode = 'cash';
-
-                    this.discount = {
-                        type: 'flat',
-                        value: Number(inv.discount_total || 0),
-                    };
-
-                    const oldCharges = Array.isArray(inv.charges_json) ? inv.charges_json : [];
-                    this.charges = oldCharges.length
-                        ? oldCharges.map(c => ({
-                            _k: Date.now() + Math.random(),
-                            name: c.name || '',
-                            amount: Number(c.amount || 0),
-                        }))
-                        : [chargeTemplate()];
-
-                    this.tcs.apply = Number(inv.tcs_percent || 0) > 0;
-                    this.tcs.percent = Number(inv.tcs_percent || 0);
-                    this.roundOff.enabled = Number(inv.round_off || 0) !== 0;
-
-                    const oldItems = Array.isArray(inv.items) ? inv.items : [];
-                    this.items = oldItems.length
-                        ? oldItems.map(it => {
-                            const type = this.normalizeItemType(it.item_type);
-
-                            const row = {
-                                _k: Date.now() + Math.random(),
-                                item_id: it.item_id ?? null,
-                                item_type: type,
-
-                                search: this.getItemSearchLabel(it.item_id),
-                                ddOpen: false,
-                                ddHi: 0,
-                                ddStyle: '',
-                                ddPreviewName: '',
-                                ddPreview: '',
-
-                                description: it.description || '',
-                                hsn: it.hsn || '',
-                                quantity: Number(it.quantity || 1),
-
-                                making_rate: Number(it.making_rate || 0),
-                                gold_purity: it.gold_purity || null,
-                                silver_purity: it.silver_purity || null,
-                                gold_rate: Number(it.gold_rate || 0),
-                                silver_rate: Number(it.silver_rate || 0),
-                                silver_wt: Number(it.silver_wt || 0),
-                                gold_wt: Number(it.gold_wt || 0),
-                                gemstone_wt: Number(it.gemstone_wt || 0),
-                                diamond_wt: Number(it.diamond_wt || 0),
-
-                                service_rate: Number(it.service_rate || 0),
-                                tax_percent: Number(it.tax_percent || 0),
-
-                                amount_mode: 'manual',
-                                manual_amount: Number(it.manual_amount || 0),
-                            };
-
-                            if (type === 'service') {
-                                this.resetRowForService(row);
-                            } else {
-                                this.resetRowForProduct(row);
-                            }
-
-                            return row;
-                        })
-                        : [rowTemplate()];
-
-                    this.onReceivedInput();
-                    this.calc();
+                    this.confirmLoadModal = true;
                 } catch (e) {
-                    console.error('Failed to load previous invoice:', e);
+                    console.error('Failed to preview previous invoice:', e);
                     this.resetInvoiceDataKeepParty();
+                    this.pendingInvoicePreview = null;
+                    this.pendingInvoiceData = null;
+                    this.confirmLoadModal = false;
                 } finally {
                     this.loadingLastInvoice = false;
                 }
+            },
+
+            confirmApplyLastInvoice() {
+                if (!this.pendingInvoiceData) {
+                    this.confirmLoadModal = false;
+                    return;
+                }
+
+                this.applyLastInvoiceData(this.pendingInvoiceData);
+                this.confirmLoadModal = false;
+            },
+
+            cancelApplyLastInvoice() {
+                this.resetInvoiceDataKeepParty();
+                this.pendingInvoicePreview = null;
+                this.pendingInvoiceData = null;
+                this.confirmLoadModal = false;
+            },
+
+            applyLastInvoiceData(inv) {
+                this.lastInvoiceInfo = {
+                    found: true,
+                    invoice_number: inv.invoice_number || '',
+                    invoice_id: inv.id || null,
+                };
+
+                this.hdr.date = TODAY;
+                this.hdr.reverse_charge = !!inv.reverse_charge;
+                this.hdr.terms = inv.terms || DEFAULT_TERMS;
+
+                this.pay.cash = Number(inv.pay_cash || 0);
+                this.pay.upi = Number(inv.pay_upi || 0);
+                this.pay.card = Number(inv.pay_card || 0);
+                this.pay.cheque = Number(inv.pay_cheque || 0);
+                this.pay.credit_excess = Number(inv.credit_sales_excess || 0);
+                this.pay.advance = Number(inv.advance_amount || 0);
+                this.pay.online_mode = inv.online_mode || '';
+                this.pay.online_ref = inv.online_ref || '';
+                this.pay.upi_id = inv.upi_id || '';
+                this.pay.card_last4 = inv.card_last4 || '';
+                this.pay.card_ref = inv.card_ref || '';
+                this.pay.cheque_no = inv.cheque_no || '';
+                this.pay.bank_name = inv.bank_name || '';
+
+                const received =
+                    Number(inv.pay_cash || 0) +
+                    Number(inv.pay_upi || 0) +
+                    Number(inv.pay_card || 0) +
+                    Number(inv.pay_cheque || 0);
+
+                this.payment.received = received;
+                this.payment.markFullyPaid = false;
+                this.payment.bank_account_id = inv.bank_account_id || '';
+
+                if (Number(inv.pay_cash || 0) > 0) this.payment.mode = 'cash';
+                else if (Number(inv.pay_upi || 0) > 0) this.payment.mode = 'upi';
+                else if (Number(inv.pay_card || 0) > 0) this.payment.mode = 'card';
+                else if (Number(inv.pay_cheque || 0) > 0) this.payment.mode = 'cheque';
+                else this.payment.mode = 'cash';
+
+                this.discount = {
+                    type: 'flat',
+                    value: Number(inv.discount_total || 0),
+                };
+
+                const oldCharges = Array.isArray(inv.charges_json) ? inv.charges_json : [];
+                this.charges = oldCharges.length
+                    ? oldCharges.map(c => ({
+                        _k: Date.now() + Math.random(),
+                        name: c.name || '',
+                        amount: Number(c.amount || 0),
+                    }))
+                    : [chargeTemplate()];
+
+                this.tcs.apply = Number(inv.tcs_percent || 0) > 0;
+                this.tcs.percent = Number(inv.tcs_percent || 0);
+                this.roundOff.enabled = Number(inv.round_off || 0) !== 0;
+
+                const oldItems = Array.isArray(inv.items) ? inv.items : [];
+                this.items = oldItems.length
+                    ? oldItems.map(it => {
+                        const type = this.normalizeItemType(it.item_type);
+
+                        const row = {
+                            _k: Date.now() + Math.random(),
+                            item_id: it.item_id ?? null,
+                            item_type: type,
+
+                            search: this.getItemSearchLabel(it.item_id),
+                            ddOpen: false,
+                            ddHi: 0,
+                            ddStyle: '',
+                            ddPreviewName: '',
+                            ddPreview: '',
+
+                            description: it.description || '',
+                            hsn: it.hsn || '',
+                            quantity: Number(it.quantity || 1),
+
+                            making_rate: Number(it.making_rate || 0),
+                            gold_purity: it.gold_purity || null,
+                            silver_purity: it.silver_purity || null,
+                            gold_rate: Number(it.gold_rate || 0),
+                            silver_rate: Number(it.silver_rate || 0),
+                            silver_wt: Number(it.silver_wt || 0),
+                            gold_wt: Number(it.gold_wt || 0),
+                            gemstone_wt: Number(it.gemstone_wt || 0),
+                            diamond_wt: Number(it.diamond_wt || 0),
+
+                            service_rate: Number(it.service_rate || 0),
+                            tax_percent: Number(it.tax_percent || 0),
+
+                            amount_mode: 'manual',
+                            manual_amount: Number(it.manual_amount || 0),
+                        };
+
+                        if (type === 'service') {
+                            this.resetRowForService(row);
+                        } else {
+                            this.resetRowForProduct(row);
+                        }
+
+                        return row;
+                    })
+                    : [rowTemplate()];
+
+                this.onReceivedInput();
+                this.calc();
+
+                this.pendingInvoicePreview = null;
+                this.pendingInvoiceData = null;
             },
 
             // ---------- METAL RATE ----------
