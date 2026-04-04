@@ -3020,5 +3020,241 @@ class InvoiceController extends Controller
     }
 
 
+    // public function getLastClientInvoice(Request $request, Client $client)
+    // {
+    //     try {
+    //         $docType = $request->get('doc_type', 'tax');
+
+    //         $invoice = Invoice::with(['items', 'payments'])
+    //             ->where('client_id', $client->id)
+    //             ->where('invoice_type', $docType)   // ✅ doc_type nahi, invoice_type hai
+    //             ->latest('id')
+    //             ->first();
+
+    //         if (!$invoice) {
+    //             return response()->json([
+    //                 'found' => false,
+    //                 'message' => 'No previous invoice found for this party.',
+    //             ]);
+    //         }
+
+    //         // last payment record
+    //         $payment = $invoice->payments()->latest('id')->first();
+
+    //         $items = $invoice->items->map(function ($item) {
+
+    //         $itemType = 'service';
+
+    //         if (
+    //             (float)($item->gold_wt ?? 0) > 0 ||
+    //             (float)($item->silver_wt ?? 0) > 0 ||
+    //             (float)($item->metal_weight ?? 0) > 0 ||
+    //             (float)($item->making_rate ?? 0) > 0 ||
+    //             (float)($item->making_charge ?? 0) > 0 ||
+    //             (float)($item->gemstone_wt_ct ?? 0) > 0 ||
+    //             (float)($item->diamond_wt_ct ?? 0) > 0
+    //         ) {
+    //             $itemType = 'product';
+    //         }
+
+    //         return [
+    //             'item_id'       => $item->item_id,
+    //             'item_type'     => $itemType,
+    //             'description'   => $item->description ?? '',
+    //             'hsn'           => $item->hsn_code ?? $item->sac_code ?? '',
+    //             'quantity'      => (float) ($item->quantity ?? 1),
+
+    //             'making_rate'   => (float) ($item->making_rate ?? $item->making_charge ?? 0),
+    //             'gold_purity'   => null,
+    //             'silver_purity' => null,
+
+    //             'gold_rate'     => (float) ($item->gold_rate ?? 0),
+    //             'silver_rate'   => (float) ($item->silver_rate ?? 0),
+    //             'silver_wt'     => (float) ($item->silver_wt ?? 0),
+    //             'gold_wt'       => (float) ($item->gold_wt ?? 0),
+    //             'gemstone_wt'   => (float) ($item->gemstone_wt_ct ?? 0),
+    //             'diamond_wt'    => (float) ($item->diamond_wt_ct ?? 0),
+
+    //             'service_rate'  => (float) ($item->rate ?? 0),
+    //             'tax_percent'   => (float) ($item->tax_percent ?? 0),
+    //             'manual_amount' => (float) ($item->amount ?? 0),
+    //         ];
+    //     })->values();
+
+    //         return response()->json([
+    //             'found' => true,
+    //             'invoice' => [
+    //                 'id' => $invoice->id,
+    //                 'invoice_number' => $invoice->invoice_number ?? '',
+    //                 'invoice_date' => $invoice->invoice_date
+    //                     ? $invoice->invoice_date->format('Y-m-d')
+    //                     : null,
+
+    //                 'terms' => $invoice->terms ?? '',
+    //                 'reverse_charge' => (bool) ($invoice->reverse_charge ?? false),
+
+    //                 // ✅ payment invoice_payments table se aayega
+    //                 'pay_cash' => (float) ($payment->cash_amount ?? 0),
+    //                 'pay_upi' => (float) ($payment->online_amount ?? 0),
+    //                 'pay_card' => (float) ($payment->card_amount ?? 0),
+    //                 'pay_cheque' => (float) ($payment->cheque_amount ?? 0),
+    //                 'credit_sales_excess' => (float) ($payment->credit_sales_excess_amount ?? 0),
+    //                 'advance_amount' => (float) ($payment->advance_amount ?? 0),
+
+    //                 'online_mode' => $payment->online_mode ?? '',
+    //                 'online_ref' => $payment->online_ref ?? '',
+    //                 'upi_id' => $payment->upi_id ?? '',
+    //                 'card_last4' => $payment->card_last4 ?? '',
+    //                 'card_ref' => $payment->card_ref ?? '',
+    //                 'cheque_no' => $payment->cheque_no ?? '',
+    //                 'bank_name' => $payment->bank_name ?? '',
+    //                 'bank_account_id' => null, // table me nahi dikh raha, isliye null
+
+    //                 'discount_total' => (float) ($invoice->discount_total ?? 0),
+    //                 'charge_total' => (float) ($invoice->charge_total ?? 0),
+    //                 'tcs_percent' => (float) ($invoice->tcs_percent ?? 0),
+    //                 'tcs_amount' => (float) ($invoice->tcs_amount ?? 0),
+    //                 'round_off' => (float) ($invoice->round_off ?? 0),
+
+    //                 'charges_json' => is_array($invoice->charges_json)
+    //                     ? $invoice->charges_json
+    //                     : (json_decode($invoice->charges_json ?? '[]', true) ?: []),
+
+    //                 'items' => $items,
+    //             ],
+    //         ]);
+    //     } catch (\Throwable $e) {
+    //         Log::error('getLastClientInvoice error', [
+    //             'message' => $e->getMessage(),
+    //             'line' => $e->getLine(),
+    //             'file' => $e->getFile(),
+    //             'client_id' => $client->id ?? null,
+    //             'doc_type' => $request->get('doc_type'),
+    //         ]);
+
+    //         return response()->json([
+    //             'found' => false,
+    //             'message' => 'Server error',
+    //             'error' => $e->getMessage(),
+    //             'line' => $e->getLine(),
+    //         ], 500);
+    //     }
+    // }
+
+
+    public function getLastClientInvoice(Request $request, Client $client)
+    {
+        try {
+            $docType = $request->get('doc_type', 'tax');
+
+            $invoice = Invoice::with(['items.item', 'payments'])
+                ->where('client_id', $client->id)
+                ->where('invoice_type', $docType)
+                ->latest('id')
+                ->first();
+
+            if (!$invoice) {
+                return response()->json([
+                    'found' => false,
+                    'message' => 'No previous invoice found for this party.',
+                ]);
+            }
+
+            $payment = $invoice->payments()->latest('id')->first();
+
+            $items = $invoice->items->map(function ($item) {
+                $itemType = strtolower(trim($item->item->type ?? ''));
+
+                if (!in_array($itemType, ['product', 'service'])) {
+                    $itemType = 'service';
+                }
+
+                return [
+                    'item_id'       => $item->item_id,
+                    'item_type'     => $itemType,
+                    'description'   => $item->description ?? '',
+                    'hsn'           => $itemType === 'service'
+                        ? ($item->sac_code ?? '')
+                        : ($item->hsn_code ?? ''),
+                    'quantity'      => (float) ($item->quantity ?? 1),
+
+                    'making_rate'   => $itemType === 'product'
+                        ? (float) ($item->making_rate ?? $item->making_charge ?? 0)
+                        : 0,
+
+                    'gold_purity'   => $item->item->gold_purity ?? null,
+                    'silver_purity' => $item->item->silver_purity ?? null,
+
+                    'gold_rate'     => $itemType === 'product' ? (float) ($item->gold_rate ?? 0) : 0,
+                    'silver_rate'   => $itemType === 'product' ? (float) ($item->silver_rate ?? 0) : 0,
+                    'silver_wt'     => $itemType === 'product' ? (float) ($item->silver_wt ?? 0) : 0,
+                    'gold_wt'       => $itemType === 'product' ? (float) ($item->gold_wt ?? 0) : 0,
+                    'gemstone_wt'   => $itemType === 'product' ? (float) ($item->gemstone_wt_ct ?? 0) : 0,
+                    'diamond_wt'    => $itemType === 'product' ? (float) ($item->diamond_wt_ct ?? 0) : 0,
+
+                    'service_rate'  => $itemType === 'service' ? (float) ($item->rate ?? 0) : 0,
+                    'tax_percent'   => (float) ($item->tax_percent ?? 0),
+                    'manual_amount' => (float) ($item->amount ?? 0),
+                ];
+            })->values();
+
+            return response()->json([
+                'found' => true,
+                'invoice' => [
+                    'id' => $invoice->id,
+                    'invoice_number' => $invoice->invoice_number ?? '',
+                    'invoice_date' => $invoice->invoice_date
+                        ? $invoice->invoice_date->format('Y-m-d')
+                        : null,
+
+                    'terms' => $invoice->terms ?? '',
+                    'reverse_charge' => (bool) ($invoice->reverse_charge ?? false),
+
+                    'pay_cash' => (float) ($payment->cash_amount ?? 0),
+                    'pay_upi' => (float) ($payment->online_amount ?? 0),
+                    'pay_card' => (float) ($payment->card_amount ?? 0),
+                    'pay_cheque' => (float) ($payment->cheque_amount ?? 0),
+                    'credit_sales_excess' => (float) ($payment->credit_sales_excess_amount ?? 0),
+                    'advance_amount' => (float) ($payment->advance_amount ?? 0),
+
+                    'online_mode' => $payment->online_mode ?? '',
+                    'online_ref' => $payment->online_ref ?? '',
+                    'upi_id' => $payment->upi_id ?? '',
+                    'card_last4' => $payment->card_last4 ?? '',
+                    'card_ref' => $payment->card_ref ?? '',
+                    'cheque_no' => $payment->cheque_no ?? '',
+                    'bank_name' => $payment->bank_name ?? '',
+                    'bank_account_id' => null,
+
+                    'discount_total' => (float) ($invoice->discount_total ?? 0),
+                    'charge_total' => (float) ($invoice->charge_total ?? 0),
+                    'tcs_percent' => (float) ($invoice->tcs_percent ?? 0),
+                    'tcs_amount' => (float) ($invoice->tcs_amount ?? 0),
+                    'round_off' => (float) ($invoice->round_off ?? 0),
+
+                    'charges_json' => is_array($invoice->charges_json)
+                        ? $invoice->charges_json
+                        : (json_decode($invoice->charges_json ?? '[]', true) ?: []),
+
+                    'items' => $items,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('getLastClientInvoice error', [
+                'message' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'client_id' => $client->id ?? null,
+                'doc_type' => $request->get('doc_type'),
+            ]);
+
+            return response()->json([
+                'found' => false,
+                'message' => 'Server error',
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+            ], 500);
+        }
+    }
 
 }

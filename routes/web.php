@@ -147,6 +147,9 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/invoices/export', [InvoiceController::class, 'export'])->name('invoices.export');
 
+        // last bill of client
+        Route::get('/invoices/client/{client}/last', [InvoiceController::class, 'getLastClientInvoice'])
+            ->name('invoices.client.last');
 
 
 
