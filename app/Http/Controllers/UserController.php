@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -100,106 +101,210 @@ class UserController extends Controller
 
 
 
+    // public function create()
+    // {
+    //     $businesses = Business::orderBy('name')->get(); // assign businesses on create
+    //     $roles = ['owner' => 'Owner', 'admin' => 'Admin', 'staff' => 'Staff'];
+    //     return view('users.create', compact('businesses', 'roles'));
+    // }
+
     public function create()
     {
-        $businesses = Business::orderBy('name')->get(); // assign businesses on create
-        $roles = ['owner' => 'Owner', 'admin' => 'Admin', 'staff' => 'Staff'];
+        $businesses = Business::orderBy('name')->get();
+        $roles = Role::orderBy('name')->get();
+
         return view('users.create', compact('businesses', 'roles'));
     }
 
+    // public function store(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'name'     => ['required','string','max:255'],
+    //         'email'    => ['required','email','max:255','unique:users,email'],
+    //         'google_drive_folder_id' => [
+    //             'nullable',
+    //             Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
+    //         ],
+    //         'password' => ['required','confirmed','min:8'],
+    //         // businesses[]: array of business_ids that were checked
+    //         'businesses'          => ['array'],
+    //         'businesses.*'        => ['integer','exists:businesses,id'],
+    //         // roles[business_id] => role string
+    //         'roles'               => ['array'],
+    //         'roles.*'             => ['in:owner,admin,staff'],
+    //     ]);
+
+    //     DB::transaction(function () use ($request, $data) {
+    //         $user = User::create([
+    //             'name'     => $data['name'],
+    //             'email'    => $data['email'],
+    //             'google_drive_folder_id'    => $data['google_drive_folder_id'],
+    //             'password' => Hash::make($data['password']),
+    //         ]);
+
+    //         // Attach to selected businesses with roles
+    //         $attach = [];
+    //         foreach ((array)($data['businesses'] ?? []) as $bid) {
+    //             $role = $data['roles'][$bid] ?? 'staff';
+    //             $attach[$bid] = ['role' => $role];
+    //         }
+    //         if ($attach) {
+    //             $user->businesses()->attach($attach);
+    //         }
+    //     });
+
+    //     return redirect()->route('users.index')->with('success', 'User created successfully.');
+    // }
+
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'name'     => ['required','string','max:255'],
-            'email'    => ['required','email','max:255','unique:users,email'],
-            'google_drive_folder_id' => [
-                'nullable',
-                Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
-            ],
-            'password' => ['required','confirmed','min:8'],
-            // businesses[]: array of business_ids that were checked
-            'businesses'          => ['array'],
-            'businesses.*'        => ['integer','exists:businesses,id'],
-            // roles[business_id] => role string
-            'roles'               => ['array'],
-            'roles.*'             => ['in:owner,admin,staff'],
+{
+    $data = $request->validate([
+        'name'     => ['required', 'string', 'max:255'],
+        'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+        'google_drive_folder_id' => ['nullable', 'unique:users,google_drive_folder_id'],
+        'password' => ['required', 'confirmed', 'min:8'],
+
+        'businesses'   => ['nullable', 'array'],
+        'businesses.*' => ['integer', 'exists:businesses,id'],
+
+        // dynamic spatie roles
+        'roles'   => ['nullable', 'array'],
+        'roles.*' => ['string', 'exists:roles,name'],
+    ]);
+
+    DB::transaction(function () use ($data) {
+        $user = User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'google_drive_folder_id' => $data['google_drive_folder_id'] ?? null,
+            'password' => Hash::make($data['password']),
         ]);
 
-        DB::transaction(function () use ($request, $data) {
-            $user = User::create([
-                'name'     => $data['name'],
-                'email'    => $data['email'],
-                'google_drive_folder_id'    => $data['google_drive_folder_id'],
-                'password' => Hash::make($data['password']),
-            ]);
-
-            // Attach to selected businesses with roles
+        // businesses attach
+        if (!empty($data['businesses'])) {
             $attach = [];
-            foreach ((array)($data['businesses'] ?? []) as $bid) {
-                $role = $data['roles'][$bid] ?? 'staff';
-                $attach[$bid] = ['role' => $role];
+            foreach ($data['businesses'] as $bid) {
+                $attach[$bid] = [];
             }
-            if ($attach) {
-                $user->businesses()->attach($attach);
-            }
-        });
+            $user->businesses()->attach($attach);
+        }
 
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
-    }
+        // spatie roles assign
+        if (!empty($data['roles'])) {
+            $user->assignRole($data['roles']);
+        }
+    });
 
-    public function edit(User $user)
-    {
-        $businesses = Business::orderBy('name')->get();
-        $roles = ['owner' => 'Owner', 'admin' => 'Admin', 'staff' => 'Staff'];
+    return redirect()->route('users.index')->with('success', 'User created successfully.');
+}
 
-        // existing roles per business (pivot)
-        $pivotRoles = $user->businesses()
-            ->pluck('business_user.role', 'business_id')
-            ->toArray();
+    // public function edit(User $user)
+    // {
+    //     $businesses = Business::orderBy('name')->get();
+    //     $roles = ['owner' => 'Owner', 'admin' => 'Admin', 'staff' => 'Staff'];
 
-        return view('users.edit', compact('user','businesses','roles','pivotRoles'));
-    }
+    //     // existing roles per business (pivot)
+    //     $pivotRoles = $user->businesses()
+    //         ->pluck('business_user.role', 'business_id')
+    //         ->toArray();
+
+    //     return view('users.edit', compact('user','businesses','roles','pivotRoles'));
+    // }
+
+public function edit(User $user)
+{
+    $businesses = Business::orderBy('name')->get();
+    $roles = Role::orderBy('name')->get();
+
+    $selectedBusinesses = $user->businesses()->pluck('businesses.id')->toArray();
+    $selectedRoles = $user->roles()->pluck('name')->toArray();
+
+    return view('users.edit', compact('user', 'businesses', 'roles', 'selectedBusinesses', 'selectedRoles'));
+}
+
+    // public function update(Request $request, User $user)
+    // {
+    //     $data = $request->validate([
+    //         'name'     => ['required','string','max:255'],
+    //         'email'    => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+    //         'google_drive_folder_id' => [
+    //             'nullable',
+    //             Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
+    //         ],
+    //         'password' => ['nullable','confirmed','min:8'],
+    //         'businesses'   => ['array'],
+    //         'businesses.*' => ['integer','exists:businesses,id'],
+    //         'roles'        => ['array'],
+    //         'roles.*'      => ['in:owner,admin,staff'],
+    //     ]);
+
+    //     DB::transaction(function () use ($request, $user, $data) {
+    //         // Update main fields
+    //         $user->name  = $data['name'];
+    //         $user->email = $data['email'];
+    //         $user->google_drive_folder_id = $data['google_drive_folder_id'];
+    //         if (!empty($data['password'])) {
+    //             $user->password = Hash::make($data['password']);
+    //         }
+    //         $user->save();
+
+    //         // Sync businesses + roles
+    //         $selected = (array)($data['businesses'] ?? []);
+    //         $sync = [];
+    //         foreach ($selected as $bid) {
+    //             $role = $data['roles'][$bid] ?? 'staff';
+    //             $sync[$bid] = ['role' => $role];
+    //         }
+    //         // Remove unselected; keep selected with roles
+    //         $user->businesses()->sync($sync);
+    //     });
+
+    //     return redirect()->route('users.index')->with('success', 'User updated successfully.');
+    // }
+
 
     public function update(Request $request, User $user)
-    {
-        $data = $request->validate([
-            'name'     => ['required','string','max:255'],
-            'email'    => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
-            'google_drive_folder_id' => [
-                'nullable',
-                Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
-            ],
-            'password' => ['nullable','confirmed','min:8'],
-            'businesses'   => ['array'],
-            'businesses.*' => ['integer','exists:businesses,id'],
-            'roles'        => ['array'],
-            'roles.*'      => ['in:owner,admin,staff'],
-        ]);
+{
+    $data = $request->validate([
+        'name'     => ['required', 'string', 'max:255'],
+        'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+        'google_drive_folder_id' => [
+            'nullable',
+            Rule::unique('users', 'google_drive_folder_id')->ignore($user->id)
+        ],
+        'password' => ['nullable', 'confirmed', 'min:8'],
 
-        DB::transaction(function () use ($request, $user, $data) {
-            // Update main fields
-            $user->name  = $data['name'];
-            $user->email = $data['email'];
-            $user->google_drive_folder_id = $data['google_drive_folder_id'];
-            if (!empty($data['password'])) {
-                $user->password = Hash::make($data['password']);
-            }
-            $user->save();
+        'businesses'   => ['nullable', 'array'],
+        'businesses.*' => ['integer', 'exists:businesses,id'],
 
-            // Sync businesses + roles
-            $selected = (array)($data['businesses'] ?? []);
-            $sync = [];
-            foreach ($selected as $bid) {
-                $role = $data['roles'][$bid] ?? 'staff';
-                $sync[$bid] = ['role' => $role];
-            }
-            // Remove unselected; keep selected with roles
-            $user->businesses()->sync($sync);
-        });
+        'roles'   => ['nullable', 'array'],
+        'roles.*' => ['string', 'exists:roles,name'],
+    ]);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
-    }
+    DB::transaction(function () use ($data, $user) {
+        $user->name  = $data['name'];
+        $user->email = $data['email'];
+        $user->google_drive_folder_id = $data['google_drive_folder_id'] ?? null;
 
+        if (!empty($data['password'])) {
+            $user->password = Hash::make($data['password']);
+        }
+
+        $user->save();
+
+        // sync businesses
+        $syncBusinesses = [];
+        foreach (($data['businesses'] ?? []) as $bid) {
+            $syncBusinesses[$bid] = [];
+        }
+        $user->businesses()->sync($syncBusinesses);
+
+        // sync spatie roles
+        $user->syncRoles($data['roles'] ?? []);
+    });
+
+    return redirect()->route('users.index')->with('success', 'User updated successfully.');
+}
     public function destroy(User $user)
     {
         // Detach pivot (optional; cascade is safe too)
