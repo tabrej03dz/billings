@@ -2,64 +2,86 @@
 
 namespace App\Exports;
 
-use App\Models\Invoice;
-use Illuminate\Contracts\View\View;
-use Maatwebsite\Excel\Concerns\FromView;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class InvoicesExport implements FromView
+class InvoicesExport implements FromArray, ShouldAutoSize, WithStyles
 {
-    protected $filters;
+    protected Collection $rows;
+    protected string $reportTitle;
+    protected array $filters;
 
-    public function __construct($filters)
+    public function __construct($rows, string $reportTitle = 'Invoice Report', array $filters = [])
     {
+        $this->rows = collect($rows);
+        $this->reportTitle = $reportTitle;
         $this->filters = $filters;
     }
 
-    public function view(): View
+    public function array(): array
     {
-        $query = Invoice::with('client')->latest();
+        $data = [];
 
-        // Search
-        if (!empty($this->filters['search'])) {
-            $search = $this->filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('invoice_number', 'like', "%{$search}%")
-                    ->orWhereHas('client', function ($sub) use ($search) {
-                        $sub->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
-            });
+        $data[] = [$this->reportTitle];
+        $data[] = [
+            'Date Range',
+            (($this->filters['from_date'] ?? '-') . ' to ' . ($this->filters['to_date'] ?? '-'))
+        ];
+        $data[] = ['Status', $this->filters['status'] ?: 'All'];
+        $data[] = ['Search', $this->filters['search'] ?: '-'];
+        $data[] = [];
+
+        $data[] = [
+            'S.No.',
+            'Invoice Date',
+            'Invoice No.',
+            'Client Name',
+            'Mobile',
+            'GSTIN',
+            'PAN',
+            'Address',
+            'Total',
+            'Received',
+            'Balance',
+            'Status',
+        ];
+
+        foreach ($this->rows as $index => $row) {
+            $status = 'Unpaid';
+
+            if ((float) $row->balance <= 0) {
+                $status = 'Paid';
+            } elseif ((float) $row->received_amount > 0 && (float) $row->balance > 0) {
+                $status = 'Partial';
+            }
+
+            $data[] = [
+                $index + 1,
+                optional($row->invoice_date)->format('Y-m-d') ?: $row->invoice_date,
+                $row->invoice_number,
+                optional($row->client)->name,
+                optional($row->client)->mobile,
+                optional($row->client)->gstin,
+                optional($row->client)->pan,
+                optional($row->client)->address,
+                (float) $row->total,
+                (float) $row->received_amount,
+                (float) $row->balance,
+                $status,
+            ];
         }
 
-        // Date range
-        if (!empty($this->filters['from_date'])) {
-            $query->whereDate('invoice_date', '>=', $this->filters['from_date']);
-        }
+        return $data;
+    }
 
-        if (!empty($this->filters['to_date'])) {
-            $query->whereDate('invoice_date', '<=', $this->filters['to_date']);
-        }
-
-        // Status
-        if (!empty($this->filters['status'])) {
-            $status = $this->filters['status'];
-            $query->where(function ($q) use ($status) {
-                if ($status === 'paid') {
-                    $q->where('balance', '<=', 0);
-                } elseif ($status === 'partial') {
-                    $q->where('received_amount', '>', 0)->where('balance', '>', 0);
-                } elseif ($status === 'unpaid') {
-                    $q->where('received_amount', '<=', 0);
-                }
-            });
-        }
-
-        if ($this->filters['type']){
-            $query->where('invoice_type', $this->filters['type']);
-        }
-
-        $invoices = $query->get();
-
-        return view('invoices.exports', compact('invoices'));
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            1 => ['font' => ['bold' => true, 'size' => 16]],
+            6 => ['font' => ['bold' => true]],
+        ];
     }
 }

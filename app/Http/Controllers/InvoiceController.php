@@ -2520,27 +2520,27 @@ class InvoiceController extends Controller
     //     return Excel::download(new InvoicesExport($r->all()), $r->from. ' to '.$r->to.' invoices-report.xlsx');
     // }
 
-    public function export(Request $r)
-    {
-        // support both: from_date/to_date OR from/to
-        $from = $r->input('from_date') ?? $r->input('from');
-        $to   = $r->input('to_date')   ?? $r->input('to');
+    // public function export(Request $r)
+    // {
+    //     // support both: from_date/to_date OR from/to
+    //     $from = $r->input('from_date') ?? $r->input('from');
+    //     $to   = $r->input('to_date')   ?? $r->input('to');
 
-        // ✅ If any one is missing → ALL records filename
-        if (empty($from) || empty($to)) {
-            $fileName = "all-invoice-records.xlsx";
-        } else {
-            $fromLabel = Carbon::parse($from)->format('d-m-Y');
-            $toLabel   = Carbon::parse($to)->format('d-m-Y');
+    //     // ✅ If any one is missing → ALL records filename
+    //     if (empty($from) || empty($to)) {
+    //         $fileName = "all-invoice-records.xlsx";
+    //     } else {
+    //         $fromLabel = Carbon::parse($from)->format('d-m-Y');
+    //         $toLabel   = Carbon::parse($to)->format('d-m-Y');
 
-            $fileName = "{$fromLabel}_to_{$toLabel}_invoices-report.xlsx";
-        }
+    //         $fileName = "{$fromLabel}_to_{$toLabel}_invoices-report.xlsx";
+    //     }
 
-        return Excel::download(
-            new InvoicesExport($r->all()),
-            $fileName
-        );
-    }
+    //     return Excel::download(
+    //         new InvoicesExport($r->all()),
+    //         $fileName
+    //     );
+    // }
 
     public function send(Invoice $invoice)
     {
@@ -3255,6 +3255,134 @@ class InvoiceController extends Controller
                 'line' => $e->getLine(),
             ], 500);
         }
+    }
+
+
+
+    public function reportsPage(Request $request)
+    {
+        $me  = $request->user();
+
+        $bid = $me->current_business_id ?? session('active_business_id');
+        if (!$bid) {
+            $bid = $me->businesses()->pluck('businesses.id')->first();
+        }
+
+        if (!$bid) {
+            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
+        }
+
+        $type = strtolower(trim((string) $request->get('type', 'tax')));
+        if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
+            $type = 'tax';
+        }
+
+        $permByType = [
+            'tax'       => 'show invoices',
+            'proforma'  => 'show proformas',
+            'quotation' => 'show quotations',
+        ];
+
+        $requiredPerm = $permByType[$type] ?? 'show invoices';
+
+        if (!$me->can($requiredPerm)) {
+            abort(403, "You don't have permission: {$requiredPerm}");
+        }
+
+        return view('invoices.reports', [
+            'activeType' => $type,
+            'filters' => [
+                'search'    => (string) $request->get('search', ''),
+                'from_date' => $request->get('from_date', ''),
+                'to_date'   => $request->get('to_date', ''),
+                'status'    => $request->get('status', ''),
+            ],
+        ]);
+    }
+
+
+    public function export(Request $request)
+    {
+        $me  = $request->user();
+
+        $bid = $me->current_business_id ?? session('active_business_id');
+        if (!$bid) {
+            $bid = $me->businesses()->pluck('businesses.id')->first();
+        }
+
+        if (!$bid) {
+            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
+        }
+
+        $type = strtolower(trim((string) $request->get('type', 'tax')));
+        if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
+            $type = 'tax';
+        }
+
+        $permByType = [
+            'tax'       => 'show invoices',
+            'proforma'  => 'show proformas',
+            'quotation' => 'show quotations',
+        ];
+
+        $requiredPerm = $permByType[$type] ?? 'show invoices';
+
+        if (!$me->can($requiredPerm)) {
+            abort(403, "You don't have permission: {$requiredPerm}");
+        }
+
+        $search   = trim((string) $request->get('search', ''));
+        $fromDate = $request->get('from_date');
+        $toDate   = $request->get('to_date');
+        $status   = $request->get('status');
+
+        $q = \App\Models\Invoice::query()
+            ->with(['client:id,name,mobile'])
+            ->where('business_id', $bid)
+            ->where('invoice_type', $type);
+
+        if ($search !== '') {
+            $q->where(function ($w) use ($search) {
+                $w->where('invoice_number', 'like', "%{$search}%")
+                ->orWhere('total', 'like', "%{$search}%")
+                ->orWhere('balance', 'like', "%{$search}%")
+                ->orWhere('received_amount', 'like', "%{$search}%")
+                ->orWhereHas('client', function ($c) use ($search) {
+                    $c->where('name', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('gstin', 'like', "%{$search}%")
+                        ->orWhere('pan', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        if (!empty($fromDate)) {
+            $q->whereDate('invoice_date', '>=', $fromDate);
+        }
+
+        if (!empty($toDate)) {
+            $q->whereDate('invoice_date', '<=', $toDate);
+        }
+
+        if (!empty($status)) {
+            if ($status === 'paid') {
+                $q->where('balance', '<=', 0);
+            } elseif ($status === 'unpaid') {
+                $q->where('received_amount', '<=', 0);
+            } elseif ($status === 'partial') {
+                $q->where('received_amount', '>', 0)->where('balance', '>', 0);
+            }
+        }
+
+        $rows = $q->orderByDesc('invoice_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\InvoicesExport($rows),
+            'invoice-report-' . $type . '-' . now()->format('Y-m-d_H-i-s') . '.xlsx'
+        );
     }
 
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\InvoiceReportController;
 use App\Http\Controllers\InvoiceSendController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
@@ -152,6 +153,10 @@ Route::middleware(['auth'])->group(function () {
             ->name('invoices.client.last');
 
 
+        Route::prefix('invoices')->name('invoices.')->group(function () {
+            Route::get('/reports', [InvoiceReportController::class, 'reportsPage'])->name('reports.page');
+            Route::get('/reports/download', [InvoiceReportController::class, 'export'])->name('reports.download');
+        });
 
 
     Route::post('/clients/quick-store', [ClientController::class, 'quickStore'])->name('clients.quick-store');

@@ -189,6 +189,19 @@
         @endcan
 
 
+        <a href="{{ route('invoices.reports.page') }}"
+        class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
+                text-gray-700 dark:text-neutral-200
+                hover:bg-gray-100 dark:hover:bg-neutral-800
+                {{ request()->routeIs('invoices.reports.page') ? 'bg-gray-100 dark:bg-neutral-800 font-semibold' : '' }}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 16v-8m0 8l-3-3m3 3l3-3M5 20h14" />
+            </svg>
+            <span>Invoice Reports</span>
+        </a>
+
+
         @can('show businesses')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
