@@ -189,6 +189,7 @@
         @endcan
 
 
+        @can('download reports')
         <a href="{{ route('invoices.reports.page') }}"
         class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium
                 text-gray-700 dark:text-neutral-200
@@ -200,6 +201,7 @@
             </svg>
             <span>Invoice Reports</span>
         </a>
+        @endcan
 
 
         @can('show businesses')

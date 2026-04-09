@@ -108,87 +108,94 @@
 
         <!-- CREATE & DELETE modals stay same -->
 
-        <!-- Permissions Modal -->
-        <div x-show="permOpen" x-transition.opacity x-cloak @keydown.escape.window="permOpen = false"
+        <!-- Create Role Modal -->
+        <div x-show="open" x-transition.opacity x-cloak @keydown.escape.window="open = false"
              class="fixed inset-0 z-[100]" aria-modal="true" role="dialog">
-            <div class="absolute inset-0 bg-black/50" @click="permOpen = false"></div>
+            <div class="absolute inset-0 bg-black/50" @click="open = false"></div>
+
             <div class="relative w-full h-full overflow-y-auto">
                 <div class="min-h-full flex items-center justify-center p-4">
-                    <div
-                        class="w-full max-w-3xl rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-gray-200 dark:border-neutral-700
-                 flex flex-col max-h-[85vh]">
+                    <div class="w-full max-w-lg rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-gray-200 dark:border-neutral-700">
                         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-neutral-700">
-                            <div>
-                                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                                    Permissions — <span x-text="currentRoleName"></span>
-                                </h2>
-                                <p class="text-xs text-gray-500 mt-0.5">
-                                    Checked = assigned. (<span x-text="permSelectedCount"></span> selected)
-                                </p>
-                            </div>
-                            <button @click="permOpen = false" class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">✕</button>
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Create Role</h2>
+                            <button type="button"
+                                    @click="open = false"
+                                    class="text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white">
+                                ✕
+                            </button>
                         </div>
 
-                        <!-- scrollable content -->
-                        <form :action="permSyncAction" method="POST"
-                              class="flex-1 overflow-y-auto px-5 py-4 space-y-4"
-                              @submit.prevent="submitPermSync($event)">
+                        <form action="{{ route('roles.store') }}" method="POST" class="p-5 space-y-4">
                             @csrf
-                            <div class="flex flex-wrap gap-3 items-center">
-                                <div class="flex items-center gap-2">
-                                    <button type="button" @click="selectAllPerms()" class="px-3 py-1 rounded border text-sm">Select all</button>
-                                    <button type="button" @click="clearAllPerms()" class="px-3 py-1 rounded border text-sm">Clear</button>
-                                </div>
 
-                                <div class="relative flex-1 min-w-[220px]">
-                                    <input type="text" x-model="permQuery" placeholder="Search permissions…"
-                                           class="w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white pl-3 pr-8 py-2">
-                                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">⌕</span>
-                                </div>
+                            <div>
+                                <label for="role-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Role Name
+                                </label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    id="role-name"
+                                    required
+                                    placeholder="Enter role name"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-neutral-600 shadow-sm focus:ring focus:ring-indigo-200 dark:bg-neutral-800 dark:text-white"
+                                >
+                                @error('name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
-                            <div class="rounded border border-gray-200 dark:border-neutral-700">
-                                <table class="min-w-full divide-y divide-gray-200 dark:divide-neutral-700">
-                                    <thead class="bg-gray-50 dark:bg-neutral-800 text-xs uppercase">
-                                    <tr>
-                                        <th class="px-4 py-2 text-left">Permission</th>
-                                        <th class="px-4 py-2 text-right">Assigned</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100 dark:divide-neutral-800">
-                                    <template x-for="p in filteredPerms" :key="p.name">
-                                        <tr>
-                                            <td class="px-4 py-2 text-sm text-gray-800 dark:text-gray-100" x-text="p.name"></td>
-                                            <td class="px-4 py-2 text-right">
-                                                <input type="checkbox" class="h-4 w-4" :value="p.name"
-                                                       :checked="currentPerms.has(p.name)"
-                                                       @change="togglePerm(p.name, $event.target.checked)">
-                                            </td>
-                                        </tr>
-                                    </template>
-                                    <tr x-show="filteredPerms.length === 0">
-                                        <td colspan="2" class="px-4 py-6 text-center text-sm text-gray-500">No permissions match.</td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div x-ref="permContainer"></div>
-                            <div class="h-3"></div>
-                        </form>
-
-                        <!-- footer -->
-                        <div class="px-5 py-3 border-t border-gray-200 dark:border-neutral-700 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-sm">
-                            <div class="flex justify-end gap-3">
-                                <button type="button" @click="permOpen = false"
+                            <div class="flex justify-end gap-3 pt-2">
+                                <button type="button"
+                                        @click="open = false"
                                         class="px-4 py-2 rounded-md border border-gray-300 dark:border-neutral-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-800">
                                     Cancel
                                 </button>
-                                <button @click="const f=$root.querySelector('form[method=POST][@submit\\.prevent]'); if(f){f.requestSubmit();}"
-                                        class="px-5 py-2 rounded-md bg-green-600 text-white font-semibold hover:bg-green-700">
-                                    Save Changes
+
+                                <button type="submit"
+                                        class="px-5 py-2 rounded-md bg-emerald-600 text-white font-semibold hover:bg-emerald-700">
+                                    Save Role
                                 </button>
                             </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Role Modal -->
+        <div x-show="delOpen" x-transition.opacity x-cloak @keydown.escape.window="delOpen = false"
+             class="fixed inset-0 z-[100]" aria-modal="true" role="dialog">
+            <div class="absolute inset-0 bg-black/50" @click="delOpen = false"></div>
+
+            <div class="relative w-full h-full overflow-y-auto">
+                <div class="min-h-full flex items-center justify-center p-4">
+                    <div class="w-full max-w-md rounded-xl bg-white dark:bg-neutral-900 shadow-2xl border border-gray-200 dark:border-neutral-700">
+                        <div class="px-5 py-4 border-b border-gray-200 dark:border-neutral-700">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Delete Role</h2>
+                        </div>
+
+                        <div class="p-5">
+                            <p class="text-sm text-gray-600 dark:text-gray-300">
+                                Are you sure you want to delete this role?
+                            </p>
+                        </div>
+
+                        <div class="px-5 py-4 border-t border-gray-200 dark:border-neutral-700 flex justify-end gap-3">
+                            <button type="button"
+                                    @click="delOpen = false"
+                                    class="px-4 py-2 rounded-md border border-gray-300 dark:border-neutral-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                Cancel
+                            </button>
+
+                            <form :action="`{{ url('roles') }}/${selectedRole}`" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit"
+                                        class="px-5 py-2 rounded-md bg-red-600 text-white font-semibold hover:bg-red-700">
+                                    Delete
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>
