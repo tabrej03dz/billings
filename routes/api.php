@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\BillRequestController as ApiBillRequestController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\InvoiceSendController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\Api\BirthdayWishController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstallmentReminderController;
 use App\Http\Controllers\Api\ItemController;
+use App\Http\Controllers\BillRequestController;
 
 Route::get('items/', [ItemController::class, 'index']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
@@ -23,6 +25,8 @@ Route::get('/send-uploaded-invoice/run', [\App\Http\Controllers\InstallmentRemin
 Route::post('/login',  [HomeController::class, 'login']);
 Route::post('/register',  [HomeController::class, 'register']);
 
+
+Route::post('/request-for-bill', [ApiBillRequestController::class, 'store']);
 
 Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
