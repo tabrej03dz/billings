@@ -301,7 +301,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('show/{billRequest}', 'show')->name('show');
         Route::delete('destroy/{billRequest}', 'destroy')->name('destroy');
-        Route::post('/bill-requests/{billRequest}/create-invoice', 'createInvoice')->name('bill-requests.create-invoice');
+        Route::post('create-invoice/{billRequest}', 'createInvoice')->name('create-invoice');
     });
 
 

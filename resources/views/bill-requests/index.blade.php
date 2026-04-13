@@ -193,6 +193,17 @@
                                         View
                                     </a>
 
+                                    @if($request->status !== 'processed')
+                                        <form method="POST" action="{{ route('bill-requests.create-invoice', $request->id) }}"
+                                            onsubmit="return confirm('Is bill request se invoice create karna hai?')">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                Create Invoice
+                                            </button>
+                                        </form>
+                                    @endif
+
                                     @if(Route::has('bill-requests.approve'))
                                         <form method="POST" action="{{ route('bill-requests.approve', $request->id) }}">
                                             @csrf
