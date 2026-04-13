@@ -190,7 +190,7 @@ public function store(Request $request)
             'package_price' => $validated['package_price'] ?? null,
             'package_duration' => $validated['package_duration'] ?? null,
 
-            'user_package_id' => $validated['user_package_id'] ?? null,
+            'source_user_package_id' => $validated['source_user_package_id'] ?? null,
             'user_package_user_id' => $validated['user_package_user_id'] ?? null,
             'user_package_package_id' => $validated['user_package_package_id'] ?? null,
             'user_package_selling_price' => $validated['user_package_selling_price'] ?? null,
