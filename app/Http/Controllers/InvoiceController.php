@@ -1192,7 +1192,7 @@ class InvoiceController extends Controller
     // }
 
 
-        public function store(Request $r, StockService $stock, $docType)
+    public function store(Request $r, StockService $stock, $docType)
     {
         $docType = strtolower(trim((string)$docType));
         if (!in_array($docType, ['tax', 'proforma', 'quotation'], true)) {

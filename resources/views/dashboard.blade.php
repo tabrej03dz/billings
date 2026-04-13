@@ -19,10 +19,44 @@
         @endif
 
         {{-- PAGE HEADER --}}
-        <div class="flex flex-wrap bg-[#BFE0E0] dark:bg-[#354A54] items-center justify-between gap-3 p-6">
+        {{-- <div class="flex flex-wrap bg-[#BFE0E0] dark:bg-[#354A54] items-center justify-between gap-3 p-6">
             <h1 class="text-2xl font-bold text-black dark:text-white">
                 Dashboard
             </h1>
+
+            <div class="text-sm text-gray-500 dark:text-gray-50 p-3 border-2 border-[#FCB055]">
+                Today:
+                <span class="font-semibold text-grey-900">
+                    {{ isset($today) ? $today->format('d M Y') : now()->format('d M Y') }}
+                </span>
+            </div>
+        </div> --}}
+
+        {{-- PAGE HEADER --}}
+        <div class="flex flex-wrap bg-[#BFE0E0] dark:bg-[#354A54] items-center justify-between gap-3 p-6">
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-black dark:text-white">
+                    Dashboard
+                </h1>
+
+                {{-- Notification Icon --}}
+                <a href="{{ route('bill-requests.index') }}"
+                class="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-700 transition"
+                title="Bill Requests">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                        class="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M14.857 17H19l-1.405-1.405A2.032 2.032 0 0117 14.158V11a5.002 5.002 0 00-4-4.9V5a1 1 0 10-2 0v1.1A5.002 5.002 0 007 11v3.159c0 .538-.214 1.055-.595 1.436L5 17h4.143m5.714 0a3 3 0 11-5.714 0m5.714 0H9.143" />
+                    </svg>
+
+                    {{-- Optional red dot --}}
+                    <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                </a>
+            </div>
 
             <div class="text-sm text-gray-500 dark:text-gray-50 p-3 border-2 border-[#FCB055]">
                 Today:
