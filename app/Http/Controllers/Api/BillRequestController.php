@@ -84,7 +84,7 @@ public function store(Request $request)
             'package_price'                 => $request->input('package_price'),
             'package_duration'              => $request->input('package_duration'),
 
-            'user_package_id'               => $request->input('user_package_id'),
+            'source_user_package_id'               => $request->input('source_user_package_id'),
             'user_package_user_id'          => $request->input('user_package_user_id'),
             'user_package_package_id'       => $request->input('user_package_package_id'),
             'user_package_selling_price'    => $request->input('user_package_selling_price'),
