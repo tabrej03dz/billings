@@ -26,7 +26,7 @@ Route::post('/login',  [HomeController::class, 'login']);
 Route::post('/register',  [HomeController::class, 'register']);
 
 
-Route::post('/request-for-bill', [ApiBillRequestController::class, 'store']);
+Route::post('request-for-bill', [ApiBillRequestController::class, 'store']);
 
 Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
