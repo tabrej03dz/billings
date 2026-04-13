@@ -225,7 +225,7 @@ public function store(Request $request)
 
             'source_customer_id'     => $validated['customer_id'] ?? null,
             'source_package_id'      => $validated['package_id'] ?? null,
-            'source_user_package_id' => $validated['user_package_id'] ?? null,
+            'source_user_package_id' => $validated['source_user_package_id'] ?? null,
             'source_payment_id'      => $validated['payment_id'] ?? null,
 
             'customer_name'          => $validated['customer_name'] ?? null,
