@@ -497,7 +497,9 @@ class BillRequestController extends Controller
     private function pushSaveInvoiceApi(BillRequest $billRequest, Invoice $invoice): void
     {
         try {
-            $endpoint = config('services.billing.save_invoice_url'); // .env/config se lo
+            // $endpoint = config('services.billing.save_invoice_url'); // .env/config se lo
+
+            $endpoint = 'https://post.realvictorygroups.com/api/invoice-url-save'; // .env/config se lo
 
             if (!$endpoint) {
                 Log::warning('save-invoice api url missing in config/services');
@@ -517,14 +519,16 @@ class BillRequestController extends Controller
             $payload = [
                 'source_request_id'      => $billRequest->source_request_id,
                 'source_user_package_id' => $billRequest->source_user_package_id,
+                // 'source_user_package_id' => '3911',
                 'invoice_id'             => $invoice->id,
                 'invoice_number'         => $invoice->invoice_number,
                 'pdf_url'                => $pdfUrl,
             ];
 
-            $response = Http::timeout(20)
-                ->acceptJson()
-                ->post($endpoint, $payload);
+            $response = Http::timeout(30)
+            ->withoutVerifying()
+            ->acceptJson()
+            ->post($endpoint, $payload);
 
             $oldApi = [];
             if (!empty($billRequest->api_response)) {
