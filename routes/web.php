@@ -113,6 +113,9 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
+        Route::get('invoices/{invoice}/view', [\App\Http\Controllers\InvoiceController::class, 'show'])
+            ->name('invoices.show'); // View page
+
 
 
 Route::middleware(['auth'])->group(function () {
@@ -165,8 +168,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\InvoiceController::class, 'download'])
             ->name('invoices.download');
-        Route::get('invoices/{invoice}/view', [\App\Http\Controllers\InvoiceController::class, 'show'])
-            ->name('invoices.show'); // View page
+
 
     Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])
         ->name('invoices.preview');
