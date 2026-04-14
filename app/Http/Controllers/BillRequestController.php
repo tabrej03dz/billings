@@ -576,4 +576,17 @@ class BillRequestController extends Controller
             ]);
         }
     }
+
+
+    public function show(BillRequest $billRequest)
+    {
+        $apiResponse = null;
+
+        if (!empty($billRequest->api_response)) {
+            $decoded = json_decode($billRequest->api_response, true);
+            $apiResponse = is_array($decoded) ? $decoded : null;
+        }
+
+        return view('bill-requests.show', compact('billRequest', 'apiResponse'));
+    }
 }
