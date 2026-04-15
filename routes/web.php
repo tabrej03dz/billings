@@ -12,10 +12,11 @@ use App\Http\Controllers\InvoiceSendController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\NoBusinessWhatsappController;
+use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
-
+use Symfony\Component\HttpKernel\DependencyInjection\RegisterControllerArgumentLocatorsPass;
 
 // frontend web routes:::::
 Route::get('/', function (){
@@ -30,6 +31,14 @@ Route::post('/register', [HomeController::class, 'store'])->name('register.store
 Route::get('/welcome', function () {
     return view('welcome');
 })->name('home');
+
+
+
+
+Route::get('/register', [RegisterController::class, 'show'])->name('register');
+Route::post('/register/send-otp', [RegisterController::class, 'sendEmailOtp'])->name('register.sendOtp');
+Route::post('/register/verify-otp', [RegisterController::class, 'verifyEmailOtp'])->name('register.verifyOtp');
+Route::post('/register/store', [RegisterController::class, 'store'])->name('register.store');
 
 //Route::view('dashboard', 'dashboard')
 //    ->middleware(['auth', 'verified'])

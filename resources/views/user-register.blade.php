@@ -153,7 +153,7 @@
                                     >
                                 </div>
 
-                                <div class="mt-4">
+                                {{-- <div class="mt-4">
                                     <label class="block text-xs text-slate-400 mb-1">Email Address</label>
                                     <input
                                         type="email"
@@ -163,6 +163,58 @@
                                         class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3 py-2.5 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                                         placeholder="Enter email"
                                     >
+                                </div> --}}
+
+                                <div class="mt-4">
+                                    <label class="block text-xs text-slate-400 mb-1">Email Address</label>
+
+                                    <div class="flex gap-2">
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            id="email"
+                                            value="{{ old('email') }}"
+                                            required
+                                            class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3 py-2.5 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                                            placeholder="Enter email"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            id="sendOtpBtn"
+                                            class="shrink-0 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-semibold text-sm"
+                                        >
+                                            Send OTP
+                                        </button>
+                                    </div>
+
+                                    <p id="otpStatus" class="mt-2 text-xs text-slate-400"></p>
+                                </div>
+
+                                <div class="mt-4">
+                                    <label class="block text-xs text-slate-400 mb-1">Email OTP</label>
+
+                                    <div class="flex gap-2">
+                                        <input
+                                            type="text"
+                                            id="emailOtp"
+                                            maxlength="6"
+                                            class="w-full bg-slate-950/70 border border-slate-700 rounded-xl px-3 py-2.5 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                                            placeholder="Enter 6 digit OTP"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            id="verifyOtpBtn"
+                                            class="shrink-0 px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold text-sm"
+                                        >
+                                            Verify OTP
+                                        </button>
+                                    </div>
+
+                                    <input type="hidden" id="emailVerified" value="0">
+
+                                    <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-400"></p>
                                 </div>
 
                                 <div class="grid sm:grid-cols-2 gap-4 mt-4">
@@ -431,92 +483,187 @@
         </div>
     </footer>
 
-    <script>
-        const steps = document.querySelectorAll('.form-step');
-        const nextBtn = document.getElementById('nextBtn');
-        const prevBtn = document.getElementById('prevBtn');
-        const submitBtn = document.getElementById('submitBtn');
-        const progressBar = document.getElementById('progressBar');
-        const currentStepText = document.getElementById('currentStepText');
-        const currentStepLabel = document.getElementById('currentStepLabel');
+<script>
+    const steps = document.querySelectorAll('.form-step');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progressBar');
+    const currentStepText = document.getElementById('currentStepText');
+    const currentStepLabel = document.getElementById('currentStepLabel');
 
-        let currentStep = 0;
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const emailInput = document.getElementById('email');
+    const emailOtpInput = document.getElementById('emailOtp');
+    const otpStatus = document.getElementById('otpStatus');
+    const verifyOtpStatus = document.getElementById('verifyOtpStatus');
+    const emailVerifiedInput = document.getElementById('emailVerified');
 
-        const labels = [
-            'User Details',
-            'Business Details',
-            'Billing Setup'
-        ];
+    let currentStep = 0;
 
-        function showStep(index) {
-            steps.forEach((step, i) => {
-                step.classList.toggle('hidden', i !== index);
+    const labels = [
+        'User Details',
+        'Business Details',
+        'Billing Setup'
+    ];
+
+    function showStep(index) {
+        steps.forEach((step, i) => {
+            step.classList.toggle('hidden', i !== index);
+        });
+
+        currentStepText.textContent = index + 1;
+        currentStepLabel.textContent = labels[index];
+        progressBar.style.width = ((index + 1) / steps.length * 100) + '%';
+
+        prevBtn.classList.toggle('hidden', index === 0);
+        nextBtn.classList.toggle('hidden', index === steps.length - 1);
+        submitBtn.classList.toggle('hidden', index !== steps.length - 1);
+    }
+
+    function validateStep(index) {
+        const currentInputs = steps[index].querySelectorAll('input, select, textarea');
+
+        for (let input of currentInputs) {
+            if (input.type === 'hidden') continue;
+
+            if (!input.checkValidity()) {
+                input.reportValidity();
+                return false;
+            }
+        }
+
+        const password = document.querySelector('input[name="password"]');
+        const confirmPassword = document.querySelector('input[name="password_confirmation"]');
+
+        if (index === 0 && password && confirmPassword) {
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity('Passwords do not match');
+                confirmPassword.reportValidity();
+                confirmPassword.focus();
+                return false;
+            } else {
+                confirmPassword.setCustomValidity('');
+            }
+        }
+
+        if (index === 0 && emailVerifiedInput.value !== '1') {
+            verifyOtpStatus.textContent = 'Pehle email OTP verify kijiye.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-400';
+            return false;
+        }
+
+        return true;
+    }
+
+    sendOtpBtn.addEventListener('click', async function () {
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            emailInput.reportValidity();
+            return;
+        }
+
+        otpStatus.textContent = 'OTP bheja ja raha hai...';
+        otpStatus.className = 'mt-2 text-xs text-amber-300';
+
+        try {
+            const response = await fetch("{{ route('register.sendOtp') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email })
             });
 
-            currentStepText.textContent = index + 1;
-            currentStepLabel.textContent = labels[index];
-            progressBar.style.width = ((index + 1) / steps.length * 100) + '%';
+            const data = await response.json();
 
-            if (index === 0) {
-                prevBtn.classList.add('hidden');
-            } else {
-                prevBtn.classList.remove('hidden');
+            if (!response.ok) {
+                throw data;
             }
 
-            if (index === steps.length - 1) {
-                nextBtn.classList.add('hidden');
-                submitBtn.classList.remove('hidden');
-            } else {
-                nextBtn.classList.remove('hidden');
-                submitBtn.classList.add('hidden');
-            }
+            emailVerifiedInput.value = '0';
+            verifyOtpStatus.textContent = '';
+            otpStatus.textContent = data.message || 'OTP bhej diya gaya hai.';
+            otpStatus.className = 'mt-2 text-xs text-emerald-400';
+        } catch (error) {
+            otpStatus.textContent = error?.message || 'OTP bhejne me problem aayi.';
+            otpStatus.className = 'mt-2 text-xs text-red-400';
+        }
+    });
+
+    verifyOtpBtn.addEventListener('click', async function () {
+        const email = emailInput.value.trim();
+        const otp = emailOtpInput.value.trim();
+
+        if (!email) {
+            emailInput.reportValidity();
+            return;
         }
 
-        function validateStep(index) {
-            const currentInputs = steps[index].querySelectorAll('input, select, textarea');
-
-            for (let input of currentInputs) {
-                if (!input.checkValidity()) {
-                    input.reportValidity();
-                    return false;
-                }
-            }
-
-            const password = document.querySelector('input[name="password"]');
-            const confirmPassword = document.querySelector('input[name="password_confirmation"]');
-
-            if (index === 0 && password && confirmPassword) {
-                if (password.value !== confirmPassword.value) {
-                    confirmPassword.setCustomValidity('Passwords do not match');
-                    confirmPassword.reportValidity();
-                    confirmPassword.focus();
-                    return false;
-                } else {
-                    confirmPassword.setCustomValidity('');
-                }
-            }
-
-            return true;
+        if (!otp || otp.length !== 6) {
+            emailOtpInput.focus();
+            verifyOtpStatus.textContent = 'Valid 6 digit OTP daliyega.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-400';
+            return;
         }
 
-        nextBtn.addEventListener('click', function () {
-            if (!validateStep(currentStep)) return;
+        verifyOtpStatus.textContent = 'OTP verify ho raha hai...';
+        verifyOtpStatus.className = 'mt-2 text-xs text-cyan-300';
 
-            if (currentStep < steps.length - 1) {
-                currentStep++;
-                showStep(currentStep);
+        try {
+            const response = await fetch("{{ route('register.verifyOtp') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email, otp })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw data;
             }
-        });
 
-        prevBtn.addEventListener('click', function () {
-            if (currentStep > 0) {
-                currentStep--;
-                showStep(currentStep);
-            }
-        });
+            emailVerifiedInput.value = '1';
+            verifyOtpStatus.textContent = data.message || 'OTP verify ho gaya.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-emerald-400';
+        } catch (error) {
+            emailVerifiedInput.value = '0';
+            verifyOtpStatus.textContent = error?.message || 'OTP verify nahi hua.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-400';
+        }
+    });
 
-        showStep(currentStep);
-    </script>
+    emailInput.addEventListener('input', function () {
+        emailVerifiedInput.value = '0';
+        verifyOtpStatus.textContent = '';
+    });
+
+    nextBtn.addEventListener('click', function () {
+        if (!validateStep(currentStep)) return;
+
+        if (currentStep < steps.length - 1) {
+            currentStep++;
+            showStep(currentStep);
+        }
+    });
+
+    prevBtn.addEventListener('click', function () {
+        if (currentStep > 0) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    });
+
+    showStep(currentStep);
+</script>
 
 </body>
 </html>
