@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -13,12 +12,12 @@ class RegisterOtpMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-     public string $otp;
+    public string $otp;
 
     /**
      * Create a new message instance.
      */
-     public function __construct(string $otp)
+    public function __construct(string $otp)
     {
         $this->otp = $otp;
     }
@@ -29,7 +28,7 @@ class RegisterOtpMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Register Otp Mail',
+            subject: 'Your Registration OTP',
         );
     }
 
@@ -39,7 +38,10 @@ class RegisterOtpMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.register-otp',
+            with: [
+                'otp' => $this->otp,
+            ],
         );
     }
 
