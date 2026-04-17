@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BillTemplateController;
 use App\Http\Controllers\BirthdayRecordController;
 use App\Http\Controllers\BirthdayWishLogController;
 use App\Http\Controllers\CategoryController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\InvoiceSendController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\NoBusinessWhatsappController;
+use App\Http\Controllers\PlanController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
@@ -54,6 +56,12 @@ Route::post('/metal-rates/today', [\App\Http\Controllers\MetalRateController::cl
 
 
 Route::middleware(['auth'])->group(function () {
+
+
+
+    Route::get('/choose-plan', [PlanController::class, 'choose'])->name('plan.choose');
+    Route::post('/choose-plan', [PlanController::class, 'choosenSave'])->name('plan.choose.store');
+
 
     Route::prefix('invoice-sends')->name('invoice-sends.')->controller(\App\Http\Controllers\InvoiceSendController::class)->group(function(){
         Route::get('/', 'index')->name('index');
@@ -314,6 +322,19 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('destroy/{billRequest}', 'destroy')->name('destroy');
         Route::post('create-invoice/{billRequest}', 'createInvoice')->name('create-invoice');
     });
+
+
+    Route::resource('plans', PlanController::class);
+    Route::post('plans/{id}/toggle-status', [PlanController::class, 'toggleStatus'])->name('plans.toggleStatus');
+
+
+    Route::get('bill-templates', [BillTemplateController::class, 'index'])->name('bill-templates.index');
+    Route::get('bill-templates/create', [BillTemplateController::class, 'create'])->name('bill-templates.create');
+    Route::post('bill-templates', [BillTemplateController::class, 'store'])->name('bill-templates.store');
+    Route::get('bill-templates/{id}', [BillTemplateController::class, 'show'])->name('bill-templates.show');
+    Route::get('bill-templates/{id}/edit', [BillTemplateController::class, 'edit'])->name('bill-templates.edit');
+    Route::put('bill-templates/{id}', [BillTemplateController::class, 'update'])->name('bill-templates.update');
+    Route::delete('bill-templates/{id}', [BillTemplateController::class, 'destroy'])->name('bill-templates.destroy');
 
 
 });

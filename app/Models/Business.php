@@ -26,4 +26,8 @@ class Business extends Model
     public function apiKey(){
         return $this->hasOne(ApiKey::class, 'business_id');
     }
+
+    public function billTemplate(){
+        return $this->belongsTo(BillTemplate::class, 'pdf_template_id');
+    }
 }

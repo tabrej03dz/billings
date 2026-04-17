@@ -21,8 +21,6 @@ return new class extends Migration
                 ->constrained('permissions')
                 ->cascadeOnDelete();
 
-            $table->timestamps();
-
             $table->unique(['plan_id', 'permission_id']);
             $table->timestamps();
         });

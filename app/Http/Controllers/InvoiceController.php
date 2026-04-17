@@ -2862,8 +2862,9 @@ class InvoiceController extends Controller
         // ❌ letter_head deliberately NOT passed
         // $vm['letter_head'] = null;
 
-//        return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
-        $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
+        //  return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
+        // $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
+        $view = 'invoices.' . ($biz->billTemplate->page_name ?? 'pdf_simple');
         // $view = 'invoices.' . ('pdf_krinoscco');
 
         return Pdf::loadView($view, $vm)

@@ -175,7 +175,7 @@ class HomeController extends Controller
             event(new Registered($user));
             Auth::login($user);
 
-            return redirect()->route('dashboard')
+            return redirect()->route('plan.choose')
                 ->with('success', 'Registration successful. Your business has been created.');
         } catch (\Throwable $e) {
             DB::rollBack();

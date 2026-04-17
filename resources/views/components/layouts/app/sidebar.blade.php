@@ -439,6 +439,25 @@
             </flux:navlist>
         @endcan
 
+        {{-- @can('show plan') --}}
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('plans.index')"
+                        :current="request()->routeIs('plans.index')" wire:navigate>{{ __('Plan management') }}
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        {{-- @endcan --}}
+
+
+        <flux:navlist variant="outline">
+            <flux:navlist.group class="grid">
+                <flux:navlist.item icon="home" :href="route('bill-templates.index')"
+                    :current="request()->routeIs('bill-templates.index')" wire:navigate>{{ __('Bill Template') }}
+                </flux:navlist.item>
+            </flux:navlist.group>
+        </flux:navlist>
+
         @can('show additional charges')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
