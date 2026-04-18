@@ -15,8 +15,21 @@
             </a>
         </div>
 
+        @if ($errors->any())
+            <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700">
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-            <form action="{{ route('bill-templates.store') }}" method="POST" class="space-y-6">
+            <form action="{{ route('bill-templates.store') }}"
+                  method="POST"
+                  enctype="multipart/form-data"
+                  class="space-y-6">
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -43,7 +56,7 @@
                                id="page_name"
                                name="page_name"
                                value="{{ old('page_name') }}"
-                               placeholder="Enter page name"
+                               placeholder="Example: pdf.simple_bill"
                                class="w-full border rounded-lg px-4 py-2.5 text-sm dark:bg-neutral-800 dark:border-neutral-700 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none">
                         @error('page_name')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -63,6 +76,35 @@
                     @error('description')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <div>
+                    <label for="preview" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Preview Image / PDF
+                    </label>
+
+                    <input type="file"
+                           id="preview"
+                           name="preview"
+                           accept=".jpg,.jpeg,.png,.webp,.pdf"
+                           class="w-full border rounded-lg px-4 py-2.5 text-sm dark:bg-neutral-800 dark:border-neutral-700 dark:text-white file:mr-4 file:rounded-md file:border-0 file:bg-cyan-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-cyan-700">
+
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Allowed files: JPG, JPEG, PNG, WEBP, PDF. Max size: 5MB.
+                    </p>
+
+                    @error('preview')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="rounded-xl border border-dashed border-gray-300 dark:border-neutral-700 p-4 bg-gray-50 dark:bg-neutral-800/50">
+                    <h3 class="text-sm font-semibold text-gray-800 dark:text-white mb-2">Notes</h3>
+                    <ul class="list-disc pl-5 space-y-1 text-sm text-gray-600 dark:text-gray-300">
+                        <li><strong>Template Name</strong> card me dikhne wala naam hoga.</li>
+                        <li><strong>Page Name</strong> actual blade/view name hoga. Example: <code>pdf.simple_bill</code></li>
+                        <li><strong>Preview</strong> choose page me dikhne wali image ya PDF file hogi.</li>
+                    </ul>
                 </div>
 
                 <div class="flex items-center gap-3">

@@ -331,11 +331,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('bill-templates', [BillTemplateController::class, 'index'])->name('bill-templates.index');
     Route::get('bill-templates/create', [BillTemplateController::class, 'create'])->name('bill-templates.create');
     Route::post('bill-templates', [BillTemplateController::class, 'store'])->name('bill-templates.store');
+    Route::get('bill-templates/choose', [BillTemplateController::class, 'choose'])->name('bill-templates.choose');
+    Route::post('bill-templates/choose', [BillTemplateController::class, 'saveChosen'])->name('bill-templates.saveChosen');
     Route::get('bill-templates/{id}', [BillTemplateController::class, 'show'])->name('bill-templates.show');
     Route::get('bill-templates/{id}/edit', [BillTemplateController::class, 'edit'])->name('bill-templates.edit');
     Route::put('bill-templates/{id}', [BillTemplateController::class, 'update'])->name('bill-templates.update');
     Route::delete('bill-templates/{id}', [BillTemplateController::class, 'destroy'])->name('bill-templates.destroy');
-
+    
 
 });
 

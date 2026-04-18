@@ -215,6 +215,7 @@
             </svg>
             <span>Bill Requests</span>
         </a>
+        
 
         @can('show businesses')
             <flux:navlist variant="outline">
@@ -458,6 +459,14 @@
             </flux:navlist.group>
         </flux:navlist>
 
+        <flux:navlist variant="outline">
+            <flux:navlist.group class="grid">
+                <flux:navlist.item icon="home" :href="route('bill-templates.choose')"
+                    :current="request()->routeIs('bill-templates.choose')" wire:navigate>{{ __('Choose Template') }}
+                </flux:navlist.item>
+            </flux:navlist.group>
+        </flux:navlist>
+
         @can('show additional charges')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
@@ -690,6 +699,7 @@
                         {{ __('Settings') }}</flux:menu.item>
                 </flux:menu.radio.group>
 
+
                 <flux:menu.separator />
 
                 <form method="POST" action="{{ route('logout') }}" class="w-full">
@@ -730,6 +740,9 @@
                         </div>
                     </div>
                 </flux:menu.radio.group>
+
+
+                
 
                 <flux:menu.separator />
 
