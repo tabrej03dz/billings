@@ -231,7 +231,7 @@ public function choose()
         //     $user->syncPermissions(['show invoices', 'show quotations', 'show proformas']);
         // }
 
-        return redirect()->route('dashboard')->with('success', 'Plan selected successfully.');
+        return redirect()->route('bill-templates.choose')->with('success', 'Plan selected successfully.');
     }
 
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BillTemplate;
 use App\Models\Business;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -30,7 +31,8 @@ class BusinessController extends Controller
     public function create()
     {
         // $this->authorize('create', Business::class); // if using policies
-        return view('businesses.create');
+        $billTemplates = BillTemplate::all();
+        return view('businesses.create', compact('billTemplates'));
     }
 
     public function store(Request $request)
