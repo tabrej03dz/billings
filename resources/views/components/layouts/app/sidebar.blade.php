@@ -448,6 +448,14 @@
                     </flux:navlist.item>
                 </flux:navlist.group>
             </flux:navlist>
+
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item icon="home" :href="route('user-plans.index')"
+                        :current="request()->routeIs('user-plans.index')" wire:navigate>{{ __('User Plan') }}
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
         {{-- @endcan --}}
 
 

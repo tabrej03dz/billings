@@ -16,6 +16,7 @@ use App\Http\Controllers\NoBusinessWhatsappController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserPlanController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -336,6 +337,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('bill-templates/{id}/edit', [BillTemplateController::class, 'edit'])->name('bill-templates.edit');
     Route::put('bill-templates/{id}', [BillTemplateController::class, 'update'])->name('bill-templates.update');
     Route::delete('bill-templates/{id}', [BillTemplateController::class, 'destroy'])->name('bill-templates.destroy');
+
+    Route::resource('user-plans', UserPlanController::class);
     
 
 });

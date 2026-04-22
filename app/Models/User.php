@@ -74,4 +74,18 @@ class User extends Authenticatable
     public function api(){
         return $this->hasOne(ApiKey::class, 'user_id');
     }
+
+    public function userPlans()
+    {
+        return $this->hasMany(UserPlan::class);
+    }
+
+    public function activePlan()
+    {
+        return $this->hasOne(UserPlan::class)
+            ->where('status', 1)
+            ->whereDate('start_date', '<=', now())
+            ->whereDate('expiry_date', '>=', now())
+            ->latestOfMany();
+    }
 }

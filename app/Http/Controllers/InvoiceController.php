@@ -2,30 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\InvoicesExport;
-use App\Models\AdditionalCharge;
 use App\Models\BankAccount;
 use App\Models\Business;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\Client;
-use App\Models\InvoiceCharge;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Item;
 use App\Models\MetalRate;
-use App\Services\InvoiceNumber;
 use App\Services\StockService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
-use Maatwebsite\Excel\Facades\Excel;
 
 
 class InvoiceController extends Controller
@@ -85,15 +77,6 @@ class InvoiceController extends Controller
             ->where('invoice_type', $type);
 
         // ✅ Search (invoice_number OR client name)
-        // if ($search !== '') {
-        //     $q->where(function ($w) use ($search) {
-        //         $w->where('invoice_number', 'like', "%{$search}%")
-        //             ->orWhereHas('client', function ($c) use ($search) {
-        //                 $c->where('name', 'like', "%{$search}%");
-        //             });
-        //     });
-        // }
-
 
         if ($search !== '') {
             $q->where(function ($w) use ($search) {
@@ -198,17 +181,6 @@ class InvoiceController extends Controller
             ->get(['id','name','mobile','address','state','state_code','gstin']);
 
         // ✅ Items
-        // $items = Item::where('business_id', $bid)
-        //     ->where('is_active', true)
-        //     ->orderBy('name')
-        //     ->get([
-        //         'id','name','type','sku','description','tax_rate','making_charge','sac',
-        //         'gold_weight','gold_purity',
-        //         'silver_weight','silver_purity',
-        //         'stone_weight','stone_charges',
-        //         'diamond_weight','diamond_charges',
-        //         'price'
-        //     ]);
 
         $items = Item::where('items.business_id', $bid)
         ->where('items.is_active', true)

@@ -20,4 +20,9 @@ class Plan extends Model
             'permission_id'
         )->withTimestamps();
     }
+
+    public function userPlans()
+    {
+        return $this->hasMany(UserPlan::class);
+    }
 }
