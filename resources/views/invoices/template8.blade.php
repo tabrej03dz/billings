@@ -114,7 +114,7 @@
 @endphp
 
 
-@include('invoices.partials.shared_logic')
+{{-- @include('invoices.partials.shared_logic') --}}
 
 <!doctype html>
 <html>
