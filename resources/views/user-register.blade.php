@@ -337,14 +337,15 @@
                                         required
                                         class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-emerald-500"
                                     >
-                                        <option value="">Select Business Type</option>
+                                        <option value="">-- Select Business Type --</option>
                                         <option value="Jewellery" {{ old('type') == 'Jewellery' ? 'selected' : '' }}>Jewellery</option>
-                                        <option value="Gold Jewellery" {{ old('type') == 'Gold Jewellery' ? 'selected' : '' }}>Gold Jewellery</option>
-                                        <option value="Silver Jewellery" {{ old('type') == 'Silver Jewellery' ? 'selected' : '' }}>Silver Jewellery</option>
-                                        <option value="Diamond Jewellery" {{ old('type') == 'Diamond Jewellery' ? 'selected' : '' }}>Diamond Jewellery</option>
                                         <option value="Retail" {{ old('type') == 'Retail' ? 'selected' : '' }}>Retail</option>
                                         <option value="Wholesale" {{ old('type') == 'Wholesale' ? 'selected' : '' }}>Wholesale</option>
                                         <option value="Manufacturer" {{ old('type') == 'Manufacturer' ? 'selected' : '' }}>Manufacturer</option>
+                                        <option value="Service Provider" {{ old('type') == 'Service Provider' ? 'selected' : '' }}>Service Provider</option>
+                                        <option value="Trading" {{ old('type') == 'Trading' ? 'selected' : '' }}>Trading</option>
+                                        <option value="E-Commerce" {{ old('type') == 'E-Commerce' ? 'selected' : '' }}>E-Commerce</option>
+                                        <option value="Agency" {{ old('type') == 'Agency' ? 'selected' : '' }}>Agency</option>
                                         <option value="Other" {{ old('type') == 'Other' ? 'selected' : '' }}>Other</option>
                                     </select>
                                 </div>
@@ -872,6 +873,18 @@
 
         return true;
     }
+
+    pills.forEach((pill, index) => {
+        pill.style.cursor = 'pointer';
+
+        pill.addEventListener('click', function () {
+            if (index > currentStep) {
+                if (!validateStep(currentStep)) return;
+            }
+
+            showStep(index);
+        });
+    });
 
     function bindFieldListeners() {
         document.querySelectorAll('input, select, textarea').forEach(input => {

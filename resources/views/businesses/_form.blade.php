@@ -174,37 +174,25 @@
             $currentTemplate = old('pdf_template_id', $business->pdf_template_id ?? 'pdf_simple');
         @endphp
 
-        <div>
-            <label class="block text-sm font-medium mb-1">
-                Bill Template <span class="text-red-600">*</span>
-            </label>
+        @if(isset($billTemplates) && $billTemplates->count())
+            <div class="col-span-1 sm:col-span-2">
+                <label for="pdf_template_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    PDF Bill Template
+                </label>
 
-            <select name="pdf_template_id" required
-                    class="mt-1 w-full border rounded px-3 py-2 bg-gray-300 dark:bg-[#242833] text-gray-400 border-gray-600
-             focus:border-blue-500 focus:ring-blue-500">
+                <select name="pdf_template_id" id="pdf_template_id" required
+                    class="w-full rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    <option value="">Select Template</option>
 
-                <option value="" class="bg-gray-300 dark:bg-[#242833] text-gray-400">-- Select template --</option>
-
-                <option value="pdf_simple" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
-                    {{ $currentTemplate === 'pdf_simple' ? 'selected' : '' }}>
-                    Simple Format
-                </option>
-
-                <option value="pdf_rvg_format" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
-                    {{ $currentTemplate === 'pdf_rvg_format' ? 'selected' : '' }}>
-                    RVG Format
-                </option>
-
-                <option value="pdf_krinoscco" class="bg-gray-300 dark:bg-[#242833] text-gray-400"
-                    {{ $currentTemplate === 'pdf_krinoscco' ? 'selected' : '' }}>
-                    Krinoscco Format
-                </option>
-            </select>
-
-            @error('pdf_template_id')
-            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-            @enderror
-        </div>
+                    @foreach($billTemplates as $template)
+                        <option value="{{ $template->id }}"
+                            {{ old('pdf_template_id', $business->pdf_template_id ?? '') == $template->id ? 'selected' : '' }}>
+                            {{ $template->name ?? 'Template '.$template->id }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
 
 
         <div class="md:col-span-2">

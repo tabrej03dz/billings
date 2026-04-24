@@ -100,7 +100,8 @@ class BusinessController extends Controller
     public function edit(Business $business)
     {
         // $this->authorize('update', $business);
-        return view('businesses.edit', compact('business'));
+        $billTemplates = BillTemplate::all();
+        return view('businesses.edit', compact('business', 'billTemplates'));
     }
 
     public function update(Request $request, Business $business)
