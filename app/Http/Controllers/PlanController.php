@@ -201,38 +201,81 @@ public function choose()
         return view('choose-plan', compact('plans'));
     }
 
+    // public function choosenSave(Request $request)
+    // {
+    //     $request->validate([
+    //         'plan_id' => ['required', 'exists:plans,id'],
+    //     ]);
+
+    //     $user = Auth::user();
+    //     $plan = Plan::findOrFail($request->plan_id);
+
+    //     // old active plans disable
+    //     UserPlan::where('user_id', $user->id)->where('status', 1)->update([
+    //         'status' => 0,
+    //     ]);
+
+    //     UserPlan::create([
+    //         'user_id'    => $user->id,
+    //         'plan_id'    => $plan->id,
+    //         'start_date' => Carbon::today(),
+    //         'expiry_date'=> Carbon::today()->addDays($plan->duration_days),
+    //         'status'     => 1,
+    //     ]);
+
+    //     // Agar aap plan ke basis par role/permission dena chahte ho
+    //     // Example:
+    //     // if ($plan->slug === 'basic') {
+    //     //     $user->syncPermissions(['show invoices']);
+    //     // } elseif ($plan->slug === 'premium') {
+    //     //     $user->syncPermissions(['show invoices', 'show quotations', 'show proformas']);
+    //     // }
+
+    //     return redirect()->route('bill-templates.choose')->with('success', 'Plan selected successfully.');
+    // }
+
+
     public function choosenSave(Request $request)
     {
         $request->validate([
             'plan_id' => ['required', 'exists:plans,id'],
+            'business_id' => ['nullable', 'exists:businesses,id'],
         ]);
 
         $user = Auth::user();
         $plan = Plan::findOrFail($request->plan_id);
 
-        // old active plans disable
-        UserPlan::where('user_id', $user->id)->where('status', 1)->update([
-            'status' => 0,
-        ]);
+        $businessId = $request->business_id
+            ?? $user->current_business_id
+            ?? session('active_business_id')
+            ?? $user->businesses()->pluck('businesses.id')->first();
+
+        if (!$businessId) {
+            return back()->with('error', 'Business not found. Please select business first.');
+        }
+
+        // old active plans disable for same business only
+        UserPlan::where('business_id', $businessId)
+            ->where('status', 1)
+            ->update([
+                'status' => 0,
+            ]);
 
         UserPlan::create([
-            'user_id'    => $user->id,
-            'plan_id'    => $plan->id,
-            'start_date' => Carbon::today(),
-            'expiry_date'=> Carbon::today()->addDays($plan->duration_days),
-            'status'     => 1,
+            'business_id' => $businessId,
+            'user_id'     => $user->id,
+            'plan_id'     => $plan->id,
+            'start_date'  => Carbon::today(),
+            'expiry_date' => Carbon::today()->addDays((int) $plan->duration_days),
+            'status'      => 1,
         ]);
 
-        // Agar aap plan ke basis par role/permission dena chahte ho
-        // Example:
-        // if ($plan->slug === 'basic') {
-        //     $user->syncPermissions(['show invoices']);
-        // } elseif ($plan->slug === 'premium') {
-        //     $user->syncPermissions(['show invoices', 'show quotations', 'show proformas']);
-        // }
-
-        return redirect()->route('bill-templates.choose')->with('success', 'Plan selected successfully.');
+        return redirect()
+            ->route('bill-templates.choose')
+            ->with('success', 'Plan selected successfully.');
     }
+
+
 
 
 }
