@@ -2532,7 +2532,7 @@ protected function imageDataUri(?string $pathOrUrl): ?string
         $vm['sign'] = $signDataUri;
 
         // ✅ FIXED: safe view resolve + fallback if missing
-        $view = 'invoices.' . (($biz?->pdf_template_id) ?: 'pdf_simple');
+        $view = 'invoices.' . (($biz?->billTemplate->page_name) ?: 'pdf_simple');
         if (!view()->exists($view)) {
             $view = 'invoices.pdf_simple';
         }
