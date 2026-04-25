@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\BillRequestController as ApiBillRequestController;
+use App\Http\Controllers\Api\BillTemplateController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\InvoiceSendController;
@@ -158,6 +159,9 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
         Route::post('/import', [InstallmentReminderController::class, 'import']); // excel import
     });
+
+    Route::get('/bill-templates', [BillTemplateController::class, 'apiChoose']);
+    Route::post('/bill-templates/choose', [BillTemplateController::class, 'apiSaveChosen']);
 
 
 
