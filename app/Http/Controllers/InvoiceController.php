@@ -11,6 +11,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Item;
 use App\Models\MetalRate;
+use App\Models\UserPlan;
 use App\Services\StockService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -1217,6 +1218,50 @@ class InvoiceController extends Controller
 
     public function store(Request $r, StockService $stock, $docType)
     {
+
+        $user = $r->user();
+
+        // ✅ Active Business Resolve
+        $bid = $user->current_business_id ?? session('active_business_id');
+
+        if (!$bid) {
+            $bid = $user->businesses()->pluck('businesses.id')->first();
+        }
+
+        if (!$bid) {
+            return back()
+                ->withErrors(['business' => 'Active business select/attach नहीं है.'])
+                ->withInput();
+        }
+
+        // ✅ Business wise plan expiry validation
+        // super_admin/admin ko bypass dena ho to ye if rakho
+        if (!$user->hasAnyRole(['super_admin', 'admin'])) {
+            $activePlan = UserPlan::where('user_id', $user->id)
+                ->where('business_id', $bid)
+                ->where('status', 'active')
+                ->whereDate('start_date', '<=', today())
+                ->whereDate('expiry_date', '>=', today())
+                ->latest('id')
+                ->first();
+
+            if (!$activePlan) {
+                return back()
+                    ->withErrors([
+                        'plan' => 'इस business का plan expire हो चुका है या active plan available नहीं है. Invoice create करने के लिए कृपया plan renew करें.'
+                    ])
+                    ->withInput();
+            }
+        }
+
+        $docType = strtolower(trim((string)$docType));
+
+        if (!in_array($docType, ['tax', 'proforma', 'quotation'], true)) {
+            $docType = 'tax';
+        }
+
+        // ✅ नीचे आपका बाकी पुराना code same रहेगा
+
         $docType = strtolower(trim((string)$docType));
         if (!in_array($docType, ['tax', 'proforma', 'quotation'], true)) {
             $docType = 'tax';
@@ -2832,10 +2877,6 @@ class InvoiceController extends Controller
         $vm['sign'] = $signDataUri;
 
         // ❌ letter_head deliberately NOT passed
-        // $vm['letter_head'] = null;
-
-        //  return Pdf::loadView('invoices.pdf_simple', $vm)->setPaper('a4');
-        // $view = 'invoices.' . ($biz->pdf_template_id ?? 'pdf_simple');
         $view = 'invoices.' . ($biz->billTemplate->page_name ?? 'pdf_simple');
         // $view = 'invoices.' . ('pdf_krinoscco');
 

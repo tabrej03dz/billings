@@ -7,23 +7,33 @@
             </div>
         @endif
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-[#BFE0E0] dark:bg-[#354A54] p-6 rounded-xl">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">User Plans</h1>
 
             <div class="flex items-center gap-2">
-                <form method="GET" action="{{ route('user-plans.index') }}" class="flex items-center gap-2">
+                <form method="GET" action="{{ route('user-plans.index') }}" class="flex flex-wrap items-center gap-2">
                     <input type="text"
                            name="q"
                            value="{{ request('q') }}"
-                           placeholder="Search user / email / plan..."
+                           placeholder="Search user / email / plan / business..."
                            class="px-3 py-2 text-sm border rounded-lg dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
+
+                    <select name="business_id"
+                            class="px-3 py-2 text-sm border rounded-lg dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
+                        <option value="">All Businesses</option>
+                        @foreach($businesses as $business)
+                            <option value="{{ $business->id }}" {{ request('business_id') == $business->id ? 'selected' : '' }}>
+                                {{ $business->name ?? $business->business_name ?? 'Business #'.$business->id }}
+                            </option>
+                        @endforeach
+                    </select>
 
                     <button type="submit"
                             class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
                         Search
                     </button>
 
-                    @if(request('q'))
+                    @if(request('q') || request('business_id'))
                         <a href="{{ route('user-plans.index') }}"
                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gray-500 rounded-lg hover:bg-gray-600">
                             Reset
@@ -31,7 +41,7 @@
                     @endif
                 </form>
 
-                <a href="{{ route('user-plans.create') }}"
+                <a href="{{ route('user-plans.create', request('business_id') ? ['business_id' => request('business_id')] : []) }}"
                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-700">
                     + New User Plan
                 </a>
@@ -43,6 +53,7 @@
                 <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                     <tr>
                         <th class="px-6 py-3">#</th>
+                        <th class="px-6 py-3">Business</th>
                         <th class="px-6 py-3">User</th>
                         <th class="px-6 py-3">Email</th>
                         <th class="px-6 py-3">Plan</th>
@@ -62,6 +73,10 @@
                             </td>
 
                             <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                {{ $userPlan->business->name ?? $userPlan->business->business_name ?? 'N/A' }}
+                            </td>
+
+                            <td class="px-6 py-4">
                                 {{ $userPlan->user->name ?? 'N/A' }}
                             </td>
 
@@ -123,7 +138,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="px-6 py-4 text-center text-gray-500">
+                            <td colspan="10" class="px-6 py-4 text-center text-gray-500">
                                 No user plans found.
                             </td>
                         </tr>
@@ -133,7 +148,7 @@
         </div>
 
         <div class="mt-4">
-            {{ $userPlans->withQueryString()->links() }}
+            {{ $userPlans->links() }}
         </div>
     </div>
 </x-layouts.app>

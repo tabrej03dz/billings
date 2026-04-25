@@ -15,13 +15,32 @@
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">Business</label>
+                        <select name="business_id"
+                                class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+                            <option value="">Select Business</option>
+                            @foreach($businesses as $business)
+                                <option value="{{ $business->id }}"
+                                    {{ old('business_id', $selectedBusinessId) == $business->id ? 'selected' : '' }}>
+                                    {{ $business->name ?? $business->business_name ?? 'Business #'.$business->id }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('business_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">User</label>
-                        <select name="user_id" class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+                        <select name="user_id"
+                                class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                             <option value="">Select User</option>
                             @foreach($users as $user)
                                 <option value="{{ $user->id }}" {{ old('user_id') == $user->id ? 'selected' : '' }}>
-                                    {{ $user->name }} ({{ $user->email }})
+                                    {{ $user->name }} {{ $user->email ? '('.$user->email.')' : '' }}
                                 </option>
                             @endforeach
                         </select>
@@ -32,13 +51,14 @@
 
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">Plan</label>
-                        <select name="plan_id" id="plan_id" class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+                        <select name="plan_id" id="plan_id"
+                                class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                             <option value="">Select Plan</option>
                             @foreach($plans as $plan)
                                 <option value="{{ $plan->id }}"
-                                        data-duration="{{ $plan->duration_days }}"
+                                        data-duration="{{ $plan->duration_days ?? 0 }}"
                                         {{ old('plan_id') == $plan->id ? 'selected' : '' }}>
-                                    {{ $plan->name }} - ₹{{ number_format($plan->price, 2) }} / {{ $plan->duration_days }} days
+                                    {{ $plan->name }} - ₹{{ number_format($plan->price ?? 0, 2) }} / {{ $plan->duration_days ?? 0 }} days
                                 </option>
                             @endforeach
                         </select>
@@ -49,7 +69,8 @@
 
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">Start Date</label>
-                        <input type="date" name="start_date" id="start_date" value="{{ old('start_date', now()->toDateString()) }}"
+                        <input type="date" name="start_date" id="start_date"
+                               value="{{ old('start_date', now()->toDateString()) }}"
                                class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                         @error('start_date')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -58,14 +79,15 @@
 
                     <div>
                         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">Expiry Date</label>
-                        <input type="date" name="expiry_date" id="expiry_date" value="{{ old('expiry_date') }}"
+                        <input type="date" name="expiry_date" id="expiry_date"
+                               value="{{ old('expiry_date') }}"
                                class="w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                         @error('expiry_date')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
-                    <div class="md:col-span-2">
+                    <div class="flex items-end">
                         <label class="inline-flex items-center gap-2">
                             <input type="hidden" name="status" value="0">
                             <input type="checkbox" name="status" value="1"
@@ -99,10 +121,10 @@
 
             function updateExpiryDate() {
                 const selectedOption = planSelect.options[planSelect.selectedIndex];
-                const duration = parseInt(selectedOption.getAttribute('data-duration') || 0);
+                const duration = parseInt(selectedOption?.getAttribute('data-duration') || 0);
                 const startDate = startDateInput.value;
 
-                if (duration && startDate && !expiryDateInput.value) {
+                if (duration > 0 && startDate) {
                     const date = new Date(startDate);
                     date.setDate(date.getDate() + duration);
 
@@ -114,17 +136,12 @@
                 }
             }
 
-            planSelect.addEventListener('change', function () {
-                expiryDateInput.value = '';
-                updateExpiryDate();
-            });
+            planSelect.addEventListener('change', updateExpiryDate);
+            startDateInput.addEventListener('change', updateExpiryDate);
 
-            startDateInput.addEventListener('change', function () {
-                expiryDateInput.value = '';
+            if (!expiryDateInput.value) {
                 updateExpiryDate();
-            });
-
-            updateExpiryDate();
+            }
         });
     </script>
 </x-layouts.app>

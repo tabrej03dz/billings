@@ -17,6 +17,7 @@ use App\Http\Controllers\PlanController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserPlanController;
+use App\Models\UserPlan;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
@@ -339,6 +340,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('bill-templates/{id}', [BillTemplateController::class, 'destroy'])->name('bill-templates.destroy');
 
     Route::resource('user-plans', UserPlanController::class);
+    Route::get('user-plans.index1/{business}', [UserPlanController::class, 'index1'])->name('user-plans.index1');
     
 
 });

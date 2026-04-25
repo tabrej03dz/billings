@@ -61,7 +61,11 @@
                                     <button type="submit" class="bg-red-600 p-2 m-3 text-white hover:underline">Delete</button>
                                 </form>
 
-                                @endcan
+                            @endcan
+
+                            @can('edit business')
+                                <a href="{{ route('user-plans.index1', $business->id) }}" class=" bg-yellow-500 text-white p-2 hover:underline m-3">Edit</a>
+                            @endcan
                         </td>
                     </tr>
                 @empty

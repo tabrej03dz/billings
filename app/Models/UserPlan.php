@@ -23,4 +23,9 @@ class UserPlan extends Model
     {
         return $this->belongsTo(Plan::class);
     }
+
+    public function business()
+    {
+        return $this->belongsTo(Business::class);
+    }
 }
