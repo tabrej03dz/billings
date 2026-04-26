@@ -1238,7 +1238,7 @@ class InvoiceController extends Controller
         // super_admin/admin ko bypass dena ho to ye if rakho
         if (!$user->hasAnyRole(['super_admin', 'admin'])) {
             $activePlan = UserPlan::where('user_id', $user->id)
-                ->where('business_id', $bid)
+                ->orWhere('business_id', $bid)
                 ->where('status', 'active')
                 ->whereDate('start_date', '<=', today())
                 ->whereDate('expiry_date', '>=', today())
