@@ -29,7 +29,24 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        // if (! Auth::attempt(['email' => $this->email, 'password' => $this->password], $this->remember)) {
+        //     RateLimiter::hit($this->throttleKey());
+
+        //     throw ValidationException::withMessages([
+        //         'email' => __('auth.failed'),
+        //     ]);
+        // }
+
+        // RateLimiter::clear($this->throttleKey());
+        // Session::regenerate();
+
+        // $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+
+
+
+        $user = \App\Models\User::where('email', $this->email)->first();
+
+        if (! $user || ! \Illuminate\Support\Facades\Hash::check($this->password, $user->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -38,9 +55,38 @@ new #[Layout('components.layouts.auth')] class extends Component {
         }
 
         RateLimiter::clear($this->throttleKey());
+
+        if ($user->hasRole('super admin')) {
+            $otp = rand(100000, 999999);
+
+            session([
+                'super_admin_otp_user_id' => $user->id,
+                'super_admin_otp_remember' => $this->remember,
+                'super_admin_otp' => $otp,
+                'super_admin_otp_expires_at' => now()->addMinutes(5)->timestamp,
+            ]);
+
+            \Illuminate\Support\Facades\Mail::raw(
+                "Your Super Admin Login OTP is: {$otp}\n\nThis OTP is valid for 5 minutes.",
+                function ($message) use ($user) {
+                    $message->to($user->email)
+                        ->subject('Super Admin Login OTP');
+                }
+            );
+
+            $this->redirect(route('super-admin.otp.verify', absolute: false), navigate: true);
+            return;
+        }
+
+        Auth::login($user, $this->remember);
+
         Session::regenerate();
 
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+
+
+
+
     }
 
     /**

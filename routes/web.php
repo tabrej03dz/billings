@@ -38,6 +38,12 @@ Route::get('/welcome', function () {
 
 
 
+Volt::route('/super-admin/otp-verify', 'auth.super-admin-otp-verify')
+    ->name('super-admin.otp.verify')
+    ->middleware('guest');
+
+
+
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register/send-otp', [RegisterController::class, 'sendEmailOtp'])->name('register.sendOtp');
 Route::post('/register/verify-otp', [RegisterController::class, 'verifyEmailOtp'])->name('register.verifyOtp');
