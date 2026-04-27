@@ -44,7 +44,7 @@ public function handle(WhatApiWhatsappService $sender, MediaManagerService $mm)
             continue;
         }
 
-        $name = $r->name ?: 'Dear';
+        $name = $r->name ?? 'Dear';
         $message = "🎉 Happy Birthday {$name}! 🎂\nGod bless you with health, happiness & success.\n\n— Real Victory Groups";
 
         $log = BirthdayWishLog::create([
