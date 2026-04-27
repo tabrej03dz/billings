@@ -7,9 +7,11 @@ use App\Models\UserPlan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PlanController extends Controller
 {
@@ -235,15 +237,57 @@ public function choose()
     // }
 
 
+    // public function choosenSave(Request $request)
+    // {
+    //     $request->validate([
+    //         'plan_id' => ['required', 'exists:plans,id'],
+    //         'business_id' => ['nullable', 'exists:businesses,id'],
+    //     ]);
+
+    //     $user = Auth::user();
+    //     $plan = Plan::findOrFail($request->plan_id);
+
+    //     $businessId = $request->business_id
+    //         ?? $user->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $user->businesses()->pluck('businesses.id')->first();
+
+    //     if (!$businessId) {
+    //         return back()->with('error', 'Business not found. Please select business first.');
+    //     }
+
+    //     // old active plans disable for same business only
+    //     UserPlan::where('business_id', $businessId)
+    //         ->where('status', 1)
+    //         ->update([
+    //             'status' => 0,
+    //         ]);
+
+    //     UserPlan::create([
+    //         'business_id' => $businessId,
+    //         'user_id'     => $user->id,
+    //         'plan_id'     => $plan->id,
+    //         'start_date'  => Carbon::today(),
+    //         'expiry_date' => Carbon::today()->addDays((int) $plan->duration_days),
+    //         'status'      => 1,
+    //     ]);
+
+    //     return redirect()
+    //         ->route('bill-templates.choose')
+    //         ->with('success', 'Plan selected successfully.');
+    // }
+
+
     public function choosenSave(Request $request)
     {
         $request->validate([
-            'plan_id' => ['required', 'exists:plans,id'],
+            'plan_id'     => ['required', 'exists:plans,id'],
             'business_id' => ['nullable', 'exists:businesses,id'],
         ]);
 
         $user = Auth::user();
-        $plan = Plan::findOrFail($request->plan_id);
+
+        $plan = Plan::with('permissions')->findOrFail($request->plan_id);
 
         $businessId = $request->business_id
             ?? $user->current_business_id
@@ -254,25 +298,36 @@ public function choose()
             return back()->with('error', 'Business not found. Please select business first.');
         }
 
-        // old active plans disable for same business only
-        UserPlan::where('business_id', $businessId)
-            ->where('status', 1)
-            ->update([
-                'status' => 0,
+        DB::transaction(function () use ($businessId, $user, $plan) {
+
+            // old active plan disable for same business
+            UserPlan::where('business_id', $businessId)
+                ->where('status', 1)
+                ->update([
+                    'status' => 0,
+                ]);
+
+            // new plan create
+            UserPlan::create([
+                'business_id' => $businessId,
+                'user_id'     => $user->id,
+                'plan_id'     => $plan->id,
+                'start_date'  => Carbon::today(),
+                'expiry_date' => Carbon::today()->addDays((int) $plan->duration_days),
+                'status'      => 1,
             ]);
 
-        UserPlan::create([
-            'business_id' => $businessId,
-            'user_id'     => $user->id,
-            'plan_id'     => $plan->id,
-            'start_date'  => Carbon::today(),
-            'expiry_date' => Carbon::today()->addDays((int) $plan->duration_days),
-            'status'      => 1,
-        ]);
+            // plan permissions assign to user
+            $permissions = $plan->permissions->pluck('name')->toArray();
+
+            $user->syncPermissions($permissions);
+
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+        });
 
         return redirect()
             ->route('bill-templates.choose')
-            ->with('success', 'Plan selected successfully.');
+            ->with('success', 'Plan selected successfully and permissions assigned.');
     }
 
 
