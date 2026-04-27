@@ -53,7 +53,7 @@ class ApiKeyController extends Controller
     {
         // Route Model Binding + BelongsToBusiness global scope:
         // agar dusre business ka id aayega to 404 dega
-        return view('api_keys._form', compact('apiKey'));
+        return view('api_keys.edit', compact('apiKey'));
     }
 
     /**

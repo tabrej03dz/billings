@@ -71,10 +71,10 @@
                         </td>
 
                         <td class="px-6 py-4 space-x-3">
-                            <a href="{{ route('api-keys.edit', $key->id) }}"
-                               class="bg-yellow-500 text-white p-2 hover:underline m-3">
+                            <a href="{{ route('api-keys.edit', ['api_key' => $key->id]) }}"
+                                class="bg-yellow-500 text-white p-2 hover:underline m-3">
                                 Edit
-                            </a>
+                            </a>    
 
                             <form action="{{ route('api-keys.destroy', $key->id) }}" method="POST"
                                   class="inline-block"

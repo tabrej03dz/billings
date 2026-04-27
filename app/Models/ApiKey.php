@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ApiKey extends Model
 {
-    use BelongsToBusiness;
+    // use BelongsToBusiness;
 
     protected $guarded = ['id'];
 
