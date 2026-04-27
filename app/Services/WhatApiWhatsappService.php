@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 
 class WhatApiWhatsappService
 {
-    public function sendBirthdayWish(string $phone, $url, $publicVideo): array
+    public function sendBirthdayWish(string $phone, $url, $publicVideo, $name = null): array
     {
 
 
@@ -26,6 +26,7 @@ class WhatApiWhatsappService
             // 'Video' => asset('asset/video/birthday-wish.mp4'),
             // 'Video' => url(Storage::url('videos/birthday-wish.mp4')),
             'Video' => $publicVideo ?? asset('asset/video/birthday-wish.mp4'), //
+            'name' => $name,
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);

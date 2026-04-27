@@ -135,7 +135,7 @@ public function handle(WhatApiWhatsappService $sender, MediaManagerService $mm)
         $publicVideo = $liveUrl ?: asset('asset/video/birthday-wish.mp4');
 
         try {
-            $resp = $sender->sendBirthdayWish($r->phone, $url, $publicVideo);
+            $resp = $sender->sendBirthdayWish($r->phone, $url, $publicVideo, $name);
 
             $log->update([
                 'status'   => ($resp['ok'] ?? false) ? 'success' : 'failed',
