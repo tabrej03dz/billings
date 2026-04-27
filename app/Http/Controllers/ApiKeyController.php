@@ -123,9 +123,13 @@ class ApiKeyController extends Controller
 
     public function index()
     {
-        $keys = ApiKey::withoutGlobalScopes()
-            ->latest()
-            ->paginate(20);
+        $query = ApiKey::withoutGlobalScopes();
+
+        if (!auth()->user()->hasAnyRole(['super_admin', 'admin'])) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $keys = $query->latest()->paginate(20);
 
         return view('api_keys.index', compact('keys'));
     }
