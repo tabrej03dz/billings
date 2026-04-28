@@ -18,14 +18,57 @@ use Illuminate\Support\Facades\Storage;
 
 class BillRequestController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $query = BillRequest::query();
+
+    //     if ($request->filled('search')) {
+    //         $search = trim($request->search);
+
+    //         $query->where(function ($q) use ($search) {
+    //             $q->where('customer_name', 'like', "%{$search}%")
+    //                 ->orWhere('customer_email', 'like', "%{$search}%")
+    //                 ->orWhere('customer_phone', 'like', "%{$search}%")
+    //                 ->orWhere('customer_phone1', 'like', "%{$search}%")
+    //                 ->orWhere('business_name', 'like', "%{$search}%")
+    //                 ->orWhere('gst_number', 'like', "%{$search}%")
+    //                 ->orWhere('package_name', 'like', "%{$search}%")
+    //                 ->orWhere('payment_method', 'like', "%{$search}%")
+    //                 ->orWhere('transaction_id', 'like', "%{$search}%")
+    //                 ->orWhere('source_software', 'like', "%{$search}%")
+    //                 ->orWhere('source_request_id', 'like', "%{$search}%");
+    //         });
+    //     }
+
+    //     if ($request->filled('status')) {
+    //         $query->where('status', $request->status);
+    //     }
+
+    //     if ($request->filled('from_date')) {
+    //         $query->whereDate('requested_at', '>=', $request->from_date);
+    //     }
+
+    //     if ($request->filled('to_date')) {
+    //         $query->whereDate('requested_at', '<=', $request->to_date);
+    //     }
+
+    //     $billRequests = $query->latest('id')->paginate(20)->withQueryString();
+
+    //     return view('bill-requests.index', compact('billRequests'));
+    // }
+
+
+
     public function index(Request $request)
     {
-        $query = BillRequest::query();
+        $statuses = ['pending', 'processed', 'failed'];
+
+        $baseQuery = BillRequest::query();
 
         if ($request->filled('search')) {
             $search = trim($request->search);
 
-            $query->where(function ($q) use ($search) {
+            $baseQuery->where(function ($q) use ($search) {
                 $q->where('customer_name', 'like', "%{$search}%")
                     ->orWhere('customer_email', 'like', "%{$search}%")
                     ->orWhere('customer_phone', 'like', "%{$search}%")
@@ -40,21 +83,37 @@ class BillRequestController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
         if ($request->filled('from_date')) {
-            $query->whereDate('requested_at', '>=', $request->from_date);
+            $baseQuery->whereDate('requested_at', '>=', $request->from_date);
         }
 
         if ($request->filled('to_date')) {
-            $query->whereDate('requested_at', '<=', $request->to_date);
+            $baseQuery->whereDate('requested_at', '<=', $request->to_date);
+        }
+
+        // ✅ Status counts for tabs
+        $statusCounts = (clone $baseQuery)
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status')
+            ->toArray();
+
+        $allCount = array_sum($statusCounts);
+
+        $query = clone $baseQuery;
+
+        if ($request->filled('status') && in_array($request->status, $statuses)) {
+            $query->where('status', $request->status);
         }
 
         $billRequests = $query->latest('id')->paginate(20)->withQueryString();
 
-        return view('bill-requests.index', compact('billRequests'));
+        return view('bill-requests.index', compact(
+            'billRequests',
+            'statuses',
+            'statusCounts',
+            'allCount'
+        ));
     }
 
     // public function createInvoice(Request $request, BillRequest $billRequest)

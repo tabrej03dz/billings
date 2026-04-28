@@ -17,6 +17,9 @@
         </div>
     </div>
 
+
+
+
     {{-- Filters --}}
     <form method="GET"
           action="{{ route('bill-requests.index') }}"
@@ -52,22 +55,6 @@
                    value="{{ request('to_date') }}"
                    class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
-
-        {{-- Status --}}
-        <div>
-            <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
-                Status
-            </label>
-            <select name="status"
-                    class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
-                <option value="">All</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
-                <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
-                <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completed</option>
-            </select>
-        </div>
-
         {{-- Buttons --}}
         <div class="md:col-span-5 flex items-center justify-between gap-2 pt-1">
             <a href="{{ route('bill-requests.index') }}"
@@ -81,6 +68,39 @@
             </button>
         </div>
     </form>
+
+        {{-- Status Tabs --}}
+    @php
+        $currentStatus = request('status');
+
+        $statusLabels = [
+            'pending' => 'Pending',
+            'processed' => 'Processed',
+            'failed' => 'Failed',
+        ];
+
+        $tabBase = 'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border transition';
+    @endphp
+
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+        <a href="{{ route('bill-requests.index', request()->except('status', 'page')) }}"
+        class="{{ $tabBase }} {{ empty($currentStatus) ? 'bg-[#46837d] text-white border-[#46837d]' : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+            All
+            <span class="text-xs px-2 py-0.5 rounded-full {{ empty($currentStatus) ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-neutral-800' }}">
+                {{ $allCount ?? 0 }}
+            </span>
+        </a>
+
+        @foreach($statuses as $status)
+            <a href="{{ route('bill-requests.index', array_merge(request()->except('page'), ['status' => $status])) }}"
+            class="{{ $tabBase }} {{ $currentStatus === $status ? 'bg-[#46837d] text-white border-[#46837d]' : 'bg-white dark:bg-neutral-900 text-gray-700 dark:text-neutral-200 border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800' }}">
+                {{ $statusLabels[$status] ?? ucfirst($status) }}
+                <span class="text-xs px-2 py-0.5 rounded-full {{ $currentStatus === $status ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-neutral-800' }}">
+                    {{ $statusCounts[$status] ?? 0 }}
+                </span>
+            </a>
+        @endforeach
+    </div>
 
     @if(session('success'))
         <div class="p-2 mb-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded">
@@ -105,6 +125,7 @@
                     <th class="px-4 py-3 text-left">Package</th>
                     <th class="px-4 py-3 text-right">Amount</th>
                     <th class="px-4 py-3 text-left">Status</th>
+                    <th class="px-4 py-3 text-left">Request By</th>
                     <th class="px-4 py-3 text-left">Requested At</th>
                     <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -172,6 +193,9 @@
                             </span>
                         </td>
 
+                         <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-neutral-200">
+                            {{ $request->activated_by }}
+                        </td>
                         {{-- Requested At --}}
                         <td class="px-4 py-3 whitespace-nowrap text-gray-700 dark:text-neutral-200">
                             {{ optional($request->requested_at ?? $request->created_at)->format('d M Y, h:i A') }}
