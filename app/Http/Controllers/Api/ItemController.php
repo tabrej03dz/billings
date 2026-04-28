@@ -452,4 +452,29 @@ class ItemController extends Controller
 
         return (int) $bid;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    public function index1(Request $request)
+    {
+        $items = Item::query()
+            ->with('category:id,name')
+            ->where('items.business_id', 1)
+            ->orderByDesc('items.id')
+            ->get();
+
+        return response()->json([
+            'ok'   => true,
+            'data' => $items,
+        ]);
+    }
 }
