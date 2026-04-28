@@ -143,7 +143,7 @@
 
                         {{-- Package --}}
                         <td class="px-4 py-3 text-gray-700 dark:text-neutral-200">
-                            <div>{{ $request->packageItem?->name ?? '-' }}</div>
+                            <div>{{ $request->packageItem?->name ?? $request->package_name }}</div>
                             <div class="text-xs text-gray-500 dark:text-neutral-400">
                                 {{ $request->package_duration ?? '-' }}
                             </div>
