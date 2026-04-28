@@ -913,9 +913,9 @@ class BillRequestController extends Controller
                 */
                 $itemId = trim((string) ($billRequest->package_name ?? ''));
 
-                if ($itemId === '' || !is_numeric($itemId)) {
-                    throw new \Exception('Package item id invalid hai.');
-                }
+                // if ($itemId === '' || !is_numeric($itemId)) {
+                //     throw new \Exception('Package item id invalid hai.');
+                // }
 
                 $matchedItem = Item::where('business_id', $bid)
                     ->where('is_active', 1)
