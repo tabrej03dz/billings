@@ -19,4 +19,8 @@ class BillRequest extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function item(){
+        return $this->belongsTo(Item::class, 'package_name');
+    }
 }

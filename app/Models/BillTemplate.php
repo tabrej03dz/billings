@@ -10,7 +10,5 @@ class BillTemplate extends Model
         'id',
     ];
 
-    public function item(){
-        return $this->belongsTo(Item::class, 'package_name');
-    }
+    
 }
