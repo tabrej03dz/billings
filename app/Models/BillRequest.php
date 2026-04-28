@@ -20,7 +20,8 @@ class BillRequest extends Model
         'updated_at' => 'datetime',
     ];
 
-    public function item(){
-        return $this->belongsTo(Item::class, 'package_name');
+    public function packageItem()
+    {
+        return $this->belongsTo(Item::class, 'package_name', 'id');
     }
 }

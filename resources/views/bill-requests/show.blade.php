@@ -177,7 +177,7 @@
             <div class="p-5 grid gap-4 sm:grid-cols-2">
                 <div>
                     <div class="text-xs text-gray-500 dark:text-neutral-400">Package Name</div>
-                    <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ $billRequest->item?->name ?: '-' }}</div>
+                    <div class="mt-1 text-sm font-medium text-gray-900 dark:text-white">{{ $billRequest->packageItem?->name ?: '-' }}</div>
                 </div>
 
                 <div>
