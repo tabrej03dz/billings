@@ -924,6 +924,16 @@ class BillRequestController extends Controller
                     ->first();
 
                 if (!$matchedItem) {
+                    $matchedItem = Item::where('business_id', $bid)
+                        ->where('is_active', 1)
+                        ->where('type', 'service')
+                        ->where(function ($q) {
+                            $q->where('name', 'like', '%Yearly Social Media Creative%')
+                            ->where('name', 'like', '%Basic Package%');
+                        })
+                        ->first();
+                }
+                if (!$matchedItem) {
                     throw new \Exception('Selected service item nahi mila. Item inactive ho sakta hai ya business/type mismatch hai.');
                 }
 
