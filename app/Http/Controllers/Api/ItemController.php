@@ -466,10 +466,10 @@ class ItemController extends Controller
 
     public function index1(Request $request)
     {
-        $items = Item::withoutGlobalScopes()
+        $items = Item::query()
             ->with('category:id,name')
-            ->where('business_id', 1)
-            ->orderByDesc('id')
+            ->where('items.business_id', 1)
+            ->orderByDesc('items.id')
             ->get();
 
         return response()->json([
