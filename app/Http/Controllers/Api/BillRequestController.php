@@ -1674,7 +1674,7 @@ private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
         $igstAmount = round($taxAmount, 2);
     }
 
-    $taxBase = $business->quotation_base_prefix ?? 'QUO';
+    $taxBase = $business->quotation_base_prefix ?? 'QT';
     $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
 
     $alloc = \App\Services\InvoiceNumber::next(
