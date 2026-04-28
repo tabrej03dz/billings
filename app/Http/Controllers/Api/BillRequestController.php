@@ -1923,7 +1923,18 @@ private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
     }
 
 
+    private function normCode($code): string
+    {
+        $code = trim((string) $code);
 
+        if ($code === '') {
+            return '';
+        }
+
+        $code = preg_replace('/\D/', '', $code);
+
+        return str_pad($code, 2, '0', STR_PAD_LEFT);
+    }
 
 
 
