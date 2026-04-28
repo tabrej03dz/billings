@@ -142,7 +142,6 @@
                         </td>
 
                         {{-- Package --}}
-                        @dd($request->packageItem);
                         <td class="px-4 py-3 text-gray-700 dark:text-neutral-200">
                             <div>{{ $request->packageItem?->name ?? '-' }}</div>
                             <div class="text-xs text-gray-500 dark:text-neutral-400">
