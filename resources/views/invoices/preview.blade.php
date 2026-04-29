@@ -28,6 +28,19 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
+
+                {{-- ✅ Convert to Tax Invoice Button --}}
+                @if(in_array(strtolower($invoice->invoice_type), ['quotation','proforma']))
+                    <form action="{{ route('invoices.convertToTax', $invoice->id) }}" method="POST"
+                        onsubmit="return confirm('Are you sure you want to convert this to Tax Invoice?');">
+                        @csrf
+
+                        <button type="submit"
+                            class="px-4 py-2 rounded-xl bg-[#46837d] text-white text-sm font-semibold hover:bg-[#35655f]">
+                            🔁 Convert to Tax Invoice
+                        </button>
+                    </form>
+                @endif
                 <a href="{{ route('invoices.download', $invoice->id) }}"
                    class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
                     ⬇ Download

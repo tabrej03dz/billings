@@ -217,6 +217,11 @@
                                         View
                                     </a>
 
+                                    <a href="{{ route('bill-requests.invoice', $request->id) }}"
+                                       class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                        View Bill
+                                    </a>
+
                                     @if($request->status !== 'processed')
                                         <form method="POST" action="{{ route('bill-requests.create-invoice', $request->id) }}"
                                             onsubmit="return confirm('Is bill request se invoice create karna hai?')">

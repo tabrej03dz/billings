@@ -1811,4 +1811,18 @@ class BillRequestController extends Controller
 
         return view('bill-requests.show', compact('billRequest', 'apiResponse'));
     }
+
+    public function showInvoice(BillRequest $billRequest)
+    {
+        $invoice = Invoice::withoutGlobalScope('business_id')->where('bil_request_id', $billRequest->id)->first();
+        
+
+        if(!$invoice){
+            return redirect()->back()->with('error', 'Bill not found');
+        }
+
+        return redirect()->route('invoices.preview', $invoice->id);
+
+        // return view('bill-requests.show', compact('billRequest', 'apiResponse'));
+    }
 }
