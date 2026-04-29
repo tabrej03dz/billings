@@ -668,6 +668,7 @@ class BirthdayRecordController extends Controller
             'Video'  => asset('asset/video/birthday-wish.mp4'),
             // if your webhook supports message too, send it:
             // 'message' => $message,
+            'name' => $name,
         ];
 
         // ✅ Create pending log first
