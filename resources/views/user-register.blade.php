@@ -324,6 +324,7 @@
                                     <input
                                         type="text"
                                         name="gstin"
+                                        id="gstin"
                                         value="{{ old('gstin') }}"
                                         class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm uppercase outline-none placeholder:text-slate-400 focus:border-emerald-500"
                                         placeholder="Optional GSTIN"
@@ -579,331 +580,7 @@
     </footer>
 
 
-    {{-- <script>
-    const steps = document.querySelectorAll('.form-step');
-    const nextBtn = document.getElementById('nextBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const submitBtn = document.getElementById('submitBtn');
-    const progressBar = document.getElementById('progressBar');
-    const currentStepText = document.getElementById('currentStepText');
-    const currentStepLabel = document.getElementById('currentStepLabel');
-    const currentStepInput = document.getElementById('current_step');
-
-    const pillStep1 = document.getElementById('pillStep1');
-    const pillStep2 = document.getElementById('pillStep2');
-    const pillStep3 = document.getElementById('pillStep3');
-
-    const sendOtpBtn = document.getElementById('sendOtpBtn');
-    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-    const emailInput = document.getElementById('email');
-    const emailOtpInput = document.getElementById('emailOtp');
-    const otpStatus = document.getElementById('otpStatus');
-    const verifyOtpStatus = document.getElementById('verifyOtpStatus');
-    const emailVerifiedInput = document.getElementById('emailVerified');
-    const form = document.getElementById('multiStepForm');
-
-    const labels = ['User Details', 'Business Details', 'Billing Setup'];
-    const pills = [pillStep1, pillStep2, pillStep3];
-
-    let currentStep = 0;
-
-    function getInitialStep() {
-        const oldStep = parseInt(currentStepInput?.value || '1', 10);
-        if (!isNaN(oldStep) && oldStep >= 1 && oldStep <= steps.length) {
-            return oldStep - 1;
-        }
-        return 0;
-    }
-
-    function updateStepPills(index) {
-        pills.forEach((pill, i) => {
-            pill.classList.remove('active', 'done');
-
-            if (i < index) {
-                pill.classList.add('done');
-            } else if (i === index) {
-                pill.classList.add('active');
-            }
-        });
-    }
-
-    function updateStepMeta(index) {
-        currentStepText.textContent = index + 1;
-        currentStepLabel.textContent = labels[index];
-        progressBar.style.width = (((index + 1) / steps.length) * 100) + '%';
-
-        prevBtn.classList.toggle('hidden', index === 0);
-        nextBtn.classList.toggle('hidden', index === steps.length - 1);
-        submitBtn.classList.toggle('hidden', index !== steps.length - 1);
-
-        if (currentStepInput) {
-            currentStepInput.value = index + 1;
-        }
-
-        updateStepPills(index);
-    }
-
-    function showStep(index, shouldScroll = true) {
-        currentStep = index;
-
-        steps.forEach((step, i) => {
-            step.classList.toggle('hidden', i !== index);
-        });
-
-        updateStepMeta(index);
-
-        if (shouldScroll) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    }
-
-    function setFieldErrorState(input, hasError) {
-        if (!input) return;
-
-        input.classList.remove('border-red-500', 'focus:border-red-500', 'ring-1', 'ring-red-200');
-
-        if (hasError) {
-            input.classList.add('border-red-500', 'focus:border-red-500', 'ring-1', 'ring-red-200');
-        }
-    }
-
-    function clearStepErrors(index) {
-        const currentInputs = steps[index].querySelectorAll('input, select, textarea');
-        currentInputs.forEach(input => setFieldErrorState(input, false));
-    }
-
-    function validateStep(index) {
-        clearStepErrors(index);
-
-        const currentInputs = steps[index].querySelectorAll('input, select, textarea');
-
-        for (let input of currentInputs) {
-            if (input.type === 'hidden' || input.type === 'button' || input.type === 'submit') continue;
-
-            input.setCustomValidity('');
-
-            if (!input.checkValidity()) {
-                setFieldErrorState(input, true);
-                input.reportValidity();
-                input.focus();
-                return false;
-            }
-        }
-
-        const password = document.querySelector('input[name="password"]');
-        const confirmPassword = document.querySelector('input[name="password_confirmation"]');
-
-        if (index === 0 && password && confirmPassword) {
-            confirmPassword.setCustomValidity('');
-
-            if (password.value !== confirmPassword.value) {
-                confirmPassword.setCustomValidity('Passwords do not match');
-                setFieldErrorState(confirmPassword, true);
-                confirmPassword.reportValidity();
-                confirmPassword.focus();
-                return false;
-            } else {
-                confirmPassword.setCustomValidity('');
-            }
-        }
-
-        if (index === 0 && emailVerifiedInput && emailVerifiedInput.value !== '1') {
-            verifyOtpStatus.textContent = 'Pehle email OTP verify kijiye.';
-            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
-            setFieldErrorState(emailOtpInput, true);
-            emailOtpInput.focus();
-            return false;
-        }
-
-        return true;
-    }
-
-    pills.forEach((pill, index) => {
-        pill.style.cursor = 'pointer';
-
-        pill.addEventListener('click', function () {
-            if (index > currentStep) {
-                if (!validateStep(currentStep)) return;
-            }
-
-            showStep(index);
-        });
-    });
-
-    function bindFieldListeners() {
-        document.querySelectorAll('input, select, textarea').forEach(input => {
-            input.addEventListener('input', function () {
-                setFieldErrorState(this, false);
-
-                if (this.name === 'password_confirmation') {
-                    this.setCustomValidity('');
-                }
-            });
-
-            input.addEventListener('change', function () {
-                setFieldErrorState(this, false);
-            });
-        });
-    }
-
-    async function sendOtp() {
-        const email = emailInput.value.trim();
-
-        if (!email) {
-            emailInput.reportValidity();
-            emailInput.focus();
-            return;
-        }
-
-        otpStatus.textContent = 'OTP bheja ja raha hai...';
-        otpStatus.className = 'mt-2 text-xs text-amber-600';
-
-        try {
-            const response = await fetch("{{ route('register.sendOtp') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ email })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw data;
-            }
-
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '0';
-            }
-
-            verifyOtpStatus.textContent = '';
-            otpStatus.textContent = data.message || 'OTP bhej diya gaya hai.';
-            otpStatus.className = 'mt-2 text-xs text-emerald-600';
-            setFieldErrorState(emailInput, false);
-            setFieldErrorState(emailOtpInput, false);
-        } catch (error) {
-            otpStatus.textContent = error?.message || 'OTP bhejne me problem aayi.';
-            otpStatus.className = 'mt-2 text-xs text-red-500';
-        }
-    }
-
-    async function verifyOtp() {
-        const email = emailInput.value.trim();
-        const otp = emailOtpInput.value.trim();
-
-        if (!email) {
-            emailInput.reportValidity();
-            emailInput.focus();
-            return;
-        }
-
-        if (!otp || otp.length !== 6) {
-            verifyOtpStatus.textContent = 'Valid 6 digit OTP daliyega.';
-            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
-            setFieldErrorState(emailOtpInput, true);
-            emailOtpInput.focus();
-            return;
-        }
-
-        verifyOtpStatus.textContent = 'OTP verify ho raha hai...';
-        verifyOtpStatus.className = 'mt-2 text-xs text-cyan-600';
-
-        try {
-            const response = await fetch("{{ route('register.verifyOtp') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ email, otp })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw data;
-            }
-
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '1';
-            }
-
-            verifyOtpStatus.textContent = data.message || 'OTP verify ho gaya.';
-            verifyOtpStatus.className = 'mt-2 text-xs text-emerald-600';
-            setFieldErrorState(emailOtpInput, false);
-            setFieldErrorState(emailInput, false);
-        } catch (error) {
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '0';
-            }
-
-            verifyOtpStatus.textContent = error?.message || 'OTP verify nahi hua.';
-            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
-            setFieldErrorState(emailOtpInput, true);
-        }
-    }
-
-    if (sendOtpBtn) {
-        sendOtpBtn.addEventListener('click', sendOtp);
-    }
-
-    if (verifyOtpBtn) {
-        verifyOtpBtn.addEventListener('click', verifyOtp);
-    }
-
-    if (emailInput) {
-        emailInput.addEventListener('input', function () {
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '0';
-            }
-
-            verifyOtpStatus.textContent = '';
-            setFieldErrorState(emailInput, false);
-            setFieldErrorState(emailOtpInput, false);
-        });
-    }
-
-    if (emailOtpInput) {
-        emailOtpInput.addEventListener('input', function () {
-            verifyOtpStatus.textContent = '';
-            setFieldErrorState(emailOtpInput, false);
-        });
-    }
-
-    nextBtn.addEventListener('click', function () {
-        if (!validateStep(currentStep)) return;
-
-        if (currentStep < steps.length - 1) {
-            showStep(currentStep + 1);
-        }
-    });
-
-    prevBtn.addEventListener('click', function () {
-        if (currentStep > 0) {
-            showStep(currentStep - 1);
-        }
-    });
-
-    if (form) {
-        form.addEventListener('submit', function () {
-            if (currentStepInput) {
-                currentStepInput.value = currentStep + 1;
-            }
-        });
-    }
-
-    bindFieldListeners();
-
-    currentStep = getInitialStep();
-    showStep(currentStep, false);
-</script> --}}
-
-
-<script>
+{{-- <script>
     const steps = document.querySelectorAll('.form-step');
     const nextBtn = document.getElementById('nextBtn');
     const prevBtn = document.getElementById('prevBtn');
@@ -1273,6 +950,464 @@
 
     if (form) {
         form.addEventListener('submit', function (e) {
+            updateStateFields();
+
+            if (!validateStep(currentStep)) {
+                e.preventDefault();
+                return;
+            }
+
+            if (currentStepInput) {
+                currentStepInput.value = currentStep + 1;
+            }
+        });
+    }
+
+    bindFieldListeners();
+
+    currentStep = getInitialStep();
+    showStep(currentStep, false);
+</script> --}}
+
+
+<script>
+    const steps = document.querySelectorAll('.form-step');
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressBar = document.getElementById('progressBar');
+    const currentStepText = document.getElementById('currentStepText');
+    const currentStepLabel = document.getElementById('currentStepLabel');
+    const currentStepInput = document.getElementById('current_step');
+
+    const pillStep1 = document.getElementById('pillStep1');
+    const pillStep2 = document.getElementById('pillStep2');
+    const pillStep3 = document.getElementById('pillStep3');
+
+    const sendOtpBtn = document.getElementById('sendOtpBtn');
+    const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const emailInput = document.getElementById('email');
+    const emailOtpInput = document.getElementById('emailOtp');
+    const otpStatus = document.getElementById('otpStatus');
+    const verifyOtpStatus = document.getElementById('verifyOtpStatus');
+    const emailVerifiedInput = document.getElementById('emailVerified');
+    const form = document.getElementById('multiStepForm');
+
+    const gstinInput = document.getElementById('gstin');
+    const stateSelect = document.getElementById('state_select');
+    const stateInput = document.getElementById('state');
+    const stateCodeInput = document.getElementById('state_code');
+
+    const labels = ['User Details', 'Business Details', 'Billing Setup'];
+    const pills = [pillStep1, pillStep2, pillStep3];
+
+    let currentStep = 0;
+
+    const gstStateMap = {
+        '01': 'Jammu and Kashmir',
+        '02': 'Himachal Pradesh',
+        '03': 'Punjab',
+        '04': 'Chandigarh',
+        '05': 'Uttarakhand',
+        '06': 'Haryana',
+        '07': 'Delhi',
+        '08': 'Rajasthan',
+        '09': 'Uttar Pradesh',
+        '10': 'Bihar',
+        '11': 'Sikkim',
+        '12': 'Arunachal Pradesh',
+        '13': 'Nagaland',
+        '14': 'Manipur',
+        '15': 'Mizoram',
+        '16': 'Tripura',
+        '17': 'Meghalaya',
+        '18': 'Assam',
+        '19': 'West Bengal',
+        '20': 'Jharkhand',
+        '21': 'Odisha',
+        '22': 'Chhattisgarh',
+        '23': 'Madhya Pradesh',
+        '24': 'Gujarat',
+        '26': 'Dadra and Nagar Haveli and Daman and Diu',
+        '27': 'Maharashtra',
+        '29': 'Karnataka',
+        '30': 'Goa',
+        '31': 'Lakshadweep',
+        '32': 'Kerala',
+        '33': 'Tamil Nadu',
+        '34': 'Puducherry',
+        '35': 'Andaman and Nicobar Islands',
+        '36': 'Telangana',
+        '37': 'Andhra Pradesh',
+        '38': 'Ladakh',
+    };
+
+    function updateStateFields() {
+        if (!stateSelect || !stateInput || !stateCodeInput) return;
+
+        const value = stateSelect.value;
+
+        if (!value) {
+            stateInput.value = '';
+            stateCodeInput.value = '';
+            return;
+        }
+
+        const parts = value.split(',');
+
+        stateCodeInput.value = parts[0] || '';
+        stateInput.value = parts.slice(1).join(',') || '';
+    }
+
+    function updateStateFromGstin() {
+        if (!gstinInput || !stateSelect || !stateInput || !stateCodeInput) return;
+
+        const gstin = gstinInput.value.trim().toUpperCase();
+        gstinInput.value = gstin;
+
+        if (gstin.length < 2) return;
+
+        const code = gstin.substring(0, 2);
+        const stateName = gstStateMap[code];
+
+        if (!stateName) return;
+
+        stateCodeInput.value = code;
+        stateInput.value = stateName;
+
+        stateSelect.value = code + ',' + stateName;
+    }
+
+    if (stateSelect) {
+        stateSelect.addEventListener('change', updateStateFields);
+        updateStateFields();
+    }
+
+    if (gstinInput) {
+        gstinInput.addEventListener('input', updateStateFromGstin);
+        gstinInput.addEventListener('blur', updateStateFromGstin);
+        updateStateFromGstin();
+    }
+
+    function getInitialStep() {
+        const oldStep = parseInt(currentStepInput?.value || '1', 10);
+
+        if (!isNaN(oldStep) && oldStep >= 1 && oldStep <= steps.length) {
+            return oldStep - 1;
+        }
+
+        return 0;
+    }
+
+    function updateStepPills(index) {
+        pills.forEach((pill, i) => {
+            if (!pill) return;
+
+            pill.classList.remove('active', 'done');
+
+            if (i < index) {
+                pill.classList.add('done');
+            } else if (i === index) {
+                pill.classList.add('active');
+            }
+        });
+    }
+
+    function updateStepMeta(index) {
+        currentStepText.textContent = index + 1;
+        currentStepLabel.textContent = labels[index];
+        progressBar.style.width = (((index + 1) / steps.length) * 100) + '%';
+
+        prevBtn.classList.toggle('hidden', index === 0);
+        nextBtn.classList.toggle('hidden', index === steps.length - 1);
+        submitBtn.classList.toggle('hidden', index !== steps.length - 1);
+
+        if (currentStepInput) {
+            currentStepInput.value = index + 1;
+        }
+
+        updateStepPills(index);
+    }
+
+    function showStep(index, shouldScroll = true) {
+        currentStep = index;
+
+        steps.forEach((step, i) => {
+            step.classList.toggle('hidden', i !== index);
+        });
+
+        updateStepMeta(index);
+
+        if (shouldScroll) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    function setFieldErrorState(input, hasError) {
+        if (!input) return;
+
+        input.classList.remove(
+            'border-red-500',
+            'focus:border-red-500',
+            'ring-1',
+            'ring-red-200'
+        );
+
+        if (hasError) {
+            input.classList.add(
+                'border-red-500',
+                'focus:border-red-500',
+                'ring-1',
+                'ring-red-200'
+            );
+        }
+    }
+
+    function clearStepErrors(index) {
+        const currentInputs = steps[index].querySelectorAll('input, select, textarea');
+
+        currentInputs.forEach(input => {
+            setFieldErrorState(input, false);
+        });
+    }
+
+    function validateStep(index) {
+        clearStepErrors(index);
+
+        updateStateFromGstin();
+        updateStateFields();
+
+        const currentInputs = steps[index].querySelectorAll('input, select, textarea');
+
+        for (let input of currentInputs) {
+            if (
+                input.type === 'hidden' ||
+                input.type === 'button' ||
+                input.type === 'submit'
+            ) {
+                continue;
+            }
+
+            input.setCustomValidity('');
+
+            if (!input.checkValidity()) {
+                setFieldErrorState(input, true);
+                input.reportValidity();
+                input.focus();
+                return false;
+            }
+        }
+
+        const password = document.querySelector('input[name="password"]');
+        const confirmPassword = document.querySelector('input[name="password_confirmation"]');
+
+        if (index === 0 && password && confirmPassword) {
+            confirmPassword.setCustomValidity('');
+
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity('Passwords do not match');
+                setFieldErrorState(confirmPassword, true);
+                confirmPassword.reportValidity();
+                confirmPassword.focus();
+                return false;
+            }
+
+            confirmPassword.setCustomValidity('');
+        }
+
+        if (index === 0 && emailVerifiedInput && emailVerifiedInput.value !== '1') {
+            verifyOtpStatus.textContent = 'Pehle email OTP verify kijiye.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+            setFieldErrorState(emailOtpInput, true);
+            emailOtpInput.focus();
+            return false;
+        }
+
+        return true;
+    }
+
+    pills.forEach((pill, index) => {
+        if (!pill) return;
+
+        pill.style.cursor = 'pointer';
+
+        pill.addEventListener('click', function () {
+            if (index > currentStep) {
+                if (!validateStep(currentStep)) return;
+            }
+
+            showStep(index);
+        });
+    });
+
+    function bindFieldListeners() {
+        document.querySelectorAll('input, select, textarea').forEach(input => {
+            input.addEventListener('input', function () {
+                setFieldErrorState(this, false);
+
+                if (this.name === 'password_confirmation') {
+                    this.setCustomValidity('');
+                }
+            });
+
+            input.addEventListener('change', function () {
+                setFieldErrorState(this, false);
+            });
+        });
+    }
+
+    async function sendOtp() {
+        const email = emailInput.value.trim();
+
+        if (!email) {
+            emailInput.reportValidity();
+            emailInput.focus();
+            return;
+        }
+
+        otpStatus.textContent = 'OTP bheja ja raha hai...';
+        otpStatus.className = 'mt-2 text-xs text-amber-600';
+
+        try {
+            const response = await fetch("{{ route('register.sendOtp') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw data;
+            }
+
+            if (emailVerifiedInput) {
+                emailVerifiedInput.value = '0';
+            }
+
+            verifyOtpStatus.textContent = '';
+            otpStatus.textContent = data.message || 'OTP bhej diya gaya hai.';
+            otpStatus.className = 'mt-2 text-xs text-emerald-600';
+
+            setFieldErrorState(emailInput, false);
+            setFieldErrorState(emailOtpInput, false);
+        } catch (error) {
+            otpStatus.textContent = error?.message || 'OTP bhejne me problem aayi.';
+            otpStatus.className = 'mt-2 text-xs text-red-500';
+        }
+    }
+
+    async function verifyOtp() {
+        const email = emailInput.value.trim();
+        const otp = emailOtpInput.value.trim();
+
+        if (!email) {
+            emailInput.reportValidity();
+            emailInput.focus();
+            return;
+        }
+
+        if (!otp || otp.length !== 6) {
+            verifyOtpStatus.textContent = 'Valid 6 digit OTP daliyega.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+            setFieldErrorState(emailOtpInput, true);
+            emailOtpInput.focus();
+            return;
+        }
+
+        verifyOtpStatus.textContent = 'OTP verify ho raha hai...';
+        verifyOtpStatus.className = 'mt-2 text-xs text-cyan-600';
+
+        try {
+            const response = await fetch("{{ route('register.verifyOtp') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ email, otp })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw data;
+            }
+
+            if (emailVerifiedInput) {
+                emailVerifiedInput.value = '1';
+            }
+
+            verifyOtpStatus.textContent = data.message || 'OTP verify ho gaya.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-emerald-600';
+
+            setFieldErrorState(emailOtpInput, false);
+            setFieldErrorState(emailInput, false);
+        } catch (error) {
+            if (emailVerifiedInput) {
+                emailVerifiedInput.value = '0';
+            }
+
+            verifyOtpStatus.textContent = error?.message || 'OTP verify nahi hua.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+
+            setFieldErrorState(emailOtpInput, true);
+        }
+    }
+
+    if (sendOtpBtn) {
+        sendOtpBtn.addEventListener('click', sendOtp);
+    }
+
+    if (verifyOtpBtn) {
+        verifyOtpBtn.addEventListener('click', verifyOtp);
+    }
+
+    if (emailInput) {
+        emailInput.addEventListener('input', function () {
+            if (emailVerifiedInput) {
+                emailVerifiedInput.value = '0';
+            }
+
+            verifyOtpStatus.textContent = '';
+            setFieldErrorState(emailInput, false);
+            setFieldErrorState(emailOtpInput, false);
+        });
+    }
+
+    if (emailOtpInput) {
+        emailOtpInput.addEventListener('input', function () {
+            verifyOtpStatus.textContent = '';
+            setFieldErrorState(emailOtpInput, false);
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+            if (!validateStep(currentStep)) return;
+
+            if (currentStep < steps.length - 1) {
+                showStep(currentStep + 1);
+            }
+        });
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function () {
+            if (currentStep > 0) {
+                showStep(currentStep - 1);
+            }
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            updateStateFromGstin();
             updateStateFields();
 
             if (!validateStep(currentStep)) {
