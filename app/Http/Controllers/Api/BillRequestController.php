@@ -1723,7 +1723,7 @@ private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
 
     $invoice = Invoice::create([
         'business_id'     => $bid,
-        'bill_request_id' => $billRequest->id,
+        'bil_request_id' => $billRequest->id,
 
         'invoice_type'    => 'quotation',
         'invoice_prefix'  => $prefix,
@@ -1897,7 +1897,7 @@ private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
             ]);
         } catch (\Throwable $e) {
             Log::error('save-invoice api call failed', [
-                'bill_request_id' => $billRequest->id,
+                'bil_request_id' => $billRequest->id,
                 'invoice_id'      => $invoice->id,
                 'error'           => $e->getMessage(),
             ]);
