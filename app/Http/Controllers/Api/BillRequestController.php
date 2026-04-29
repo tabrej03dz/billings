@@ -1823,7 +1823,7 @@ private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
     $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
 
     $billRequest->update([
-        'status'       => 'processed',
+        // 'status'       => 'processed',
         'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
         'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
     ]);
