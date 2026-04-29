@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Models\BillRequest;
 use App\Models\Business;
 use App\Models\Category;
 use App\Models\Invoice;
@@ -3033,6 +3034,11 @@ class InvoiceController extends Controller
         // $path = $dir . "/" . $safeName . ".pdf";
         // \Storage::disk('public')->put($path, $pdf->output());
         // $invoice->update(['pdf_url' => $path]);
+
+        $billRequest = BillRequest::find($invoice->bil_request_id);
+        if($billRequest){
+            $billRequest->update(['status' => 'processed']);
+        }
 
         return redirect()->route('invoices.edit', $invoice->id)
             ->with('success', 'Converted to Tax invoice successfully.');
