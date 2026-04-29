@@ -211,6 +211,7 @@ class BirthdayWishLogController extends Controller
             'abs'      => $abs,
         ]);
 
+        $name = $raw->name ?? 'Dear';
         /**
          * 1) First try: URL payload (some providers accept url)
          */
@@ -220,6 +221,7 @@ class BirthdayWishLogController extends Controller
             ->post($url, [
                 'number' => $to,
                 'Video'  => $videoUrl, // if provider expects different key, change here
+                'name' => $name
             ]);
 
         /**
