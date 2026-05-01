@@ -1412,7 +1412,7 @@ class BillRequestController extends Controller
                 |--------------------------------------------------------------------------
                 */
                 $existingInvoice = Invoice::where('business_id', $bid)
-                    ->where('bill_request_id', $billRequest->id)
+                    ->where('bil_request_id', $billRequest->id)
                     ->first();
 
                 $taxBase = optional(
@@ -1499,7 +1499,7 @@ class BillRequestController extends Controller
 
                 $invoiceData = [
                     'business_id'     => $bid,
-                    'bill_request_id' => $billRequest->id,
+                    'bil_request_id' => $billRequest->id,
 
                     'invoice_type'    => 'tax',
                     'invoice_prefix'  => $prefix,
@@ -1663,7 +1663,7 @@ class BillRequestController extends Controller
 
         } catch (\Throwable $e) {
             Log::error('Bill request to invoice failed', [
-                'bill_request_id' => $billRequest->id,
+                'bil_request_id' => $billRequest->id,
                 'error'           => $e->getMessage(),
                 'line'            => $e->getLine(),
                 'file'            => $e->getFile(),
@@ -1696,7 +1696,7 @@ class BillRequestController extends Controller
                 ->with('success', 'Bill request deleted successfully.');
         } catch (\Throwable $e) {
             Log::error('Bill request delete failed', [
-                'bill_request_id' => $billRequest->id,
+                'bil_request_id' => $billRequest->id,
                 'error' => $e->getMessage(),
             ]);
 
@@ -1774,7 +1774,7 @@ class BillRequestController extends Controller
             ]);
         } catch (\Throwable $e) {
             Log::error('save-invoice api call failed', [
-                'bill_request_id' => $billRequest->id,
+                'bil_request_id' => $billRequest->id,
                 'invoice_id'      => $invoice->id,
                 'error'           => $e->getMessage(),
             ]);
