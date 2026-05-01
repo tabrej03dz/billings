@@ -1223,7 +1223,7 @@ class InvoiceController extends Controller
         $user = $r->user();
 
         // ✅ Active Business Resolve
-        $bid = $user->current_business_id ?? session('active_business_id');
+        $bid = $user->businesses->first()?->id;
 
         if (!$bid) {
             $bid = $user->businesses()->pluck('businesses.id')->first();
@@ -1256,10 +1256,14 @@ class InvoiceController extends Controller
         // }
 
 
+        
         if (!$user->hasAnyRole(['super_admin', 'admin'])) {
 
             $activePlan = UserPlan::where('business_id', $bid)
-                ->where('status', 'active')
+                ->where(function ($q) {
+                    $q->where('status', 'active')
+                    ->orWhere('status', 1);
+                })
                 ->whereDate('start_date', '<=', today())
                 ->where(function ($q) {
                     $q->whereNull('expiry_date')
@@ -1267,6 +1271,7 @@ class InvoiceController extends Controller
                 })
                 ->latest('id')
                 ->first();
+
 
             if (!$activePlan) {
                 return back()
