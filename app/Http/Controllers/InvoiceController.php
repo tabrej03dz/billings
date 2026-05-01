@@ -1237,9 +1237,31 @@ class InvoiceController extends Controller
 
         // ✅ Business wise plan expiry validation
         // super_admin/admin ko bypass dena ho to ye if rakho
+        // if (!$user->hasAnyRole(['super_admin', 'admin'])) {
+        //     $activePlan = UserPlan::where('user_id', $user->id)
+        //         ->orWhere('business_id', $bid)
+        //         ->where('status', 'active')
+        //         ->whereDate('start_date', '<=', today())
+        //         ->whereDate('expiry_date', '>=', today())
+        //         ->latest('id')
+        //         ->first();
+
+        //     if (!$activePlan) {
+        //         return back()
+        //             ->withErrors([
+        //                 'plan' => 'इस business का plan expire हो चुका है या active plan available नहीं है. Invoice create करने के लिए कृपया plan renew करें.'
+        //             ])
+        //             ->withInput();
+        //     }
+        // }
+
+
         if (!$user->hasAnyRole(['super_admin', 'admin'])) {
-            $activePlan = UserPlan::where('user_id', $user->id)
-                ->orWhere('business_id', $bid)
+
+            $activePlan = UserPlan::where(function ($q) use ($user, $bid) {
+                    $q->where('user_id', $user->id)
+                    ->orWhere('business_id', $bid);
+                })
                 ->where('status', 'active')
                 ->whereDate('start_date', '<=', today())
                 ->whereDate('expiry_date', '>=', today())
@@ -1249,7 +1271,7 @@ class InvoiceController extends Controller
             if (!$activePlan) {
                 return back()
                     ->withErrors([
-                        'plan' => 'इस business का plan expire हो चुका है या active plan available नहीं है. Invoice create करने के लिए कृपया plan renew करें.'
+                        'plan' => 'इस business या user का active plan available नहीं है या plan expire हो चुका है. Invoice create करने के लिए कृपया plan renew करें.'
                     ])
                     ->withInput();
             }

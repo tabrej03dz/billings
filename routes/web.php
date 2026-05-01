@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AnniversaryController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BillTemplateController;
 use App\Http\Controllers\BirthdayRecordController;
@@ -320,6 +321,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('birthday-records.import');
     Route::resource('/birthday-records', BirthdayRecordController::class);
     Route::get('birthday-records/send/{birthdayRecord}', [BirthdayRecordController::class, 'send'])->name('birthday-records.send');
+
+
+    Route::resource('anniversaries', AnniversaryController::class);
 
 
 
