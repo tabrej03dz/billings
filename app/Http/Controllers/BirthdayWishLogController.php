@@ -221,7 +221,8 @@ class BirthdayWishLogController extends Controller
             ->post($url, [
                 'number' => $to,
                 'Video'  => $videoUrl, // if provider expects different key, change here
-                'name' => $name
+                'name' => $name,
+                'image' => asset('asset/img/birthday-wish.jpeg'),
             ]);
 
         /**

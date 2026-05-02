@@ -27,6 +27,7 @@ class WhatApiWhatsappService
             // 'Video' => url(Storage::url('videos/birthday-wish.mp4')),
             'Video' => $publicVideo ?? asset('asset/video/birthday-wish.mp4'), //
             'name' => $name,
+            'image' => asset('asset/img/birthday-wish.jpeg'),
         ];
 
         Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);

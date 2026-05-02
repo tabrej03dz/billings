@@ -325,6 +325,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('anniversaries', AnniversaryController::class);
 
+    Route::get('anniversaries-import', [AnniversaryController::class, 'importForm'])
+    ->name('anniversaries.importForm');
+
+    Route::post('anniversaries-import', [AnniversaryController::class, 'import'])
+        ->name('anniversaries.import');
+
+    Route::resource('anniversaries', AnniversaryController::class);
+
 
 
     Route::prefix('bill-requests')->name('bill-requests.')->controller(\App\Http\Controllers\BillRequestController::class)->group(function(){

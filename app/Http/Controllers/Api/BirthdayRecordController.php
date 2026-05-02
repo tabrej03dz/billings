@@ -399,6 +399,7 @@ class BirthdayRecordController extends Controller
         $payload = [
             'number' => $to,
             'Video'  => asset('asset/video/birthday-wish.mp4'),
+            'image' => asset('asset/img/birthday-wish.jpeg'),
             // 'message' => $message, // if supported
         ];
 
