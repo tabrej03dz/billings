@@ -276,279 +276,283 @@ class BillRequestController extends Controller
 
 
 
-private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
-{
-    $bid = 1;
-    $userId = 1;
+    private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
+    {
+        $bid = 1;
+        $userId = 1;
 
-    $business = Business::findOrFail($bid);
+        $business = Business::findOrFail($bid);
 
-    $client = null;
+        $client = null;
 
-    if (!empty($billRequest->gst_number)) {
-        $client = Client::where('business_id', $bid)
-            ->where('gstin', trim($billRequest->gst_number))
-            ->first();
-    }
+        if (!empty($billRequest->gst_number)) {
+            $client = Client::where('business_id', $bid)
+                ->where('gstin', trim($billRequest->gst_number))
+                ->first();
+        }
 
-    if (!$client && !empty($billRequest->customer_phone)) {
-        $client = Client::where('business_id', $bid)
-            ->where('mobile', trim($billRequest->customer_phone))
-            ->first();
-    }
+        if (!$client && !empty($billRequest->customer_phone)) {
+            $client = Client::where('business_id', $bid)
+                ->where('mobile', trim($billRequest->customer_phone))
+                ->first();
+        }
 
-    if (!$client && !empty($billRequest->customer_email)) {
-        $client = Client::where('business_id', $bid)
-            ->where('email', trim($billRequest->customer_email))
-            ->first();
-    }
+        if (!$client && !empty($billRequest->customer_email)) {
+            $client = Client::where('business_id', $bid)
+                ->where('email', trim($billRequest->customer_email))
+                ->first();
+        }
 
-    if (!$client) {
-        $client = Client::create([
-            'business_id' => $bid,
-            'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
-            'address'     => $billRequest->address,
-            'gstin'       => $billRequest->gst_number,
-            'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
-            'state'       => $billRequest->state,
-            'city'        => $billRequest->city,
-            'pincode'     => $billRequest->pin,
-            'state_code'  => null,
-            'email'       => $billRequest->customer_email,
-            'is_save'     => 1,
-        ]);
-    }
+        if (!$client) {
+            $client = Client::create([
+                'business_id' => $bid,
+                'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
+                'address'     => $billRequest->address,
+                'gstin'       => $billRequest->gst_number,
+                'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+                'state'       => $billRequest->state,
+                'city'        => $billRequest->city,
+                'pincode'     => $billRequest->pin,
+                'state_code'  => null,
+                'email'       => $billRequest->customer_email,
+                'is_save'     => 1,
+            ]);
+        }
 
-    $itemId = trim((string) ($billRequest->package_name ?? ''));
+        $itemId = trim((string) ($billRequest->package_name ?? ''));
 
-    $matchedItem = Item::where('business_id', $bid)
-        ->where('is_active', 1)
-        ->where('type', 'service')
-        ->where('id', (int) $itemId)
-        ->first();
-
-    if (!$matchedItem) {
         $matchedItem = Item::where('business_id', $bid)
             ->where('is_active', 1)
             ->where('type', 'service')
-            ->where(function ($q) {
-                $q->where('name', 'like', '%Yearly Social Media Creative%')
-                  ->where('name', 'like', '%Basic Package%');
-            })
+            ->where('id', (int) $itemId)
             ->first();
-    }
 
-    if (!$matchedItem) {
-        throw new \Exception('Selected service item nahi mila. Item inactive ho sakta hai ya business/type mismatch hai.');
-    }
-
-    $grossAmount = (float) (
-        $billRequest->selling_price
-        ?? $billRequest->payment_amount
-        ?? $billRequest->package_price
-        ?? $matchedItem->price
-        ?? 0
-    );
-
-    if ($grossAmount <= 0) {
-        throw new \Exception('Bill request amount invalid hai.');
-    }
-
-    $invoiceDate = now(config('app.timezone'))->toDateString();
-
-    $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
-
-    if ($taxPercent > 0) {
-        $subtotal  = round($grossAmount * 100 / (100 + $taxPercent), 2);
-        $taxAmount = round($grossAmount - $subtotal, 2);
-    } else {
-        $subtotal  = round($grossAmount, 2);
-        $taxAmount = 0;
-    }
-
-    $grandTotal = round($grossAmount, 2);
-
-    $bizCode   = $this->normCode($business->state_code ?? '');
-    $partyCode = $this->normCode($client->state_code ?? '');
-
-    $isIntra = ($bizCode !== '' && $partyCode !== '')
-        ? ($bizCode === $partyCode)
-        : false;
-
-    if ($isIntra) {
-        $cgstPercent = round($taxPercent / 2, 2);
-        $sgstPercent = round($taxPercent / 2, 2);
-        $igstPercent = 0;
-
-        $cgstAmount = round($taxAmount / 2, 2);
-        $sgstAmount = round($taxAmount - $cgstAmount, 2);
-        $igstAmount = 0;
-    } else {
-        $cgstPercent = 0;
-        $sgstPercent = 0;
-        $igstPercent = round($taxPercent, 2);
-
-        $cgstAmount = 0;
-        $sgstAmount = 0;
-        $igstAmount = round($taxAmount, 2);
-    }
-
-    $taxBase = $business->quotation_base_prefix ?? 'QT';
-    $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
-
-    $alloc = \App\Services\InvoiceNumber::next(
-        $bid,
-        $invoiceDate,
-        $prefix,
-        3,
-        'quotation'
-    );
-
-    $invoiceNumber = $alloc['full'];
-
-    \App\Services\InvoiceNumber::syncNextSeqIfMatches(
-        $bid,
-        $invoiceDate,
-        $invoiceNumber,
-        3,
-        'quotation'
-    );
-
-    $itemDescription = $matchedItem->description ?: $matchedItem->name;
-
-    $itemsJson = [
-        [
-            'item_id'       => $matchedItem->id,
-            'item_type'     => 'service',
-            'description'   => $itemDescription,
-            'hsn'           => $matchedItem->sac ?? '',
-            'qty'           => 1,
-            'tax_percent'   => round($taxPercent, 2),
-            'service_rate'  => round($subtotal, 2),
-            'rate'          => round($subtotal, 2),
-            'tax_amount'    => round($taxAmount, 2),
-            'amount'        => round($grandTotal, 2),
-            'making_charge' => round($subtotal, 2),
-            'gold_wt'       => 0,
-            'silver_wt'     => 0,
-            'gold_rate'     => 0,
-            'silver_rate'   => 0,
-            'gemstone_wt'   => 0,
-            'diamond_wt'    => 0,
-            'making_rate'   => 0,
-            'stone_charges' => 0,
-        ],
-    ];
-
-    $invoice = Invoice::create([
-        'business_id'     => $bid,
-        'bil_request_id' => $billRequest->id,
-
-        'invoice_type'    => 'quotation',
-        'invoice_prefix'  => $prefix,
-        'invoice_number'  => $invoiceNumber,
-        'client_id'       => $client->id,
-        'invoice_date'    => $invoiceDate,
-        'payment_terms'   => 0,
-        'due_date'        => null,
-
-        'subtotal'        => round($subtotal, 2),
-        'tax_amount'      => round($taxAmount, 2),
-
-        'cgst_percent'    => $cgstPercent,
-        'cgst_amount'     => $cgstAmount,
-        'sgst_percent'    => $sgstPercent,
-        'sgst_amount'     => $sgstAmount,
-        'igst_percent'    => $igstPercent,
-        'igst_amount'     => $igstAmount,
-
-        'discount_total'  => 0,
-        'charge_total'    => 0,
-        'tcs_percent'     => 0,
-        'tcs_amount'      => 0,
-        'round_off'       => 0,
-        'less_amount'     => 0,
-
-        'total'           => $grandTotal,
-        'received_amount' => 0,
-        'balance'         => $grandTotal,
-
-        'payment_method'  => null,
-        'transport_mode'  => null,
-        'reverse_charge'  => 0,
-
-        'place_of_supply_state' => $client->state,
-        'place_of_supply_code'  => $client->state_code,
-
-        'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
-        'terms'           => null,
-
-        'charges_json'    => json_encode([]),
-        'items_json'      => json_encode($itemsJson),
-
-        'amount_in_words' => '',
-        'pdf_url'         => null,
-        'signature'       => null,
-
-        'user_id'         => $userId,
-        'created_by'      => $userId,
-        'updated_by'      => $userId,
-
-        'kots_json'       => json_encode([]),
-    ]);
-
-    InvoiceItem::create([
-        'invoice_id'      => $invoice->id,
-        'item_id'         => $matchedItem->id,
-        'description'     => $itemDescription,
-        'sac_code'        => $matchedItem->sac ?? null,
-        'hsn_code'        => null,
-        'quantity'        => 1,
-        'gold_wt'         => 0,
-        'silver_wt'       => 0,
-        'gold_rate'       => 0,
-        'silver_rate'     => 0,
-        'gemstone_wt_ct'  => 0,
-        'diamond_wt_ct'   => 0,
-        'making_charge'   => round($subtotal, 2),
-        'making_rate'     => null,
-        'discount'        => 0,
-        'tax_percent'     => round($taxPercent, 2),
-        'rate'            => round($subtotal, 2),
-        'amount'          => round($grandTotal, 2),
-    ]);
-
-    $oldApi = [];
-
-    if (!empty($billRequest->api_response)) {
-        $decoded = json_decode($billRequest->api_response, true);
-
-        if (is_array($decoded)) {
-            $oldApi = $decoded;
+        if (!$matchedItem) {
+            $matchedItem = Item::where('business_id', $bid)
+                ->where('is_active', 1)
+                ->where('type', 'service')
+                ->where(function ($q) {
+                    $q->where('name', 'like', '%Yearly Social Media Creative%')
+                    ->where('name', 'like', '%Basic Package%');
+                })
+                ->first();
         }
+
+        if (!$matchedItem) {
+            throw new \Exception('Selected service item nahi mila. Item inactive ho sakta hai ya business/type mismatch hai.');
+        }
+
+        $grossAmount = (float) (
+            $billRequest->selling_price
+            ?? $billRequest->payment_amount
+            ?? $billRequest->package_price
+            ?? $matchedItem->price
+            ?? 0
+        );
+
+        if ($grossAmount <= 0) {
+            throw new \Exception('Bill request amount invalid hai.');
+        }
+
+        $invoiceDate = now(config('app.timezone'))->toDateString();
+
+        $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
+
+        if ($taxPercent > 0) {
+            $subtotal  = round($grossAmount * 100 / (100 + $taxPercent), 2);
+            $taxAmount = round($grossAmount - $subtotal, 2);
+        } else {
+            $subtotal  = round($grossAmount, 2);
+            $taxAmount = 0;
+        }
+
+        $grandTotal = round($grossAmount, 2);
+
+        $bizCode   = $this->normCode($business->state_code ?? '');
+        $partyCode = $this->normCode($client->state_code ?? '');
+
+        $isIntra = ($bizCode !== '' && $partyCode !== '')
+            ? ($bizCode === $partyCode)
+            : false;
+
+        if ($isIntra) {
+            $cgstPercent = round($taxPercent / 2, 2);
+            $sgstPercent = round($taxPercent / 2, 2);
+            $igstPercent = 0;
+
+            $cgstAmount = round($taxAmount / 2, 2);
+            $sgstAmount = round($taxAmount - $cgstAmount, 2);
+            $igstAmount = 0;
+        } else {
+            $cgstPercent = 0;
+            $sgstPercent = 0;
+            $igstPercent = round($taxPercent, 2);
+
+            $cgstAmount = 0;
+            $sgstAmount = 0;
+            $igstAmount = round($taxAmount, 2);
+        }
+
+        $taxBase = $business->quotation_base_prefix ?? 'QT';
+        $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
+
+        $alloc = \App\Services\InvoiceNumber::next(
+            $bid,
+            $invoiceDate,
+            $prefix,
+            3,
+            'quotation'
+        );
+
+        $invoiceNumber = $alloc['full'];
+
+        \App\Services\InvoiceNumber::syncNextSeqIfMatches(
+            $bid,
+            $invoiceDate,
+            $invoiceNumber,
+            3,
+            'quotation'
+        );
+
+        $itemDescription = trim((string) ($billRequest->package_description ?? ''));
+
+        if ($itemDescription === '') {
+            $itemDescription = $matchedItem->description ?: $matchedItem->name;
+        }
+
+        $itemsJson = [
+            [
+                'item_id'       => $matchedItem->id,
+                'item_type'     => 'service',
+                'description'   => $itemDescription,
+                'hsn'           => $matchedItem->sac ?? '',
+                'qty'           => 1,
+                'tax_percent'   => round($taxPercent, 2),
+                'service_rate'  => round($subtotal, 2),
+                'rate'          => round($subtotal, 2),
+                'tax_amount'    => round($taxAmount, 2),
+                'amount'        => round($grandTotal, 2),
+                'making_charge' => round($subtotal, 2),
+                'gold_wt'       => 0,
+                'silver_wt'     => 0,
+                'gold_rate'     => 0,
+                'silver_rate'   => 0,
+                'gemstone_wt'   => 0,
+                'diamond_wt'    => 0,
+                'making_rate'   => 0,
+                'stone_charges' => 0,
+            ],
+        ];
+
+        $invoice = Invoice::create([
+            'business_id'     => $bid,
+            'bil_request_id' => $billRequest->id,
+
+            'invoice_type'    => 'quotation',
+            'invoice_prefix'  => $prefix,
+            'invoice_number'  => $invoiceNumber,
+            'client_id'       => $client->id,
+            'invoice_date'    => $invoiceDate,
+            'payment_terms'   => 0,
+            'due_date'        => null,
+
+            'subtotal'        => round($subtotal, 2),
+            'tax_amount'      => round($taxAmount, 2),
+
+            'cgst_percent'    => $cgstPercent,
+            'cgst_amount'     => $cgstAmount,
+            'sgst_percent'    => $sgstPercent,
+            'sgst_amount'     => $sgstAmount,
+            'igst_percent'    => $igstPercent,
+            'igst_amount'     => $igstAmount,
+
+            'discount_total'  => 0,
+            'charge_total'    => 0,
+            'tcs_percent'     => 0,
+            'tcs_amount'      => 0,
+            'round_off'       => 0,
+            'less_amount'     => 0,
+
+            'total'           => $grandTotal,
+            'received_amount' => 0,
+            'balance'         => $grandTotal,
+
+            'payment_method'  => null,
+            'transport_mode'  => null,
+            'reverse_charge'  => 0,
+
+            'place_of_supply_state' => $client->state,
+            'place_of_supply_code'  => $client->state_code,
+
+            'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+            'terms'           => null,
+
+            'charges_json'    => json_encode([]),
+            'items_json'      => json_encode($itemsJson),
+
+            'amount_in_words' => '',
+            'pdf_url'         => null,
+            'signature'       => null,
+
+            'user_id'         => $userId,
+            'created_by'      => $userId,
+            'updated_by'      => $userId,
+
+            'kots_json'       => json_encode([]),
+        ]);
+
+        InvoiceItem::create([
+            'invoice_id'      => $invoice->id,
+            'item_id'         => $matchedItem->id,
+            'description'     => $itemDescription,
+            'sac_code'        => $matchedItem->sac ?? null,
+            'hsn_code'        => null,
+            'quantity'        => 1,
+            'gold_wt'         => 0,
+            'silver_wt'       => 0,
+            'gold_rate'       => 0,
+            'silver_rate'     => 0,
+            'gemstone_wt_ct'  => 0,
+            'diamond_wt_ct'   => 0,
+            'making_charge'   => round($subtotal, 2),
+            'making_rate'     => null,
+            'discount'        => 0,
+            'tax_percent'     => round($taxPercent, 2),
+            'rate'            => round($subtotal, 2),
+            'amount'          => round($grandTotal, 2),
+        ]);
+
+        $oldApi = [];
+
+        if (!empty($billRequest->api_response)) {
+            $decoded = json_decode($billRequest->api_response, true);
+
+            if (is_array($decoded)) {
+                $oldApi = $decoded;
+            }
+        }
+
+        $oldApi['matched_item_id']        = $matchedItem->id;
+        $oldApi['matched_item_name']      = $matchedItem->name;
+        $oldApi['created_invoice_id']     = $invoice->id;
+        $oldApi['created_invoice_number'] = $invoice->invoice_number;
+        $oldApi['created_client_id']      = $client->id;
+        $oldApi['invoice_type']           = 'quotation';
+        $oldApi['invoice_date']           = $invoiceDate;
+        $oldApi['gst_included']           = true;
+        $oldApi['gross_amount']           = $grandTotal;
+        $oldApi['taxable_amount']         = $subtotal;
+        $oldApi['tax_amount']             = $taxAmount;
+        $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
+
+        $billRequest->update([
+            // 'status'       => 'processed',
+            'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
+            'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
+        ]);
+
+        return $invoice;
     }
-
-    $oldApi['matched_item_id']        = $matchedItem->id;
-    $oldApi['matched_item_name']      = $matchedItem->name;
-    $oldApi['created_invoice_id']     = $invoice->id;
-    $oldApi['created_invoice_number'] = $invoice->invoice_number;
-    $oldApi['created_client_id']      = $client->id;
-    $oldApi['invoice_type']           = 'quotation';
-    $oldApi['invoice_date']           = $invoiceDate;
-    $oldApi['gst_included']           = true;
-    $oldApi['gross_amount']           = $grandTotal;
-    $oldApi['taxable_amount']         = $subtotal;
-    $oldApi['tax_amount']             = $taxAmount;
-    $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
-
-    $billRequest->update([
-        // 'status'       => 'processed',
-        'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
-        'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
-    ]);
-
-    return $invoice;
-}
 
 
 

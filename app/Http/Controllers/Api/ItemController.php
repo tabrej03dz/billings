@@ -456,14 +456,6 @@ class ItemController extends Controller
 
 
 
-
-
-
-
-
-
-
-
     public function index1(Request $request)
     {
         $items = Item::query()
