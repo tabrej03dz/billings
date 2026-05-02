@@ -20,6 +20,264 @@ use Illuminate\Support\Facades\Storage;
 class BillRequestController extends Controller
 {
 
+    // public function store(Request $request)
+    // {
+    //     try {
+    //         $data = $request->all();
+
+    //         if (empty($data)) {
+    //             $json = json_decode($request->getContent(), true);
+
+    //             if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
+    //                 $data = $json;
+    //                 $request->merge($data);
+    //             }
+    //         }
+
+    //         $requestForBill = $request->input('request_for_bill');
+
+    //         if (in_array($requestForBill, ['1', 1, true, 'true', 'yes', 'on'], true)) {
+    //             $requestForBill = true;
+    //         } elseif (in_array($requestForBill, ['0', 0, false, 'false', 'no', 'off'], true)) {
+    //             $requestForBill = false;
+    //         } else {
+    //             $requestForBill = null;
+    //         }
+
+    //         $validator = Validator::make([
+    //             'request_for_bill'       => $requestForBill,
+
+    //             'source_software'        => $request->input('source_software'),
+    //             'source_customer_id'     => $request->input('source_customer_id'),
+    //             'source_package_id'      => $request->input('source_package_id'),
+    //             'source_user_package_id' => $request->input('source_user_package_id'),
+    //             'source_payment_id'      => $request->input('source_payment_id'),
+
+    //             'customer_name'          => $request->input('customer_name'),
+    //             'customer_email'         => $request->input('customer_email'),
+    //             'customer_phone'         => $request->input('customer_phone'),
+    //             'customer_phone1'        => $request->input('customer_phone1'),
+    //             'country'                => $request->input('country'),
+    //             'state'                  => $request->input('state'),
+    //             'city'                   => $request->input('city'),
+    //             'pin'                    => $request->input('pin'),
+    //             'address'                => $request->input('address'),
+    //             'customer_gst_number'    => $request->input('customer_gst_number'),
+
+    //             'package_id'             => $request->input('package_id'),
+    //             'package_name'           => $request->input('package_name'),
+    //             'package_description'    => $request->input('package_description'),
+    //             'package_price'          => $request->input('package_price'),
+    //             'package_duration'       => $request->input('package_duration'),
+
+    //             'start_date'             => $request->input('start_date'),
+    //             'expiry_date'            => $request->input('expiry_date'),
+    //             'status'                 => $request->input('status'),
+
+    //             'payment_amount'         => $request->input('payment_amount'),
+    //             'payment_method'         => $request->input('payment_method'),
+    //             'transaction_id'         => $request->input('transaction_id'),
+    //             'bank'                   => $request->input('bank'),
+    //             'payment_date'           => $request->input('payment_date'),
+    //             'activated_by'           => $request->input('activated_by') ?? $request->input('created_by') ?? $request->input('created_by_name'),
+    //             'customer_type'          => $request->input('customer_type'),
+    //             'old_customer_user_id'   => $request->input('old_customer_user_id'),
+
+    //             'created_by'             => $request->input('created_by'),
+    //             'created_by_name'        => $request->input('created_by_name'),
+    //             'request_date'           => $request->input('request_date'),
+    //         ], [
+    //             'request_for_bill'       => ['required', 'boolean'],
+
+    //             'source_software'        => ['nullable', 'string', 'max:255'],
+    //             'source_customer_id'     => ['nullable', 'integer'],
+    //             'source_package_id'      => ['nullable', 'integer'],
+    //             'source_user_package_id' => ['nullable', 'integer'],
+    //             'source_payment_id'      => ['nullable', 'integer'],
+
+    //             'customer_name'          => ['required', 'string', 'max:255'],
+    //             'customer_email'         => ['nullable', 'email', 'max:255'],
+    //             'customer_phone'         => ['nullable', 'string', 'max:255'],
+    //             'customer_phone1'        => ['nullable', 'string', 'max:255'],
+    //             'country'                => ['nullable', 'string', 'max:255'],
+    //             'state'                  => ['nullable', 'string', 'max:255'],
+    //             'city'                   => ['nullable', 'string', 'max:255'],
+    //             'pin'                    => ['nullable', 'string', 'max:255'],
+    //             'address'                => ['nullable', 'string'],
+    //             'customer_gst_number'    => ['nullable', 'string', 'size:15'],
+
+    //             'package_id'             => ['nullable', 'integer'],
+    //             'package_name'           => ['nullable'],
+    //             'package_description'    => ['nullable', 'string'],
+    //             'package_price'          => ['nullable', 'numeric'],
+    //             'package_duration'       => ['nullable', 'integer'],
+
+    //             'start_date'             => ['nullable', 'date'],
+    //             'expiry_date'            => ['nullable', 'date'],
+    //             'status'                 => ['nullable', 'string', 'max:255'],
+
+    //             'payment_amount'         => ['nullable', 'numeric'],
+    //             'payment_method'         => ['nullable', 'string', 'max:255'],
+    //             'transaction_id'         => ['nullable', 'string', 'max:255'],
+    //             'bank'                   => ['nullable', 'string', 'max:255'],
+    //             'payment_date'           => ['nullable', 'date'],
+    //             'activated_by'           => ['nullable', 'string', 'max:255'],
+    //             'customer_type'          => ['nullable', 'string', 'max:255'],
+    //             'old_customer_user_id'   => ['nullable', 'integer'],
+
+    //             'created_by'             => ['nullable', 'integer'],
+    //             'created_by_name'        => ['nullable', 'string', 'max:255'],
+    //             'request_date'           => ['nullable', 'date'],
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'success'          => false,
+    //                 'message'          => 'Validation failed.',
+    //                 'errors'           => $validator->errors(),
+    //                 'received_payload' => $request->all(),
+    //             ], 422);
+    //         }
+
+    //         $validated = $validator->validated();
+
+    //         $gstNumber = !empty($validated['customer_gst_number'])
+    //             ? strtoupper(trim($validated['customer_gst_number']))
+    //             : null;
+
+    //         $fullPayload = [
+    //             'request_for_bill'       => $validated['request_for_bill'],
+    //             'source_software'        => $validated['source_software'] ?? null,
+    //             'source_customer_id'     => $validated['source_customer_id'] ?? null,
+    //             'source_package_id'      => $validated['source_package_id'] ?? null,
+    //             'source_user_package_id' => $validated['source_user_package_id'] ?? null,
+    //             'source_payment_id'      => $validated['source_payment_id'] ?? null,
+
+    //             'customer_name'          => $validated['customer_name'] ?? null,
+    //             'customer_email'         => $validated['customer_email'] ?? null,
+    //             'customer_phone'         => $validated['customer_phone'] ?? null,
+    //             'customer_phone1'        => $validated['customer_phone1'] ?? null,
+    //             'country'                => $validated['country'] ?? null,
+    //             'state'                  => $validated['state'] ?? null,
+    //             'city'                   => $validated['city'] ?? null,
+    //             'pin'                    => $validated['pin'] ?? null,
+    //             'address'                => $validated['address'] ?? null,
+    //             'customer_gst_number'    => $gstNumber,
+
+    //             'package_id'             => $validated['package_id'] ?? null,
+    //             'package_name'           => $validated['package_name'] ?? null,
+    //             'package_description'    => $validated['package_description'] ?? null,
+    //             'package_price'          => $validated['package_price'] ?? null,
+    //             'package_duration'       => $validated['package_duration'] ?? null,
+
+    //             'payment_amount'         => $validated['payment_amount'] ?? null,
+    //             'payment_method'         => $validated['payment_method'] ?? null,
+    //             'transaction_id'         => $validated['transaction_id'] ?? null,
+    //             'bank'                   => $validated['bank'] ?? null,
+    //             'payment_date'           => $validated['payment_date'] ?? null,
+    //             'activated_by'           => $validated['activated_by'] ?? null,
+    //             'customer_type'          => $validated['customer_type'] ?? null,
+    //             'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
+
+    //             'created_by'             => $validated['created_by'] ?? null,
+    //             'created_by_name'        => $validated['created_by_name'] ?? null,
+    //             'request_date'           => $validated['request_date'] ?? null,
+    //         ];
+
+    //         $billRequest = null;
+    //         $invoice = null;
+
+    //         DB::transaction(function () use (&$billRequest, &$invoice, $validated, $request, $gstNumber, $fullPayload) {
+    //             $billRequest = BillRequest::create([
+    //                 'source_software'        => $validated['source_software'] ?? 'postimage',
+    //                 'source_request_id'      => $request->header('X-Request-Id'),
+
+    //                 'source_customer_id'     => $validated['source_customer_id'] ?? null,
+    //                 'source_package_id'      => $validated['source_package_id'] ?? null,
+    //                 'source_user_package_id' => $validated['source_user_package_id'] ?? null,
+    //                 'source_payment_id'      => $validated['source_payment_id'] ?? null,
+
+    //                 'customer_name'          => $validated['customer_name'] ?? null,
+    //                 'customer_email'         => $validated['customer_email'] ?? null,
+    //                 'customer_phone'         => $validated['customer_phone'] ?? null,
+    //                 'customer_phone1'        => $validated['customer_phone1'] ?? null,
+    //                 'country'                => $validated['country'] ?? null,
+    //                 'state'                  => $validated['state'] ?? null,
+    //                 'city'                   => $validated['city'] ?? null,
+    //                 'pin'                    => $validated['pin'] ?? null,
+    //                 'address'                => $validated['address'] ?? null,
+    //                 'gst_number'             => $gstNumber,
+
+    //                 'package_name'           => $validated['package_name'] ?? null,
+    //                 'package_price'          => $validated['package_price'] ?? null,
+    //                 'package_duration'       => $validated['package_duration'] ?? null,
+    //                 'selling_price'          => $validated['package_price'] ?? null,
+
+    //                 'payment_amount'         => $validated['payment_amount'] ?? null,
+    //                 'payment_method'         => $validated['payment_method'] ?? null,
+    //                 'transaction_id'         => $validated['transaction_id'] ?? null,
+    //                 'bank'                   => $validated['bank'] ?? null,
+    //                 'payment_date'           => $validated['payment_date'] ?? null,
+
+    //                 'activated_by'           => $validated['activated_by'] ?? null,
+    //                 'customer_type'          => $validated['customer_type'] ?? null,
+    //                 'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
+
+    //                 'status'                 => 'pending',
+    //                 'remarks'                => null,
+    //                 'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
+    //                 'api_response'           => json_encode([
+    //                     'received_from' => $validated['source_software'] ?? 'postimage',
+    //                     'received_at'   => now()->toDateTimeString(),
+    //                 ], JSON_UNESCAPED_UNICODE),
+    //                 'requested_at'           => $validated['request_date'] ?? now(),
+    //             ]);
+
+    //             if ($validated['request_for_bill']) {
+    //                 $invoice = $this->createQuotationInvoiceFromBillRequest($billRequest);
+    //             }
+    //         });
+
+    //         if ($invoice) {
+    //             $this->pushSaveInvoiceApi($billRequest->fresh(), $invoice->fresh());
+    //         }
+
+    //         return response()->json([
+    //             'success'            => true,
+    //             'message'            => $invoice
+    //                 ? 'Billing request received and quotation created successfully.'
+    //                 : 'Billing request received successfully.',
+    //             'billing_request_id' => $billRequest->id,
+    //             'invoice_id'         => $invoice?->id,
+    //             'invoice_number'     => $invoice?->invoice_number,
+    //             'invoice_type'       => $invoice?->invoice_type,
+    //             'status'             => $billRequest->fresh()->status,
+    //             'data'               => [
+    //                 'bill_request' => $billRequest->fresh(),
+    //                 'invoice'      => $invoice ? $invoice->fresh() : null,
+    //             ],
+    //         ], 201);
+
+    //     } catch (\Throwable $e) {
+    //         Log::error('Billing request API failed', [
+    //             'message' => $e->getMessage(),
+    //             'line'    => $e->getLine(),
+    //             'file'    => $e->getFile(),
+    //             'payload' => $request->all(),
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Something went wrong while saving billing request and quotation.',
+    //             'error'   => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+
+
+
+
     public function store(Request $request)
     {
         try {
@@ -70,6 +328,8 @@ class BillRequestController extends Controller
                 'package_price'          => $request->input('package_price'),
                 'package_duration'       => $request->input('package_duration'),
 
+                'items'                  => $request->input('items'),
+
                 'start_date'             => $request->input('start_date'),
                 'expiry_date'            => $request->input('expiry_date'),
                 'status'                 => $request->input('status'),
@@ -112,6 +372,13 @@ class BillRequestController extends Controller
                 'package_price'          => ['nullable', 'numeric'],
                 'package_duration'       => ['nullable', 'integer'],
 
+                'items'                  => ['nullable', 'array'],
+                'items.*.item_id'        => ['required_with:items', 'integer'],
+                'items.*.qty'            => ['nullable', 'numeric', 'min:1'],
+                'items.*.price'          => ['required_with:items', 'numeric', 'min:0'],
+                'items.*.description'    => ['nullable', 'string'],
+                'items.*.line_total'     => ['nullable', 'numeric', 'min:0'],
+
                 'start_date'             => ['nullable', 'date'],
                 'expiry_date'            => ['nullable', 'date'],
                 'status'                 => ['nullable', 'string', 'max:255'],
@@ -141,6 +408,37 @@ class BillRequestController extends Controller
 
             $validated = $validator->validated();
 
+            $items = collect($validated['items'] ?? [])
+                ->filter(fn ($row) => !empty($row['item_id']))
+                ->map(function ($row) {
+                    $qty = max(1, (float) ($row['qty'] ?? 1));
+                    $price = (float) ($row['price'] ?? 0);
+
+                    return [
+                        'item_id'     => (int) $row['item_id'],
+                        'qty'         => $qty,
+                        'price'       => $price,
+                        'description' => trim((string) ($row['description'] ?? '')),
+                        'line_total'  => round($qty * $price, 2),
+                    ];
+                })
+                ->filter(fn ($row) => $row['item_id'] > 0 && $row['price'] > 0)
+                ->values()
+                ->toArray();
+
+            if ($validated['request_for_bill'] && empty($items)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors'  => [
+                        'items' => ['Bill ke liye kam se kam ek valid item required hai.'],
+                    ],
+                    'received_payload' => $request->all(),
+                ], 422);
+            }
+
+            $itemsTotal = collect($items)->sum('line_total');
+
             $gstNumber = !empty($validated['customer_gst_number'])
                 ? strtoupper(trim($validated['customer_gst_number']))
                 : null;
@@ -167,10 +465,12 @@ class BillRequestController extends Controller
                 'package_id'             => $validated['package_id'] ?? null,
                 'package_name'           => $validated['package_name'] ?? null,
                 'package_description'    => $validated['package_description'] ?? null,
-                'package_price'          => $validated['package_price'] ?? null,
+                'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
                 'package_duration'       => $validated['package_duration'] ?? null,
 
-                'payment_amount'         => $validated['payment_amount'] ?? null,
+                'items'                  => $items,
+
+                'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
                 'payment_method'         => $validated['payment_method'] ?? null,
                 'transaction_id'         => $validated['transaction_id'] ?? null,
                 'bank'                   => $validated['bank'] ?? null,
@@ -187,7 +487,7 @@ class BillRequestController extends Controller
             $billRequest = null;
             $invoice = null;
 
-            DB::transaction(function () use (&$billRequest, &$invoice, $validated, $request, $gstNumber, $fullPayload) {
+            DB::transaction(function () use (&$billRequest, &$invoice, $validated, $request, $gstNumber, $fullPayload, $itemsTotal) {
                 $billRequest = BillRequest::create([
                     'source_software'        => $validated['source_software'] ?? 'postimage',
                     'source_request_id'      => $request->header('X-Request-Id'),
@@ -209,11 +509,11 @@ class BillRequestController extends Controller
                     'gst_number'             => $gstNumber,
 
                     'package_name'           => $validated['package_name'] ?? null,
-                    'package_price'          => $validated['package_price'] ?? null,
+                    'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
                     'package_duration'       => $validated['package_duration'] ?? null,
-                    'selling_price'          => $validated['package_price'] ?? null,
+                    'selling_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
 
-                    'payment_amount'         => $validated['payment_amount'] ?? null,
+                    'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
                     'payment_method'         => $validated['payment_method'] ?? null,
                     'transaction_id'         => $validated['transaction_id'] ?? null,
                     'bank'                   => $validated['bank'] ?? null,
@@ -276,284 +576,632 @@ class BillRequestController extends Controller
 
 
 
+    // private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
+    // {
+    //     $bid = 1;
+    //     $userId = 1;
+
+    //     $business = Business::findOrFail($bid);
+
+    //     $client = null;
+
+    //     if (!empty($billRequest->gst_number)) {
+    //         $client = Client::where('business_id', $bid)
+    //             ->where('gstin', trim($billRequest->gst_number))
+    //             ->first();
+    //     }
+
+    //     if (!$client && !empty($billRequest->customer_phone)) {
+    //         $client = Client::where('business_id', $bid)
+    //             ->where('mobile', trim($billRequest->customer_phone))
+    //             ->first();
+    //     }
+
+    //     if (!$client && !empty($billRequest->customer_email)) {
+    //         $client = Client::where('business_id', $bid)
+    //             ->where('email', trim($billRequest->customer_email))
+    //             ->first();
+    //     }
+
+    //     if (!$client) {
+    //         $client = Client::create([
+    //             'business_id' => $bid,
+    //             'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
+    //             'address'     => $billRequest->address,
+    //             'gstin'       => $billRequest->gst_number,
+    //             'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+    //             'state'       => $billRequest->state,
+    //             'city'        => $billRequest->city,
+    //             'pincode'     => $billRequest->pin,
+    //             'state_code'  => null,
+    //             'email'       => $billRequest->customer_email,
+    //             'is_save'     => 1,
+    //         ]);
+    //     }
+
+    //     $itemId = trim((string) ($billRequest->package_name ?? ''));
+
+    //     $matchedItem = Item::where('business_id', $bid)
+    //         ->where('is_active', 1)
+    //         ->where('type', 'service')
+    //         ->where('id', (int) $itemId)
+    //         ->first();
+
+    //     if (!$matchedItem) {
+    //         $matchedItem = Item::where('business_id', $bid)
+    //             ->where('is_active', 1)
+    //             ->where('type', 'service')
+    //             ->where(function ($q) {
+    //                 $q->where('name', 'like', '%Yearly Social Media Creative%')
+    //                 ->where('name', 'like', '%Basic Package%');
+    //             })
+    //             ->first();
+    //     }
+
+    //     if (!$matchedItem) {
+    //         throw new \Exception('Selected service item nahi mila. Item inactive ho sakta hai ya business/type mismatch hai.');
+    //     }
+
+    //     $grossAmount = (float) (
+    //         $billRequest->selling_price
+    //         ?? $billRequest->payment_amount
+    //         ?? $billRequest->package_price
+    //         ?? $matchedItem->price
+    //         ?? 0
+    //     );
+
+    //     if ($grossAmount <= 0) {
+    //         throw new \Exception('Bill request amount invalid hai.');
+    //     }
+
+    //     $invoiceDate = now(config('app.timezone'))->toDateString();
+
+    //     $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
+
+    //     if ($taxPercent > 0) {
+    //         $subtotal  = round($grossAmount * 100 / (100 + $taxPercent), 2);
+    //         $taxAmount = round($grossAmount - $subtotal, 2);
+    //     } else {
+    //         $subtotal  = round($grossAmount, 2);
+    //         $taxAmount = 0;
+    //     }
+
+    //     $grandTotal = round($grossAmount, 2);
+
+    //     $bizCode   = $this->normCode($business->state_code ?? '');
+    //     $partyCode = $this->normCode($client->state_code ?? '');
+
+    //     $isIntra = ($bizCode !== '' && $partyCode !== '')
+    //         ? ($bizCode === $partyCode)
+    //         : false;
+
+    //     if ($isIntra) {
+    //         $cgstPercent = round($taxPercent / 2, 2);
+    //         $sgstPercent = round($taxPercent / 2, 2);
+    //         $igstPercent = 0;
+
+    //         $cgstAmount = round($taxAmount / 2, 2);
+    //         $sgstAmount = round($taxAmount - $cgstAmount, 2);
+    //         $igstAmount = 0;
+    //     } else {
+    //         $cgstPercent = 0;
+    //         $sgstPercent = 0;
+    //         $igstPercent = round($taxPercent, 2);
+
+    //         $cgstAmount = 0;
+    //         $sgstAmount = 0;
+    //         $igstAmount = round($taxAmount, 2);
+    //     }
+
+    //     $taxBase = $business->quotation_base_prefix ?? 'QT';
+    //     $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
+
+    //     $alloc = \App\Services\InvoiceNumber::next(
+    //         $bid,
+    //         $invoiceDate,
+    //         $prefix,
+    //         3,
+    //         'quotation'
+    //     );
+
+    //     $invoiceNumber = $alloc['full'];
+
+    //     \App\Services\InvoiceNumber::syncNextSeqIfMatches(
+    //         $bid,
+    //         $invoiceDate,
+    //         $invoiceNumber,
+    //         3,
+    //         'quotation'
+    //     );
+
+    //     $itemDescription = trim((string) ($billRequest->package_description ?? ''));
+
+    //     if ($itemDescription === '') {
+    //         $itemDescription = $matchedItem->description ?: $matchedItem->name;
+    //     }
+
+    //     $itemsJson = [
+    //         [
+    //             'item_id'       => $matchedItem->id,
+    //             'item_type'     => 'service',
+    //             'description'   => $itemDescription,
+    //             'hsn'           => $matchedItem->sac ?? '',
+    //             'qty'           => 1,
+    //             'tax_percent'   => round($taxPercent, 2),
+    //             'service_rate'  => round($subtotal, 2),
+    //             'rate'          => round($subtotal, 2),
+    //             'tax_amount'    => round($taxAmount, 2),
+    //             'amount'        => round($grandTotal, 2),
+    //             'making_charge' => round($subtotal, 2),
+    //             'gold_wt'       => 0,
+    //             'silver_wt'     => 0,
+    //             'gold_rate'     => 0,
+    //             'silver_rate'   => 0,
+    //             'gemstone_wt'   => 0,
+    //             'diamond_wt'    => 0,
+    //             'making_rate'   => 0,
+    //             'stone_charges' => 0,
+    //         ],
+    //     ];
+
+    //     $invoice = Invoice::create([
+    //         'business_id'     => $bid,
+    //         'bil_request_id' => $billRequest->id,
+
+    //         'invoice_type'    => 'quotation',
+    //         'invoice_prefix'  => $prefix,
+    //         'invoice_number'  => $invoiceNumber,
+    //         'client_id'       => $client->id,
+    //         'invoice_date'    => $invoiceDate,
+    //         'payment_terms'   => 0,
+    //         'due_date'        => null,
+
+    //         'subtotal'        => round($subtotal, 2),
+    //         'tax_amount'      => round($taxAmount, 2),
+
+    //         'cgst_percent'    => $cgstPercent,
+    //         'cgst_amount'     => $cgstAmount,
+    //         'sgst_percent'    => $sgstPercent,
+    //         'sgst_amount'     => $sgstAmount,
+    //         'igst_percent'    => $igstPercent,
+    //         'igst_amount'     => $igstAmount,
+
+    //         'discount_total'  => 0,
+    //         'charge_total'    => 0,
+    //         'tcs_percent'     => 0,
+    //         'tcs_amount'      => 0,
+    //         'round_off'       => 0,
+    //         'less_amount'     => 0,
+
+    //         'total'           => $grandTotal,
+    //         'received_amount' => 0,
+    //         'balance'         => $grandTotal,
+
+    //         'payment_method'  => null,
+    //         'transport_mode'  => null,
+    //         'reverse_charge'  => 0,
+
+    //         'place_of_supply_state' => $client->state,
+    //         'place_of_supply_code'  => $client->state_code,
+
+    //         'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+    //         'terms'           => null,
+
+    //         'charges_json'    => json_encode([]),
+    //         'items_json'      => json_encode($itemsJson),
+
+    //         'amount_in_words' => '',
+    //         'pdf_url'         => null,
+    //         'signature'       => null,
+
+    //         'user_id'         => $userId,
+    //         'created_by'      => $userId,
+    //         'updated_by'      => $userId,
+
+    //         'kots_json'       => json_encode([]),
+    //     ]);
+
+    //     InvoiceItem::create([
+    //         'invoice_id'      => $invoice->id,
+    //         'item_id'         => $matchedItem->id,
+    //         'description'     => $itemDescription,
+    //         'sac_code'        => $matchedItem->sac ?? null,
+    //         'hsn_code'        => null,
+    //         'quantity'        => 1,
+    //         'gold_wt'         => 0,
+    //         'silver_wt'       => 0,
+    //         'gold_rate'       => 0,
+    //         'silver_rate'     => 0,
+    //         'gemstone_wt_ct'  => 0,
+    //         'diamond_wt_ct'   => 0,
+    //         'making_charge'   => round($subtotal, 2),
+    //         'making_rate'     => null,
+    //         'discount'        => 0,
+    //         'tax_percent'     => round($taxPercent, 2),
+    //         'rate'            => round($subtotal, 2),
+    //         'amount'          => round($grandTotal, 2),
+    //     ]);
+
+    //     $oldApi = [];
+
+    //     if (!empty($billRequest->api_response)) {
+    //         $decoded = json_decode($billRequest->api_response, true);
+
+    //         if (is_array($decoded)) {
+    //             $oldApi = $decoded;
+    //         }
+    //     }
+
+    //     $oldApi['matched_item_id']        = $matchedItem->id;
+    //     $oldApi['matched_item_name']      = $matchedItem->name;
+    //     $oldApi['created_invoice_id']     = $invoice->id;
+    //     $oldApi['created_invoice_number'] = $invoice->invoice_number;
+    //     $oldApi['created_client_id']      = $client->id;
+    //     $oldApi['invoice_type']           = 'quotation';
+    //     $oldApi['invoice_date']           = $invoiceDate;
+    //     $oldApi['gst_included']           = true;
+    //     $oldApi['gross_amount']           = $grandTotal;
+    //     $oldApi['taxable_amount']         = $subtotal;
+    //     $oldApi['tax_amount']             = $taxAmount;
+    //     $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
+
+    //     $billRequest->update([
+    //         // 'status'       => 'processed',
+    //         'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
+    //         'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
+    //     ]);
+
+    //     return $invoice;
+    // }
+
+
     private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
-    {
-        $bid = 1;
-        $userId = 1;
+{
+    $bid = 1;
+    $userId = 1;
 
-        $business = Business::findOrFail($bid);
+    $business = Business::findOrFail($bid);
 
-        $client = null;
+    $client = null;
 
-        if (!empty($billRequest->gst_number)) {
-            $client = Client::where('business_id', $bid)
-                ->where('gstin', trim($billRequest->gst_number))
-                ->first();
+    if (!empty($billRequest->gst_number)) {
+        $client = Client::where('business_id', $bid)
+            ->where('gstin', trim($billRequest->gst_number))
+            ->first();
+    }
+
+    if (!$client && !empty($billRequest->customer_phone)) {
+        $client = Client::where('business_id', $bid)
+            ->where('mobile', trim($billRequest->customer_phone))
+            ->first();
+    }
+
+    if (!$client && !empty($billRequest->customer_email)) {
+        $client = Client::where('business_id', $bid)
+            ->where('email', trim($billRequest->customer_email))
+            ->first();
+    }
+
+    if (!$client) {
+        $client = Client::create([
+            'business_id' => $bid,
+            'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
+            'address'     => $billRequest->address,
+            'gstin'       => $billRequest->gst_number,
+            'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+            'state'       => $billRequest->state,
+            'city'        => $billRequest->city,
+            'pincode'     => $billRequest->pin,
+            'state_code'  => null,
+            'email'       => $billRequest->customer_email,
+            'is_save'     => 1,
+        ]);
+    }
+
+    $payload = [];
+
+    if (!empty($billRequest->full_payload)) {
+        $decoded = json_decode($billRequest->full_payload, true);
+        if (is_array($decoded)) {
+            $payload = $decoded;
         }
+    }
 
-        if (!$client && !empty($billRequest->customer_phone)) {
-            $client = Client::where('business_id', $bid)
-                ->where('mobile', trim($billRequest->customer_phone))
-                ->first();
+    $requestItems = $payload['items'] ?? [];
+
+    if (empty($requestItems)) {
+        $requestItems = [[
+            'item_id'     => (int) ($billRequest->package_name ?? 0),
+            'qty'         => 1,
+            'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
+            'description' => (string) ($billRequest->package_description ?? ''),
+        ]];
+    }
+
+    $invoiceDate = now(config('app.timezone'))->toDateString();
+
+    $bizCode   = $this->normCode($business->state_code ?? '');
+    $partyCode = $this->normCode($client->state_code ?? '');
+
+    $isIntra = ($bizCode !== '' && $partyCode !== '')
+        ? ($bizCode === $partyCode)
+        : false;
+
+    $itemsJson = [];
+    $invoiceRows = [];
+
+    $subtotal = 0;
+    $taxAmount = 0;
+    $grandTotal = 0;
+
+    $totalTaxPercentForInvoice = 0;
+    $totalCgstAmount = 0;
+    $totalSgstAmount = 0;
+    $totalIgstAmount = 0;
+
+    foreach ($requestItems as $row) {
+        $itemId = (int) ($row['item_id'] ?? 0);
+
+        if ($itemId <= 0) {
+            throw new \Exception('Selected service item id invalid hai.');
         }
-
-        if (!$client && !empty($billRequest->customer_email)) {
-            $client = Client::where('business_id', $bid)
-                ->where('email', trim($billRequest->customer_email))
-                ->first();
-        }
-
-        if (!$client) {
-            $client = Client::create([
-                'business_id' => $bid,
-                'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
-                'address'     => $billRequest->address,
-                'gstin'       => $billRequest->gst_number,
-                'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
-                'state'       => $billRequest->state,
-                'city'        => $billRequest->city,
-                'pincode'     => $billRequest->pin,
-                'state_code'  => null,
-                'email'       => $billRequest->customer_email,
-                'is_save'     => 1,
-            ]);
-        }
-
-        $itemId = trim((string) ($billRequest->package_name ?? ''));
 
         $matchedItem = Item::where('business_id', $bid)
             ->where('is_active', 1)
             ->where('type', 'service')
-            ->where('id', (int) $itemId)
+            ->where('id', $itemId)
             ->first();
 
         if (!$matchedItem) {
-            $matchedItem = Item::where('business_id', $bid)
-                ->where('is_active', 1)
-                ->where('type', 'service')
-                ->where(function ($q) {
-                    $q->where('name', 'like', '%Yearly Social Media Creative%')
-                    ->where('name', 'like', '%Basic Package%');
-                })
-                ->first();
+            throw new \Exception('Selected service item nahi mila. Item ID: ' . $itemId);
         }
 
-        if (!$matchedItem) {
-            throw new \Exception('Selected service item nahi mila. Item inactive ho sakta hai ya business/type mismatch hai.');
+        $qty = max(1, (float) ($row['qty'] ?? 1));
+        $price = (float) ($row['price'] ?? 0);
+
+        if ($price <= 0) {
+            throw new \Exception('Bill request amount invalid hai. Item: ' . $matchedItem->name);
         }
 
-        $grossAmount = (float) (
-            $billRequest->selling_price
-            ?? $billRequest->payment_amount
-            ?? $billRequest->package_price
-            ?? $matchedItem->price
-            ?? 0
-        );
-
-        if ($grossAmount <= 0) {
-            throw new \Exception('Bill request amount invalid hai.');
-        }
-
-        $invoiceDate = now(config('app.timezone'))->toDateString();
+        $grossAmount = round($qty * $price, 2);
 
         $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
 
         if ($taxPercent > 0) {
-            $subtotal  = round($grossAmount * 100 / (100 + $taxPercent), 2);
-            $taxAmount = round($grossAmount - $subtotal, 2);
+            $lineSubtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
+            $lineTaxAmount = round($grossAmount - $lineSubtotal, 2);
         } else {
-            $subtotal  = round($grossAmount, 2);
-            $taxAmount = 0;
+            $lineSubtotal = round($grossAmount, 2);
+            $lineTaxAmount = 0;
         }
-
-        $grandTotal = round($grossAmount, 2);
-
-        $bizCode   = $this->normCode($business->state_code ?? '');
-        $partyCode = $this->normCode($client->state_code ?? '');
-
-        $isIntra = ($bizCode !== '' && $partyCode !== '')
-            ? ($bizCode === $partyCode)
-            : false;
 
         if ($isIntra) {
-            $cgstPercent = round($taxPercent / 2, 2);
-            $sgstPercent = round($taxPercent / 2, 2);
-            $igstPercent = 0;
-
-            $cgstAmount = round($taxAmount / 2, 2);
-            $sgstAmount = round($taxAmount - $cgstAmount, 2);
-            $igstAmount = 0;
+            $lineCgstAmount = round($lineTaxAmount / 2, 2);
+            $lineSgstAmount = round($lineTaxAmount - $lineCgstAmount, 2);
+            $lineIgstAmount = 0;
         } else {
-            $cgstPercent = 0;
-            $sgstPercent = 0;
-            $igstPercent = round($taxPercent, 2);
-
-            $cgstAmount = 0;
-            $sgstAmount = 0;
-            $igstAmount = round($taxAmount, 2);
+            $lineCgstAmount = 0;
+            $lineSgstAmount = 0;
+            $lineIgstAmount = round($lineTaxAmount, 2);
         }
 
-        $taxBase = $business->quotation_base_prefix ?? 'QT';
-        $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
-
-        $alloc = \App\Services\InvoiceNumber::next(
-            $bid,
-            $invoiceDate,
-            $prefix,
-            3,
-            'quotation'
-        );
-
-        $invoiceNumber = $alloc['full'];
-
-        \App\Services\InvoiceNumber::syncNextSeqIfMatches(
-            $bid,
-            $invoiceDate,
-            $invoiceNumber,
-            3,
-            'quotation'
-        );
-
-        $itemDescription = trim((string) ($billRequest->package_description ?? ''));
+        $itemDescription = trim((string) ($row['description'] ?? ''));
 
         if ($itemDescription === '') {
             $itemDescription = $matchedItem->description ?: $matchedItem->name;
         }
 
-        $itemsJson = [
-            [
-                'item_id'       => $matchedItem->id,
-                'item_type'     => 'service',
-                'description'   => $itemDescription,
-                'hsn'           => $matchedItem->sac ?? '',
-                'qty'           => 1,
-                'tax_percent'   => round($taxPercent, 2),
-                'service_rate'  => round($subtotal, 2),
-                'rate'          => round($subtotal, 2),
-                'tax_amount'    => round($taxAmount, 2),
-                'amount'        => round($grandTotal, 2),
-                'making_charge' => round($subtotal, 2),
-                'gold_wt'       => 0,
-                'silver_wt'     => 0,
-                'gold_rate'     => 0,
-                'silver_rate'   => 0,
-                'gemstone_wt'   => 0,
-                'diamond_wt'    => 0,
-                'making_rate'   => 0,
-                'stone_charges' => 0,
-            ],
+        $rateWithoutTax = round($lineSubtotal / $qty, 2);
+
+        $subtotal += $lineSubtotal;
+        $taxAmount += $lineTaxAmount;
+        $grandTotal += $grossAmount;
+
+        $totalCgstAmount += $lineCgstAmount;
+        $totalSgstAmount += $lineSgstAmount;
+        $totalIgstAmount += $lineIgstAmount;
+
+        $totalTaxPercentForInvoice = max($totalTaxPercentForInvoice, $taxPercent);
+
+        $itemsJson[] = [
+            'item_id'       => $matchedItem->id,
+            'item_type'     => 'service',
+            'description'   => $itemDescription,
+            'hsn'           => $matchedItem->sac ?? '',
+            'qty'           => $qty,
+            'tax_percent'   => round($taxPercent, 2),
+            'service_rate'  => $rateWithoutTax,
+            'rate'          => $rateWithoutTax,
+            'tax_amount'    => round($lineTaxAmount, 2),
+            'amount'        => round($grossAmount, 2),
+            'making_charge' => round($lineSubtotal, 2),
+            'gold_wt'       => 0,
+            'silver_wt'     => 0,
+            'gold_rate'     => 0,
+            'silver_rate'   => 0,
+            'gemstone_wt'   => 0,
+            'diamond_wt'    => 0,
+            'making_rate'   => 0,
+            'stone_charges' => 0,
         ];
 
-        $invoice = Invoice::create([
-            'business_id'     => $bid,
-            'bil_request_id' => $billRequest->id,
+        $invoiceRows[] = [
+            'matched_item'     => $matchedItem,
+            'description'      => $itemDescription,
+            'qty'              => $qty,
+            'rate_without_tax' => $rateWithoutTax,
+            'line_subtotal'    => round($lineSubtotal, 2),
+            'tax_percent'      => round($taxPercent, 2),
+            'line_tax_amount'  => round($lineTaxAmount, 2),
+            'gross_amount'     => round($grossAmount, 2),
+        ];
+    }
 
-            'invoice_type'    => 'quotation',
-            'invoice_prefix'  => $prefix,
-            'invoice_number'  => $invoiceNumber,
-            'client_id'       => $client->id,
-            'invoice_date'    => $invoiceDate,
-            'payment_terms'   => 0,
-            'due_date'        => null,
+    if (empty($invoiceRows)) {
+        throw new \Exception('Invoice ke liye koi valid item nahi mila.');
+    }
 
-            'subtotal'        => round($subtotal, 2),
-            'tax_amount'      => round($taxAmount, 2),
+    $subtotal = round($subtotal, 2);
+    $taxAmount = round($taxAmount, 2);
+    $grandTotal = round($grandTotal, 2);
 
-            'cgst_percent'    => $cgstPercent,
-            'cgst_amount'     => $cgstAmount,
-            'sgst_percent'    => $sgstPercent,
-            'sgst_amount'     => $sgstAmount,
-            'igst_percent'    => $igstPercent,
-            'igst_amount'     => $igstAmount,
+    if ($isIntra) {
+        $cgstPercent = round($totalTaxPercentForInvoice / 2, 2);
+        $sgstPercent = round($totalTaxPercentForInvoice / 2, 2);
+        $igstPercent = 0;
 
-            'discount_total'  => 0,
-            'charge_total'    => 0,
-            'tcs_percent'     => 0,
-            'tcs_amount'      => 0,
-            'round_off'       => 0,
-            'less_amount'     => 0,
+        $cgstAmount = round($totalCgstAmount, 2);
+        $sgstAmount = round($totalSgstAmount, 2);
+        $igstAmount = 0;
+    } else {
+        $cgstPercent = 0;
+        $sgstPercent = 0;
+        $igstPercent = round($totalTaxPercentForInvoice, 2);
 
-            'total'           => $grandTotal,
-            'received_amount' => 0,
-            'balance'         => $grandTotal,
+        $cgstAmount = 0;
+        $sgstAmount = 0;
+        $igstAmount = round($totalIgstAmount, 2);
+    }
 
-            'payment_method'  => null,
-            'transport_mode'  => null,
-            'reverse_charge'  => 0,
+    $taxBase = $business->quotation_base_prefix ?? 'QT';
+    $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
 
-            'place_of_supply_state' => $client->state,
-            'place_of_supply_code'  => $client->state_code,
+    $alloc = \App\Services\InvoiceNumber::next(
+        $bid,
+        $invoiceDate,
+        $prefix,
+        3,
+        'quotation'
+    );
 
-            'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
-            'terms'           => null,
+    $invoiceNumber = $alloc['full'];
 
-            'charges_json'    => json_encode([]),
-            'items_json'      => json_encode($itemsJson),
+    \App\Services\InvoiceNumber::syncNextSeqIfMatches(
+        $bid,
+        $invoiceDate,
+        $invoiceNumber,
+        3,
+        'quotation'
+    );
 
-            'amount_in_words' => '',
-            'pdf_url'         => null,
-            'signature'       => null,
+    $invoice = Invoice::create([
+        'business_id'     => $bid,
+        'bil_request_id'  => $billRequest->id,
 
-            'user_id'         => $userId,
-            'created_by'      => $userId,
-            'updated_by'      => $userId,
+        'invoice_type'    => 'quotation',
+        'invoice_prefix'  => $prefix,
+        'invoice_number'  => $invoiceNumber,
+        'client_id'       => $client->id,
+        'invoice_date'    => $invoiceDate,
+        'payment_terms'   => 0,
+        'due_date'        => null,
 
-            'kots_json'       => json_encode([]),
-        ]);
+        'subtotal'        => $subtotal,
+        'tax_amount'      => $taxAmount,
 
+        'cgst_percent'    => $cgstPercent,
+        'cgst_amount'     => $cgstAmount,
+        'sgst_percent'    => $sgstPercent,
+        'sgst_amount'     => $sgstAmount,
+        'igst_percent'    => $igstPercent,
+        'igst_amount'     => $igstAmount,
+
+        'discount_total'  => 0,
+        'charge_total'    => 0,
+        'tcs_percent'     => 0,
+        'tcs_amount'      => 0,
+        'round_off'       => 0,
+        'less_amount'     => 0,
+
+        'total'           => $grandTotal,
+        'received_amount' => 0,
+        'balance'         => $grandTotal,
+
+        'payment_method'  => null,
+        'transport_mode'  => null,
+        'reverse_charge'  => 0,
+
+        'place_of_supply_state' => $client->state,
+        'place_of_supply_code'  => $client->state_code,
+
+        'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+        'terms'           => null,
+
+        'charges_json'    => json_encode([]),
+        'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
+
+        'amount_in_words' => '',
+        'pdf_url'         => null,
+        'signature'       => null,
+
+        'user_id'         => $userId,
+        'created_by'      => $userId,
+        'updated_by'      => $userId,
+
+        'kots_json'       => json_encode([]),
+    ]);
+
+    foreach ($invoiceRows as $row) {
         InvoiceItem::create([
             'invoice_id'      => $invoice->id,
-            'item_id'         => $matchedItem->id,
-            'description'     => $itemDescription,
-            'sac_code'        => $matchedItem->sac ?? null,
+            'item_id'         => $row['matched_item']->id,
+            'description'     => $row['description'],
+            'sac_code'        => $row['matched_item']->sac ?? null,
             'hsn_code'        => null,
-            'quantity'        => 1,
+            'quantity'        => $row['qty'],
             'gold_wt'         => 0,
             'silver_wt'       => 0,
             'gold_rate'       => 0,
             'silver_rate'     => 0,
             'gemstone_wt_ct'  => 0,
             'diamond_wt_ct'   => 0,
-            'making_charge'   => round($subtotal, 2),
+            'making_charge'   => $row['line_subtotal'],
             'making_rate'     => null,
             'discount'        => 0,
-            'tax_percent'     => round($taxPercent, 2),
-            'rate'            => round($subtotal, 2),
-            'amount'          => round($grandTotal, 2),
+            'tax_percent'     => $row['tax_percent'],
+            'rate'            => $row['rate_without_tax'],
+            'amount'          => $row['gross_amount'],
         ]);
-
-        $oldApi = [];
-
-        if (!empty($billRequest->api_response)) {
-            $decoded = json_decode($billRequest->api_response, true);
-
-            if (is_array($decoded)) {
-                $oldApi = $decoded;
-            }
-        }
-
-        $oldApi['matched_item_id']        = $matchedItem->id;
-        $oldApi['matched_item_name']      = $matchedItem->name;
-        $oldApi['created_invoice_id']     = $invoice->id;
-        $oldApi['created_invoice_number'] = $invoice->invoice_number;
-        $oldApi['created_client_id']      = $client->id;
-        $oldApi['invoice_type']           = 'quotation';
-        $oldApi['invoice_date']           = $invoiceDate;
-        $oldApi['gst_included']           = true;
-        $oldApi['gross_amount']           = $grandTotal;
-        $oldApi['taxable_amount']         = $subtotal;
-        $oldApi['tax_amount']             = $taxAmount;
-        $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
-
-        $billRequest->update([
-            // 'status'       => 'processed',
-            'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
-            'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
-        ]);
-
-        return $invoice;
     }
 
+    $oldApi = [];
+
+    if (!empty($billRequest->api_response)) {
+        $decoded = json_decode($billRequest->api_response, true);
+
+        if (is_array($decoded)) {
+            $oldApi = $decoded;
+        }
+    }
+
+    $oldApi['matched_items'] = collect($invoiceRows)->map(function ($row) {
+        return [
+            'matched_item_id'   => $row['matched_item']->id,
+            'matched_item_name' => $row['matched_item']->name,
+            'qty'               => $row['qty'],
+            'rate'              => $row['rate_without_tax'],
+            'amount'            => $row['gross_amount'],
+        ];
+    })->values()->toArray();
+
+    $oldApi['created_invoice_id']     = $invoice->id;
+    $oldApi['created_invoice_number'] = $invoice->invoice_number;
+    $oldApi['created_client_id']      = $client->id;
+    $oldApi['invoice_type']           = 'quotation';
+    $oldApi['invoice_date']           = $invoiceDate;
+    $oldApi['gst_included']           = true;
+    $oldApi['gross_amount']           = $grandTotal;
+    $oldApi['taxable_amount']         = $subtotal;
+    $oldApi['tax_amount']             = $taxAmount;
+    $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
+
+    $billRequest->update([
+        'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
+        'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
+    ]);
+
+    return $invoice;
+}
 
 
 
