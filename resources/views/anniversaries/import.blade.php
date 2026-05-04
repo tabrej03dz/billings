@@ -43,6 +43,7 @@
                 <p><strong>Phone:</strong> phone, mobile, mobile_no, contact, contact_no</p>
                 <p><strong>Date:</strong> date_of_anniversary, anniversary_date, anniversary, doa</p>
                 <p><strong>Name:</strong> name, full_name, customer_name</p>
+                <p><strong>Wish Time:</strong> wish_time, time, send_time, whatsapp_time</p>
             </div>
 
             <div class="flex justify-end gap-2">
