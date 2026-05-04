@@ -101,6 +101,9 @@
                     @forelse ($logs as $log)
                         <tr>
                             <td class="px-6 py-3">
+                                {{ $log->anniversary->name ?? '-' }}
+                            </td>
+                            <td class="px-6 py-3">
                                 {{ optional($log->wish_date)->format('d M, Y') ?? '-' }}
                             </td>
 

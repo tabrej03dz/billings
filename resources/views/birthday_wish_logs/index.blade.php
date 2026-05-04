@@ -91,6 +91,7 @@
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                 <thead class="bg-gray-100 dark:bg-neutral-800 text-xs uppercase font-medium tracking-wider">
                 <tr>
+                    <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Wish Date</th>
                     <th class="px-6 py-3">Year</th>
                     <th class="px-6 py-3">Phone</th>
@@ -105,6 +106,9 @@
                 <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
                 @forelse ($logs as $log)
                     <tr>
+                        <td class="px-6 py-3">
+                            {{ optional($log->record)->name ?? '-' }}
+                        </td>
                         <td class="px-6 py-3">
                             {{ optional($log->wish_date)->format('d M, Y') ?? '-' }}
                         </td>
