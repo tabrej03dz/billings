@@ -105,7 +105,7 @@
                                 {{ $log->anniversary->name ?? '-' }}
                             </td>
                             <td class="px-6 py-3">
-                                {{ optional($log->wish_date)->format('d M, Y') ?? '-' }}
+                                {{ optional($log->created_at)->format('d M, Y') ?? '-' }}
                             </td>
 
                             <td class="px-6 py-3">
