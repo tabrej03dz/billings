@@ -644,6 +644,40 @@
             </flux:navlist>
         @endcan
 
+        @can('show anniversary records')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item :href="route('anniversaries.index')"
+                        :current="request()->routeIs('anniversaries.index')" wire:navigate>{{ __('Birthday Records') }}
+                        <x-slot:icon>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 64 64">
+
+                                <!-- Background -->
+                                <rect x="6" y="6" width="52" height="52" rx="10" fill="#FEF9C3" />
+
+                                <!-- Cake base -->
+                                <rect x="20" y="28" width="24" height="16" rx="3" fill="#FBBF24" />
+
+                                <!-- Cake frosting -->
+                                <path d="M20 28 Q32 18 44 28 Z" fill="#F59E0B" />
+
+                                <!-- Candles -->
+                                <rect x="26" y="20" width="2" height="8" fill="#EF4444" />
+                                <rect x="32" y="18" width="2" height="10" fill="#3B82F6" />
+                                <rect x="38" y="20" width="2" height="8" fill="#10B981" />
+
+                                <!-- Small spark / flame -->
+                                <circle cx="27" cy="18" r="1" fill="#FCD34D" />
+                                <circle cx="33" cy="16" r="1" fill="#FCD34D" />
+                                <circle cx="39" cy="18" r="1" fill="#FCD34D" />
+                            </svg>
+                        </x-slot:icon>
+
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        @endcan
+
         @can('show wishes logs')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">

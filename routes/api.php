@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AnniversaryController;
 use App\Http\Controllers\Api\BillRequestController as ApiBillRequestController;
 use App\Http\Controllers\Api\BillTemplateController;
 use App\Http\Controllers\Api\BusinessController;
@@ -17,6 +18,7 @@ Route::get('items1/', [ItemController::class, 'index1']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
 
 Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
+// Route::get('/anniversary-wishes/run', [AnniversaryController::class, 'run']);
 Route::get('/installment-reminders/run', [\App\Http\Controllers\InstallmentReminderController::class, 'run']);
 Route::get('/drive-scan-pdf/run', [\App\Http\Controllers\InstallmentReminderController::class, 'driveScanPdf']);
 Route::get('/send-uploaded-invoice/run', [\App\Http\Controllers\InstallmentReminderController::class, 'sendUploadedInvoice']);

@@ -59,7 +59,7 @@ class WhatApiWhatsappService
         // ✅ Payload (adjust keys if your provider expects different)
         $payload = [
             'number'      => $to,
-//            'Video' => asset('asset/video/birthday-wish.mp4'),
+        //      'Video' => asset('asset/video/birthday-wish.mp4'),
             'AcNo' => $snmeNumber,
             'amount' => $amount,
             'date' => now('Asia/Kolkata')->addDay()->format('d/m/Y'),
@@ -80,5 +80,43 @@ class WhatApiWhatsappService
             'body'   => $res->body(),
         ];
 
+    }
+
+
+
+    public function sendAnniversaryWish(string $phone, $url): array
+    {
+        // ✅ Basic sanitation only digits
+        $to = preg_replace('/\D+/', '', $phone);
+
+        // If 10 digit => add 91 India
+        if (strlen($to) === 10) {
+            $to = '91' . $to;
+        }
+
+        $payload = [
+            'number' => $to,
+            'image'  => asset('asset/img/anniversary-wish.jpeg'),
+        ];
+
+        Log::info('WA ANNIVERSARY WISH REQ', [
+            'url' => $url,
+            'payload' => $payload,
+        ]);
+
+        $res = Http::timeout(60)
+            ->acceptJson()
+            ->post($url, $payload);
+
+        Log::info('WA ANNIVERSARY WISH RES', [
+            'status' => $res->status(),
+            'body'   => $res->body(),
+        ]);
+
+        return [
+            'ok'     => $res->successful(),
+            'status' => $res->status(),
+            'body'   => $res->body(),
+        ];
     }
 }

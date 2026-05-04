@@ -78,6 +78,7 @@
                         <th class="px-6 py-3">Name</th>
                         <th class="px-6 py-3">Phone</th>
                         <th class="px-6 py-3">Anniversary Date</th>
+                        <th class="px-6 py-3">Wishing Time</th>
                         <th class="px-6 py-3">Added By</th>
                         <th class="px-6 py-3">Actions</th>
                     </tr>
@@ -115,7 +116,9 @@
                             <td class="px-6 py-3">
                                 {{ $r->date_of_anniversary ? \Carbon\Carbon::parse($r->date_of_anniversary)->format('d M, Y') : '-' }}
                             </td>
-
+                            <td class="px-6 py-3">
+                                {{ $r->wish_time ?? '-' }}
+                            </td>
                             <td class="px-6 py-3">
                                 {{ optional($r->user)->name ?? '-' }}
                             </td>

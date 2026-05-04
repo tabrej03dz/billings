@@ -56,6 +56,7 @@ class AnniversaryController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'date_of_anniversary' => ['required', 'date'],
+            'wish_time' => ['nullable', 'time'],
         ]);
 
         $data['user_id'] = $request->user()?->id;
@@ -78,6 +79,34 @@ class AnniversaryController extends Controller
         return view('anniversaries.edit', ['record' => $anniversary]);
     }
 
+    // public function update(Request $request, Anniversary $anniversary)
+    // {
+    //     $data = $request->validate([
+    //         'business_id' => ['nullable', 'integer'],
+    //         'name' => ['nullable', 'string', 'max:255'],
+    //         'phone' => ['required', 'string', 'max:20'],
+    //         'date_of_anniversary' => ['required', 'date'],
+    //         'wish_time' => ['nullable', 'time'],
+    //     ]);
+
+    //     $exists = Anniversary::where('business_id', $data['business_id'] ?? null)
+    //         ->where('phone', $data['phone'])
+    //         ->where('id', '!=', $anniversary->id)
+    //         ->exists();
+
+    //     if ($exists) {
+    //         return back()
+    //             ->withErrors(['phone' => 'This phone already exists in this business.'])
+    //             ->withInput();
+    //     }
+
+    //     $anniversary->update($data);
+
+    //     return redirect()->route('anniversaries.index')
+    //         ->with('success', 'Anniversary record updated!');
+    // }
+
+
     public function update(Request $request, Anniversary $anniversary)
     {
         $data = $request->validate([
@@ -85,6 +114,7 @@ class AnniversaryController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'date_of_anniversary' => ['required', 'date'],
+            'wish_time' => ['nullable', 'date_format:H:i'],
         ]);
 
         $exists = Anniversary::where('business_id', $data['business_id'] ?? null)

@@ -20,6 +20,7 @@ return new class extends Migration
             $table->date('date_of_anniversary');
             $table->string('status')->default('uploaded');
             $table->text('response')->nullable();
+            $table->time('wish_time')->default('07:00');
             $table->dateTime('sent_at')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
             $table->timestamps();

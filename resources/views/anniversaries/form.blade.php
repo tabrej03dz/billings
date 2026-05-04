@@ -34,10 +34,22 @@
     @enderror
 </div>
 
+
 <div>
     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Date of Anniversary</label>
     <input type="date" name="date_of_anniversary"
            value="{{ old('date_of_anniversary', isset($record) && $record->date_of_anniversary ? \Carbon\Carbon::parse($record->date_of_anniversary)->format('Y-m-d') : '') }}"
+           class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
+
+    @error('date_of_anniversary')
+        <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+    @enderror
+</div>
+
+<div>
+    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Wishing Time</label>
+    <input type="time" name="wish_time"
+           value="{{ old('wish_time', isset($record) && $record->wish_time ? \Carbon\Carbon::parse($record->wish_time)->format('H:i') : '') }}"
            class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
 
     @error('date_of_anniversary')
