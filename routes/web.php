@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AnniversaryController;
+use App\Http\Controllers\AnniversaryWishLogController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\BillTemplateController;
 use App\Http\Controllers\BirthdayRecordController;
@@ -332,6 +333,18 @@ Route::middleware(['auth'])->group(function () {
         ->name('anniversaries.import');
 
     Route::resource('anniversaries', AnniversaryController::class);
+
+
+    Route::resource('anniversary-wish-logs', AnniversaryWishLogController::class);
+
+    Route::post('anniversary-wish-logs/{anniversaryWishLog}/resend', [AnniversaryWishLogController::class, 'resend'])
+        ->name('anniversary-wish-logs.resend');
+
+    Route::post('anniversary-wish-logs/{anniversaryWishLog}/success', [AnniversaryWishLogController::class, 'markSuccess'])
+        ->name('anniversary-wish-logs.success');
+
+    Route::post('anniversary-wish-logs/{anniversaryWishLog}/failed', [AnniversaryWishLogController::class, 'markFailed'])
+        ->name('anniversary-wish-logs.failed');
 
 
 
