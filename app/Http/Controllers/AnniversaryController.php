@@ -56,7 +56,7 @@ class AnniversaryController extends Controller
             'name' => ['nullable', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:20'],
             'date_of_anniversary' => ['required', 'date'],
-            'wish_time' => ['nullable', 'time'],
+            'wish_time' => ['nullable', 'date_format:H:i'],
         ]);
 
         $data['user_id'] = $request->user()?->id;
