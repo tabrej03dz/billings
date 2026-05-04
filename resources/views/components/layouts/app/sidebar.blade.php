@@ -644,6 +644,35 @@
             </flux:navlist>
         @endcan
 
+                @can('show wishes logs')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item :href="route('birthday-wish-logs.index')"
+                        :current="request()->routeIs('birthday-wish-logs.index')" wire:navigate>{{ __('Wishes logs') }}
+                        <x-slot:icon>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 64 64">
+
+                                <!-- Background -->
+                                <rect x="6" y="6" width="52" height="52" rx="10" fill="#EFF6FF" />
+
+                                <!-- Head -->
+                                <circle cx="32" cy="22" r="10" fill="#3B82F6" />
+
+                                <!-- Shoulders / torso -->
+                                <path d="M20 44c0-6 24-6 24 0v4H20v-4z" fill="#60A5FA" />
+
+                                <!-- Small badge / indicator -->
+                                <circle cx="44" cy="14" r="4" fill="#FBBF24" />
+                                <text x="44" y="16" text-anchor="middle" font-size="6" fill="#FFF"
+                                    font-family="Arial, sans-serif">P</text>
+                            </svg>
+                        </x-slot:icon>
+
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        @endcan
+
         @can('show anniversary records')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
@@ -710,34 +739,7 @@
             </flux:navlist>
         @endcan
 
-        @can('show wishes logs')
-            <flux:navlist variant="outline">
-                <flux:navlist.group class="grid">
-                    <flux:navlist.item :href="route('birthday-wish-logs.index')"
-                        :current="request()->routeIs('birthday-wish-logs.index')" wire:navigate>{{ __('Wishes logs') }}
-                        <x-slot:icon>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 64 64">
 
-                                <!-- Background -->
-                                <rect x="6" y="6" width="52" height="52" rx="10" fill="#EFF6FF" />
-
-                                <!-- Head -->
-                                <circle cx="32" cy="22" r="10" fill="#3B82F6" />
-
-                                <!-- Shoulders / torso -->
-                                <path d="M20 44c0-6 24-6 24 0v4H20v-4z" fill="#60A5FA" />
-
-                                <!-- Small badge / indicator -->
-                                <circle cx="44" cy="14" r="4" fill="#FBBF24" />
-                                <text x="44" y="16" text-anchor="middle" font-size="6" fill="#FFF"
-                                    font-family="Arial, sans-serif">P</text>
-                            </svg>
-                        </x-slot:icon>
-
-                    </flux:navlist.item>
-                </flux:navlist.group>
-            </flux:navlist>
-        @endcan
 
 
 
