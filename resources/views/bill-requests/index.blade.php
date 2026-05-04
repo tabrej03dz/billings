@@ -222,6 +222,9 @@
                                         View Bill
                                     </a>
 
+                                    @can('create invoice')
+                                        
+                                    
                                     @if($request->status !== 'processed')
                                         <form method="POST" action="{{ route('bill-requests.create-invoice', $request->id) }}"
                                             onsubmit="return confirm('Is bill request se invoice create karna hai?')">
@@ -232,6 +235,7 @@
                                             </button>
                                         </form>
                                     @endif
+                                    @endcan
 
                                     @if(Route::has('bill-requests.approve'))
                                         <form method="POST" action="{{ route('bill-requests.approve', $request->id) }}">
@@ -253,19 +257,22 @@
                                         </form>
                                     @endif
 
-                                    @if(Route::has('bill-requests.destroy'))
-                                        <div class="h-px bg-gray-100 dark:bg-neutral-800"></div>
+                                    @can('delete bill request')
+                                        @if(Route::has('bill-requests.destroy'))
+                                            <div class="h-px bg-gray-100 dark:bg-neutral-800"></div>
 
-                                        <form method="POST" action="{{ route('bill-requests.destroy', $request->id) }}"
-                                              onsubmit="return confirm('Delete this bill request?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                                Delete
-                                            </button>
-                                        </form>
-                                    @endif
+                                            <form method="POST" action="{{ route('bill-requests.destroy', $request->id) }}"
+                                                onsubmit="return confirm('Delete this bill request?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                        class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
+
                                 </div>
                             </div>
                         </td>
