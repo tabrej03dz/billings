@@ -102,6 +102,7 @@
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Phone</th>
                     <th class="px-6 py-3">Date of Birth</th>
+                    <th class="px-6 py-3">Wishing Time</th>
                     <th class="px-6 py-3">Added By</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
@@ -138,6 +139,9 @@
                         </td>
                         <td class="px-6 py-3">
                             {{ optional($r->date_of_birth)->format('d M, Y') }}
+                        </td>
+                        <td class="px-6 py-3">
+                            {{ $r->wish_time }}
                         </td>
                         <td class="px-6 py-3">
                             {{ optional($r->user)->name ?? '-' }}

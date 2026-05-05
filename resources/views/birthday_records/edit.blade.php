@@ -42,6 +42,13 @@
                            class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
 
+                <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Wishing Time (optional)</label>
+                    <input type="time" name="wish_time"
+                           value="{{ old('wish_time', optional($record->wish_time)->format('Y-m-d')) }}"
+                           class="mt-1 w-full rounded-lg border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                </div>
+
 {{--                <div class="md:col-span-3">--}}
 {{--                    <label class="text-sm font-medium text-gray-700 dark:text-gray-200">Business ID (optional)</label>--}}
 {{--                    <input type="number" name="business_id" value="{{ old('business_id', $record->business_id) }}"--}}

@@ -164,16 +164,34 @@ class SendBirthdayWishes extends Command
 
 public function handle(WhatApiWhatsappService $sender, MediaManagerService $mm)
 {
-    $today = Carbon::now()->timezone(config('app.timezone'));
-    $currentHour   = (int) $today->format('H');
-    $currentMinute = (int) $today->format('i');
+    // $today = Carbon::now()->timezone(config('app.timezone'));
+    // $currentHour   = (int) $today->format('H');
+    // $currentMinute = (int) $today->format('i');
+    // $month = (int) $today->format('m');
+    // $day   = (int) $today->format('d');
+    // $year  = (int) $today->format('Y');
+
+    // $records = BirthdayRecord::query()
+    //     ->whereMonth('date_of_birth', $month)
+    //     ->whereDay('date_of_birth', $day)
+    //     ->with(['user.api'])
+    //     ->get();
+
+
+    $today = Carbon::now(config('app.timezone'));
+
     $month = (int) $today->format('m');
     $day   = (int) $today->format('d');
     $year  = (int) $today->format('Y');
 
+    $startTime = $today->copy()->subHours(1)->format('H:i:s');
+    $endTime   = $today->format('H:i:s');
+
     $records = BirthdayRecord::query()
         ->whereMonth('date_of_birth', $month)
         ->whereDay('date_of_birth', $day)
+        ->whereNotNull('wish_time')
+        ->whereBetween('wish_time', [$startTime, $endTime])
         ->with(['user.api'])
         ->get();
 
@@ -306,11 +324,25 @@ public function handle(WhatApiWhatsappService $sender, MediaManagerService $mm)
 
 
 
+    // $anniversaries = Anniversary::query()
+    //     ->whereMonth('date_of_anniversary', $month)
+    //     ->whereDay('date_of_anniversary', $day)
+    //     ->whereRaw('HOUR(wish_time) = ?', [$currentHour])
+    //     ->whereRaw('MINUTE(wish_time) = ?', [$currentMinute])
+    //     ->with(['user.api'])
+    //     ->get();
+
+
+    $now = now('Asia/Kolkata');
+
+    $startTime = $now->copy()->subHours(1)->format('H:i:s');
+    $endTime   = $now->format('H:i:s');
+
     $anniversaries = Anniversary::query()
         ->whereMonth('date_of_anniversary', $month)
         ->whereDay('date_of_anniversary', $day)
-        ->whereRaw('HOUR(wish_time) = ?', [$currentHour])
-        ->whereRaw('MINUTE(wish_time) = ?', [$currentMinute])
+        ->whereNotNull('wish_time')
+        ->whereBetween('wish_time', [$startTime, $endTime])
         ->with(['user.api'])
         ->get();
 
