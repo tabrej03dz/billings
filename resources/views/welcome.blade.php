@@ -41,9 +41,9 @@
                 Login
             </a>
 
-            <a href="{{route('no-business.whatsapp')}}" class="text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition">
+            {{-- <a href="{{route('no-business.whatsapp')}}" class="text-sm px-3 py-1.5 rounded-lg border border-slate-700 hover:border-emerald-400 hover:text-emerald-400 transition">
                 Send Invoice
-            </a>
+            </a> --}}
 
             {{-- <a href="/register" class="text-sm px-3 py-1.5 rounded-lg border border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-slate-900 transition">
                 Register
@@ -535,41 +535,59 @@
                 <!-- Simple form (non-functional HTML, tum baad me Laravel route se jodo) -->
                 <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
                     <h3 class="text-sm font-semibold mb-3">Request a free demo / callback</h3>
-                    <form action="#" method="POST" class="space-y-4 text-sm">
-                        <!-- @csrf (Laravel me use karna) -->
+                    <form action="{{ route('demo-requests.save') }}#contact" method="POST" class="space-y-4 text-sm">
+                        @csrf
+
+                        @if(session('success'))
+                            <div class="bg-green-500/20 border border-green-500 text-green-300 px-4 py-3 rounded-lg">
+                                {{ session('success') }}
+                            </div>
+                        @endif
+
+                        @if($errors->any())
+                            <div class="bg-red-500/20 border border-red-500 text-red-300 px-4 py-3 rounded-lg">
+                                <ul class="list-disc list-inside">
+                                    @foreach($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Name</label>
-                            <input type="text" name="name" required
-                                   class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="text" name="name" value="{{ old('name') }}" required
+                                class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2">
                         </div>
+
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Mobile / WhatsApp</label>
-                            <input type="text" name="phone" required
-                                   class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="text" name="mobile" value="{{ old('mobile') }}"  maxlength="10" pattern="[6-9][0-9]{9}" inputmode="numeric"
+                                class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2">
                         </div>
+
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">City</label>
-                            <input type="text" name="city"
-                                   class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="text" name="city" value="{{ old('city') }}"
+                                class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2">
                         </div>
+
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Your jewellery business name</label>
-                            <input type="text" name="business_name"
-                                   class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500">
+                            <input type="text" name="business_name" value="{{ old('business_name') }}"
+                                class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2">
                         </div>
+
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">How can we help?</label>
                             <textarea name="message" rows="3"
-                                      class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                                      placeholder="Billing, WhatsApp integration, multi-branch setup, etc."></textarea>
+                                    class="w-full bg-slate-950/70 border border-slate-700 rounded-lg px-3 py-2">{{ old('message') }}</textarea>
                         </div>
+
                         <button type="submit"
                                 class="w-full mt-2 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold text-sm">
                             Submit Request
                         </button>
-                        <p class="mt-2 text-[11px] text-slate-500">
-                            Form backend later Laravel se connect kar sakte ho – abhi design purpose se HTML ready hai.
-                        </p>
                     </form>
                 </div>
             </div>

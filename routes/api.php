@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\BirthdayWishController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstallmentReminderController;
 use App\Http\Controllers\Api\ItemController;
-use App\Http\Controllers\BillRequestController;
+use App\Http\Controllers\Api\BillRequestController;
 
 Route::get('items1/', [ItemController::class, 'index1']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
@@ -166,9 +166,23 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::post('/bill-templates/choose', [BillTemplateController::class, 'apiSaveChosen']);
 
 
-
-
-
+    Route::prefix('bill-requests')->name('bill-requests.')->group(function () {
+        // Bill Request List + Filters
+        Route::get('/', [ApiBillRequestController::class, 'index'])
+            ->name('index');
+        // Single Bill Request Details
+        Route::get('show/{billRequest}', [ApiBillRequestController::class, 'show'])
+            ->name('show');
+        // Bill Request se Invoice Create / Update
+        Route::post('/create-invoice/{billRequest}', [ApiBillRequestController::class, 'createInvoice'])
+            ->name('create-invoice');
+        // Bill Request ka Invoice Show
+        Route::get('/invoice/{billRequest}', [ApiBillRequestController::class, 'showInvoice'])
+            ->name('invoice');
+        // Bill Request Delete
+        Route::delete('destroy/{billRequest}', [ApiBillRequestController::class, 'destroy'])
+            ->name('destroy');
+    });
 
 
 });

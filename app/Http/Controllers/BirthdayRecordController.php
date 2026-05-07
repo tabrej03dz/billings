@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 
 class BirthdayRecordController extends Controller
 {
@@ -738,6 +739,45 @@ class BirthdayRecordController extends Controller
             return null;
         }
     }
+
+
+    private function parseExcelTime($value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            // Excel numeric time e.g. 0.375 = 09:00
+            if (is_numeric($value)) {
+                return ExcelDate::excelToDateTimeObject($value)->format('H:i:s');
+            }
+
+            $value = trim((string) $value);
+
+            $formats = [
+                'H:i:s',
+                'H:i',
+                'h:i A',
+                'h:i a',
+                'g:i A',
+                'g:i a',
+            ];
+
+            foreach ($formats as $format) {
+                try {
+                    return Carbon::createFromFormat($format, $value)->format('H:i:s');
+                } catch (\Throwable $e) {
+                    // try next format
+                }
+            }
+
+            return Carbon::parse($value)->format('H:i:s');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
 
 //    public function send(BirthdayRecord $birthdayRecord){
 //

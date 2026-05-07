@@ -220,6 +220,21 @@
             </a>
         @endcan
         
+        @can('show demo requests')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item :href="route('demo-requests.index')" :current="request()->routeIs('demo-requests.index')"
+                        wire:navigate>{{ __('Demo Request') }}
+                        <x-slot:icon>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 64 64">
+                                <rect x="8" y="8" width="20" height="40" rx="4" fill="#0EA5E9" />
+                                <rect x="32" y="16" width="20" height="32" rx="4" fill="#22C55E" />
+                            </svg>
+                        </x-slot:icon>
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        @endcan
 
         @can('show businesses')
             <flux:navlist variant="outline">

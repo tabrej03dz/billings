@@ -8,6 +8,7 @@ use App\Http\Controllers\BirthdayRecordController;
 use App\Http\Controllers\BirthdayWishLogController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceReportController;
@@ -38,7 +39,7 @@ Route::get('/welcome', function () {
 })->name('home');
 
 
-
+Route::post('demo-requests/save', [DemoRequestController::class, 'store'])->name('demo-requests.save');
 
 Volt::route('/super-admin/otp-verify', 'auth.super-admin-otp-verify')
     ->name('super-admin.otp.verify')
@@ -355,6 +356,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('create-invoice/{billRequest}', 'createInvoice')->name('create-invoice');
         Route::get('invoice/{billRequest}', 'showInvoice')->name('invoice');
     });
+
+
+    Route::patch('demo-requests/{demoRequest}/status', [DemoRequestController::class, 'updateStatus'])
+    ->name('demo-requests.update-status');
+
+    Route::resource('demo-requests', DemoRequestController::class);
 
 
     Route::resource('plans', PlanController::class);
