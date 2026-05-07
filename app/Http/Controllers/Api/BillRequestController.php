@@ -866,7 +866,7 @@ class BillRequestController extends Controller
     public function destroy(BillRequest $billRequest)
     {
         try {
-            // $billRequest->delete();
+            $billRequest->delete();
 
             return response()->json([
                 'success' => true,
