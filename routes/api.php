@@ -168,8 +168,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     Route::prefix('bill-requests')->name('bill-requests.')->group(function () {
         // Bill Request List + Filters
-        Route::get('/', [ApiBillRequestController::class, 'index'])
-            ->name('index');
+        Route::get('/', [ApiBillRequestController::class, 'index']);
         // Single Bill Request Details
         Route::get('show/{billRequest}', [ApiBillRequestController::class, 'show'])
             ->name('show');
