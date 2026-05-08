@@ -109,8 +109,8 @@ class InvoiceReportController extends Controller
             }
         }
 
-        $rows = $q->orderByDesc('invoice_date')
-            ->orderByDesc('id')
+        $rows = $q->orderBy('invoice_date', 'asc')
+            ->orderBy('id', 'asc')
             ->get();
 
         $reportTitle = ucfirst($type) . ' Report';
