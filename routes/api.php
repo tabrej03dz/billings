@@ -83,7 +83,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     // INVOICE APIS
 
-    Route::prefix('invoices')->name('invoices.')->controller(InvoiceController::class)->group(function(){
+    Route::prefix('invoices')->controller(InvoiceController::class)->group(function(){
         Route::get('index/{type}', [InvoiceController::class, 'index']);
 
         // create (docType: tax | proforma | quotation)
@@ -166,21 +166,19 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::post('/bill-templates/choose', [BillTemplateController::class, 'apiSaveChosen']);
 
 
-    Route::prefix('bill-requests')->name('bill-requests.')->group(function () {
+    Route::prefix('bill-requests')->group(function () {
         // Bill Request List + Filters
         Route::get('/', [ApiBillRequestController::class, 'index']);
         // Single Bill Request Details
-        Route::get('show/{billRequest}', [ApiBillRequestController::class, 'show'])
-            ->name('show');
+        Route::get('show/{billRequest}', [ApiBillRequestController::class, 'show']);
         // Bill Request se Invoice Create / Update
-        Route::post('/create-invoice/{billRequest}', [ApiBillRequestController::class, 'createInvoice'])
-            ->name('create-invoice');
+        Route::post('/create-invoice/{billRequest}', [ApiBillRequestController::class, 'createInvoice']);
         // Bill Request ka Invoice Show
         Route::get('/invoice/{billRequest}', [ApiBillRequestController::class, 'showInvoice'])
-            ->name('invoice');
+            ;
         // Bill Request Delete
         Route::delete('destroy/{billRequest}', [ApiBillRequestController::class, 'destroy'])
-            ->name('destroy');
+           ;
     });
 
 
