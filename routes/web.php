@@ -17,6 +17,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\NoBusinessWhatsappController;
 use App\Http\Controllers\PlanController;
+use App\Http\Controllers\RecycleController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserPlanController;
@@ -380,6 +381,22 @@ Route::middleware(['auth'])->group(function () {
 
     Route::resource('user-plans', UserPlanController::class);
     Route::get('user-plans.index1/{business}', [UserPlanController::class, 'index1'])->name('user-plans.index1');
+
+
+
+    // RECYCLE BIN ROUTES
+    Route::get('recycle', [RecycleController::class, 'index'])->name('recycle.index');
+
+    Route::post('recycle/users/{id}/restore', [RecycleController::class, 'restoreUser'])->name('recycle.users.restore');
+    Route::delete('recycle/users/{id}/force-delete', [RecycleController::class, 'forceDeleteUser'])->name('recycle.users.forceDelete');
+
+    Route::post('recycle/businesses/{id}/restore', [RecycleController::class, 'restoreBusiness'])->name('recycle.businesses.restore');
+    Route::delete('recycle/businesses/{id}/force-delete', [RecycleController::class, 'forceDeleteBusiness'])->name('recycle.businesses.forceDelete');
+
+    Route::post('recycle/bulk-restore', [RecycleController::class, 'bulkRestore'])->name('recycle.bulkRestore');
+    Route::delete('recycle/bulk-force-delete', [RecycleController::class, 'bulkForceDelete'])->name('recycle.bulkForceDelete');
+
+    Route::delete('recycle/empty', [RecycleController::class, 'empty'])->name('recycle.empty');
     
 
 });

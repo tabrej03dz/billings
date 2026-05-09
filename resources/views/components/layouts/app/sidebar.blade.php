@@ -294,6 +294,32 @@
             </flux:navlist>
         @endcan
 
+
+        @can('show recycle bin')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item :href="route('recycle.index')"
+                        :current="request()->routeIs('recycle.*')" wire:navigate>
+                        {{ __('Recycle Bin') }}
+
+                        <x-slot:icon>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 64 64">
+                                <rect x="6" y="6" width="52" height="52" rx="10" fill="#FEE2E2" />
+
+                                <path d="M22 22h20l-2 26H24L22 22z" fill="#EF4444" />
+                                <rect x="20" y="18" width="24" height="4" rx="2" fill="#B91C1C" />
+                                <rect x="27" y="14" width="10" height="4" rx="2" fill="#F87171" />
+
+                                <line x1="28" y1="28" x2="28" y2="44" stroke="#fff" stroke-width="2" />
+                                <line x1="32" y1="28" x2="32" y2="44" stroke="#fff" stroke-width="2" />
+                                <line x1="36" y1="28" x2="36" y2="44" stroke="#fff" stroke-width="2" />
+                            </svg>
+                        </x-slot:icon>
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        @endcan
+
         @can('show clients')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">

@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('anniversaries', function (Blueprint $table) {
-            $table->time('wish_time')->default('07:00');
+        Schema::table('businesses', function (Blueprint $table) {
+            $table->softDeletes();
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('anniversaries', function (Blueprint $table) {
-            //
+        Schema::table('businesses', function (Blueprint $table) {
+            $table->dropSoftDeletes();
         });
     }
 };
