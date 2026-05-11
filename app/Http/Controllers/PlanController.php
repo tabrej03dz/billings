@@ -15,19 +15,20 @@ use Spatie\Permission\PermissionRegistrar;
 
 class PlanController extends Controller
 {
-    
-
     public function index(Request $request)
     {
-        $query = Plan::with('permissions')->latest();
+        $query = Plan::with(['permissions', 'planFeatures'])
+            ->orderBy('sort_order', 'asc')
+            ->latest();
 
         if ($request->filled('search')) {
             $search = trim($request->search);
 
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('subtitle', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -36,9 +37,6 @@ class PlanController extends Controller
         return view('plans.index', compact('plans'));
     }
 
-    /**
-     * Create form
-     */
     public function create()
     {
         $permissions = Permission::orderBy('name')->get();
@@ -46,122 +44,147 @@ class PlanController extends Controller
         return view('plans.create', compact('permissions'));
     }
 
-    /**
-     * Store new plan
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'            => ['required', 'string', 'max:255'],
-            'slug'            => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
-            'price'           => ['required', 'numeric', 'min:0'],
-            'duration_days'   => ['required', 'integer', 'min:1'],
-            'description'     => ['nullable', 'string'],
-            'status'          => ['nullable', 'boolean'],
-            'permission_ids'  => ['nullable', 'array'],
-            'permission_ids.*'=> ['exists:permissions,id'],
+            'name'                    => ['required', 'string', 'max:255'],
+            'subtitle'                => ['nullable', 'string', 'max:255'],
+            'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
+            'price'                   => ['required', 'numeric', 'min:0'],
+            'duration_days'           => ['required', 'integer', 'min:1'],
+            'description'             => ['nullable', 'string'],
+            'status'                  => ['nullable', 'boolean'],
+            'is_recommended'          => ['nullable', 'boolean'],
+            'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+            'permission_ids'          => ['nullable', 'array'],
+            'permission_ids.*'        => ['exists:permissions,id'],
+
+            'feature_titles'          => ['nullable', 'array'],
+            'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+            'feature_descriptions'    => ['nullable', 'array'],
+            'feature_descriptions.*'  => ['nullable', 'string'],
+            'feature_icons'           => ['nullable', 'array'],
+            'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+            'feature_sort_orders'     => ['nullable', 'array'],
+            'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+            'feature_is_active'       => ['nullable', 'array'],
         ]);
 
         $slug = !empty($validated['slug'])
             ? Str::slug($validated['slug'])
             : Str::slug($validated['name']);
 
-        // slug unique banana
-        $originalSlug = $slug;
-        $count = 1;
-        while (Plan::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $count++;
-        }
+        $slug = $this->makeUniqueSlug($slug);
 
-        $plan = Plan::create([
-            'name'          => $validated['name'],
-            'slug'          => $slug,
-            'price'         => $validated['price'],
-            'duration_days' => $validated['duration_days'],
-            'description'   => $validated['description'] ?? null,
-            'status'        => $request->boolean('status'),
-        ]);
+        DB::transaction(function () use ($request, $validated, $slug) {
+            $plan = Plan::create([
+                'name'              => $validated['name'],
+                'subtitle'          => $validated['subtitle'] ?? null,
+                'slug'              => $slug,
+                'price'             => $validated['price'],
+                'duration_days'     => $validated['duration_days'],
+                'description'       => $validated['description'] ?? null,
+                'status'            => $request->boolean('status'),
+                'is_recommended'    => $request->boolean('is_recommended'),
+                'sort_order'        => $validated['sort_order'] ?? 0,
+            ]);
 
-        $plan->permissions()->sync($validated['permission_ids'] ?? []);
+            $plan->permissions()->sync($validated['permission_ids'] ?? []);
+
+            $this->syncPlanFeatures($plan, $request);
+        });
 
         return redirect()
             ->route('plans.index')
             ->with('success', 'Plan created successfully.');
     }
 
-    /**
-     * Edit form
-     */
+    public function show($id)
+    {
+        $plan = Plan::with(['permissions', 'planFeatures'])->findOrFail($id);
+
+        return view('plans.show', compact('plan'));
+    }
+
     public function edit($id)
     {
-        $plan = Plan::with('permissions')->findOrFail($id);
+        $plan = Plan::with(['permissions', 'planFeatures'])->findOrFail($id);
         $permissions = Permission::orderBy('name')->get();
         $selectedPermissions = $plan->permissions->pluck('id')->toArray();
 
         return view('plans.edit', compact('plan', 'permissions', 'selectedPermissions'));
     }
 
-    /**
-     * Update plan
-     */
     public function update(Request $request, $id)
     {
-        $plan = Plan::findOrFail($id);
+        $plan = Plan::with('planFeatures')->findOrFail($id);
 
         $validated = $request->validate([
-            'name'            => ['required', 'string', 'max:255'],
-            'slug'            => [
+            'name'                    => ['required', 'string', 'max:255'],
+            'subtitle'                => ['nullable', 'string', 'max:255'],
+            'slug'                    => [
                 'nullable',
                 'string',
                 'max:255',
                 Rule::unique('plans', 'slug')->ignore($plan->id),
             ],
-            'price'           => ['required', 'numeric', 'min:0'],
-            'duration_days'   => ['required', 'integer', 'min:1'],
-            'description'     => ['nullable', 'string'],
-            'status'          => ['nullable', 'boolean'],
-            'permission_ids'  => ['nullable', 'array'],
-            'permission_ids.*'=> ['exists:permissions,id'],
+            'price'                   => ['required', 'numeric', 'min:0'],
+            'duration_days'           => ['required', 'integer', 'min:1'],
+            'description'             => ['nullable', 'string'],
+            'status'                  => ['nullable', 'boolean'],
+            'is_recommended'          => ['nullable', 'boolean'],
+            'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+            'permission_ids'          => ['nullable', 'array'],
+            'permission_ids.*'        => ['exists:permissions,id'],
+
+            'feature_titles'          => ['nullable', 'array'],
+            'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+            'feature_descriptions'    => ['nullable', 'array'],
+            'feature_descriptions.*'  => ['nullable', 'string'],
+            'feature_icons'           => ['nullable', 'array'],
+            'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+            'feature_sort_orders'     => ['nullable', 'array'],
+            'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+            'feature_is_active'       => ['nullable', 'array'],
         ]);
 
         $slug = !empty($validated['slug'])
             ? Str::slug($validated['slug'])
             : Str::slug($validated['name']);
 
-        // update ke time unique slug check
-        $originalSlug = $slug;
-        $count = 1;
-        while (
-            Plan::where('slug', $slug)
-                ->where('id', '!=', $plan->id)
-                ->exists()
-        ) {
-            $slug = $originalSlug . '-' . $count++;
-        }
+        $slug = $this->makeUniqueSlug($slug, $plan->id);
 
-        $plan->update([
-            'name'          => $validated['name'],
-            'slug'          => $slug,
-            'price'         => $validated['price'],
-            'duration_days' => $validated['duration_days'],
-            'description'   => $validated['description'] ?? null,
-            'status'        => $request->boolean('status'),
-        ]);
+        DB::transaction(function () use ($request, $validated, $plan, $slug) {
+            $plan->update([
+                'name'              => $validated['name'],
+                'subtitle'          => $validated['subtitle'] ?? null,
+                'slug'              => $slug,
+                'price'             => $validated['price'],
+                'duration_days'     => $validated['duration_days'],
+                'description'       => $validated['description'] ?? null,
+                'status'            => $request->boolean('status'),
+                'is_recommended'    => $request->boolean('is_recommended'),
+                'sort_order'        => $validated['sort_order'] ?? 0,
+            ]);
 
-        $plan->permissions()->sync($validated['permission_ids'] ?? []);
+            $plan->permissions()->sync($validated['permission_ids'] ?? []);
+
+            $this->syncPlanFeatures($plan, $request);
+        });
 
         return redirect()
             ->route('plans.index')
             ->with('success', 'Plan updated successfully.');
     }
 
-    /**
-     * Delete plan
-     */
     public function destroy($id)
     {
         $plan = Plan::findOrFail($id);
+
         $plan->permissions()->detach();
+        $plan->planFeatures()->delete();
         $plan->delete();
 
         return redirect()
@@ -169,19 +192,10 @@ class PlanController extends Controller
             ->with('success', 'Plan deleted successfully.');
     }
 
-
-    public function show($id)
-    {
-        $plan = \App\Models\Plan::with('permissions')->findOrFail($id);
-        return view('plans.show', compact('plan'));
-    }
-
-    /**
-     * Change status quickly
-     */
     public function toggleStatus($id)
     {
         $plan = Plan::findOrFail($id);
+
         $plan->status = !$plan->status;
         $plan->save();
 
@@ -190,93 +204,19 @@ class PlanController extends Controller
             ->with('success', 'Plan status updated successfully.');
     }
 
-
-
-
-
-
-
-public function choose()
+    public function choose()
     {
-        $plans = Plan::where('status', 1)->orderBy('price')->get();
+        $plans = Plan::where('status', 1)
+            ->with(['permissions', 'planFeatures' => function ($query) {
+                $query->where('is_active', 1)->orderBy('sort_order', 'asc');
+            }])
+            ->orderByDesc('is_recommended')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('price', 'asc')
+            ->get();
 
         return view('choose-plan', compact('plans'));
     }
-
-    // public function choosenSave(Request $request)
-    // {
-    //     $request->validate([
-    //         'plan_id' => ['required', 'exists:plans,id'],
-    //     ]);
-
-    //     $user = Auth::user();
-    //     $plan = Plan::findOrFail($request->plan_id);
-
-    //     // old active plans disable
-    //     UserPlan::where('user_id', $user->id)->where('status', 1)->update([
-    //         'status' => 0,
-    //     ]);
-
-    //     UserPlan::create([
-    //         'user_id'    => $user->id,
-    //         'plan_id'    => $plan->id,
-    //         'start_date' => Carbon::today(),
-    //         'expiry_date'=> Carbon::today()->addDays($plan->duration_days),
-    //         'status'     => 1,
-    //     ]);
-
-    //     // Agar aap plan ke basis par role/permission dena chahte ho
-    //     // Example:
-    //     // if ($plan->slug === 'basic') {
-    //     //     $user->syncPermissions(['show invoices']);
-    //     // } elseif ($plan->slug === 'premium') {
-    //     //     $user->syncPermissions(['show invoices', 'show quotations', 'show proformas']);
-    //     // }
-
-    //     return redirect()->route('bill-templates.choose')->with('success', 'Plan selected successfully.');
-    // }
-
-
-    // public function choosenSave(Request $request)
-    // {
-    //     $request->validate([
-    //         'plan_id' => ['required', 'exists:plans,id'],
-    //         'business_id' => ['nullable', 'exists:businesses,id'],
-    //     ]);
-
-    //     $user = Auth::user();
-    //     $plan = Plan::findOrFail($request->plan_id);
-
-    //     $businessId = $request->business_id
-    //         ?? $user->current_business_id
-    //         ?? session('active_business_id')
-    //         ?? $user->businesses()->pluck('businesses.id')->first();
-
-    //     if (!$businessId) {
-    //         return back()->with('error', 'Business not found. Please select business first.');
-    //     }
-
-    //     // old active plans disable for same business only
-    //     UserPlan::where('business_id', $businessId)
-    //         ->where('status', 1)
-    //         ->update([
-    //             'status' => 0,
-    //         ]);
-
-    //     UserPlan::create([
-    //         'business_id' => $businessId,
-    //         'user_id'     => $user->id,
-    //         'plan_id'     => $plan->id,
-    //         'start_date'  => Carbon::today(),
-    //         'expiry_date' => Carbon::today()->addDays((int) $plan->duration_days),
-    //         'status'      => 1,
-    //     ]);
-
-    //     return redirect()
-    //         ->route('bill-templates.choose')
-    //         ->with('success', 'Plan selected successfully.');
-    // }
-
 
     public function choosenSave(Request $request)
     {
@@ -299,15 +239,12 @@ public function choose()
         }
 
         DB::transaction(function () use ($businessId, $user, $plan) {
-
-            // old active plan disable for same business
             UserPlan::where('business_id', $businessId)
                 ->where('status', 1)
                 ->update([
                     'status' => 0,
                 ]);
 
-            // new plan create
             UserPlan::create([
                 'business_id' => $businessId,
                 'user_id'     => $user->id,
@@ -317,7 +254,6 @@ public function choose()
                 'status'      => 1,
             ]);
 
-            // plan permissions assign to user
             $permissions = $plan->permissions->pluck('name')->toArray();
 
             $user->syncPermissions($permissions);
@@ -330,7 +266,48 @@ public function choose()
             ->with('success', 'Plan selected successfully and permissions assigned.');
     }
 
+    private function syncPlanFeatures(Plan $plan, Request $request): void
+    {
+        $plan->planFeatures()->delete();
 
+        $titles = $request->input('feature_titles', []);
+        $descriptions = $request->input('feature_descriptions', []);
+        $icons = $request->input('feature_icons', []);
+        $sortOrders = $request->input('feature_sort_orders', []);
+        $activeItems = $request->input('feature_is_active', []);
 
+        foreach ($titles as $index => $title) {
+            $title = trim((string) $title);
 
+            if ($title === '') {
+                continue;
+            }
+
+            $plan->planFeatures()->create([
+                'title'       => $title,
+                'description' => $descriptions[$index] ?? null,
+                'icon'        => $icons[$index] ?? null,
+                'sort_order'  => $sortOrders[$index] ?? $index,
+                'is_active'   => isset($activeItems[$index]),
+            ]);
+        }
+    }
+
+    private function makeUniqueSlug(string $slug, ?int $ignoreId = null): string
+    {
+        $slug = $slug ?: 'plan';
+
+        $originalSlug = $slug;
+        $count = 1;
+
+        while (
+            Plan::where('slug', $slug)
+                ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+                ->exists()
+        ) {
+            $slug = $originalSlug . '-' . $count++;
+        }
+
+        return $slug;
+    }
 }

@@ -21,13 +21,25 @@ use App\Http\Controllers\RecycleController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserPlanController;
+use App\Models\Plan;
 use App\Models\UserPlan;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 
 // frontend web routes:::::
-Route::get('/', function (){
-    return view('welcome');
+
+Route::get('/', function () {
+    $plans = Plan::where('status', 1)
+        ->with(['planFeatures' => function ($query) {
+            $query->where('is_active', 1)
+                ->orderBy('sort_order', 'asc');
+        }])
+        ->orderByDesc('is_recommended')
+        ->orderBy('sort_order', 'asc')
+        ->orderBy('price', 'asc')
+        ->get();
+
+    return view('welcome', compact('plans'));
 })->name('index');
 
 Route::get('user-register', function (){

@@ -25,4 +25,9 @@ class Plan extends Model
     {
         return $this->hasMany(UserPlan::class);
     }
+
+    public function planFeatures()
+    {
+        return $this->hasMany(PlanFeature::class)->orderBy('sort_order');
+    }
 }

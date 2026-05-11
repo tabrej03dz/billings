@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MyVictory Billing - GST Billing Software</title>
+    <title>MyVictory Billing - Smart Billing Software for Modern Shops</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     {{-- Tailwind CDN --}}
@@ -19,9 +19,7 @@
         .soft-card {
             box-shadow: 0 24px 70px rgba(15, 23, 42, .10);
         }
-        .image-mask {
-            border-radius: 34px;
-        }
+        .image-mask { border-radius: 34px; }
     </style>
 </head>
 
@@ -41,21 +39,15 @@
         <nav class="hidden lg:flex items-center gap-8 text-sm font-bold text-slate-600">
             <a href="#features" class="hover:text-blue-600">Features</a>
             <a href="#benefits" class="hover:text-blue-600">Benefits</a>
-            <a href="#business" class="hover:text-blue-600">For Business</a>
+            <a href="#business" class="hover:text-blue-600">Businesses</a>
             <a href="#pricing" class="hover:text-blue-600">Pricing</a>
             <a href="#contact" class="hover:text-blue-600">Demo</a>
         </nav>
 
         <div class="hidden md:flex items-center gap-3">
-            <a href="/login" class="px-5 py-3 rounded-full border border-slate-300 text-sm font-bold hover:border-blue-500">
-                Login
-            </a>
-            <a href="user-register" class="px-5 py-3 rounded-full bg-slate-950 text-white text-sm font-bold">
-                Register
-            </a>
-            <a href="#contact" class="px-6 py-3 rounded-full bg-blue-600 text-white text-sm font-black shadow-lg shadow-blue-200">
-                Book Free Demo
-            </a>
+            <a href="/login" class="px-5 py-3 rounded-full border border-slate-300 text-sm font-bold hover:border-blue-500">Login</a>
+            <a href="user-register" class="px-5 py-3 rounded-full bg-slate-950 text-white text-sm font-bold">Register</a>
+            <a href="#contact" class="px-6 py-3 rounded-full bg-blue-600 text-white text-sm font-black shadow-lg shadow-blue-200">Book Free Demo</a>
         </div>
 
         <button id="mobileToggle" class="lg:hidden h-11 w-11 rounded-xl border border-slate-300 text-xl">☰</button>
@@ -64,7 +56,7 @@
     <div id="mobileMenu" class="hidden lg:hidden bg-white border-t border-slate-200 px-4 py-4 space-y-3 text-sm font-semibold">
         <a href="#features" class="block">Features</a>
         <a href="#benefits" class="block">Benefits</a>
-        <a href="#business" class="block">For Business</a>
+        <a href="#business" class="block">Businesses</a>
         <a href="#pricing" class="block">Pricing</a>
         <a href="#contact" class="block">Demo</a>
         <a href="/login" class="block text-center rounded-xl border px-4 py-3">Login</a>
@@ -82,17 +74,18 @@
             <div>
                 <div class="inline-flex items-center gap-2 rounded-full bg-white border border-blue-100 shadow-sm px-5 py-2 text-sm font-black text-blue-700 mb-6">
                     <span class="h-2.5 w-2.5 rounded-full bg-green-500"></span>
-                    Smart GST Billing Software for Jewellery Showrooms
+                    Smart Billing Software for Modern Shops
                 </div>
 
                 <h1 class="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight">
-                    Jewellery billing अब बनेगी
-                    <span class="text-blue-600">fast, premium & error-free.</span>
+                    Typing Kam,
+                    <span class="text-blue-600">Billing Fast.</span>
                 </h1>
 
                 <p class="mt-6 text-lg text-slate-600 max-w-xl leading-8">
-                    MyVictory Billing jewellery showrooms ke liye ek smart cloud billing software hai jisme GST invoice,
-                    customer management, item billing, WhatsApp invoice sharing, staff permissions aur business reports sab ek jagah milte hain.
+                    MyVictory Billing GST invoice, sale & purchase management, stock management,
+                    customer management, WhatsApp invoice sharing aur photo based smart entry features ke saath
+                    modern shops ke liye complete billing software hai.
                 </p>
 
                 <div class="mt-8 flex flex-wrap gap-4">
@@ -106,12 +99,12 @@
 
                 <div class="mt-10 grid grid-cols-3 gap-4 max-w-xl">
                     <div class="bg-white rounded-3xl p-5 border border-slate-200 soft-card">
-                        <div class="text-2xl font-black text-blue-600">3%</div>
-                        <p class="text-xs text-slate-500 mt-1">GST Auto</p>
+                        <div class="text-2xl font-black text-blue-600">₹999</div>
+                        <p class="text-xs text-slate-500 mt-1">Starting / Year</p>
                     </div>
                     <div class="bg-white rounded-3xl p-5 border border-slate-200 soft-card">
-                        <div class="text-2xl font-black text-blue-600">1 Click</div>
-                        <p class="text-xs text-slate-500 mt-1">Bill Share</p>
+                        <div class="text-2xl font-black text-blue-600">Photo</div>
+                        <p class="text-xs text-slate-500 mt-1">Smart Entry</p>
                     </div>
                     <div class="bg-white rounded-3xl p-5 border border-slate-200 soft-card">
                         <div class="text-2xl font-black text-blue-600">Cloud</div>
@@ -130,14 +123,14 @@
 
                 <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-7">
-                        <img src="https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&w=900&q=80"
+                        <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80"
                              class="image-mask w-full h-[420px] object-cover soft-card"
-                             alt="Jewellery showroom billing">
+                             alt="Small business billing software">
                     </div>
                     <div class="col-span-5 space-y-4 pt-10">
-                        <img src="https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&w=700&q=80"
+                        <img src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&fit=crop&w=700&q=80"
                              class="rounded-[2rem] w-full h-[190px] object-cover soft-card"
-                             alt="Jewellery products">
+                             alt="Retail shop billing">
                         <div class="bg-white rounded-[2rem] p-5 border border-slate-200 soft-card">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -154,8 +147,8 @@
                 </div>
 
                 <div class="absolute -bottom-7 right-6 z-20 bg-blue-600 text-white rounded-3xl p-5 soft-card hidden sm:block">
-                    <div class="text-xs text-blue-100">GST Jewellery Billing</div>
-                    <div class="text-2xl font-black">Gold • Silver • Diamond</div>
+                    <div class="text-xs text-blue-100">Smart Billing • GST Invoice</div>
+                    <div class="text-2xl font-black">Retail • Wholesale • Services</div>
                 </div>
             </div>
 
@@ -163,17 +156,17 @@
     </div>
 </section>
 
-{{-- TRUST BAR --}}
+{{-- QUICK FEATURES --}}
 <section class="bg-white border-y border-slate-200">
     <div class="max-w-7xl mx-auto px-4 lg:px-8 py-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
         @foreach([
-            ['No Installation', 'Direct browser me use karein'],
-            ['Smart Invoice', 'Professional GST PDF bill'],
-            ['WhatsApp Ready', 'Customer ko bill instantly bhejein'],
-            ['Staff Control', 'Owner, accountant aur staff access'],
+            ['GST Invoice Billing', 'Professional tax invoice'],
+            ['Stock Management', 'Product stock tracking'],
+            ['Photo Based Entry', 'Customer & product smart entry'],
+            ['WhatsApp Sharing', 'Invoice directly share karein'],
         ] as $item)
             <div class="rounded-3xl bg-slate-50 border border-slate-200 p-6 hover:bg-blue-50 transition">
-                <h3 class="font-black text-lg">{{ $item[0] }}</h3>
+                <h3 class="font-black text-lg">✅ {{ $item[0] }}</h3>
                 <p class="text-sm text-slate-500 mt-1">{{ $item[1] }}</p>
             </div>
         @endforeach
@@ -185,18 +178,20 @@
     <div class="max-w-7xl mx-auto px-4 lg:px-8">
         <div class="text-center max-w-3xl mx-auto mb-14">
             <p class="text-blue-600 font-black uppercase tracking-widest text-sm">Software Features</p>
-            <h2 class="text-3xl lg:text-5xl font-black mt-3">Jewellery showroom ke daily billing work ke liye complete solution</h2>
-            <p class="mt-4 text-slate-600 text-lg">Billing fast, reporting clear aur customer experience professional.</p>
+            <h2 class="text-3xl lg:text-5xl font-black mt-3">Modern shops ke liye complete billing solution</h2>
+            <p class="mt-4 text-slate-600 text-lg">Smart Billing • GST Invoice • Stock Management • Easy to Use • Fast Billing</p>
         </div>
 
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             @foreach([
-                ['🧾','GST Invoice Creation','Customer details, item details, tax, discount, round-off ke saath professional invoice.'],
-                ['💍','Gold/Silver/Diamond Billing','Purity, weight, making charge, wastage aur jewellery item structure ke saath billing.'],
-                ['📲','WhatsApp Invoice Share','Invoice generate hone ke baad customer ko PDF directly WhatsApp par send karein.'],
-                ['📊','Sales & GST Reports','Daily sales, customer history, invoice report aur GST summary ek dashboard me.'],
-                ['👥','Role Based Access','Owner, accountant aur billing staff ke liye alag permission control.'],
-                ['☁️','Cloud Based Software','Laptop, desktop ya mobile browser se kahi se bhi billing manage karein.'],
+                ['🧾','GST Billing','Professional GST invoice, tax, discount aur PDF bill create karein.'],
+                ['🛒','Sale & Purchase','Sale entry aur purchase management ko organized rakhein.'],
+                ['📦','Stock Management','Product quantity, purchase, sale aur stock easily track karein.'],
+                ['👥','Customer Management','Customer details, history aur records ek jagah manage karein.'],
+                ['📸','Photo Based Smart Entry','Photo se customer create aur photo se product add karne ki smart facility.'],
+                ['⚡','Fast & Easy Billing','Typing kam, billing fast — daily shop work ke liye simple flow.'],
+                ['📲','WhatsApp Invoice Sharing','Invoice PDF customer ko directly WhatsApp par bhejein.'],
+                ['☁️','Cloud Based Management','Laptop, desktop ya mobile browser se kahi se bhi manage karein.'],
             ] as $feature)
                 <div class="bg-white rounded-[2rem] p-7 border border-slate-200 soft-card hover:-translate-y-1 transition">
                     <div class="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl mb-6">
@@ -210,12 +205,12 @@
     </div>
 </section>
 
-{{-- BENEFITS WITH IMAGE --}}
+{{-- BENEFITS --}}
 <section id="benefits" class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 lg:px-8">
         <div class="grid lg:grid-cols-2 gap-14 items-center">
             <div class="relative">
-                <img src="https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?auto=format&fit=crop&w=1000&q=80"
+                <img src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1000&q=80"
                      class="rounded-[2.5rem] w-full h-[540px] object-cover soft-card"
                      alt="Business billing software">
 
@@ -226,12 +221,12 @@
                             <div class="text-xs text-slate-500">Billing</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-black text-blue-600">Clean</div>
-                            <div class="text-xs text-slate-500">Reports</div>
+                            <div class="text-2xl font-black text-blue-600">Stock</div>
+                            <div class="text-xs text-slate-500">Control</div>
                         </div>
                         <div>
-                            <div class="text-2xl font-black text-blue-600">Easy</div>
-                            <div class="text-xs text-slate-500">Sharing</div>
+                            <div class="text-2xl font-black text-blue-600">Photo</div>
+                            <div class="text-xs text-slate-500">Smart Entry</div>
                         </div>
                     </div>
                 </div>
@@ -241,16 +236,16 @@
                 <p class="text-blue-600 font-black uppercase tracking-widest text-sm">Advantages</p>
                 <h2 class="text-3xl lg:text-5xl font-black mt-3">Manual billing se smart billing par shift karein</h2>
                 <p class="mt-5 text-lg text-slate-600 leading-8">
-                    Manual register, calculator aur repeated customer entry se time waste hota hai.
-                    MyVictory Billing aapko ek organized system deta hai jisse business ka control better hota hai.
+                    Manual register, calculator aur repeated customer/product entry se time waste hota hai.
+                    MyVictory Billing aapko ek organized system deta hai jisse billing fast aur business control better hota hai.
                 </p>
 
                 <div class="mt-8 space-y-4">
                     @foreach([
+                        ['Typing Kam, Billing Fast', 'Photo based smart entry aur saved data se billing jaldi hoti hai.'],
                         ['Calculation mistakes reduce hoti hain', 'GST, discount, total aur round-off system se manage hota hai.'],
+                        ['Stock control better hota hai', 'Purchase aur sale ke baad stock records easily track hote hain.'],
                         ['Customer trust improve hota hai', 'Professional PDF invoice customer ko premium experience deta hai.'],
-                        ['Staff productivity badhti hai', 'Saved customers/items se invoice jaldi ban jata hai.'],
-                        ['Owner ko clear reports milti hain', 'Daily sales, invoice aur customer history easily track hoti hai.'],
                     ] as $benefit)
                         <div class="flex gap-4 rounded-3xl bg-slate-50 border border-slate-200 p-5">
                             <div class="h-11 w-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shrink-0">✓</div>
@@ -266,36 +261,60 @@
     </div>
 </section>
 
-{{-- BUSINESS USE CASES --}}
+{{-- BUSINESS LIST --}}
 <section id="business" class="py-20 bg-slate-950 text-white overflow-hidden">
     <div class="max-w-7xl mx-auto px-4 lg:px-8">
-        <div class="grid lg:grid-cols-2 gap-14 items-center">
-            <div>
-                <p class="text-blue-300 font-black uppercase tracking-widest text-sm">Useful For</p>
-                <h2 class="text-3xl lg:text-5xl font-black mt-3">Har jewellery business role ke liye simple workflow</h2>
-                <p class="mt-5 text-slate-300 text-lg leading-8">
-                    Software owner, accountant, billing staff aur customer — sabke experience ko easy banata hai.
-                </p>
+        <div class="text-center max-w-4xl mx-auto mb-12">
+            <p class="text-blue-300 font-black uppercase tracking-widest text-sm">Perfect For</p>
+            <h2 class="text-3xl lg:text-5xl font-black mt-3">
+                All Types of Small & Medium Businesses
+            </h2>
+            <p class="mt-5 text-slate-300 text-lg leading-8">
+                Garment, cosmetic, gift shop, boutique, artificial jewellery, mobile accessories, bakery,
+                stationery, general store aur more businesses ke liye simple billing solution.
+            </p>
+        </div>
 
-                <div class="mt-8 grid sm:grid-cols-2 gap-5">
-                    @foreach([
-                        ['For Owner','Sales reports, staff access aur business overview.'],
-                        ['For Accountant','GST summary, invoice records aur reports.'],
-                        ['For Billing Staff','Simple screen se fast bill generation.'],
-                        ['For Customer','WhatsApp par professional PDF invoice.'],
-                    ] as $use)
-                        <div class="rounded-3xl bg-white/10 border border-white/10 p-6">
-                            <h3 class="text-xl font-black text-blue-200">{{ $use[0] }}</h3>
-                            <p class="text-sm text-slate-300 mt-3 leading-6">{{ $use[1] }}</p>
-                        </div>
-                    @endforeach
+        @php
+            $businesses = [
+                'Garment Shops','Kids Wear Stores','Ladies Wear Shops','Footwear Shops',
+                'Cosmetic Stores','Gift Shops','Fancy Stores','Artificial Jewellery Shops',
+                'Mobile Accessories Shops','Toy Shops','Stationery Shops','Pooja Item Stores',
+                'General Stores','Home Decor Shops','Kitchenware Shops','Bakery Shops',
+                'Sweet Shops','Dry Fruit Stores','Namkeen Shops','Tea Shops','Juice Shops',
+                'Ice Cream Parlours','Small Cafes','Mobile Repair Shops','Computer Repair Shops',
+                'Printer Repair Shops','Car Accessories Shops','Bike Accessories Shops',
+                'Salons','Spa Centers','Gyms','Coaching Institutes','Tuition Centers',
+                'Cosmetic Wholesalers','Artificial Jewellery Wholesalers','Gift Item Wholesalers',
+                'Stationery Wholesalers','Mobile Accessories Distributors','Boutiques',
+                'Ladies Fashion Stores','Small Supermarkets','Mini Mart Stores',
+                'Daily Use Product Shops','Electronics Accessory Stores','Bags & Luggage Shops',
+                'Watch Shops','Sports Item Shops','Pet Shops','Furniture Decor Stores',
+                'Crockery Shops','Festival Decoration Shops','Book Stores',
+                'Hardware Light Retail Shops','Uniform Shops','Tailoring Material Shops',
+                'Baby Product Stores','Perfume & Ittar Shops','Organic Product Stores'
+            ];
+        @endphp
+
+        <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            @foreach($businesses as $business)
+                <div class="rounded-2xl bg-white/10 border border-white/10 px-5 py-4 text-sm font-bold text-slate-100 hover:bg-blue-600 transition">
+                    ✅ {{ $business }}
                 </div>
-            </div>
+            @endforeach
+        </div>
 
-            <div class="bg-white rounded-[2.5rem] p-5 soft-card">
-                <img src="https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1000&q=80"
-                     class="rounded-[2rem] w-full h-[470px] object-cover"
-                     alt="Business team working">
+        <div class="mt-12 text-center">
+            <div class="inline-flex flex-wrap justify-center gap-3 rounded-3xl bg-white text-slate-950 px-8 py-5 font-black soft-card">
+                <span>Smart Billing</span>
+                <span>•</span>
+                <span>GST Invoice</span>
+                <span>•</span>
+                <span>Stock Management</span>
+                <span>•</span>
+                <span>Easy to Use</span>
+                <span>•</span>
+                <span>Fast Billing</span>
             </div>
         </div>
     </div>
@@ -311,8 +330,8 @@
 
         <div class="grid lg:grid-cols-3 gap-8">
             @foreach([
-                ['01','Business Setup','Showroom name, GST number, address aur invoice settings add karein.'],
-                ['02','Create Jewellery Bill','Customer select karein, item/weight/making charge add karein aur invoice generate karein.'],
+                ['01','Business Setup','Shop name, GST number, address, logo aur invoice settings add karein.'],
+                ['02','Create Bill Fast','Customer select karein, product/service add karein aur invoice generate karein.'],
                 ['03','Share & Track','PDF download karein ya WhatsApp par bhejein aur reports me track karein.'],
             ] as $step)
                 <div class="rounded-[2rem] bg-[#f8fbff] border border-slate-200 p-8 hover:bg-blue-600 hover:text-white transition">
@@ -335,9 +354,9 @@
 
         <div class="grid md:grid-cols-3 gap-6">
             @foreach([
-                ['R.K. Jewellers','Billing fast ho gaya aur WhatsApp invoice feature daily use me bahut helpful hai.'],
-                ['Shree Gold House','Staff easily bill bana leta hai aur owner reports dekh sakta hai.'],
-                ['Diamond Palace','Invoice PDF professional lagta hai, customer ko showroom ka premium feel milta hai.'],
+                ['Garment Store','Billing fast ho gaya aur WhatsApp invoice feature daily use me bahut helpful hai.'],
+                ['Cosmetic Shop','Stock aur sales reports easily mil jati hain, daily work simple ho gaya.'],
+                ['Mobile Accessories Store','Invoice PDF professional lagta hai, customer ko premium feel milta hai.'],
             ] as $review)
                 <div class="bg-white rounded-[2rem] p-8 border border-slate-200 soft-card">
                     <div class="text-yellow-400 text-xl">★★★★★</div>
@@ -348,7 +367,7 @@
                         </div>
                         <div>
                             <div class="font-black">{{ $review[0] }}</div>
-                            <div class="text-sm text-slate-500">Jewellery Business</div>
+                            <div class="text-sm text-slate-500">Small Business</div>
                         </div>
                     </div>
                 </div>
@@ -361,54 +380,93 @@
 <section id="pricing" class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 lg:px-8">
         <div class="text-center mb-14">
-            <p class="text-blue-600 font-black uppercase tracking-widest text-sm">Pricing</p>
-            <h2 class="text-3xl lg:text-5xl font-black mt-3">Simple subscription pricing</h2>
-            <p class="mt-4 text-slate-600">Start small, grow anytime.</p>
+            <p class="text-blue-600 font-black uppercase tracking-widest text-sm">Pricing Plans</p>
+            <h2 class="text-3xl lg:text-5xl font-black mt-3">Plans Starting From ₹999 / Year</h2>
+            <p class="mt-4 text-slate-600">Choose the best plan for your shop or growing business.</p>
         </div>
 
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="rounded-[2rem] bg-slate-50 border border-slate-200 p-8">
-                <h3 class="text-2xl font-black">Starter</h3>
-                <p class="text-slate-500 mt-2">Single jewellery shop</p>
-                <div class="text-4xl font-black mt-6">₹999 <span class="text-sm text-slate-500">/ year</span></div>
-                <ul class="mt-7 space-y-3 text-sm text-slate-600">
-                    <li>✓ 1 showroom/location</li>
-                    <li>✓ Unlimited invoices</li>
-                    <li>✓ Customer master</li>
-                    <li>✓ PDF invoice download</li>
-                </ul>
-                <a href="https://api.whatsapp.com/send/?phone=917753800444" class="mt-8 block text-center rounded-full bg-slate-950 text-white py-4 font-black">Enquiry</a>
-            </div>
+        @if($plans->count())
+            <div class="grid md:grid-cols-3 gap-8">
+                @foreach($plans as $plan)
+                    @php
+                        $isPopular = $plan->is_recommended;
+                    @endphp
 
-            <div class="rounded-[2rem] bg-blue-600 text-white p-8 relative shadow-2xl shadow-blue-200 scale-105">
-                <div class="absolute -top-4 right-8 bg-yellow-400 text-slate-950 text-xs font-black px-4 py-2 rounded-full">Most Popular</div>
-                <h3 class="text-2xl font-black">Growth</h3>
-                <p class="text-blue-100 mt-2">WhatsApp + reports</p>
-                <div class="text-4xl font-black mt-6">₹1,999 <span class="text-sm text-blue-100">/ year</span></div>
-                <ul class="mt-7 space-y-3 text-sm text-blue-50">
-                    <li>✓ Up to 3 showrooms</li>
-                    <li>✓ WhatsApp & Email invoice</li>
-                    <li>✓ Customer & sales reports</li>
-                    <li>✓ Basic stock tracking</li>
-                    <li>✓ Priority support</li>
-                </ul>
-                <a href="https://api.whatsapp.com/send/?phone=917753800444" class="mt-8 block text-center rounded-full bg-white text-blue-700 py-4 font-black">Enquiry</a>
-            </div>
+                    <div class="rounded-[2rem] p-8 relative transition hover:-translate-y-1
+                        {{ $isPopular ? 'bg-blue-600 text-white shadow-2xl shadow-blue-200 scale-105' : 'bg-slate-50 border border-slate-200' }}">
 
-            <div class="rounded-[2rem] bg-slate-50 border border-slate-200 p-8">
-                <h3 class="text-2xl font-black">Enterprise</h3>
-                <p class="text-slate-500 mt-2">Multi showroom control</p>
-                <div class="text-4xl font-black mt-6">Custom</div>
-                <ul class="mt-7 space-y-3 text-sm text-slate-600">
-                    <li>✓ Unlimited showrooms</li>
-                    <li>✓ Advanced roles</li>
-                    <li>✓ Custom reports</li>
-                    <li>✓ Integration support</li>
-                    <li>✓ Dedicated manager</li>
-                </ul>
-                <a href="tel:917753800444" class="mt-8 block text-center rounded-full bg-slate-950 text-white py-4 font-black">Call Now</a>
+                        @if($isPopular)
+                            <div class="absolute -top-4 right-8 bg-yellow-400 text-slate-950 text-xs font-black px-4 py-2 rounded-full">
+                                Most Recommended ⭐
+                            </div>
+                        @endif
+
+                        <h3 class="text-2xl font-black uppercase">{{ $plan->name }}</h3>
+
+                        <p class="mt-2 {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
+                            {{ $plan->subtitle ?: ($plan->description ?: 'Perfect for Small & Medium Businesses') }}
+                        </p>
+
+                        <div class="text-4xl font-black mt-6">
+                            ₹{{ number_format($plan->price, 0) }}
+                            <span class="text-sm {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
+                                / {{ $plan->duration_days >= 365 ? 'Year' : $plan->duration_days . ' Days' }}
+                            </span>
+                        </div>
+
+                        <ul class="mt-7 space-y-3 text-sm {{ $isPopular ? 'text-blue-50' : 'text-slate-600' }}">
+                            @forelse($plan->planFeatures as $feature)
+                                <li>
+                                    @if($feature->icon)
+                                        {{ $feature->icon }}
+                                    @else
+                                        ✔
+                                    @endif
+
+                                    {{ $feature->title }}
+                                </li>
+                            @empty
+                                <li>✔ GST Billing</li>
+                                <li>✔ Customer Management</li>
+                                <li>✔ Invoice Print / Share</li>
+                            @endforelse
+                        </ul>
+
+                        <a href="https://api.whatsapp.com/send/?phone=917753800444&text=I%20want%20{{ urlencode($plan->name) }}%20demo"
+                           class="mt-8 block text-center rounded-full py-4 font-black
+                           {{ $isPopular ? 'bg-white text-blue-700' : 'bg-slate-950 text-white' }}">
+                            Enquiry
+                        </a>
+                    </div>
+                @endforeach
             </div>
+        @else
+            <div class="text-center bg-slate-50 border border-slate-200 rounded-3xl p-10">
+                <h3 class="text-2xl font-black">No active plans available</h3>
+                <p class="text-slate-500 mt-2">Please add active plans from admin panel.</p>
+            </div>
+        @endif
+    </div>
+</section>
+
+{{-- CTA --}}
+<section class="py-16 bg-blue-600 text-white">
+    <div class="max-w-7xl mx-auto px-4 lg:px-8 text-center">
+        <h2 class="text-3xl lg:text-5xl font-black">🚀 MY VICTORY BILLING SOFTWARE</h2>
+        <p class="mt-4 text-xl text-blue-100">Smart Billing Software for Modern Shops 🧾</p>
+
+        <div class="mt-8 flex flex-wrap justify-center gap-3 text-sm font-black">
+            <span class="bg-white/15 border border-white/20 rounded-full px-5 py-3">GST Billing</span>
+            <span class="bg-white/15 border border-white/20 rounded-full px-5 py-3">Sale & Purchase</span>
+            <span class="bg-white/15 border border-white/20 rounded-full px-5 py-3">Stock Management</span>
+            <span class="bg-white/15 border border-white/20 rounded-full px-5 py-3">Mobile Friendly</span>
+            <span class="bg-white/15 border border-white/20 rounded-full px-5 py-3">WhatsApp Sharing</span>
+            <span class="bg-white/15 border border-white/20 rounded-full px-5 py-3">Photo Smart Entry</span>
         </div>
+
+        <a href="#contact" class="mt-9 inline-block rounded-full bg-white text-blue-700 px-8 py-4 font-black">
+            Demo Available
+        </a>
     </div>
 </section>
 
@@ -421,8 +479,9 @@
                     <p class="font-black uppercase tracking-widest text-blue-600 text-sm">Book Demo</p>
                     <h2 class="text-3xl lg:text-5xl font-black mt-4">Ready to see MyVictory in action?</h2>
                     <p class="mt-5 text-slate-600 text-lg leading-8">
-                        Form fill karein ya WhatsApp par message bhejein. Hum aapko billing,
-                        reports, WhatsApp invoices aur complete setup ka demo dikhaenge.
+                        Form fill karein ya WhatsApp par message bhejein. Hum aapko GST billing,
+                        sale purchase, stock management, photo based smart entry, WhatsApp invoice sharing
+                        aur complete setup ka demo dikhaenge.
                     </p>
 
                     <div class="mt-8 space-y-5">
@@ -472,8 +531,15 @@
                         <input type="text" name="city" value="{{ old('city') }}" placeholder="City"
                                class="w-full rounded-2xl border border-slate-300 px-4 py-4 outline-none focus:border-blue-600 bg-white">
 
-                        <input type="text" name="business_name" value="{{ old('business_name') }}" placeholder="Jewellery business name"
+                        <input type="text" name="business_name" value="{{ old('business_name') }}" placeholder="Business / shop name"
                                class="w-full rounded-2xl border border-slate-300 px-4 py-4 outline-none focus:border-blue-600 bg-white">
+
+                        <select name="plan" class="w-full rounded-2xl border border-slate-300 px-4 py-4 outline-none focus:border-blue-600 bg-white">
+                            <option value="">Select Interested Plan</option>
+                            <option value="Starter Plan - 999" {{ old('plan') == 'Starter Plan - 999' ? 'selected' : '' }}>Starter Plan - ₹999 / Year</option>
+                            <option value="Smart Plan - 2999" {{ old('plan') == 'Smart Plan - 2999' ? 'selected' : '' }}>Smart Plan - ₹2999 / Year</option>
+                            <option value="Pro Plan - 5999" {{ old('plan') == 'Pro Plan - 5999' ? 'selected' : '' }}>Pro Plan - ₹5999 / Year</option>
+                        </select>
 
                         <textarea name="message" rows="4" placeholder="How can we help?"
                                   class="w-full rounded-2xl border border-slate-300 px-4 py-4 outline-none focus:border-blue-600 bg-white">{{ old('message') }}</textarea>
