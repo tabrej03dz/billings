@@ -42,6 +42,27 @@ Route::get('/', function () {
     return view('welcome', compact('plans'));
 })->name('index');
 
+
+Route::view('/privacy-policy', 'frontend.pages.privacy-policy')->name('privacy-policy');
+Route::view('/terms-conditions', 'frontend.pages.terms-conditions')->name('terms-conditions');
+Route::view('/refund-policy', 'frontend.pages.refund-policy')->name('refund-policy');
+Route::view('/shipping-delivery-policy', 'frontend.pages.shipping-delivery-policy')->name('shipping-delivery-policy');
+Route::view('/about-us', 'frontend.pages.about-us')->name('about-us');
+Route::view('/contact-us', 'frontend.pages.contact-us')->name('contact-us');
+Route::view('/pricing', 'frontend.pages.pricing')->name('pricing-page');
+
+
+
+
+
+
+
+
+
+
+
+
+
 Route::get('user-register', function (){
     return view('user-register');
 })->name('index');
