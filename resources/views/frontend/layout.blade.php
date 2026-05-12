@@ -55,7 +55,7 @@
 
 <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200">
     <div class="max-w-7xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
-        <a href="#top" class="flex items-center gap-3">
+        {{-- <a href="#top" class="flex items-center gap-3">
             <img src="{{ asset('asset/img/logo.png') }}"
                  class="h-12 w-12 rounded-2xl border border-slate-200 shadow-sm"
                  alt="MyVictory">
@@ -64,6 +64,13 @@
                 <div class="font-black text-xl leading-none text-mvDark">MyVictory Billing</div>
                 <div class="text-xs text-mvBlue font-semibold mt-1">Smart Billing. Simple Business.</div>
             </div>
+        </a> --}}
+
+
+        <a href="{{ url('/') }}" class="flex items-center">
+            <img src="{{ asset('asset/img/MY VICTORY LOGO 2.png') }}"
+                class="h-16 w-auto object-contain"
+                alt="MyVictory Billing Logo">
         </a>
 
         <nav class="hidden lg:flex items-center gap-8 text-sm font-bold text-slate-600">
@@ -112,7 +119,7 @@
             <div>
                 <div class="font-black text-xl text-mvDark">MyVictory Billing</div>
                 <p class="text-sm text-slate-500 mt-2">
-                    © {{ date('Y') }} MyVictory Billing · Powered by Real Victory Groups
+                    © {{ date('Y') }} MyVictory Billing · Powered by <a href="https://www.realvictorygroups.com/" target="_blank" class="text-mvBlue hover:underline">Real Victory Groups</a>
                 </p>
 
                 <div class="mt-6">

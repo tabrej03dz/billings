@@ -13,6 +13,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\InvoiceReportController;
 use App\Http\Controllers\InvoiceSendController;
+use App\Http\Controllers\ItemAiController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\NoBusinessWhatsappController;
@@ -223,15 +224,24 @@ Route::middleware(['auth'])->group(function () {
         });
 
 
-    Route::post('/clients/quick-store', [ClientController::class, 'quickStore'])->name('clients.quick-store');
+        Route::post('/clients/quick-store', [ClientController::class, 'quickStore'])->name('clients.quick-store');
+
+
+        // photo upload and AI processing routes
+        Route::get('/items/ai-photo-entry', [ItemAiController::class, 'create'])->name('items.ai.create');
+        Route::post('/items/ai-photo-entry', [ItemAiController::class, 'photoEntry'])->name('items.ai-photo-entry');
+
+
+
 
         // Optional: item lookup by id (JSON). Not required if you preload items.
         Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\InvoiceController::class, 'download'])
             ->name('invoices.download');
 
+        
 
-    Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])
+        Route::get('/invoices/{invoice}/preview', [InvoiceController::class, 'preview'])
         ->name('invoices.preview');
 
         Route::post('/invoices/preview-number', [InvoiceController::class, 'previewNumber'])

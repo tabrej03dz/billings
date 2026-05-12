@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstallmentReminderController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\BillRequestController;
+use App\Http\Controllers\Api\PurchaseController;
 
 Route::get('items1/', [ItemController::class, 'index1']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
@@ -180,6 +181,21 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::delete('destroy/{billRequest}', [ApiBillRequestController::class, 'destroy'])
            ;
     });
+
+
+    // Purchase Form Data
+    Route::get('purchases/form-data',[PurchaseController::class, 'formData']);
+
+    // Purchase CRUD APIs
+    Route::get('purchases',[PurchaseController::class, 'index']);
+
+    Route::post('purchases',[PurchaseController::class, 'store']);
+
+    Route::get('purchases/{purchase}',[PurchaseController::class, 'show']);
+
+    Route::put('purchases/{purchase}',[PurchaseController::class, 'update']);
+
+    Route::delete('purchases/{purchase}',[PurchaseController::class, 'destroy']);
 
 
 });
