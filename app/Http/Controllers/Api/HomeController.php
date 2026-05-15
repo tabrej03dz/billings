@@ -139,6 +139,13 @@ class HomeController extends Controller
             'otp_expires_at' => null,
         ]);
 
+         $permissions = $user->getAllPermissions()
+            ->pluck('name')
+            ->unique()
+            ->values();
+
+        
+            
         return response()->json([
             'status' => true,
             'message' => 'Login successful',
@@ -149,6 +156,7 @@ class HomeController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'business' => $user->businesses,
+                'permissions' => $permissions,
             ],
         ], 200);
     }
