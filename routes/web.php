@@ -64,14 +64,39 @@ Route::view('/pricing', 'frontend.pages.pricing')->name('pricing-page');
 
 
 
-Route::get('user-register', function (){
-    return view('user-register');
-})->name('index');
+// Route::get('user-register', function (){
+//     return view('user-register');
+// })->name('index');
+
+Route::get('user-register', function (\Illuminate\Http\Request $request) {
+    $selectedPlan = null;
+
+    if ($request->filled('plan_id')) {
+        $selectedPlan = \App\Models\Plan::where('status', 1)
+            ->where('id', $request->plan_id)
+            ->first();
+    }
+
+    return view('user-register', compact('selectedPlan'));
+})->name('user.register');
 Route::post('/register', [HomeController::class, 'store'])->name('register.store');
 
 Route::get('/welcome', function () {
     return view('welcome');
 })->name('home');
+
+
+// use App\Http\Controllers\RazorpayController;
+
+// Route::middleware(['auth'])->group(function () {
+//     Route::get('/razorpay/payment/{plan_id}', [RazorpayController::class, 'payment'])
+//         ->name('razorpay.payment');
+
+//     Route::post('/razorpay/payment/success', [RazorpayController::class, 'success'])
+//         ->name('razorpay.success');
+// });
+
+
 
 
 Route::post('demo-requests/save', [DemoRequestController::class, 'store'])->name('demo-requests.save');

@@ -370,10 +370,10 @@
                                 @endforelse
                             </ul>
 
-                            <a href="https://api.whatsapp.com/send/?phone=917753800444&text=I%20want%20{{ urlencode($plan->name) }}%20demo"
-                               class="mt-8 block text-center rounded-full py-4 font-black
-                               {{ $isPopular ? 'bg-white text-mvBlue' : 'bg-mvDark text-white' }}">
-                                Enquiry
+                            <a href="{{ route('user.register', ['plan_id' => $plan->id]) }}"
+                                class="mt-8 block text-center rounded-full py-4 font-black
+                                {{ $isPopular ? 'bg-white text-mvBlue' : 'bg-mvDark text-white' }}">
+                                Choose Plan
                             </a>
                         </div>
                     @endforeach

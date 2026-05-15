@@ -17,20 +17,61 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Mail;
+
 
 class HomeController extends Controller
 {
+    // public function login(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'email'    => ['required','email'],
+    //         'password' => ['required','string','min:4'],
+    //         'device_name' => ['nullable','string','max:100'], // optional
+    //     ]);
+
+
+    //     $user = User::where('email', $data['email'])->first();
+
+
+    //     if (!$user || !Hash::check($data['password'], $user->password)) {
+    //         throw ValidationException::withMessages([
+    //             'email' => ['Invalid email or password.'],
+    //         ]);
+    //     }
+
+
+
+    //     // (Optional) old tokens delete (single device login chahiye to)
+    //     // $user->tokens()->delete();
+
+
+
+    //     $token = $user->createToken('authToken')->plainTextToken;
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Login successful',
+    //         'token_type' => 'Bearer',
+    //         'token' => $token,
+    //         'user' => [
+    //             'id' => $user->id,
+    //             'name' => $user->name,
+    //             'email' => $user->email,
+    //             'business' => $user->businesses
+    //         ],
+    //     ], 200);
+    // }
+
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => ['required','email'],
-            'password' => ['required','string','min:4'],
-            'device_name' => ['nullable','string','max:100'], // optional
+            'email'       => ['required', 'email'],
+            'password'    => ['required', 'string', 'min:4'],
+            'device_name' => ['nullable', 'string', 'max:100'],
         ]);
 
-
         $user = User::where('email', $data['email'])->first();
-
 
         if (!$user || !Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
@@ -38,14 +79,65 @@ class HomeController extends Controller
             ]);
         }
 
+        $otp = rand(100000, 999999);
+
+        $user->update([
+            'otp' => $otp,
+            'otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        Mail::raw("Your login OTP is: {$otp}. This OTP is valid for 10 minutes.", function ($message) use ($user) {
+            $message->to($user->email)
+                    ->subject('Your Login OTP');
+        });
+
+        return response()->json([
+            'status' => true,
+            'message' => 'OTP sent successfully on your email.',
+            'email' => $user->email,
+        ], 200);
+    }
 
 
-        // (Optional) old tokens delete (single device login chahiye to)
+    public function verifyLoginOtp(Request $request)
+    {
+        $data = $request->validate([
+            'email'       => ['required', 'email'],
+            'otp'         => ['required', 'digits:6'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'email' => ['User not found.'],
+            ]);
+        }
+
+        if (!$user->otp || $user->otp != $data['otp']) {
+            throw ValidationException::withMessages([
+                'otp' => ['Invalid OTP.'],
+            ]);
+        }
+
+        if (!$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
+            throw ValidationException::withMessages([
+                'otp' => ['OTP expired. Please login again.'],
+            ]);
+        }
+
+        // Single device login chahiye to ye line uncomment kar dena
         // $user->tokens()->delete();
 
+        $deviceName = $data['device_name'] ?? 'authToken';
 
+        $token = $user->createToken($deviceName)->plainTextToken;
 
-        $token = $user->createToken('authToken')->plainTextToken;
+        $user->update([
+            'otp' => null,
+            'otp_expires_at' => null,
+        ]);
 
         return response()->json([
             'status' => true,
@@ -56,10 +148,11 @@ class HomeController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'business' => $user->businesses
+                'business' => $user->businesses,
             ],
         ], 200);
     }
+
 
     public function logout(Request $request)
     {
@@ -469,7 +562,7 @@ class HomeController extends Controller
             }
 
             // ✅ create token
-            $tokenName = $data['device_name'] ?? 'authToken';
+            $tokenName = $d42200ata['device_name'] ?? 'authToken';
             $token = $user->createToken($tokenName)->plainTextToken;
 
             // fresh businesses load

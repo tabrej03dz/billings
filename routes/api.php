@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstallmentReminderController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\BillRequestController;
+use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\PurchaseController;
 
 Route::get('items1/', [ItemController::class, 'index1']);
@@ -27,6 +28,7 @@ Route::get('/send-uploaded-invoice/run', [\App\Http\Controllers\InstallmentRemin
 
 
 Route::post('/login',  [HomeController::class, 'login']);
+Route::post('/login/verify-otp', [HomeController::class, 'verifyLoginOtp']);
 Route::post('/register',  [HomeController::class, 'register']);
 
 
@@ -196,6 +198,19 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::put('purchases/{purchase}',[PurchaseController::class, 'update']);
 
     Route::delete('purchases/{purchase}',[PurchaseController::class, 'destroy']);
+
+    // Plan APIs
+
+     Route::get('/plans', [PlanController::class, 'index']);
+    Route::post('/plans', [PlanController::class, 'store']);
+    Route::get('/plans/{id}', [PlanController::class, 'show']);
+    Route::put('/plans/{id}', [PlanController::class, 'update']);
+    Route::delete('/plans/{id}', [PlanController::class, 'destroy']);
+
+    Route::patch('/plans/{id}/toggle-status', [PlanController::class, 'toggleStatus']);
+
+    Route::get('/choose-plans', [PlanController::class, 'choose']);
+    Route::post('/choose-plan-save', [PlanController::class, 'choosenSave']);
 
 
 });

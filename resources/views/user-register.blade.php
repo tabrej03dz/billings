@@ -220,9 +220,17 @@
                             </div>
                         @endif
 
+                        @if(!empty($selectedPlan))
+                            <div class="mb-5 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                                Selected Plan: <strong>{{ $selectedPlan->name }}</strong> -
+                                ₹{{ number_format($selectedPlan->price, 0) }}
+                            </div>
+                        @endif
+
                         <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6">
                             @csrf
 
+                            <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
                             <input type="hidden" name="current_step" id="current_step" value="{{ old('current_step', 1) }}">
 
                             <div class="form-step space-y-5" data-step="1">
