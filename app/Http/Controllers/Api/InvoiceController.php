@@ -921,22 +921,22 @@ class InvoiceController extends Controller
 
 
         // ✅ Business wise plan expiry validation
-        if (!$user->hasAnyRole(['super_admin', 'admin'])) {
-            $activePlan = UserPlan::where('user_id', $user->id)
-                ->where('business_id', $bid)
-                ->where('status', 'active')
-                ->whereDate('start_date', '<=', today())
-                ->whereDate('expiry_date', '>=', today())
-                ->latest('id')
-                ->first();
+        // if (!$user->hasAnyRole(['super_admin', 'admin'])) {
+        //     $activePlan = UserPlan::where('user_id', $user->id)
+        //         ->where('business_id', $bid)
+        //         ->where('status', 'active')
+        //         ->whereDate('start_date', '<=', today())
+        //         ->whereDate('expiry_date', '>=', today())
+        //         ->latest('id')
+        //         ->first();
 
-            if (!$activePlan) {
-                return response()->json([
-                    'ok' => false,
-                    'message' => 'इस business का plan expire हो चुका है या active plan available नहीं है. Invoice create करने के लिए कृपया plan renew करें.',
-                ], 422);
-            }
-        }
+        //     if (!$activePlan) {
+        //         return response()->json([
+        //             'ok' => false,
+        //             'message' => 'इस business का plan expire हो चुका है या active plan available नहीं है. Invoice create करने के लिए कृपया plan renew करें.',
+        //         ], 422);
+        //     }
+        // }
 
 
 
