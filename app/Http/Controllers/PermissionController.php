@@ -69,28 +69,68 @@ class PermissionController extends Controller
 //     }
 
 
+// public function index()
+// {
+//     if (auth()->user()->hasRole('super admin')) {
+//         $users = User::orderBy('name')->get();
+//         $permissions = Permission::orderBy('name')->get();
+//         $roles = Role::orderBy('name')->get();
+//     } else {
+//         $users = User::where('business_id', auth()->user()->business_id)
+//             ->orderBy('name')
+//             ->get();
+
+//         $permissions = Permission::where('guard_name', 'web')
+//             ->orderBy('name')
+//             ->get();
+
+//         $roles = Role::where('guard_name', 'web')
+//             ->orderBy('name')
+//             ->get();
+//     }
+
+//     return view('permissions.index', compact('permissions', 'users', 'roles'));
+// }
+
+
+
 public function index()
-    {
-        if (auth()->user()->hasRole('super admin')) {
-            $users = User::orderBy('name')->get();
-            $permissions = Permission::orderBy('name')->get();
-            $roles = Role::orderBy('name')->get();
-        } else {
-            $users = User::where('business_id', auth()->user()->business_id)
-                ->orderBy('name')
-                ->get();
+{
+    $user = auth()->user();
 
-            $permissions = Permission::where('guard_name', 'web')
-                ->orderBy('name')
-                ->get();
+    if ($user->hasRole('super admin')) {
+        $users = User::orderBy('name')->get();
+        $permissions = Permission::orderBy('name')->get();
+        $roles = Role::orderBy('name')->get();
+    } else {
 
-            $roles = Role::where('guard_name', 'web')
-                ->orderBy('name')
-                ->get();
+        $bid = $user->current_business_id ?? session('active_business_id');
+
+        if (!$bid) {
+            $bid = $user->business_id;
         }
 
-        return view('permissions.index', compact('permissions', 'users', 'roles'));
+        if (!$bid && method_exists($user, 'businesses')) {
+            $bid = $user->businesses()->pluck('businesses.id')->first();
+        }
+
+        abort_unless($bid, 422, 'Active business not found.');
+
+        $users = User::where('business_id', $bid)
+            ->orderBy('name')
+            ->get();
+
+        $permissions = Permission::where('guard_name', 'web')
+            ->orderBy('name')
+            ->get();
+
+        $roles = Role::where('guard_name', 'web')
+            ->orderBy('name')
+            ->get();
     }
+
+    return view('permissions.index', compact('permissions', 'users', 'roles'));
+}
 
     public function assign(Request $request)
     {
