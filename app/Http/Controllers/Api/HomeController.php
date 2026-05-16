@@ -8,6 +8,7 @@ use App\Models\Invoice;
 use App\Models\Item;
 use App\Models\MetalRate;
 use App\Models\Purchase;
+use App\Models\RegisterOtp;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -515,62 +516,170 @@ class HomeController extends Controller
         ], 200);
     }
 
+    // public function register(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'name'        => ['required','string','max:120'],
+    //         'email'       => ['required','email','max:190', 'unique:users,email'],
+    //         'password'    => ['required','string','min:6','confirmed'],
+    //         // confirmed => password_confirmation required
+
+    //         'phone'       => ['nullable','string','max:20'],
+    //         'avatar'      => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
+
+    //         // optional: business attach
+    //         'business_id' => ['nullable','integer','exists:businesses,id'],
+
+    //         'device_name' => ['nullable','string','max:100'],
+    //     ]);
+
+    //     return DB::transaction(function () use ($request, $data) {
+
+    //         // ✅ avatar upload (optional)
+    //         $avatarPath = null;
+    //         if ($request->hasFile('avatar')) {
+    //             $avatarPath = $request->file('avatar')->store('avatars', 'public');
+    //         }
+
+    //         // ✅ create user
+    //         $user = User::create([
+    //             'name'     => $data['name'],
+    //             'email'    => $data['email'],
+    //             'password' => Hash::make($data['password']),
+    //             'phone'    => $data['phone'] ?? null,
+    //             'avatar'   => $avatarPath,
+    //         ]);
+
+    //         // ✅ business attach (optional)
+    //         if (!empty($data['business_id'])) {
+    //             // pivot attach (assumes many-to-many relation exists)
+    //             $user->businesses()->attach($data['business_id']);
+
+    //             // optional: set current business id if your users table has this column
+    //             if (Schema::hasColumn('users', 'current_business_id')) {
+    //                 $user->current_business_id = $data['business_id'];
+    //                 $user->save();
+    //             }
+    //         }
+
+    //         // ✅ create token
+    //         $tokenName = $d42200ata['device_name'] ?? 'authToken';
+    //         $token = $user->createToken($tokenName)->plainTextToken;
+
+    //         // fresh businesses load
+    //         $user->load('businesses');
+
+    //         return response()->json([
+    //             'status'     => true,
+    //             'message'    => 'Register successful',
+    //             'token_type' => 'Bearer',
+    //             'token'      => $token,
+    //             'user'       => [
+    //                 'id'       => $user->id,
+    //                 'name'     => $user->name,
+    //                 'email'    => $user->email,
+    //                 'phone'    => $user->phone,
+    //                 'avatar'   => $user->avatar,
+    //                 'business' => $user->businesses,
+    //             ],
+    //         ], 201);
+    //     });
+    // }
+
+
     public function register(Request $request)
     {
         $data = $request->validate([
             'name'        => ['required','string','max:120'],
-            'email'       => ['required','email','max:190', 'unique:users,email'],
+            'email'       => ['required','email','max:190','unique:users,email'],
             'password'    => ['required','string','min:6','confirmed'],
-            // confirmed => password_confirmation required
-
             'phone'       => ['nullable','string','max:20'],
-            'avatar'      => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
-
-            // optional: business attach
             'business_id' => ['nullable','integer','exists:businesses,id'],
-
             'device_name' => ['nullable','string','max:100'],
         ]);
 
-        return DB::transaction(function () use ($request, $data) {
+        $otp = rand(100000, 999999);
 
-            // ✅ avatar upload (optional)
-            $avatarPath = null;
-            if ($request->hasFile('avatar')) {
-                $avatarPath = $request->file('avatar')->store('avatars', 'public');
-            }
+        RegisterOtp::where('email', $data['email'])->delete();
 
-            // ✅ create user
+        RegisterOtp::create([
+            'email'      => $data['email'],
+            'otp'        => $otp,
+            'payload'    => $data,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        Mail::raw("Your registration OTP is: {$otp}", function ($message) use ($data) {
+            $message->to($data['email'])
+                ->subject('Verify Your Email');
+        });
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'OTP sent successfully on your email.',
+            'email'   => $data['email'],
+        ]);
+    }
+
+
+
+    public function verifyRegisterOtp(Request $request)
+    {
+        $request->validate([
+            'email' => ['required','email'],
+            'otp'   => ['required','digits:6'],
+        ]);
+
+        $otpRecord = RegisterOtp::where('email', $request->email)
+            ->where('otp', $request->otp)
+            ->first();
+
+        if (!$otpRecord) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Invalid OTP.',
+            ], 422);
+        }
+
+        if ($otpRecord->expires_at->isPast()) {
+            $otpRecord->delete();
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'OTP expired. Please register again.',
+            ], 422);
+        }
+
+        $data = $otpRecord->payload;
+
+        return DB::transaction(function () use ($data, $otpRecord) {
+
             $user = User::create([
                 'name'     => $data['name'],
                 'email'    => $data['email'],
                 'password' => Hash::make($data['password']),
                 'phone'    => $data['phone'] ?? null,
-                'avatar'   => $avatarPath,
             ]);
 
-            // ✅ business attach (optional)
             if (!empty($data['business_id'])) {
-                // pivot attach (assumes many-to-many relation exists)
                 $user->businesses()->attach($data['business_id']);
 
-                // optional: set current business id if your users table has this column
                 if (Schema::hasColumn('users', 'current_business_id')) {
                     $user->current_business_id = $data['business_id'];
                     $user->save();
                 }
             }
 
-            // ✅ create token
-            $tokenName = $d42200ata['device_name'] ?? 'authToken';
+            $tokenName = $data['device_name'] ?? 'authToken';
             $token = $user->createToken($tokenName)->plainTextToken;
 
-            // fresh businesses load
             $user->load('businesses');
+
+            $otpRecord->delete();
 
             return response()->json([
                 'status'     => true,
-                'message'    => 'Register successful',
+                'message'    => 'Email verified and registration successful.',
                 'token_type' => 'Bearer',
                 'token'      => $token,
                 'user'       => [
@@ -578,7 +687,6 @@ class HomeController extends Controller
                     'name'     => $user->name,
                     'email'    => $user->email,
                     'phone'    => $user->phone,
-                    'avatar'   => $user->avatar,
                     'business' => $user->businesses,
                 ],
             ], 201);

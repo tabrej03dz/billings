@@ -30,6 +30,7 @@ Route::get('/send-uploaded-invoice/run', [\App\Http\Controllers\InstallmentRemin
 Route::post('/login',  [HomeController::class, 'login']);
 Route::post('/login/verify-otp', [HomeController::class, 'verifyLoginOtp']);
 Route::post('/register',  [HomeController::class, 'register']);
+Route::post('/register/verify-otp', [HomeController::class, 'verifyRegisterOtp']);
 
 
 Route::post('request-for-bill', [ApiBillRequestController::class, 'store']);
