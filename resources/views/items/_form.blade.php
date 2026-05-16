@@ -35,14 +35,14 @@
                 @error('name') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div>
+            {{-- <div>
                 <label class="block text-sm font-medium mb-1">SKU</label>
                 <input type="text" name="sku"
                        value="{{ old('sku', $item->sku ?? '') }}"
                        class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
                        placeholder="Optional">
                 @error('sku') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
-            </div>
+            </div> --}}
 
             <div>
                 <label class="block text-sm font-medium mb-1">Category</label>
@@ -229,10 +229,11 @@
             </div>
 
             <div id="makingChargeBlock" class="hidden">
-                <label class="block text-sm font-medium mb-1">Making Charge (₹)</label>
-                <input id="makingChargeField" type="number" step="0.01" min="0" name="making_charge"
-                       value="{{ old('making_charge', $item->making_charge ?? '') }}"
-                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                <label class="block text-sm font-medium mb-1">Making Charge (%)</label>
+                <input id="makingChargeField" type="number" step="0.01" min="0" max="100" name="making_charge"
+                    value="{{ old('making_charge', $item->making_charge ?? '') }}"
+                    class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                    placeholder="Example: 10">
             </div>
 
             <div>
