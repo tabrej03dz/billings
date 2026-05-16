@@ -69,54 +69,14 @@ class PermissionController extends Controller
 //     }
 
 
-// public function index()
-// {
-//     if (auth()->user()->hasRole('super admin')) {
-//         $users = User::orderBy('name')->get();
-//         $permissions = Permission::orderBy('name')->get();
-//         $roles = Role::orderBy('name')->get();
-//     } else {
-//         $users = User::where('business_id', auth()->user()->business_id)
-//             ->orderBy('name')
-//             ->get();
-
-//         $permissions = Permission::where('guard_name', 'web')
-//             ->orderBy('name')
-//             ->get();
-
-//         $roles = Role::where('guard_name', 'web')
-//             ->orderBy('name')
-//             ->get();
-//     }
-
-//     return view('permissions.index', compact('permissions', 'users', 'roles'));
-// }
-
-
-
 public function index()
 {
-    $user = auth()->user();
-
-    if ($user->hasRole('super admin')) {
+    if (auth()->user()->hasRole('super admin') || auth()->user()->hasRole('admin')) {
         $users = User::orderBy('name')->get();
         $permissions = Permission::orderBy('name')->get();
         $roles = Role::orderBy('name')->get();
     } else {
-
-        $bid = $user->current_business_id ?? session('active_business_id');
-
-        if (!$bid) {
-            $bid = $user->business_id;
-        }
-
-        if (!$bid && method_exists($user, 'businesses')) {
-            $bid = $user->businesses()->pluck('businesses.id')->first();
-        }
-
-        abort_unless($bid, 422, 'Active business not found.');
-
-        $users = User::where('business_id', $bid)
+        $users = User::where('business_id', auth()->user()->business_id)
             ->orderBy('name')
             ->get();
 
