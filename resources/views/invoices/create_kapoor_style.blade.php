@@ -344,7 +344,7 @@
                                     {{-- Product-only cells --}}
                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                         <input type="number" step="0.01" min="0"
-                                            x-model.number="row.making_charge" @input="onAutoChange(row)"
+                                            x-model.number="row.making_rate" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
@@ -453,6 +453,9 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and
                             Conditions</label>
+                        {{-- <textarea name="terms" rows="4"
+                            class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $defaultTerms) }}</textarea> --}}
+
                             <textarea name="terms" rows="4" x-model="hdr.terms"
                                 class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm"></textarea>
                     </div>
@@ -1169,7 +1172,12 @@
         </form>
     </div>
 
-<script type="application/json" id="banks-json">{!! $banksJson !!}</script>
+    <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
+
+
+
+
+
 
 <script>
     function invoiceForm() {
@@ -1320,7 +1328,7 @@
             hsn: '',
             quantity: 1,
 
-            making_charge: 0,
+            making_rate: 0,
             gold_purity: null,
             silver_purity: null,
             gold_rate: 0,
@@ -1584,7 +1592,7 @@
                     Number(it?.price || 0) > 0 &&
                     Number(it?.gold_weight ?? it?.gold_wt ?? 0) <= 0 &&
                     Number(it?.silver_weight ?? it?.silver_wt ?? 0) <= 0 &&
-                    Number(it?.making_charge ?? it?.making_charge ?? 0) <= 0;
+                    Number(it?.making_charge ?? it?.making_rate ?? 0) <= 0;
 
                 if (hasServicePrice) {
                     return 'service';
@@ -1595,7 +1603,7 @@
                     Number(it?.silver_weight ?? it?.silver_wt ?? 0) > 0 ||
                     Number(it?.stone_weight ?? it?.gemstone_wt ?? 0) > 0 ||
                     Number(it?.diamond_weight ?? it?.diamond_wt ?? 0) > 0 ||
-                    Number(it?.making_charge ?? it?.making_charge ?? 0) > 0 ||
+                    Number(it?.making_charge ?? it?.making_rate ?? 0) > 0 ||
                     !!(it?.gold_purity) ||
                     !!(it?.silver_purity);
 
@@ -1611,7 +1619,7 @@
             },
 
             resetRowForService(r) {
-                r.making_charge = 0;
+                r.making_rate = 0;
                 r.gold_purity = null;
                 r.silver_purity = null;
                 r.gold_rate = 0;
@@ -1896,7 +1904,7 @@
                             hsn: it.hsn || '',
                             quantity: Number(it.quantity || 1),
 
-                            making_charge: Number(it.making_charge || 0),
+                            making_rate: Number(it.making_rate || 0),
                             gold_purity: it.gold_purity || null,
                             silver_purity: it.silver_purity || null,
                             gold_rate: Number(it.gold_rate || 0),
@@ -2023,7 +2031,7 @@
                 r.gemstone_wt = n(it.stone_weight ?? it.gemstone_wt, 0);
                 r.diamond_wt = n(it.diamond_weight ?? it.diamond_wt, 0);
 
-                r.making_charge = n(it.making_charge ?? it.making_charge, 0);
+                r.making_rate = n(it.making_charge ?? it.making_rate, 0);
                 r.gold_rate = this.findMetalRate('gold', r.gold_purity);
                 r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
 
@@ -2060,58 +2068,32 @@
             },
 
             // ---------- LINE CALCS ----------
-            // lineBase(r) {
-            //     const qty = Math.max(1, n(r.quantity, 1));
-            //     const pct = n(r.tax_percent, 0);
-
-            //     if (r.amount_mode === 'manual') {
-            //         const total = n(r.manual_amount, 0);
-            //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-            //         return Math.max(0, n(base.toFixed(2), 0));
-            //     }
-
-            //     // ✅ PRIORITY: items.price me value hai to wahi price use hoga.
-            //     // Gold/Silver/Diamond/Making calculation bilkul skip hogi.
-            //     if (n(r.fixed_price, 0) > 0) {
-            //         return Math.max(0, n((n(r.fixed_price, 0) * qty).toFixed(2), 0));
-            //     }
-
-            //     if (r.item_type === 'service') {
-            //         const rate = n(r.service_rate, 0);
-            //         return Math.max(0, n((rate * qty).toFixed(2), 0));
-            //     }
-
-            //     const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
-            //     const silvAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
-            //     const making = n(r.making_charge, 0);
-
-            //     return Math.max(0, n(((goldAmt + silvAmt + making) * qty).toFixed(2), 0));
-            // },
-
-
             lineBase(r) {
                 const qty = Math.max(1, n(r.quantity, 1));
+                const pct = n(r.tax_percent, 0);
 
                 if (r.amount_mode === 'manual') {
-                    return Math.max(0, n(r.manual_amount, 0));
+                    const total = n(r.manual_amount, 0);
+                    const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+                    return Math.max(0, n(base.toFixed(2), 0));
+                }
+
+                // ✅ PRIORITY: items.price me value hai to wahi price use hoga.
+                // Gold/Silver/Diamond/Making calculation bilkul skip hogi.
+                if (n(r.fixed_price, 0) > 0) {
+                    return Math.max(0, n((n(r.fixed_price, 0) * qty).toFixed(2), 0));
                 }
 
                 if (r.item_type === 'service') {
-                    return Math.max(0, n((n(r.service_rate, 0) * qty).toFixed(2), 0));
+                    const rate = n(r.service_rate, 0);
+                    return Math.max(0, n((rate * qty).toFixed(2), 0));
                 }
 
                 const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
-                const silverAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
+                const silvAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
+                const making = n(r.making_rate, 0);
 
-                const itemPrice = n(r.fixed_price, 0) > 0
-                    ? n(r.fixed_price, 0)
-                    : (goldAmt + silverAmt);
-
-                // ✅ making_charge item price ka percent
-                const makingAmount = itemPrice * n(r.making_charge, 0) / 100;
-
-                // ✅ taxable amount = price + making charge
-                return Math.max(0, n(((itemPrice + makingAmount) * qty).toFixed(2), 0));
+                return Math.max(0, n(((goldAmt + silvAmt + making) * qty).toFixed(2), 0));
             },
 
             lineTax(r) {
@@ -2120,18 +2102,11 @@
                 return n((base * (pct / 100)).toFixed(2), 0);
             },
 
-            // lineAmount(r) {
-            //     if (r.amount_mode === 'manual') {
-            //         return n(n(r.manual_amount, 0).toFixed(2), 0);
-            //     }
-            //     return n((this.lineBase(r) + this.lineTax(r)).toFixed(2), 0);
-            // },
-
             lineAmount(r) {
-                const base = this.lineBase(r);
-                const tax = base * n(r.tax_percent, 0) / 100;
-
-                return Math.max(0, n((base + tax).toFixed(2), 0));
+                if (r.amount_mode === 'manual') {
+                    return n(n(r.manual_amount, 0).toFixed(2), 0);
+                }
+                return n((this.lineBase(r) + this.lineTax(r)).toFixed(2), 0);
             },
 
             subtotal() {
@@ -2618,7 +2593,7 @@
                     hsn: r.hsn || '',
                     quantity: Math.max(1, n(r.quantity, 1)),
 
-                    making_charge: n(r.making_charge),
+                    making_rate: n(r.making_rate),
                     gold_purity: r.gold_purity || null,
                     silver_purity: r.silver_purity || null,
                     gold_rate: n(r.gold_rate),

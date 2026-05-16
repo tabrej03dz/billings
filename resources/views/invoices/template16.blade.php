@@ -334,7 +334,7 @@
 
         <tbody>
         @forelse($items as $index => $it)
-            @php
+            {{-- @php
                 $name = $it->item->name ?? $it->name ?? $it->item_name ?? 'Jewellery Product';
                 $desc = $it->description ?? '';
                 $hsn = $it->hsn_code ?? $it->sac_code ?? $it->hsn ?? '-';
@@ -380,6 +380,70 @@
                 }
 
                 $stoneGemTotal = (float)$diamondAmount + (float)$stoneAmount + (float)$gemstonePrice;
+            @endphp --}}
+
+
+            @php
+                $name = $it->item->name ?? $it->name ?? $it->item_name ?? 'Jewellery Product';
+                $desc = $it->description ?? '';
+                $hsn  = $it->hsn_code ?? $it->sac_code ?? $it->hsn ?? '-';
+
+                $qty  = (float)($it->quantity ?? $it->qty ?? 1);
+                $unit = $it->unit ?? '';
+
+                $goldWeight   = (float)($it->gold_wt ?? $it->net_weight ?? $it->net_wt ?? 0);
+                $silverWeight = (float)($it->silver_wt ?? 0);
+
+                $grossWeight = $it->gross_weight ?? $it->gross_wt ?? $goldWeight;
+                $netWeight   = $it->net_weight ?? $it->net_wt ?? $goldWeight;
+                $lessWeight  = $it->less_weight ?? $it->less_wt ?? null;
+
+                $purity = $it->purity ?? $it->karat ?? null;
+                $huid   = $it->huid ?? $it->hallmark_uid ?? null;
+
+                $goldRate   = (float)($it->gold_rate ?? 0);
+                $silverRate = (float)($it->silver_rate ?? 0);
+
+                $goldAmount   = (float)($it->gold_amount ?? 0);
+                $silverAmount = (float)($it->silver_amount ?? 0);
+
+                if ($goldAmount <= 0 && $goldWeight > 0 && $goldRate > 0) {
+                    $goldAmount = $goldWeight * $goldRate;
+                }
+
+                if ($silverAmount <= 0 && $silverWeight > 0 && $silverRate > 0) {
+                    $silverAmount = $silverWeight * $silverRate;
+                }
+
+                $diamondAmount = (float)($it->diamond_amount ?? 0);
+                $stoneAmount   = (float)($it->stone_amount ?? 0);
+                $gemstonePrice = (float)($it->gemstone_price ?? $it->gemstone_amount ?? 0);
+
+                // making_charge database me percentage save hai
+                $makingPercent = (float)($it->making_charge ?? $it->making_rate ?? $it->making_amount ?? 0);
+
+                $metalAmount = $goldAmount + $silverAmount;
+
+                // actual making amount
+                $makingCharge = $metalAmount * ($makingPercent / 100);
+
+                $makingPerGram = $it->making_per_gram ?? null;
+                $wastage = $it->wastage ?? $it->wastage_percent ?? null;
+
+                $taxPercent = (float)($it->tax_percent ?? $inv->tax_percent ?? 0);
+                $taxAmount  = (float)($it->tax_amount ?? 0);
+
+                $stoneGemTotal = $diamondAmount + $stoneAmount + $gemstonePrice;
+
+                $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
+
+                if ($lineTotal <= 0) {
+                    $lineTotal =
+                        $metalAmount
+                        + $stoneGemTotal
+                        + $makingCharge
+                        + $taxAmount;
+                }
             @endphp
 
             <tr>

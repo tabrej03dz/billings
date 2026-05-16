@@ -143,6 +143,7 @@ class InvoiceController extends Controller
         ]);
     }
 
+
     public function create(Request $request, $type = 'proforma')
     {
         $today = now()->toDateString();
@@ -267,339 +268,552 @@ class InvoiceController extends Controller
         ]);
     }
 
+
+
+
+    // public function edit(Request $request, \App\Models\Invoice $invoice)
+    // {
+    //     // ✅ relations load
+    //     $invoice = $invoice->load([
+    //         'client',
+    //         'items',      // invoice_items
+    //         'business',
+    //         'payments'    // if exists
+    //     ]);
+
+    //     // ✅ Active business resolve
+    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
+    //     if (!$bid) $bid = $invoice->business_id;
+
+    //     // ✅ Safety
+    //     if ((int)$invoice->business_id !== (int)$bid) {
+    //         abort(403, 'Unauthorized invoice access.');
+    //     }
+
+    //     $today = \Carbon\Carbon::parse($invoice->invoice_date)->toDateString();
+
+    //     // ✅ detect doc type from invoice (tax/proforma/quotation)
+    //     $docType = strtolower(trim((string)($invoice->invoice_type ?? 'tax')));
+    //     if (!in_array($docType, ['tax','proforma','quotation'], true)) $docType = 'tax';
+
+    //     $business = \App\Models\Business::findOrFail($bid);
+
+    //     // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
+    //     $taxBase = optional(
+    //             $request->user()->businesses()->where('businesses.id', $bid)->first()
+    //         )->invoice_base_prefix ?? 'RV/SL';
+
+    //     if ($docType === 'proforma') {
+    //         $base = 'PF';
+    //     } elseif ($docType === 'quotation') {
+    //         $base = 'QT';
+    //     } else {
+    //         $base = $taxBase;
+    //     }
+
+    //     // ✅ suggested prefix (for display only; edit me hum existing prefix hi use karenge)
+    //     $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
+
+    //     // ✅ Clients
+    //     $clients = \App\Models\Client::where('business_id', $bid)->where('is_save', true)->orWhere('id', $invoice->client_id)
+    //         ->orderBy('name')
+    //         ->get(['id','name','mobile','address','state','state_code','gstin','pincode']);
+
+    //     // ✅ Items master
+    //     // $items = \App\Models\Item::where('business_id', $bid)
+    //     //     ->where('is_active', true)
+    //     //     ->orderBy('name')
+    //     //     ->get([
+    //     //         'id','name','type','sku','description','tax_rate','making_charge','sac',
+    //     //         'gold_weight','gold_purity',
+    //     //         'silver_weight','silver_purity',
+    //     //         'stone_weight','stone_charges',
+    //     //         'diamond_weight','diamond_charges',
+    //     //         'price'
+    //     //     ]);
+
+    //     $items = Item::where('items.business_id', $bid)
+    //     ->where('items.is_active', true)
+    //     ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
+    //     ->select(
+    //         'items.id',
+    //         'items.name',
+    //         'items.type',
+    //         'items.sku',
+    //         'items.description',
+    //         'items.tax_rate',
+    //         'items.making_charge',
+    //         'items.sac',
+    //         'items.gold_weight',
+    //         'items.gold_purity',
+    //         'items.silver_weight',
+    //         'items.silver_purity',
+    //         'items.stone_weight',
+    //         'items.stone_charges',
+    //         'items.diamond_weight',
+    //         'items.diamond_charges',
+    //         'items.price',
+    //         DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
+    //     )
+    //     ->groupBy(
+    //         'items.id',
+    //         'items.name',
+    //         'items.type',
+    //         'items.sku',
+    //         'items.description',
+    //         'items.tax_rate',
+    //         'items.making_charge',
+    //         'items.sac',
+    //         'items.gold_weight',
+    //         'items.gold_purity',
+    //         'items.silver_weight',
+    //         'items.silver_purity',
+    //         'items.stone_weight',
+    //         'items.stone_charges',
+    //         'items.diamond_weight',
+    //         'items.diamond_charges',
+    //         'items.price'
+    //     )
+    //     ->orderByDesc('total_sold') // 🔥 Most sold first
+    //     ->get();
+    //     // ✅ Metal rates
+    //     $metalRates = \App\Models\MetalRate::where('business_id', $bid)
+    //         ->whereDate('rate_date', $today)
+    //         ->where('is_active', true)
+    //         ->get(['metal_type','purity','rate_per_gram']);
+
+    //     // ✅ Banks
+    //     $banks = \App\Models\BankAccount::where('business_id', $bid)
+    //         ->orderBy('bank_name')
+    //         ->get(['id','bank_name','account_holder','account_no','ifsc']);
+
+    //     // ✅ invoice JSON for prefill
+    //     $invoiceJson = [
+    //         'id' => $invoice->id,
+    //         'client_id' => $invoice->client_id,
+    //         'invoice_date' => $today,
+    //         'invoice_number' => (string)($invoice->invoice_number ?? ''),
+    //         'invoice_prefix' => (string)($invoice->invoice_prefix ?? $suggestedPrefix),
+
+    //         'gst_no' => (string)($invoice->gst_no ?? ''),
+    //         'transport_mode' => (string)($invoice->transport_mode ?? ''),
+    //         'reverse_charge' => (int)($invoice->reverse_charge ?? 0),
+
+    //         // totals / extras
+    //         'discount_type' => (string)($invoice->discount_type ?? 'flat'),
+    //         'discount_value' => (float)($invoice->discount_value ?? 0),
+
+    //         'charges_json' => $invoice->charges_json ?? null, // string/array (jo aap store kar rahe)
+    //         'charge_total' => (float)($invoice->charge_total ?? 0),
+
+    //         'tcs_percent' => (float)($invoice->tcs_percent ?? 0),
+    //         'tcs_amount'  => (float)($invoice->tcs_amount ?? 0),
+
+    //         'round_off' => (float)($invoice->round_off ?? 0),
+
+    //         'payment_method' => (string)($invoice->payment_method ?? 'cash'),
+    //         'bank_account_id' => $invoice->bank_account_id ?? null,
+
+    //         // received fields (agar aapke table me hai)
+    //         'received' => (float)($invoice->received ?? 0),
+
+    //         // invoice items map
+    //         'items' => $invoice->items->map(function($it){
+    //             return [
+    //                 'item_id' => $it->item_id ?? null,
+    //                 'item_type' => $it->item_type ?? null,
+
+    //                 'description' => $it->description ?? '',
+    //                 'hsn' => $it->hsn ?? '',
+    //                 'quantity' => (float)($it->quantity ?? 1),
+
+    //                 'making_rate' => (float)($it->making_rate ?? 0),
+    //                 'gold_purity' => $it->gold_purity ?? null,
+    //                 'silver_purity' => $it->silver_purity ?? null,
+
+    //                 'gold_rate' => (float)($it->gold_rate ?? 0),
+    //                 'silver_rate' => (float)($it->silver_rate ?? 0),
+    //                 'silver_wt' => (float)($it->silver_wt ?? 0),
+    //                 'gold_wt' => (float)($it->gold_wt ?? 0),
+    //                 'gemstone_wt' => (float)($it->gemstone_wt ?? 0),
+    //                 'diamond_wt' => (float)($it->diamond_wt ?? 0),
+
+    //                 // 'service_rate' => (float)($it->service_rate ?? 0),
+
+    //                'service_rate' => 
+    //              (float)($it->rate ?? $it->making_charge ?? 0),
+                   
+
+    //                 'tax_percent' => (float)($it->tax_percent ?? 0),
+
+    //                 // for edit screen: amount final (tax included)
+    //                 'amount' => (float)($it->amount ?? 0),
+    //             ];
+    //         })->values(),
+    //     ];
+
+
+    //     return view('invoices.edit_kapoor_style', [
+    //         'invoice'            => $invoice,
+
+    //         'today'              => $today,
+    //         'clientsJson'        => $clients->values()->toJson(),
+    //         'itemsJson'          => $items->values()->toJson(),
+    //         'metalRatesJson'     => $metalRates->values()->toJson(),
+    //         'banksJson'          => $banks->values()->toJson(),
+
+    //         'suggestedPrefix'    => $suggestedPrefix,
+    //         'basePrefix'         => $base,
+    //         'defaultTerms'       => $business->terms,
+
+    //         'businessState'      => $business->state,
+    //         'businessStateCode'  => $business->state_code,
+    //         'businessGstin'      => $business->gstin,
+
+    //         'docType'            => $docType,
+
+    //         // ✅ prefill
+    //         'invoiceJson'        => json_encode($invoiceJson, JSON_UNESCAPED_UNICODE),
+    //     ]);
+    // }
+
     public function edit(Request $request, \App\Models\Invoice $invoice)
-    {
-        // ✅ Relations load
-        // NOTE: InvoiceItem model me item() relation hona chahiye:
-        // public function item(){ return $this->belongsTo(\App\Models\Item::class, 'item_id'); }
-        $invoice = $invoice->load([
-            'client',
-            'items.item',
-            'business',
-            'payments',
-        ]);
+{
+    // ✅ Relations load
+    // NOTE: InvoiceItem model me item() relation hona chahiye:
+    // public function item(){ return $this->belongsTo(\App\Models\Item::class, 'item_id'); }
+    $invoice = $invoice->load([
+        'client',
+        'items.item',
+        'business',
+        'payments',
+    ]);
 
-        // ✅ Active business resolve
-        $bid = $request->user()->current_business_id ?? session('active_business_id');
+    // ✅ Active business resolve
+    $bid = $request->user()->current_business_id ?? session('active_business_id');
 
-        if (!$bid) {
-            $bid = $invoice->business_id;
-        }
-
-        // ✅ Safety
-        if ((int) $invoice->business_id !== (int) $bid) {
-            abort(403, 'Unauthorized invoice access.');
-        }
-
-        $today = \Carbon\Carbon::parse($invoice->invoice_date)->toDateString();
-
-        // ✅ Detect doc type
-        $docType = strtolower(trim((string) ($invoice->invoice_type ?? 'tax')));
-
-        if (!in_array($docType, ['tax', 'proforma', 'quotation'], true)) {
-            $docType = 'tax';
-        }
-
-        $business = \App\Models\Business::findOrFail($bid);
-
-        // ✅ Base prefix
-        $taxBase = optional(
-            $request->user()
-                ->businesses()
-                ->where('businesses.id', $bid)
-                ->first()
-        )->invoice_base_prefix ?? 'RV/SL';
-
-        if ($docType === 'proforma') {
-            $base = 'PF';
-        } elseif ($docType === 'quotation') {
-            $base = 'QT';
-        } else {
-            $base = $taxBase;
-        }
-
-        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
-
-        // ✅ Clients
-        $clients = \App\Models\Client::where('business_id', $bid)
-            ->where(function ($q) use ($invoice) {
-                $q->where('is_save', true)
-                    ->orWhere('id', $invoice->client_id);
-            })
-            ->orderBy('name')
-            ->get([
-                'id',
-                'name',
-                'mobile',
-                'address',
-                'state',
-                'state_code',
-                'gstin',
-                'pincode',
-            ]);
-
-        // ✅ Items master with most sold sorting
-        $items = \App\Models\Item::where('items.business_id', $bid)
-            ->where('items.is_active', true)
-            ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
-            ->select(
-                'items.id',
-                'items.name',
-                'items.type',
-                'items.sku',
-                'items.description',
-                'items.tax_rate',
-                'items.making_charge',
-                'items.sac',
-                'items.gold_weight',
-                'items.gold_purity',
-                'items.silver_weight',
-                'items.silver_purity',
-                'items.stone_weight',
-                'items.stone_charges',
-                'items.diamond_weight',
-                'items.diamond_charges',
-                'items.price',
-                \DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
-            )
-            ->groupBy(
-                'items.id',
-                'items.name',
-                'items.type',
-                'items.sku',
-                'items.description',
-                'items.tax_rate',
-                'items.making_charge',
-                'items.sac',
-                'items.gold_weight',
-                'items.gold_purity',
-                'items.silver_weight',
-                'items.silver_purity',
-                'items.stone_weight',
-                'items.stone_charges',
-                'items.diamond_weight',
-                'items.diamond_charges',
-                'items.price'
-            )
-            ->orderByDesc('total_sold')
-            ->orderBy('items.name')
-            ->get();
-
-        // ✅ Metal rates
-        $metalRates = \App\Models\MetalRate::where('business_id', $bid)
-            ->whereDate('rate_date', $today)
-            ->where('is_active', true)
-            ->get([
-                'metal_type',
-                'purity',
-                'rate_per_gram',
-            ]);
-
-        // ✅ Banks
-        $banks = \App\Models\BankAccount::where('business_id', $bid)
-            ->orderBy('bank_name')
-            ->get([
-                'id',
-                'bank_name',
-                'account_holder',
-                'account_no',
-                'ifsc',
-            ]);
-
-        // ✅ Existing charges decode
-        $chargesJson = $invoice->charges_json ?? null;
-
-        if (is_string($chargesJson)) {
-            $decodedCharges = json_decode($chargesJson, true);
-            $chargesJson = is_array($decodedCharges) ? $decodedCharges : [];
-        }
-
-        if (!is_array($chargesJson)) {
-            $chargesJson = [];
-        }
-
-        // ✅ Payment data
-        $payment = $invoice->payments->first();
-
-        $receivedAmount = (float) (
-            $invoice->received_amount
-            ?? $payment->received_total
-            ?? 0
-        );
-
-        $paymentMode = (string) (
-            $invoice->payment_method
-            ?? 'cash'
-        );
-
-        // ✅ Invoice JSON for Alpine prefill
-        $invoiceJson = [
-            'id' => $invoice->id,
-            'client_id' => $invoice->client_id,
-            'invoice_date' => $today,
-            'invoice_number' => (string) ($invoice->invoice_number ?? ''),
-            'invoice_prefix' => (string) ($invoice->invoice_prefix ?? $suggestedPrefix),
-
-            'gst_no' => (string) ($invoice->gst_no ?? ''),
-            'transport_mode' => (string) ($invoice->transport_mode ?? 'By Hand'),
-            'reverse_charge' => (int) ($invoice->reverse_charge ?? 0),
-
-            'discount_type' => (string) ($invoice->discount_type ?? 'flat'),
-            'discount_value' => (float) (
-                $invoice->discount_value
-                ?? $invoice->discount_total
-                ?? 0
-            ),
-
-            'charges_json' => $chargesJson,
-            'charge_total' => (float) ($invoice->charge_total ?? 0),
-
-            'tcs_percent' => (float) ($invoice->tcs_percent ?? 0),
-            'tcs_amount' => (float) ($invoice->tcs_amount ?? 0),
-
-            'round_off' => (float) ($invoice->round_off ?? 0),
-
-            'payment_method' => $paymentMode,
-            'bank_account_id' => $invoice->bank_account_id ?? null,
-
-            'received' => $receivedAmount,
-
-            'pay_cash' => (float) ($payment->cash_amount ?? 0),
-            'pay_upi' => (float) ($payment->online_amount ?? 0),
-            'pay_card' => (float) ($payment->card_amount ?? 0),
-            'pay_cheque' => (float) ($payment->cheque_amount ?? 0),
-            'credit_sales_excess' => (float) ($payment->credit_sales_excess_amount ?? 0),
-            'advance_amount' => (float) ($payment->advance_amount ?? 0),
-
-            'online_mode' => (string) ($payment->online_mode ?? ''),
-            'online_ref' => (string) ($payment->online_ref ?? ''),
-            'upi_id' => (string) ($payment->upi_id ?? ''),
-            'card_last4' => (string) ($payment->card_last4 ?? ''),
-            'card_ref' => (string) ($payment->card_ref ?? ''),
-            'cheque_no' => (string) ($payment->cheque_no ?? ''),
-            'bank_name' => (string) ($payment->bank_name ?? ''),
-
-            // ✅ Important: item_type master item se detect hoga
-            'items' => $invoice->items->map(function ($it) {
-                $master = $it->item ?? null;
-
-                $type = strtolower(trim((string) (
-                    $master->type
-                    ?? $it->item_type
-                    ?? 'product'
-                )));
-
-                if (!in_array($type, ['product', 'service'], true)) {
-                    $type = 'product';
-                }
-
-                $hsn = $it->hsn_code ?? $it->sac_code ?? '';
-
-                $qty = (float) ($it->quantity ?? 1);
-                if ($qty <= 0) {
-                    $qty = 1;
-                }
-
-                $taxPercent = (float) ($it->tax_percent ?? 0);
-
-                // invoice_items.amount me final amount hai
-                $finalAmount = (float) ($it->amount ?? 0);
-
-                // invoice_items.rate me taxable/base amount hai
-                $baseAmount = (float) ($it->rate ?? 0);
-
-                // fixed price per unit nikalna
-                $masterPrice = (float) ($master->price ?? 0);
-                $fixedPrice = $masterPrice > 0
-                    ? $masterPrice
-                    : ($qty > 0 ? round($baseAmount / $qty, 2) : 0);
-
-                // Service rate per unit
-                $serviceRate = 0;
-                if ($type === 'service') {
-                    $serviceRate = $masterPrice > 0
-                        ? $masterPrice
-                        : ($qty > 0 ? round($baseAmount / $qty, 2) : (float) ($it->making_charge ?? 0));
-                }
-
-                $searchName = '';
-                if ($master) {
-                    $searchName = $master->sku
-                        ? ($master->name . ' (' . $master->sku . ')')
-                        : $master->name;
-                }
-
-                return [
-                    '_k' => now()->timestamp . rand(1000, 9999),
-
-                    'item_id' => $it->item_id ?? null,
-                    'item_type' => $type,
-
-                    'search' => $searchName,
-
-                    'ddOpen' => false,
-                    'ddHi' => 0,
-                    'ddStyle' => '',
-                    'ddPreviewName' => '',
-                    'ddPreview' => '',
-
-                    'description' => (string) ($it->description ?? ''),
-                    'hsn' => (string) $hsn,
-                    'quantity' => $qty,
-
-                    'making_rate' => $type === 'product'
-                        ? (float) ($it->making_rate ?? 0)
-                        : 0,
-
-                    'gold_purity' => $master->gold_purity ?? null,
-                    'silver_purity' => $master->silver_purity ?? null,
-
-                    'gold_rate' => (float) ($it->gold_rate ?? 0),
-                    'silver_rate' => (float) ($it->silver_rate ?? 0),
-
-                    'silver_wt' => (float) ($it->silver_wt ?? 0),
-                    'gold_wt' => (float) ($it->gold_wt ?? 0),
-
-                    'gemstone_wt' => (float) ($it->gemstone_wt_ct ?? 0),
-                    'diamond_wt' => (float) ($it->diamond_wt_ct ?? 0),
-
-                    // ✅ fixed price support
-                    'fixed_price' => $type === 'product' ? $fixedPrice : 0,
-
-                    'service_rate' => $type === 'service' ? $serviceRate : 0,
-
-                    'tax_percent' => $taxPercent,
-
-                    // ✅ edit screen me existing invoice amount same dikhe
-                    'amount_mode' => 'manual',
-                    'manual_amount' => $finalAmount,
-                    'amount' => $finalAmount,
-                ];
-            })->values(),
-        ];
-
-        return view('invoices.edit_kapoor_style', [
-            'invoice' => $invoice,
-
-            'today' => $today,
-            'clientsJson' => $clients->values()->toJson(),
-            'itemsJson' => $items->values()->toJson(),
-            'metalRatesJson' => $metalRates->values()->toJson(),
-            'banksJson' => $banks->values()->toJson(),
-
-            'suggestedPrefix' => $suggestedPrefix,
-            'basePrefix' => $base,
-            'defaultTerms' => $business->terms,
-
-            'businessState' => $business->state,
-            'businessStateCode' => $business->state_code,
-            'businessGstin' => $business->gstin,
-
-            'docType' => $docType,
-
-            'invoiceJson' => json_encode($invoiceJson, JSON_UNESCAPED_UNICODE),
-        ]);
+    if (!$bid) {
+        $bid = $invoice->business_id;
     }
+
+    // ✅ Safety
+    if ((int) $invoice->business_id !== (int) $bid) {
+        abort(403, 'Unauthorized invoice access.');
+    }
+
+    $today = \Carbon\Carbon::parse($invoice->invoice_date)->toDateString();
+
+    // ✅ Detect doc type
+    $docType = strtolower(trim((string) ($invoice->invoice_type ?? 'tax')));
+
+    if (!in_array($docType, ['tax', 'proforma', 'quotation'], true)) {
+        $docType = 'tax';
+    }
+
+    $business = \App\Models\Business::findOrFail($bid);
+
+    // ✅ Base prefix
+    $taxBase = optional(
+        $request->user()
+            ->businesses()
+            ->where('businesses.id', $bid)
+            ->first()
+    )->invoice_base_prefix ?? 'RV/SL';
+
+    if ($docType === 'proforma') {
+        $base = 'PF';
+    } elseif ($docType === 'quotation') {
+        $base = 'QT';
+    } else {
+        $base = $taxBase;
+    }
+
+    $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
+
+    // ✅ Clients
+    $clients = \App\Models\Client::where('business_id', $bid)
+        ->where(function ($q) use ($invoice) {
+            $q->where('is_save', true)
+                ->orWhere('id', $invoice->client_id);
+        })
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+            'mobile',
+            'address',
+            'state',
+            'state_code',
+            'gstin',
+            'pincode',
+        ]);
+
+    // ✅ Items master with most sold sorting
+    $items = \App\Models\Item::where('items.business_id', $bid)
+        ->where('items.is_active', true)
+        ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
+        ->select(
+            'items.id',
+            'items.name',
+            'items.type',
+            'items.sku',
+            'items.description',
+            'items.tax_rate',
+            'items.making_charge',
+            'items.sac',
+            'items.gold_weight',
+            'items.gold_purity',
+            'items.silver_weight',
+            'items.silver_purity',
+            'items.stone_weight',
+            'items.stone_charges',
+            'items.diamond_weight',
+            'items.diamond_charges',
+            'items.price',
+            \DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
+        )
+        ->groupBy(
+            'items.id',
+            'items.name',
+            'items.type',
+            'items.sku',
+            'items.description',
+            'items.tax_rate',
+            'items.making_charge',
+            'items.sac',
+            'items.gold_weight',
+            'items.gold_purity',
+            'items.silver_weight',
+            'items.silver_purity',
+            'items.stone_weight',
+            'items.stone_charges',
+            'items.diamond_weight',
+            'items.diamond_charges',
+            'items.price'
+        )
+        ->orderByDesc('total_sold')
+        ->orderBy('items.name')
+        ->get();
+
+    // ✅ Metal rates
+    $metalRates = \App\Models\MetalRate::where('business_id', $bid)
+        ->whereDate('rate_date', $today)
+        ->where('is_active', true)
+        ->get([
+            'metal_type',
+            'purity',
+            'rate_per_gram',
+        ]);
+
+    // ✅ Banks
+    $banks = \App\Models\BankAccount::where('business_id', $bid)
+        ->orderBy('bank_name')
+        ->get([
+            'id',
+            'bank_name',
+            'account_holder',
+            'account_no',
+            'ifsc',
+        ]);
+
+    // ✅ Existing charges decode
+    $chargesJson = $invoice->charges_json ?? null;
+
+    if (is_string($chargesJson)) {
+        $decodedCharges = json_decode($chargesJson, true);
+        $chargesJson = is_array($decodedCharges) ? $decodedCharges : [];
+    }
+
+    if (!is_array($chargesJson)) {
+        $chargesJson = [];
+    }
+
+    // ✅ Payment data
+    $payment = $invoice->payments->first();
+
+    $receivedAmount = (float) (
+        $invoice->received_amount
+        ?? $payment->received_total
+        ?? 0
+    );
+
+    $paymentMode = (string) (
+        $invoice->payment_method
+        ?? 'cash'
+    );
+
+    // ✅ Invoice JSON for Alpine prefill
+    $invoiceJson = [
+        'id' => $invoice->id,
+        'client_id' => $invoice->client_id,
+        'invoice_date' => $today,
+        'invoice_number' => (string) ($invoice->invoice_number ?? ''),
+        'invoice_prefix' => (string) ($invoice->invoice_prefix ?? $suggestedPrefix),
+
+        'gst_no' => (string) ($invoice->gst_no ?? ''),
+        'transport_mode' => (string) ($invoice->transport_mode ?? 'By Hand'),
+        'reverse_charge' => (int) ($invoice->reverse_charge ?? 0),
+
+        'discount_type' => (string) ($invoice->discount_type ?? 'flat'),
+        'discount_value' => (float) (
+            $invoice->discount_value
+            ?? $invoice->discount_total
+            ?? 0
+        ),
+
+        'charges_json' => $chargesJson,
+        'charge_total' => (float) ($invoice->charge_total ?? 0),
+
+        'tcs_percent' => (float) ($invoice->tcs_percent ?? 0),
+        'tcs_amount' => (float) ($invoice->tcs_amount ?? 0),
+
+        'round_off' => (float) ($invoice->round_off ?? 0),
+
+        'payment_method' => $paymentMode,
+        'bank_account_id' => $invoice->bank_account_id ?? null,
+
+        'received' => $receivedAmount,
+
+        'pay_cash' => (float) ($payment->cash_amount ?? 0),
+        'pay_upi' => (float) ($payment->online_amount ?? 0),
+        'pay_card' => (float) ($payment->card_amount ?? 0),
+        'pay_cheque' => (float) ($payment->cheque_amount ?? 0),
+        'credit_sales_excess' => (float) ($payment->credit_sales_excess_amount ?? 0),
+        'advance_amount' => (float) ($payment->advance_amount ?? 0),
+
+        'online_mode' => (string) ($payment->online_mode ?? ''),
+        'online_ref' => (string) ($payment->online_ref ?? ''),
+        'upi_id' => (string) ($payment->upi_id ?? ''),
+        'card_last4' => (string) ($payment->card_last4 ?? ''),
+        'card_ref' => (string) ($payment->card_ref ?? ''),
+        'cheque_no' => (string) ($payment->cheque_no ?? ''),
+        'bank_name' => (string) ($payment->bank_name ?? ''),
+
+        // ✅ Important: item_type master item se detect hoga
+        'items' => $invoice->items->map(function ($it) {
+            $master = $it->item ?? null;
+
+            $type = strtolower(trim((string) (
+                $master->type
+                ?? $it->item_type
+                ?? 'product'
+            )));
+
+            if (!in_array($type, ['product', 'service'], true)) {
+                $type = 'product';
+            }
+
+            $hsn = $it->hsn_code ?? $it->sac_code ?? '';
+
+            $qty = (float) ($it->quantity ?? 1);
+            if ($qty <= 0) {
+                $qty = 1;
+            }
+
+            $taxPercent = (float) ($it->tax_percent ?? 0);
+
+            // invoice_items.amount me final amount hai
+            $finalAmount = (float) ($it->amount ?? 0);
+
+            // invoice_items.rate me taxable/base amount hai
+            $baseAmount = (float) ($it->rate ?? 0);
+
+            // fixed price per unit nikalna
+            $masterPrice = (float) ($master->price ?? 0);
+            $fixedPrice = $masterPrice > 0
+                ? $masterPrice
+                : ($qty > 0 ? round($baseAmount / $qty, 2) : 0);
+
+            // Service rate per unit
+            $serviceRate = 0;
+            if ($type === 'service') {
+                $serviceRate = $masterPrice > 0
+                    ? $masterPrice
+                    : ($qty > 0 ? round($baseAmount / $qty, 2) : (float) ($it->making_charge ?? 0));
+            }
+
+            $searchName = '';
+            if ($master) {
+                $searchName = $master->sku
+                    ? ($master->name . ' (' . $master->sku . ')')
+                    : $master->name;
+            }
+
+            return [
+                '_k' => now()->timestamp . rand(1000, 9999),
+
+                'item_id' => $it->item_id ?? null,
+                'item_type' => $type,
+
+                'search' => $searchName,
+
+                'ddOpen' => false,
+                'ddHi' => 0,
+                'ddStyle' => '',
+                'ddPreviewName' => '',
+                'ddPreview' => '',
+
+                'description' => (string) ($it->description ?? ''),
+                'hsn' => (string) $hsn,
+                'quantity' => $qty,
+
+                'making_rate' => $type === 'product'
+                    ? (float) ($it->making_rate ?? 0)
+                    : 0,
+
+                'gold_purity' => $master->gold_purity ?? null,
+                'silver_purity' => $master->silver_purity ?? null,
+
+                'gold_rate' => (float) ($it->gold_rate ?? 0),
+                'silver_rate' => (float) ($it->silver_rate ?? 0),
+
+                'silver_wt' => (float) ($it->silver_wt ?? 0),
+                'gold_wt' => (float) ($it->gold_wt ?? 0),
+
+                'gemstone_wt' => (float) ($it->gemstone_wt_ct ?? 0),
+                'diamond_wt' => (float) ($it->diamond_wt_ct ?? 0),
+
+                // ✅ fixed price support
+                'fixed_price' => $type === 'product' ? $fixedPrice : 0,
+
+                'service_rate' => $type === 'service' ? $serviceRate : 0,
+
+                'tax_percent' => $taxPercent,
+
+                // ✅ edit screen me existing invoice amount same dikhe
+                'amount_mode' => 'manual',
+                'manual_amount' => $finalAmount,
+                'amount' => $finalAmount,
+            ];
+        })->values(),
+    ];
+
+    return view('invoices.edit_kapoor_style', [
+        'invoice' => $invoice,
+
+        'today' => $today,
+        'clientsJson' => $clients->values()->toJson(),
+        'itemsJson' => $items->values()->toJson(),
+        'metalRatesJson' => $metalRates->values()->toJson(),
+        'banksJson' => $banks->values()->toJson(),
+
+        'suggestedPrefix' => $suggestedPrefix,
+        'basePrefix' => $base,
+        'defaultTerms' => $business->terms,
+
+        'businessState' => $business->state,
+        'businessStateCode' => $business->state_code,
+        'businessGstin' => $business->gstin,
+
+        'docType' => $docType,
+
+        'invoiceJson' => json_encode($invoiceJson, JSON_UNESCAPED_UNICODE),
+    ]);
+}
+
+
+
+
 
     public function destroy(Invoice $invoice)
     {
