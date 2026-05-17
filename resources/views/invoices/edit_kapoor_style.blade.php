@@ -220,17 +220,19 @@
                             <th>HSN / SAC</th>
                             <th class="text-center">Qty</th>
 
+                            <th>Rate / Price</th>
+
                             {{-- Product-only columns --}}
-                            <th x-show="hasProduct()">Making Rate</th>
-                            <th x-show="hasProduct()">Gold Rate (₹/g)</th>
-                            <th x-show="hasProduct()">Silver Rate (₹/g)</th>
-                            <th x-show="hasProduct()">Silver Wt.(Gm)</th>
-                            <th x-show="hasProduct()">Gold Wt.(Gm)</th>
-                            <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
-                            <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
+                            <th x-show="items.some(row => showItemField(row, 'making_rate'))">Making Rate</th>
+                            <th x-show="items.some(row => showItemField(row, 'gold_rate'))">Gold Rate (₹/g)</th>
+                            <th x-show="items.some(row => showItemField(row, 'silver_rate'))">Silver Rate (₹/g)</th>
+                            <th x-show="items.some(row => showItemField(row, 'silver_wt'))">Silver Wt.(Gm)</th>
+                            <th x-show="items.some(row => showItemField(row, 'gold_wt'))">Gold Wt.(Gm)</th>
+                            <th x-show="items.some(row => showItemField(row, 'gemstone_wt'))">Gem Stone Wt.(Ct.)</th>
+                            <th x-show="items.some(row => showItemField(row, 'diamond_wt'))">Diamond Wt.(Ct.)</th>
 
                             {{-- Service-only column --}}
-                            <th x-show="hasService()">Service Rate (₹)</th>
+                            {{-- <th x-show="hasService()">Service Rate (₹)</th> --}}
 
                             <th>Tax %</th>
                             <th>Amount (Editable)</th>
@@ -439,14 +441,32 @@
                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
                                 </td>
 
+                                <td class="px-3 py-2">
+                                    <div class="text-[10px] mb-0.5 text-gray-500 dark:text-neutral-400"
+                                        x-text="row.item_type === 'service' ? 'Service Rate' : 'Price'">
+                                    </div>
+
+                                    <input type="number" step="0.01" min="0"
+                                        :value="row.item_type === 'service' ? row.service_rate : row.fixed_price"
+                                        @input="
+                                            if (row.item_type === 'service') {
+                                                row.service_rate = Number($event.target.value || 0);
+                                            } else {
+                                                row.fixed_price = Number($event.target.value || 0);
+                                            }
+                                            onAutoChange(row);
+                                        "
+                                        class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
+                                </td>
+
                                 {{-- Product-only cells --}}
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'making_rate')">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.making_rate" @input="onAutoChange(row)"
                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'gold_rate')">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.gold_rate" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
@@ -454,7 +474,7 @@
                                          x-text="row.gold_purity ? ('Purity: ' + row.gold_purity) : ''"></div>
                                 </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'silver_rate')">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.silver_rate" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
@@ -462,39 +482,39 @@
                                          x-text="row.silver_purity ? ('Purity: ' + row.silver_purity) : ''"></div>
                                 </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'silver_wt')">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.silver_wt" @input="onAutoChange(row)"
                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'gold_wt')">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.gold_wt" @input="onAutoChange(row)"
                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'gemstone_wt')">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.gemstone_wt" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                <td class="px-3 py-2" x-show="showItemField(row, 'diamond_wt')">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.diamond_wt" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
                                 {{-- Service-only cell --}}
-                                <td class="px-3 py-2" x-show="row.item_type === 'service'">
+                                {{-- <td class="px-3 py-2" x-show="row.item_type === 'service'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.service_rate" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                     <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400">
                                         (Service = Item Price)
                                     </div>
-                                </td>
+                                </td> --}}
 
                                 <td class="px-3 py-2">
                                     <input type="number" step="0.01" min="0" max="100"
@@ -3386,6 +3406,20 @@ function invoiceForm() {
 
     return {
         clients: CLIENTS,
+
+
+        hasValue(v) {
+            if (v === null || v === undefined) return false;
+            if (String(v).trim() === '') return false;
+            return Number(v) > 0 || isNaN(Number(v));
+        },
+
+        showItemField(row, field) {
+            return row.item_type === 'product' && this.hasValue(row[field]);
+        },
+
+
+
         itemsData: ITEMS,
         metalRates: METAL_RATES,
         banks: BANKS,
@@ -3814,17 +3848,46 @@ function invoiceForm() {
             this.calc();
         },
 
+        // onAmountEdit(row) {
+        //     if (!row) return;
+
+        //     const total = n(row.manual_amount, 0);
+        //     row.amount_mode = total > 0 ? 'manual' : 'auto';
+
+        //     if (row.item_type === 'service' && row.amount_mode === 'manual') {
+        //         const qty = Math.max(1, n(row.quantity, 1));
+        //         const pct = n(row.tax_percent, 0);
+        //         const base = pct > 0 ? total / (1 + pct / 100) : total;
+        //         row.service_rate = n((base / qty).toFixed(2), 0);
+        //     }
+
+        //     this.calc();
+        // },
+
         onAmountEdit(row) {
             if (!row) return;
 
             const total = n(row.manual_amount, 0);
             row.amount_mode = total > 0 ? 'manual' : 'auto';
 
-            if (row.item_type === 'service' && row.amount_mode === 'manual') {
+            if (row.amount_mode === 'manual') {
                 const qty = Math.max(1, n(row.quantity, 1));
                 const pct = n(row.tax_percent, 0);
-                const base = pct > 0 ? total / (1 + pct / 100) : total;
-                row.service_rate = n((base / qty).toFixed(2), 0);
+
+                // tax reverse
+                const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
+
+                if (row.item_type === 'service') {
+                    row.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
+                } else {
+                    // making reverse
+                    const makingPercent = n(row.making_rate, 0);
+                    const baseBeforeMaking = makingPercent > 0
+                        ? baseAfterTax / (1 + makingPercent / 100)
+                        : baseAfterTax;
+
+                    row.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
+                }
             }
 
             this.calc();
@@ -4181,6 +4244,50 @@ function invoiceForm() {
             this.calc();
         },
 
+        // beforeSubmit() {
+        //     const payload = (this.items || []).map(r => ({
+        //         item_id: r.item_id ?? null,
+        //         item_type: r.item_type ?? null,
+        //         description: r.description || '',
+        //         hsn: r.hsn || '',
+        //         quantity: Math.max(1, n(r.quantity, 1)),
+
+        //         // ✅ making_rate is percentage. Backend compatibility ke liye making_charge bhi bhej rahe hain.
+        //         making_rate: n(r.making_rate),
+        //         making_charge: n(r.making_rate),
+        //         making_charge: n(r.making_rate),
+        //         gold_purity: r.gold_purity || null,
+        //         silver_purity: r.silver_purity || null,
+        //         gold_rate: n(r.gold_rate),
+        //         silver_rate: n(r.silver_rate),
+        //         silver_wt: n(r.silver_wt),
+        //         gold_wt: n(r.gold_wt),
+        //         gemstone_wt: n(r.gemstone_wt),
+        //         diamond_wt: n(r.diamond_wt),
+
+        //         service_rate: n(r.service_rate),
+
+        //         // ✅ IMPORTANT: backend ko price milega
+        //         fixed_price: n(r.fixed_price),
+
+        //         discount: 0,
+        //         tax_percent: n(r.tax_percent),
+
+        //         amount_mode: r.amount_mode || 'auto',
+        //         manual_amount: n(r.manual_amount),
+
+        //         rate: this.lineBase(r),
+        //         tax_amount: this.lineTax(r),
+        //         amount: this.lineAmount(r),
+        //     }));
+
+        //     document.getElementById('items_json').value = JSON.stringify(payload);
+
+        //     this.onReceivedInput();
+        //     this.$refs.form.submit();
+        // },
+
+
         beforeSubmit() {
             const payload = (this.items || []).map(r => ({
                 item_id: r.item_id ?? null,
@@ -4189,10 +4296,9 @@ function invoiceForm() {
                 hsn: r.hsn || '',
                 quantity: Math.max(1, n(r.quantity, 1)),
 
-                // ✅ making_rate is percentage. Backend compatibility ke liye making_charge bhi bhej rahe hain.
                 making_rate: n(r.making_rate),
                 making_charge: n(r.making_rate),
-                making_charge: n(r.making_rate),
+
                 gold_purity: r.gold_purity || null,
                 silver_purity: r.silver_purity || null,
                 gold_rate: n(r.gold_rate),
@@ -4203,8 +4309,6 @@ function invoiceForm() {
                 diamond_wt: n(r.diamond_wt),
 
                 service_rate: n(r.service_rate),
-
-                // ✅ IMPORTANT: backend ko price milega
                 fixed_price: n(r.fixed_price),
 
                 discount: 0,

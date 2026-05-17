@@ -209,18 +209,19 @@
                                 <th>Description</th>
                                 <th>HSN / SAC</th>
                                 <th class="text-center">Qty</th>
+                                <th>Rate / Price</th>
 
                                 {{-- Product-only columns --}}
-                                <th x-show="hasProduct()">Making Rate</th>
-                                <th x-show="hasProduct()">Gold Rate (₹/g)</th>
-                                <th x-show="hasProduct()">Silver Rate (₹/g)</th>
-                                <th x-show="hasProduct()">Silver Wt.(Gm)</th>
-                                <th x-show="hasProduct()">Gold Wt.(Gm)</th>
-                                <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
-                                <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
+                                <th x-show="items.some(row => showItemField(row, 'making_rate'))">Making Rate</th>
+                                <th x-show="items.some(row => showItemField(row, 'gold_rate'))">Gold Rate (₹/g)</th>
+                                <th x-show="items.some(row => showItemField(row, 'silver_rate'))">Silver Rate (₹/g)</th>
+                                <th x-show="items.some(row => showItemField(row, 'silver_wt'))">Silver Wt.(Gm)</th>
+                                <th x-show="items.some(row => showItemField(row, 'gold_wt'))">Gold Wt.(Gm)</th>
+                                <th x-show="items.some(row => showItemField(row, 'gemstone_wt'))">Gem Stone Wt.(Ct.)</th>
+                                <th x-show="items.some(row => showItemField(row, 'diamond_wt'))">Diamond Wt.(Ct.)</th>
 
                                 {{-- Service-only column --}}
-                                <th x-show="hasService()">Service Rate (₹)</th>
+                                {{-- <th x-show="hasService()">Service Rate (₹)</th> --}}
 
                                 <th>Tax %</th>
                                 <th>Amount (Editable)</th>
@@ -341,62 +342,82 @@
                                             class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs text-center">
                                     </td>
 
+                                    <td class="px-3 py-2">
+                                        <div class="text-[10px] mb-0.5 text-gray-500 dark:text-neutral-400"
+                                            x-text="row.item_type === 'service' ? 'Service Rate' : 'Price'">
+                                        </div>
+
+                                        <input type="number" step="0.01" min="0"
+                                            :value="row.item_type === 'service' ? row.service_rate : row.fixed_price"
+                                            @input="
+                                                if (row.item_type === 'service') {
+                                                    row.service_rate = Number($event.target.value || 0);
+                                                } else {
+                                                    row.fixed_price = Number($event.target.value || 0);
+                                                }
+                                                onAutoChange(row);
+                                            "
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs text-right">
+                                    </td>
+
                                     {{-- Product-only cells --}}
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'making_rate')">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.making_rate" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'gold_rate')">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gold_rate" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                            x-text="row.gold_purity ? ('Purity: ' + row.gold_purity) : ''"></div>
+                                            x-show="hasValue(row.gold_purity)"
+                                            x-text="'Purity: ' + row.gold_purity"></div>
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'silver_rate')">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.silver_rate" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                            x-text="row.silver_purity ? ('Purity: ' + row.silver_purity) : ''"></div>
+                                            x-show="hasValue(row.silver_purity)"
+                                            x-text="'Purity: ' + row.silver_purity"></div>
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'silver_wt')">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.silver_wt" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'gold_wt')">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gold_wt" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'gemstone_wt')">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gemstone_wt" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField(row, 'diamond_wt')">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.diamond_wt" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
                                     {{-- Service-only cell --}}
-                                    <td class="px-3 py-2" x-show="row.item_type === 'service'">
+                                    {{-- <td class="px-3 py-2" x-show="row.item_type === 'service'">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.service_rate" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400">
                                             (Service = Item Price)
                                         </div>
-                                    </td>
+                                    </td> --}}
 
                                     <td class="px-3 py-2">
                                         <input type="number" step="0.01" min="0" max="100"
@@ -2887,6 +2908,20 @@
             clients: CLIENTS,
             itemsData: ITEMS,
             categories: CATEGORIES,
+
+
+
+             hasValue(v) {
+                if (v === null || v === undefined) return false;
+                if (String(v).trim() === '') return false;
+                return Number(v) > 0 || isNaN(Number(v));
+            },
+
+            showItemField(row, field) {
+                return row.item_type === 'product' && this.hasValue(row[field]);
+            },
+
+
             metalRates: METAL_RATES,
             banks: BANKS,
             states: STATES,
@@ -3001,6 +3036,7 @@
             },
 
             newItem: {
+
                 type: 'product',
                 name: '',
                 sku: '',
@@ -3017,6 +3053,7 @@
                 silver_purity: '',
                 stone_weight: 0,
                 diamond_weight: 0
+                
             },
 
             // ---------- UTILS ----------
@@ -3508,29 +3545,95 @@
                 this.calc();
             },
 
+            // onAmountEdit(r) {
+            //     const total = n(r.manual_amount, 0);
+            //     r.amount_mode = (total > 0) ? 'manual' : 'auto';
+
+            //     if (r.item_type === 'service') {
+            //         const qty = Math.max(1, n(r.quantity, 1));
+            //         const pct = n(r.tax_percent, 0);
+            //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+            //         r.service_rate = n((base / qty).toFixed(2), 0);
+            //     }
+
+            //     this.calc();
+            // },
+
+            // onAmountEdit(r) {
+            //     const total = n(r.manual_amount, 0);
+            //     r.amount_mode = (total > 0) ? 'manual' : 'auto';
+
+            //     const qty = Math.max(1, n(r.quantity, 1));
+            //     const pct = n(r.tax_percent, 0);
+            //     const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+            //     const perUnit = n((base / qty).toFixed(2), 0);
+
+            //     if (r.item_type === 'service') {
+            //         r.service_rate = perUnit;
+            //     } else {
+            //         r.fixed_price = perUnit;
+            //     }
+
+            //     this.calc();
+            // },
+
+
             onAmountEdit(r) {
                 const total = n(r.manual_amount, 0);
                 r.amount_mode = (total > 0) ? 'manual' : 'auto';
 
-                if (r.item_type === 'service') {
+                if (r.amount_mode === 'manual') {
                     const qty = Math.max(1, n(r.quantity, 1));
                     const pct = n(r.tax_percent, 0);
-                    const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                    r.service_rate = n((base / qty).toFixed(2), 0);
+
+                    // पहले tax हटेगा
+                    const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
+
+                    if (r.item_type === 'service') {
+                        r.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
+                    } else {
+                        // product में making rate भी reverse होगा
+                        const makingPercent = n(r.making_rate, 0);
+                        const baseBeforeMaking = makingPercent > 0
+                            ? baseAfterTax / (1 + makingPercent / 100)
+                            : baseAfterTax;
+
+                        r.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
+                    }
                 }
 
                 this.calc();
             },
 
+            // onAutoChange(r) {
+            //     if (r.amount_mode !== 'manual') {
+            //         r.manual_amount = this.lineAmount(r);
+            //     } else if (r.item_type === 'service') {
+            //         const total = n(r.manual_amount, 0);
+            //         const qty = Math.max(1, n(r.quantity, 1));
+            //         const pct = n(r.tax_percent, 0);
+            //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+            //         r.service_rate = n((base / qty).toFixed(2), 0);
+            //     }
+
+            //     this.calc();
+            // },
+
             onAutoChange(r) {
                 if (r.amount_mode !== 'manual') {
                     r.manual_amount = this.lineAmount(r);
-                } else if (r.item_type === 'service') {
+                } else {
                     const total = n(r.manual_amount, 0);
                     const qty = Math.max(1, n(r.quantity, 1));
                     const pct = n(r.tax_percent, 0);
                     const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                    r.service_rate = n((base / qty).toFixed(2), 0);
+                    const perUnit = n((base / qty).toFixed(2), 0);
+
+                    if (r.item_type === 'service') {
+                        r.service_rate = perUnit;
+                    } else {
+                        r.fixed_price = perUnit;
+                    }
                 }
 
                 this.calc();

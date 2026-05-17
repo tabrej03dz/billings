@@ -222,6 +222,7 @@ class PlanController extends Controller
         ]);
     }
 
+
     private function validatePlan(Request $request, ?int $ignoreId = null): array
     {
         return $request->validate([

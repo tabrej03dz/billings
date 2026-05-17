@@ -349,10 +349,12 @@
                 <span class="smalltag" style="font-size:11px;">ORIGINAL FOR RECIPIENT</span>
             </div>
 
+            @if($b->name == 'Real Victory Groups')
             <!-- Right: Think Outside The Box -->
             <div class="bold" style="font-size:11px; text-align:right; ">
                 Think Outside The Box
             </div>
+            @endif
         </div>
     </td>
 </tr>
