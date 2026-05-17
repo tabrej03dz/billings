@@ -212,13 +212,13 @@
                                 <th>Rate / Price</th>
 
                                 {{-- Product-only columns --}}
-                                <th x-show="items.some(row => showItemField(row, 'making_rate'))">Making Rate</th>
-                                <th x-show="items.some(row => showItemField(row, 'gold_rate'))">Gold Rate (₹/g)</th>
-                                <th x-show="items.some(row => showItemField(row, 'silver_rate'))">Silver Rate (₹/g)</th>
-                                <th x-show="items.some(row => showItemField(row, 'silver_wt'))">Silver Wt.(Gm)</th>
-                                <th x-show="items.some(row => showItemField(row, 'gold_wt'))">Gold Wt.(Gm)</th>
-                                <th x-show="items.some(row => showItemField(row, 'gemstone_wt'))">Gem Stone Wt.(Ct.)</th>
-                                <th x-show="items.some(row => showItemField(row, 'diamond_wt'))">Diamond Wt.(Ct.)</th>
+                                <th x-show="hasProduct()">Making Rate</th>
+                                <th x-show="hasProduct()">Gold Rate (₹/g)</th>
+                                <th x-show="hasProduct()">Silver Rate (₹/g)</th>
+                                <th x-show="hasProduct()">Silver Wt.(Gm)</th>
+                                <th x-show="hasProduct()">Gold Wt.(Gm)</th>
+                                <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
+                                <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
 
                                 {{-- Service-only column --}}
                                 {{-- <th x-show="hasService()">Service Rate (₹)</th> --}}
