@@ -4219,11 +4219,11 @@
             },
 
             // ---------- COMPAT ----------
-            blankRow() {
-                return rowTemplate();
-            },
+            // blankRow() {
+            //     return rowTemplate();
+            // },
 
-            scrollItemDDIntoView() {},
+            // scrollItemDDIntoView() {},
         };
     }
 
