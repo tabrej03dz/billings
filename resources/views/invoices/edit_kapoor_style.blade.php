@@ -4192,6 +4192,7 @@ function invoiceForm() {
                 // ✅ making_rate is percentage. Backend compatibility ke liye making_charge bhi bhej rahe hain.
                 making_rate: n(r.making_rate),
                 making_charge: n(r.making_rate),
+                making_charge: n(r.making_rate),
                 gold_purity: r.gold_purity || null,
                 silver_purity: r.silver_purity || null,
                 gold_rate: n(r.gold_rate),
