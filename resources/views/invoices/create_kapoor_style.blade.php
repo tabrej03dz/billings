@@ -361,13 +361,15 @@
                                     </td>
 
                                     {{-- Product-only cells --}}
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'making_rate')">
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.making_rate" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'gold_rate')">
+                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'gold_rate')"> --}}
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gold_rate" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
@@ -376,7 +378,9 @@
                                             x-text="'Purity: ' + row.gold_purity"></div>
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'silver_rate')">
+                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'silver_rate')"> --}}
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.silver_rate" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
@@ -385,25 +389,33 @@
                                             x-text="'Purity: ' + row.silver_purity"></div>
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'silver_wt')">
+                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'silver_wt')"> --}}
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.silver_wt" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'gold_wt')">
+                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'gold_wt')"> --}}
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gold_wt" @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'gemstone_wt')">
+                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'gemstone_wt')"> --}}
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gemstone_wt" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="showItemField(row, 'diamond_wt')">
+                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'diamond_wt')"> --}}
+                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.diamond_wt" @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
