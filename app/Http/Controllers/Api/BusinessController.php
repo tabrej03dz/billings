@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Business;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -42,69 +43,128 @@ class BusinessController extends Controller
         ]);
     }
 
+    // public function store(Request $request)
+    // {
+
+    //     // ✅ IMPORTANT: store() me $business variable exist nahi karta, isliye ignore hata diya.
+    //     $data = $request->validate([
+    //         'name'    => ['required', 'string', 'max:255'],
+    //         'slug'    => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
+    //         'email'   => ['required', 'email', 'max:255', 'unique:businesses,email'],
+
+    //         'mobile'  => ['nullable', 'string', 'max:20', 'unique:businesses,mobile'],
+    //         'gstin'   => ['nullable', 'string', 'max:50'],
+    //         'address' => ['nullable', 'string', 'max:1000'],
+    //         'terms'   => ['nullable', 'string', 'max:1000'],
+
+    //         'logo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    //         'signature'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    //         'letter_head'=> ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+
+    //         'pdf_template_id' => ['nullable', 'string', 'max:100'],
+    //         'type' => ['nullable', 'string', 'max:100'], // optional in store (aap chahe to required kar do)
+    //         'state' => ['nullable', 'string', 'max:100'],
+    //         'state_code' => ['nullable', 'string', 'max:100'],
+    //     ]);
+
+
+
+    //     // Slug
+    //     $data['slug'] = Str::slug($data['name']);
+
+    //     if (Business::where('slug', $data['slug'])->exists()) {
+    //         $data['slug'] .= '-' . Str::lower(Str::random(6));
+    //     }
+
+    //     // Files
+    //     if ($request->hasFile('logo')) {
+    //         $data['logo'] = $request->file('logo')->store('business_logos', 'public');
+    //     }
+    //     if ($request->hasFile('signature')) {
+    //         $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
+    //     }
+    //     if ($request->hasFile('letter_head')) {
+    //         $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
+    //     }
+
+
+    //     $business = Business::create($data);
+
+    //     //        // Attach current user as OWNER
+    //     //        $request->user()->businesses()->syncWithoutDetaching([
+    //     //            $business->id => ['role' => 'owner']
+    //     //        ]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Business created successfully.',
+    //         'data' => $business,
+    //     ], 201);
+    // }
+
+
     public function store(Request $request)
     {
-
-        // ✅ IMPORTANT: store() me $business variable exist nahi karta, isliye ignore hata diya.
         $data = $request->validate([
             'name'    => ['required', 'string', 'max:255'],
             'slug'    => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
             'email'   => ['required', 'email', 'max:255', 'unique:businesses,email'],
-
             'mobile'  => ['nullable', 'string', 'max:20', 'unique:businesses,mobile'],
             'gstin'   => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:1000'],
             'terms'   => ['nullable', 'string', 'max:1000'],
 
-            'logo'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'signature'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'letter_head'=> ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
 
             'pdf_template_id' => ['nullable', 'string', 'max:100'],
-            'type' => ['nullable', 'string', 'max:100'], // optional in store (aap chahe to required kar do)
-            'state' => ['nullable', 'string', 'max:100'],
+            'type'       => ['nullable', 'string', 'max:100'],
+            'state'      => ['nullable', 'string', 'max:100'],
             'state_code' => ['nullable', 'string', 'max:100'],
-            'user_id' => ['nullable', 'exists:users,id'], // optional: agar aap chahte ho ki business create karte time hi kisi user ko assign karna, to is field ko required kar do
+            'user_id'    => ['nullable', 'exists:users,id'],
         ]);
 
-
-
-        // Slug
         $data['slug'] = Str::slug($data['name']);
 
         if (Business::where('slug', $data['slug'])->exists()) {
             $data['slug'] .= '-' . Str::lower(Str::random(6));
         }
 
-        // Files
         if ($request->hasFile('logo')) {
             $data['logo'] = $request->file('logo')->store('business_logos', 'public');
         }
+
         if ($request->hasFile('signature')) {
             $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
         }
+
         if ($request->hasFile('letter_head')) {
             $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
         }
 
-
         $business = Business::create($data);
 
-        BusinessUser::create([
-            'business_id' => $business->id,
-            'user_id' => $request->user_id ?? $request->user()->id, // agar request me user_id nahi hai, to current user ko assign kar do
-            'role' => 'user',
-        ]);
+        $assignUserId = $request->filled('user_id')
+            ? $request->user_id
+            : auth()->id();
 
-//        // Attach current user as OWNER
-//        $request->user()->businesses()->syncWithoutDetaching([
-//            $business->id => ['role' => 'owner']
-//        ]);
+        DB::table('business_user')->updateOrInsert(
+            [
+                'business_id' => $business->id,
+                'user_id'     => $assignUserId,
+            ],
+            [
+                'role'       => 'owner',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'Business created successfully.',
-            'data' => $business,
+            'data'    => $business,
         ], 201);
     }
 
