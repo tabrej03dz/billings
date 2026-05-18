@@ -215,7 +215,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::post('/choose-plan-save', [PlanController::class, 'choosenSave']);
 
 
-    Route::get('/banner-sliders', [BannerSliderController::class, 'inndex']);
+    Route::get('/banner-sliders', [BannerSliderController::class, 'index']);
 
 
 });
