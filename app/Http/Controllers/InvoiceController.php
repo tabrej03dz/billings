@@ -2242,6 +2242,7 @@ class InvoiceController extends Controller
             'bank_account_id' => ['nullable', 'integer'],
             'signature'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'kots_json'       => ['nullable', 'string', 'max:5000'],
+            'remove_signature' => ['nullable', 'boolean'],
         ]);
 
         $pay = [];
@@ -2525,19 +2526,21 @@ class InvoiceController extends Controller
         $business = Business::findOrFail($bid);
         $signaturePath = null;
 
-        // ✅ Agar business me pehle se signature hai
-        if (!empty($business->signature)) {
-            $signaturePath = $business->signature;
-        }
+        // ✅ Remove checked hai to invoice me signature save nahi hoga
+        if (!$r->boolean('remove_signature')) {
 
-        // ✅ Agar user naya signature upload kare
-        if ($r->hasFile('signature')) {
-            $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
+            // ✅ Agar new upload hai to wahi save hoga
+            if ($r->hasFile('signature')) {
+                $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
 
-            // ✅ business table me bhi new signature update
-            $business->update([
-                'signature' => $signaturePath,
-            ]);
+                $business->update([
+                    'signature' => $signaturePath,
+                ]);
+            } 
+            // ✅ Upload nahi hai to business ka existing signature invoice me save hoga
+            elseif (!empty($business->signature)) {
+                $signaturePath = $business->signature;
+            }
         }
 
         $kots = [];

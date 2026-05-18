@@ -851,6 +851,8 @@ class InvoiceController extends Controller
 
             'payment_method'  => ['nullable', 'string', 'max:255'],
             'bank_account_id' => ['nullable', 'integer'],
+            'signature' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_signature' => ['nullable', 'boolean'],
         ]);
 
         // Handle items_json from Flutter / Postman / web
@@ -1182,6 +1184,26 @@ class InvoiceController extends Controller
 
         InvoiceNumber::syncNextSeqIfMatches((int) $bid, $invoiceDate, $reqInvoiceNo, 3, $docType);
 
+        $signaturePath = null;
+
+        // ✅ remove_signature true/1 hai to invoice me signature save nahi hoga
+        if (!$request->boolean('remove_signature')) {
+
+            // ✅ naya upload hai to wahi save hoga
+            if ($request->hasFile('signature')) {
+                $signaturePath = $request->file('signature')
+                    ->store("invoices/{$bid}/signatures", 'public');
+
+                $biz->update([
+                    'signature' => $signaturePath,
+                ]);
+            }
+            // ✅ upload nahi hai to business ka existing signature save hoga
+            elseif (!empty($biz->signature)) {
+                $signaturePath = $biz->signature;
+            }
+        }
+
         $invoice = null;
 
         DB::transaction(function () use (
@@ -1218,7 +1240,8 @@ class InvoiceController extends Controller
             $credit,
             $advance,
             $pay,
-            $chargesJson
+            $chargesJson,
+            $signaturePath,
         ) {
             $invoice = Invoice::create([
                 'business_id'           => $bid,
@@ -1265,6 +1288,7 @@ class InvoiceController extends Controller
                 'charges_json'          => $chargesJson,
                 'items_json'            => json_encode($cleanRows, JSON_UNESCAPED_UNICODE),
                 'amount_in_words'       => '',
+                'signature' => $signaturePath,
             ]);
 
             foreach ($cleanRows as $row) {
