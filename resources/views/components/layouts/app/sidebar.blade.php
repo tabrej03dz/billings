@@ -347,6 +347,34 @@
             </flux:navlist>
         @endcan
 
+
+        @can('show banner sliders')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item :href="route('banner-sliders.index')" :current="request()->routeIs('banner-sliders.index')"
+                        wire:navigate>{{ __('Banner Sliders') }}
+                        <x-slot:icon>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 64 64">
+
+                                <!-- Background -->
+                                <rect x="6" y="6" width="52" height="52" rx="10" fill="#F0FDF4" />
+
+                                <!-- Client avatar -->
+                                <circle cx="32" cy="26" r="8" fill="#22C55E" />
+                                <path d="M18 46c0-7 6-12 14-12s14 5 14 12" fill="#4ADE80" />
+
+                                <!-- Star / badge -->
+                                <polygon points="46,20 48,24 52,24 49,27 50,31 46,29 42,31 43,27 40,24 44,24"
+                                    fill="#F59E0B" />
+
+                            </svg>
+                        </x-slot:icon>
+
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        @endcan
+
         @can('show categories')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">

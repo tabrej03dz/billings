@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnniversaryController;
 use App\Http\Controllers\AnniversaryWishLogController;
 use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BannerSliderController;
 use App\Http\Controllers\BillTemplateController;
 use App\Http\Controllers\BirthdayRecordController;
 use App\Http\Controllers\BirthdayWishLogController;
@@ -465,6 +466,31 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('recycle/bulk-force-delete', [RecycleController::class, 'bulkForceDelete'])->name('recycle.bulkForceDelete');
 
     Route::delete('recycle/empty', [RecycleController::class, 'empty'])->name('recycle.empty');
+
+
+    Route::get('/banner-sliders', [BannerSliderController::class, 'index'])
+        ->name('banner-sliders.index');
+
+    Route::get('/banner-sliders/create', [BannerSliderController::class, 'create'])
+        ->name('banner-sliders.create');
+
+    Route::post('/banner-sliders', [BannerSliderController::class, 'store'])
+        ->name('banner-sliders.store');
+
+    Route::get('/banner-sliders/{bannerSlider}', [BannerSliderController::class, 'show'])
+        ->name('banner-sliders.show');
+
+    Route::get('/banner-sliders/{bannerSlider}/edit', [BannerSliderController::class, 'edit'])
+        ->name('banner-sliders.edit');
+
+    Route::put('/banner-sliders/{bannerSlider}', [BannerSliderController::class, 'update'])
+        ->name('banner-sliders.update');
+
+    Route::delete('/banner-sliders/{bannerSlider}', [BannerSliderController::class, 'destroy'])
+        ->name('banner-sliders.destroy');
+
+    Route::patch('/banner-sliders/{bannerSlider}/toggle-status', [BannerSliderController::class, 'toggleStatus'])
+        ->name('banner-sliders.toggle-status');
     
 
 });

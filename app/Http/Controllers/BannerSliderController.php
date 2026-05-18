@@ -10,18 +10,29 @@ use Illuminate\Support\Str;
 
 class BannerSliderController extends Controller
 {
-    public function index()
-    {
-        $banners = BannerSlider::orderBy('sort_order', 'asc')
-            ->orderBy('id', 'desc')
-            ->paginate(20);
+    public function index(Request $request)
+{
+    $q = $request->get('q', '');
 
-        return view('admin.banner-sliders.index', compact('banners'));
-    }
+    $banners = BannerSlider::query()
+        ->when($q !== '', function ($query) use ($q) {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('title', 'like', "%{$q}%")
+                    ->orWhere('subtitle', 'like', "%{$q}%")
+                    ->orWhere('button_text', 'like', "%{$q}%");
+            });
+        })
+        ->orderBy('sort_order', 'asc')
+        ->orderBy('id', 'desc')
+        ->paginate(20)
+        ->withQueryString();
+
+    return view('banner-sliders.index', compact('banners', 'q'));
+}
 
     public function create()
     {
-        return view('admin.banner-sliders.create');
+        return view('banner-sliders.create');
     }
 
     public function store(Request $request)
@@ -55,18 +66,18 @@ class BannerSliderController extends Controller
         BannerSlider::create($data);
 
         return redirect()
-            ->route('admin.banner-sliders.index')
+            ->route('banner-sliders.index')
             ->with('success', 'Banner slider created successfully.');
     }
 
     public function show(BannerSlider $bannerSlider)
     {
-        return view('admin.banner-sliders.show', compact('bannerSlider'));
+        return view('banner-sliders.show', compact('bannerSlider'));
     }
 
     public function edit(BannerSlider $bannerSlider)
     {
-        return view('admin.banner-sliders.edit', compact('bannerSlider'));
+        return view('banner-sliders.edit', compact('bannerSlider'));
     }
 
     public function update(Request $request, BannerSlider $bannerSlider)
@@ -106,7 +117,7 @@ class BannerSliderController extends Controller
         $bannerSlider->update($data);
 
         return redirect()
-            ->route('admin.banner-sliders.index')
+            ->route('banner-sliders.index')
             ->with('success', 'Banner slider updated successfully.');
     }
 
@@ -118,7 +129,7 @@ class BannerSliderController extends Controller
         $bannerSlider->delete();
 
         return redirect()
-            ->route('admin.banner-sliders.index')
+            ->route('banner-sliders.index')
             ->with('success', 'Banner slider deleted successfully.');
     }
 
