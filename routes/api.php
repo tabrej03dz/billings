@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AnniversaryController;
+use App\Http\Controllers\Api\BannerSliderController;
 use App\Http\Controllers\Api\BillRequestController as ApiBillRequestController;
 use App\Http\Controllers\Api\BillTemplateController;
 use App\Http\Controllers\Api\BusinessController;
@@ -212,6 +213,9 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     Route::get('/choose-plans', [PlanController::class, 'choose']);
     Route::post('/choose-plan-save', [PlanController::class, 'choosenSave']);
+
+
+    Route::get('/banner-sliders', [BannerSliderController::class, 'inndex']);
 
 
 });
