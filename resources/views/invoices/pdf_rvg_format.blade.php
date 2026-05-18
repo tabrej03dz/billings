@@ -582,10 +582,21 @@
                 <div class="bold">{{ inr_words($finalTotal) }}</div>
             </div>
 
+            @php
+                $invoiceSignature = $inv->signature ?? null;
+
+                $invoiceSignatureUrl = $invoiceSignature
+                    ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+                        ? $invoiceSignature
+                        : public_path('storage/' . $invoiceSignature))
+                    : null;
+            @endphp
+
             <div class="signArea">
-                @if(!empty($sign))
-                    <img src="{{ $sign }}" class="signImg" alt="Signature">
+                @if(!empty($invoiceSignatureUrl))
+                    <img src="{{ $invoiceSignatureUrl }}" class="signImg" alt="Signature">
                 @endif
+
                 <div class="auth" style="font-size: 12px">AUTHORISED SIGNATORY FOR</div>
                 <div class="muted" style="font-size:12px ">{{ $b->name ?? 'Real Victory Groups' }}</div>
             </div>

@@ -2522,9 +2522,22 @@ class InvoiceController extends Controller
             }
         }
 
+        $business = Business::findOrFail($bid);
         $signaturePath = null;
+
+        // ✅ Agar business me pehle se signature hai
+        if (!empty($business->signature)) {
+            $signaturePath = $business->signature;
+        }
+
+        // ✅ Agar user naya signature upload kare
         if ($r->hasFile('signature')) {
             $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
+
+            // ✅ business table me bhi new signature update
+            $business->update([
+                'signature' => $signaturePath,
+            ]);
         }
 
         $kots = [];
@@ -2653,7 +2666,7 @@ class InvoiceController extends Controller
                     'items_json'      => json_encode($cleanRows),
 
                     'amount_in_words' => '',
-                    'signature_path'  => $signaturePath,
+                    'signature' => $signaturePath,
 
                     'created_by'      => auth()->user()->id ?? null,
                     'updated_by'      => auth()->user()->id ?? null,
