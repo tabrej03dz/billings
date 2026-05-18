@@ -111,6 +111,13 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+    $invoiceSignature = $inv->signature ?? null;
+
+    $invoiceSignatureUrl = $invoiceSignature
+        ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+            ? $invoiceSignature
+            : public_path('storage/' . $invoiceSignature))
+        : null;
 @endphp
 
 
@@ -285,9 +292,10 @@
                 @endif
             </td>
             <td style="width:40%; text-align:right; vertical-align:top;">
-                @if(!empty($sign))
-                    <img src="{{ $sign }}" alt="Signature" style="max-height:45px;"><br>
+                @if(!empty($invoiceSignatureUrl))
+                    <img src="{{ $invoiceSignatureUrl }}" alt="Signature" style="max-height:45px;"><br>
                 @endif
+
                 <div class="label">Authorised Signatory</div>
                 <div class="value">{{ $b->name ?? 'Real Victory Groups' }}</div>
             </td>

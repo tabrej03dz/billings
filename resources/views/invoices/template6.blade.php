@@ -111,6 +111,13 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+    $invoiceSignature = $inv->signature ?? null;
+
+$invoiceSignatureUrl = $invoiceSignature
+    ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+        ? $invoiceSignature
+        : public_path('storage/' . $invoiceSignature))
+    : null;
 @endphp
 
 {{-- @include('invoices.partials.shared_logic') --}}
@@ -481,9 +488,10 @@ table {
         </div>
 
         <div class="sign no-break">
-            @if(!empty($sign))
-                <img src="{{ $sign }}" alt="Signature"><br>
+            @if(!empty($invoiceSignatureUrl))
+                <img src="{{ $invoiceSignatureUrl }}" alt="Signature"><br>
             @endif
+
             <div style="border-top:1px solid #111827; width:180px; margin-left:auto; padding-top:8px;">
                 Authorised Signatory
             </div>

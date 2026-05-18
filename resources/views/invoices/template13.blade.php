@@ -111,6 +111,14 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+
+    $invoiceSignature = $inv->signature ?? null;
+
+    $invoiceSignatureUrl = $invoiceSignature
+        ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+            ? $invoiceSignature
+            : public_path('storage/' . $invoiceSignature))
+        : null;
 @endphp
 
 <!doctype html>
@@ -255,8 +263,8 @@ td,th{border:1px solid #000;padding:6px;vertical-align:top}
                 @endif
             </td>
             <td class="sign">
-                @if(!empty($sign))
-                    <img src="{{ $sign }}"><br>
+                @if(!empty($invoiceSignatureUrl))
+                    <img src="{{ $invoiceSignatureUrl }}" alt="Signature"><br>
                 @endif
                 <strong>Authorised Signatory</strong><br>
                 {{ $b->name ?? '' }}

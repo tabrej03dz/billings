@@ -64,6 +64,7 @@ class BusinessController extends Controller
             'type' => ['nullable', 'string', 'max:100'], // optional in store (aap chahe to required kar do)
             'state' => ['nullable', 'string', 'max:100'],
             'state_code' => ['nullable', 'string', 'max:100'],
+            'user_id' => ['nullable', 'exists:users,id'], // optional: agar aap chahte ho ki business create karte time hi kisi user ko assign karna, to is field ko required kar do
         ]);
 
 
@@ -88,6 +89,12 @@ class BusinessController extends Controller
 
 
         $business = Business::create($data);
+
+        BusinessUser::create([
+            'business_id' => $business->id,
+            'user_id' => $request->user_id ?? $request->user()->id, // agar request me user_id nahi hai, to current user ko assign kar do
+            'role' => 'user',
+        ]);
 
 //        // Attach current user as OWNER
 //        $request->user()->businesses()->syncWithoutDetaching([

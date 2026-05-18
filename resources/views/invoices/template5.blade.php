@@ -112,6 +112,13 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+    $invoiceSignature = $inv->signature ?? null;
+
+$invoiceSignatureUrl = $invoiceSignature
+    ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+        ? $invoiceSignature
+        : public_path('storage/' . $invoiceSignature))
+    : null;
 @endphp
 
 {{-- @include('invoices.partials.shared_logic') --}}
@@ -304,9 +311,10 @@
                 @endif
             </td>
             <td style="width:40%; text-align:right; vertical-align:top;">
-                @if(!empty($sign))
-                    <img src="{{ $sign }}" alt="Signature" style="max-height:50px;"><br>
+                @if(!empty($invoiceSignatureUrl))
+                    <img src="{{ $invoiceSignatureUrl }}" alt="Signature" style="max-height:50px;"><br>
                 @endif
+
                 <div class="label">Authorised Signatory</div>
                 <strong>{{ $b->name ?? 'Real Victory Groups' }}</strong>
             </td>
