@@ -214,9 +214,9 @@
                                 {{-- Product-only columns --}}
                                 <th x-show="hasProduct()">Making Rate</th>
                                 <th x-show="hasProduct()">Gold Rate (₹/g)</th>
+                                <th x-show="hasProduct()">Gold Wt.(Gm)</th>
                                 <th x-show="hasProduct()">Silver Rate (₹/g)</th>
                                 <th x-show="hasProduct()">Silver Wt.(Gm)</th>
-                                <th x-show="hasProduct()">Gold Wt.(Gm)</th>
                                 <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
                                 <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
 
@@ -728,22 +728,50 @@
                     </div>
 
                     {{-- ================= SIGNATURE UPLOAD ================= --}}
+                   @php
+                        $businessSignature = $businessSignature ?? null;
+
+                        $businessSignatureUrl = $businessSignature
+                            ? (\Illuminate\Support\Str::startsWith($businessSignature, ['http://', 'https://'])
+                                ? $businessSignature
+                                : asset('storage/' . $businessSignature))
+                            : null;
+                    @endphp
+
                     <div class="pt-2">
                         <div class="text-sm font-semibold text-gray-900 dark:text-neutral-100 mb-2">
                             Signature
                         </div>
 
+                        @if($businessSignatureUrl)
+                            <div class="mb-3 p-3 rounded-xl border border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-[#242833]">
+                                <div class="text-xs font-semibold text-gray-600 dark:text-neutral-300 mb-2">
+                                    Current Business Signature
+                                </div>
+
+                                <img src="{{ $businessSignatureUrl }}"
+                                    alt="Business Signature"
+                                    class="h-20 max-w-xs object-contain bg-white rounded-lg border border-gray-200 p-2">
+
+                                <label class="mt-3 inline-flex items-center gap-2 text-sm text-red-600">
+                                    <input type="checkbox" name="remove_signature" value="1"
+                                        class="rounded border-gray-300 dark:border-neutral-700">
+                                    Remove this signature
+                                </label>
+                            </div>
+                        @endif
+
                         <div class="grid gap-2">
                             <input type="file" name="signature" accept="image/*"
                                 class="w-full text-sm file:mr-3 file:px-3 file:py-2 file:rounded-lg
-                                          file:border-0 file:bg-gray-100 file:text-gray-700
-                                          dark:file:bg-neutral-800 dark:file:text-neutral-200
-                                          border border-gray-300 dark:border-neutral-700
-                                          rounded-lg px-3 py-2 bg-white dark:bg-neutral-900
-                                          text-gray-900 dark:text-neutral-100">
+                                    file:border-0 file:bg-gray-100 file:text-gray-700
+                                    dark:file:bg-neutral-800 dark:file:text-neutral-200
+                                    border border-gray-300 dark:border-neutral-700
+                                    rounded-lg px-3 py-2 bg-white dark:bg-neutral-900
+                                    text-gray-900 dark:text-neutral-100">
 
                             <div class="text-[11px] text-gray-500 dark:text-neutral-400">
-                                Allowed: JPG/PNG/WebP • Max 2MB (recommended: transparent PNG)
+                                Allowed: JPG/PNG/WebP • Max 2MB. New upload karoge to old signature replace ho jayega.
                             </div>
                         </div>
                     </div>

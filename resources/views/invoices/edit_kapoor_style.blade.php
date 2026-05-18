@@ -223,13 +223,21 @@
                             <th>Rate / Price</th>
 
                             {{-- Product-only columns --}}
-                            <th x-show="items.some(row => showItemField(row, 'making_rate'))">Making Rate</th>
+                            {{-- <th x-show="items.some(row => showItemField(row, 'making_rate'))">Making Rate</th>
                             <th x-show="items.some(row => showItemField(row, 'gold_rate'))">Gold Rate (₹/g)</th>
                             <th x-show="items.some(row => showItemField(row, 'silver_rate'))">Silver Rate (₹/g)</th>
                             <th x-show="items.some(row => showItemField(row, 'silver_wt'))">Silver Wt.(Gm)</th>
                             <th x-show="items.some(row => showItemField(row, 'gold_wt'))">Gold Wt.(Gm)</th>
                             <th x-show="items.some(row => showItemField(row, 'gemstone_wt'))">Gem Stone Wt.(Ct.)</th>
-                            <th x-show="items.some(row => showItemField(row, 'diamond_wt'))">Diamond Wt.(Ct.)</th>
+                            <th x-show="items.some(row => showItemField(row, 'diamond_wt'))">Diamond Wt.(Ct.)</th> --}}
+
+                            <th x-show="hasProduct()">Making Rate</th>
+                            <th x-show="hasProduct()">Gold Rate (₹/g)</th>
+                            <th x-show="hasProduct()">Gold Wt.(Gm)</th>
+                            <th x-show="hasProduct()">Silver Rate (₹/g)</th>
+                            <th x-show="hasProduct()">Silver Wt.(Gm)</th>
+                            <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
+                            <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
 
                             {{-- Service-only column --}}
                             {{-- <th x-show="hasService()">Service Rate (₹)</th> --}}
@@ -244,92 +252,6 @@
                         <template x-for="(row, i) in items" :key="row._k">
                             <tr>
                                 <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
-
-                                {{-- <td class="px-3 py-2">
-                                    <div class="flex items-center gap-2 mb-2"> --}}
-
-                                        {{-- ✅ FIX: select now uses x-model (so edit value always selected) --}}
-                                        {{--     <select--}}
-                                        {{--      class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"--}}
-                                        {{--        x-model="row.item_id"--}}
-                                        {{--      @change="pickItem(i, row.item_id)"--}}
-                                        {{--      >--}}
-
-                                        {{-- <div class="flex-1 relative"
-                                             @click.outside="closeItemDD(i)">
-
-                                            <input type="text"
-                                                   class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                                   placeholder="Search item..."
-                                                   x-model="row.search"
-                                                   @focus="openItemDD(i)"
-                                                   @input="openItemDD(i)"
-                                                   @keydown.arrow-down.prevent="itemDDDown(i)"
-                                                   @keydown.arrow-up.prevent="itemDDUp(i)"
-                                                   @keydown.enter.prevent="itemDDPick(i)"
-                                            >
-
-                                            <!-- hidden select value (backend use already items_json so ok, but keep for clarity) -->
-                                            <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
-
-                                            <!-- dropdown -->
-                                            <div x-show="row.ddOpen"
-                                                 x-transition.opacity
-                                                 class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
-                                                        bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
-                                                        max-h-72 overflow-auto"
-                                                 :style="row.ddStyle"
-                                                 style="display:none;"
-                                                 @mousedown.prevent.stop>
-
-                                                <template x-if="filteredItems(row.search).length === 0">
-                                                    <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
-                                                </template>
-
-                                                <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
-                                                    <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
-                                                        hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                                         :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                                         @mouseenter="row.ddHi = idx"
-                                                         @mousedown.prevent.stop="selectItemFromDD(i, it)">
-
-                                                        <div class="truncate"
-                                                             x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
-
-                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
-                                                             x-text="(it.type || '').toUpperCase()"></div>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div> --}}
-
-
-                                        {{--                                        <option value="">-- Select Item --</option>--}}
-                                        {{--                                            <template x-for="it in itemsData" :key="it.id">--}}
-                                        {{--                                                <option :value="String(it.id)"--}}
-                                        {{--                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></option>--}}
-                                        {{--                                            </template>--}}
-                                        {{--                                        </select>--}}
-
-                                        {{-- <button type="button"
-                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap hover:bg-gray-50 dark:hover:bg-neutral-800"
-                                                @click="openItemModal(i)">
-                                            + New
-                                        </button>
-                                    </div> --}}
-
-                                    {{-- <textarea x-model="row.description" required rows="2"
-                                              class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs
-                                                 resize-y leading-tight"
-                                              style="min-height: 42px;"></textarea>
-                                    <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
-                                         x-show="row.item_type"
-                                         x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>
-                                </td> --}}
-
-
                                 <td class="px-3 py-2">
                                     <div class="flex items-center gap-2 mb-2">
 
@@ -460,13 +382,13 @@
                                 </td>
 
                                 {{-- Product-only cells --}}
-                                <td class="px-3 py-2" x-show="showItemField(row, 'making_rate')">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.making_rate" @input="onAutoChange(row)"
                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="showItemField(row, 'gold_rate')">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.gold_rate" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
@@ -474,7 +396,13 @@
                                          x-text="row.gold_purity ? ('Purity: ' + row.gold_purity) : ''"></div>
                                 </td>
 
-                                <td class="px-3 py-2" x-show="showItemField(row, 'silver_rate')">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <input type="number" step="0.001" min="0"
+                                           x-model.number="row.gold_wt" @input="onAutoChange(row)"
+                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                </td>
+
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.01" min="0"
                                            x-model.number="row.silver_rate" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
@@ -482,25 +410,21 @@
                                          x-text="row.silver_purity ? ('Purity: ' + row.silver_purity) : ''"></div>
                                 </td>
 
-                                <td class="px-3 py-2" x-show="showItemField(row, 'silver_wt')">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.silver_wt" @input="onAutoChange(row)"
                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="showItemField(row, 'gold_wt')">
-                                    <input type="number" step="0.001" min="0"
-                                           x-model.number="row.gold_wt" @input="onAutoChange(row)"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                
 
-                                <td class="px-3 py-2" x-show="showItemField(row, 'gemstone_wt')">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.gemstone_wt" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                 </td>
 
-                                <td class="px-3 py-2" x-show="showItemField(row, 'diamond_wt')">
+                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
                                     <input type="number" step="0.001" min="0"
                                            x-model.number="row.diamond_wt" @input="onAutoChange(row)"
                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">

@@ -58,7 +58,7 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'        => ['required','string','max:255', Rule::unique('categories','name')],
+            'name'        => ['required','string','max:255'],
             'description' => ['nullable','string'],
             'is_active'   => ['sometimes','boolean'],
             'business_id' => ['required', 'integer'],
@@ -86,7 +86,7 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $data = $request->validate([
-            'name'        => ['required','string','max:255', Rule::unique('categories','name')->ignore($category->id)],
+            'name'        => ['required','string','max:255'],
             'description' => ['nullable','string'],
             'is_active'   => ['sometimes','boolean'],
             'business_id' => ['required', 'integer'],
