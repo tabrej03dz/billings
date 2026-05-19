@@ -326,6 +326,19 @@ class RegisterController extends Controller
             event(new Registered($user));
             Auth::login($user);
 
+            $planId = $request->input('plan_id');
+            $isTrial = (int) $request->input('trial', 0) === 1;
+
+            if ($planId && $isTrial) {
+                return redirect()->route('bill-template.choose')
+                    ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
+            }
+
+            if ($planId && ! $isTrial) {
+                return redirect()->route('plan.payment', ['plan_id' => $planId])
+                    ->with('success', 'Registration successful. Please complete payment to start your plan.');
+            }
+
             return redirect()->route('plan.choose')
                 ->with('success', 'Registration successful. Your business has been created.');
         } catch (\Throwable $e) {

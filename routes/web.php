@@ -19,11 +19,13 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\MetalRateController;
 use App\Http\Controllers\NoBusinessWhatsappController;
 use App\Http\Controllers\PlanController;
+use App\Http\Controllers\PlanPaymentController as ControllersPlanPaymentController;
 use App\Http\Controllers\RecycleController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserPlanController;
 use App\Models\Plan;
+use App\Models\PlanPaymentController;
 use App\Models\UserPlan;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
@@ -112,6 +114,11 @@ Route::get('/register', [RegisterController::class, 'show'])->name('register');
 Route::post('/register/send-otp', [RegisterController::class, 'sendEmailOtp'])->name('register.sendOtp');
 Route::post('/register/verify-otp', [RegisterController::class, 'verifyEmailOtp'])->name('register.verifyOtp');
 Route::post('/register/store', [RegisterController::class, 'store'])->name('register.store1');
+
+
+    Route::get('/plan/payment/{plan}', [ControllersPlanPaymentController::class, 'show'])
+        ->name('plan.payment');
+
 
 //Route::view('dashboard', 'dashboard')
 //    ->middleware(['auth', 'verified'])

@@ -231,6 +231,7 @@
                             @csrf
 
                             <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
+                            <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
                             <input type="hidden" name="current_step" id="current_step" value="{{ old('current_step', 1) }}">
 
                             <div class="form-step space-y-5" data-step="1">
