@@ -30,10 +30,10 @@
                 @endcan
 
             @can('create invoice')
-            <a href="{{ route('invoices.create', 'tax') }}"
-               class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#46837d] text-white text-sm font-medium hover:bg-[#46837d]">
-                + Tax Invoice
-            </a>
+                <a href="{{ route('invoices.create', 'tax') }}"
+                class="inline-flex items-center justify-center px-3 py-2 rounded-md bg-[#46837d] text-white text-sm font-medium hover:bg-[#46837d]">
+                    + Tax Invoice
+                </a>
             @endcan
         </div>
     </div>
