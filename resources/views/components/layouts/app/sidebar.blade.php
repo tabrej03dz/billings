@@ -54,7 +54,7 @@
             $business = App\Models\Business::find($activeBusinessId);
         @endphp
 
-        @role('super admin')
+        @can('show all businesses')
 
 
             <form action="{{ route('business.switch') }}" method="POST" class="inline-block">
