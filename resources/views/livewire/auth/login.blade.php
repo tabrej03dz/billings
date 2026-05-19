@@ -56,7 +56,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
         RateLimiter::clear($this->throttleKey());
 
-        if ($user->hasRole('super admin')) {
+        // if ($user->hasRole('super admin')) {
             $otp = rand(100000, 999999);
 
             session([
@@ -76,7 +76,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
             $this->redirect(route('super-admin.otp.verify', absolute: false), navigate: true);
             return;
-        }
+        // }
 
         Auth::login($user, $this->remember);
 
