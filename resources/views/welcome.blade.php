@@ -1,6 +1,18 @@
 @extends('frontend.layout')
 @section('content')
 
+<style>
+    #typingText::after {
+    content: "|";
+    animation: blink 0.7s infinite;
+    color: #2624CC;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+</style>
+
 <main id="top">
 
     {{-- HERO --}}
@@ -14,9 +26,13 @@
                         Smart Billing Software for Modern Shops
                     </div>
 
-                    <h1 class="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-mvDark">
+                    {{-- <h1 class="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-mvDark">
                         Typing Kam,
                         <span class="brand-text">Billing Fast.</span>
+                    </h1> --}}
+
+                    <h1 class="min-h-[150px] sm:min-h-[160px] lg:min-h-[150px] text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-mvDark">
+                        <span id="typingText"></span>
                     </h1>
 
                     <p class="mt-6 text-lg text-slate-600 max-w-xl leading-8">
@@ -493,5 +509,48 @@
     </section>
 
 </main>
+
+<script>
+    const words = [
+        "Typing Kam, Billing Fast.",
+        "Entry Kam, Billing Smart.",
+        "Time Save, Billing Easy.",
+        "Photo Entry, Invoice Ready.",
+        "Smart Shop, Fast Billing.",
+        "GST Bill, One Click."
+    ];
+
+    let wordIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    const typingText = document.getElementById("typingText");
+
+    function typeEffect() {
+        const currentWord = words[wordIndex];
+
+        if (isDeleting) {
+            typingText.innerHTML = currentWord.substring(0, charIndex--);
+        } else {
+            typingText.innerHTML = currentWord.substring(0, charIndex++);
+        }
+
+        let speed = isDeleting ? 45 : 70;
+
+        if (!isDeleting && charIndex === currentWord.length + 1) {
+            speed = 1200; // 1.2 second rukega
+            isDeleting = true;
+        }
+
+        if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            wordIndex = (wordIndex + 1) % words.length;
+            speed = 300;
+        }
+
+        setTimeout(typeEffect, speed);
+    }
+
+    typeEffect();
+</script>
 
 @endsection
