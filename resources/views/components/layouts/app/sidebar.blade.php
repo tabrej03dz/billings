@@ -76,7 +76,7 @@
                     @endforelse
                 </select>
             </form>
-        @endrole
+        @endcan
 
         @can('show invoices menu')
             @php
