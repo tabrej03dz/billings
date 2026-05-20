@@ -31,4 +31,9 @@ class Business extends Model
     public function billTemplate(){
         return $this->belongsTo(BillTemplate::class, 'pdf_template_id');
     }
+
+    public function businessType()
+    {
+        return $this->belongsTo(\App\Models\BusinessType::class);
+    }
 }

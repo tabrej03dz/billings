@@ -48,18 +48,6 @@
         $selectedState = $business->state_code . ',' . $business->state; // "09,Uttar Pradesh"
     }
 
-    $businessTypes = [
-        'jewellery'     => 'Jewellery',
-        'retail'        => 'Retail',
-        'wholesale'     => 'Wholesale',
-        'manufacturer'  => 'Manufacturer',
-        'service'       => 'Service Provider',
-        'trading'       => 'Trading',
-        'ecommerce'     => 'E-Commerce',
-        'agency'        => 'Agency',
-        'other'         => 'Other',
-    ];
-
     $selectedBusinessType = old('type', $business->type ?? '');
 @endphp
 
@@ -116,27 +104,24 @@
             </label>
 
             <select
-                name="type"
+                name="business_type_id"
                 required
                 class="mt-1 w-full border rounded px-3 py-2
-               bg-gray-300 dark:bg-[#242833] text-gray-400 border-gray-600
-               focus:border-blue-500 focus:ring-blue-500"
+                bg-gray-300 dark:bg-[#242833] text-gray-700 dark:text-gray-300 border-gray-600
+                focus:border-blue-500 focus:ring-blue-500"
             >
-                <option value="" class="bg-gray-300 dark:bg-[#242833] text-gray-400">
-                    -- Select Business Type --
-                </option>
+                <option value="">-- Select Business Type --</option>
 
-                @foreach($businessTypes as $key => $label)
-                    <option value="{{ $key }}"
-                            class="bg-gray-300 dark:bg-[#242833] text-gray-400"
-                        {{ $selectedBusinessType === $key ? 'selected' : '' }}>
-                        {{ $label }}
+                @foreach($businessTypes as $businessType)
+                    <option value="{{ $businessType->id ?? $businessType->id }}"
+                        {{ (string)$selectedBusinessType === (string)($businessType->slug ?? $businessType->id) ? 'selected' : '' }}>
+                        {{ $businessType->name }}
                     </option>
                 @endforeach
             </select>
 
             @error('type')
-            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
             @enderror
         </div>
 

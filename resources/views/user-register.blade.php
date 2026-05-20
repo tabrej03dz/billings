@@ -346,18 +346,17 @@
 
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Business Type</label>
-                                        <select name="type" required
+
+                                        <select name="business_type_id" required
                                                 class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500">
                                             <option value="">-- Select Business Type --</option>
-                                            <option value="Jewellery" {{ old('type') == 'Jewellery' ? 'selected' : '' }}>Jewellery</option>
-                                            <option value="Retail" {{ old('type') == 'Retail' ? 'selected' : '' }}>Retail</option>
-                                            <option value="Wholesale" {{ old('type') == 'Wholesale' ? 'selected' : '' }}>Wholesale</option>
-                                            <option value="Manufacturer" {{ old('type') == 'Manufacturer' ? 'selected' : '' }}>Manufacturer</option>
-                                            <option value="Service Provider" {{ old('type') == 'Service Provider' ? 'selected' : '' }}>Service Provider</option>
-                                            <option value="Trading" {{ old('type') == 'Trading' ? 'selected' : '' }}>Trading</option>
-                                            <option value="E-Commerce" {{ old('type') == 'E-Commerce' ? 'selected' : '' }}>E-Commerce</option>
-                                            <option value="Agency" {{ old('type') == 'Agency' ? 'selected' : '' }}>Agency</option>
-                                            <option value="Other" {{ old('type') == 'Other' ? 'selected' : '' }}>Other</option>
+
+                                            @foreach($businessTypes as $businessType)
+                                                <option value="{{ $businessType->id }}"
+                                                    {{ old('business_type_id') == $businessType->id ? 'selected' : '' }}>
+                                                    {{ $businessType->name }}
+                                                </option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>

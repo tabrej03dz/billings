@@ -7,6 +7,7 @@ use App\Http\Controllers\BannerSliderController;
 use App\Http\Controllers\BillTemplateController;
 use App\Http\Controllers\BirthdayRecordController;
 use App\Http\Controllers\BirthdayWishLogController;
+use App\Http\Controllers\BusinessTypeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DemoRequestController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\RecycleController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserPlanController;
+use App\Models\BusinessType;
 use App\Models\Plan;
 use App\Models\PlanPaymentController;
 use App\Models\UserPlan;
@@ -79,8 +81,11 @@ Route::get('user-register', function (\Illuminate\Http\Request $request) {
             ->where('id', $request->plan_id)
             ->first();
     }
+    $businessTypes = BusinessType::query()
+        ->orderBy('name')
+        ->get();
 
-    return view('user-register', compact('selectedPlan'));
+    return view('user-register', compact('selectedPlan', 'businessTypes'));
 })->name('user.register');
 Route::post('/register', [HomeController::class, 'store'])->name('register.store');
 
@@ -498,6 +503,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::patch('/banner-sliders/{bannerSlider}/toggle-status', [BannerSliderController::class, 'toggleStatus'])
         ->name('banner-sliders.toggle-status');
+
+        // business types
+
+    Route::resource('business-types', BusinessTypeController::class);
     
 
 });

@@ -198,7 +198,7 @@ class RegisterController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'state_code' => ['nullable', 'string', 'max:255'],
-            'type' => ['required', 'string', 'max:255'],
+            'business_type_id' => ['required', 'string', 'max:255'],
 
             // billing step
             'gst_enabled' => ['nullable', 'in:0,1'],

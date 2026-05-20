@@ -43,7 +43,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
 
     Route::prefix('businesses')->group(function(){
-        Route::get('index', [BusinessController::class, 'index']);          // list
+        Route::get('index', [BusinessController::class, 'index']); // list
         Route::post('store', [BusinessController::class, 'store']);         // create
         Route::post('update/{business}', [BusinessController::class, 'update']); // update (supports file)
         Route::delete('delete/{business}', [BusinessController::class, 'destroy']); // delete
