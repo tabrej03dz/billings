@@ -230,7 +230,7 @@ class RegisterController extends Controller
                 'address' => $request->address,
                 'state' => $request->state,
                 'state_code' => $request->state_code,
-                'type' => $request->type,
+                'business_type_id' => $request->business_type_id,
                 'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
                 'rounding_mode' => $request->rounding_mode ?: 'nearest',
                 'rounding_step' => $request->rounding_step ?: 1.00,

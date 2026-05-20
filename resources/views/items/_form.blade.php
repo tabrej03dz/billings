@@ -60,6 +60,17 @@
                 </div>
             @endif
 
+            @if($showField('sku'))
+                <div>
+                    <label class="block text-sm font-medium mb-1">SKU</label>
+                    <input type="text" name="sku"
+                        value="{{ old('sku', $item->sku ?? '') }}"
+                        class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                        placeholder="Example: ITEM-001">
+                    @error('sku') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                </div>
+            @endif
+
             @if($showField('type'))
                 <div>
                     <label class="block text-sm font-medium mb-1">
@@ -80,7 +91,7 @@
     </div>
 
     @if($showField('sac') || $showField('service_duration'))
-        <div id="serviceFields" class="border-b pb-4 hidden">
+    <div id="serviceFields" class="border-b pb-4">
             <h3 class="font-semibold text-gray-700 mb-3">Service Details</h3>
 
             <div class="grid md:grid-cols-2 gap-4">
@@ -349,60 +360,112 @@
             });
         }
 
+        // function toggleByType(val) {
+        //     if (!val) {
+        //         productFields?.classList.add('hidden');
+        //         // serviceFields?.classList.add('hidden');
+        //         makingChargeBlock?.classList.add('hidden');
+
+        //         setDisabledInside(productFields, true);
+        //         // setDisabledInside(serviceFields, true);
+
+        //         if (makingChargeField) makingChargeField.disabled = true;
+        //         if (stockQty) stockQty.required = false;
+        //         if (sacField) sacField.required = false;
+
+        //         return;
+        //     }
+
+        //     if (val === 'service') {
+        //         serviceFields?.classList.remove('hidden');
+        //         productFields?.classList.add('hidden');
+        //         makingChargeBlock?.classList.add('hidden');
+
+        //         setDisabledInside(serviceFields, false);
+        //         setDisabledInside(productFields, true);
+
+        //         if (makingChargeField) {
+        //             makingChargeField.disabled = true;
+        //             makingChargeField.value = '';
+        //         }
+
+        //         if (stockQty) {
+        //             stockQty.required = false;
+        //             stockQty.value = '';
+        //         }
+
+        //         if (unitField) unitField.value = '';
+        //         if (sacField) sacField.required = true;
+
+        //     } else {
+        //         productFields?.classList.remove('hidden');
+        //         serviceFields?.classList.add('hidden');
+        //         makingChargeBlock?.classList.remove('hidden');
+
+        //         setDisabledInside(productFields, false);
+        //         setDisabledInside(serviceFields, true);
+
+        //         if (makingChargeField) makingChargeField.disabled = false;
+        //         if (stockQty) stockQty.required = true;
+
+        //         if (sacField) {
+        //             sacField.required = false;
+        //             sacField.value = '';
+        //         }
+        //     }
+        // }
+
         function toggleByType(val) {
-            if (!val) {
-                productFields?.classList.add('hidden');
-                serviceFields?.classList.add('hidden');
-                makingChargeBlock?.classList.add('hidden');
 
-                setDisabledInside(productFields, true);
-                setDisabledInside(serviceFields, true);
+    // SAC section hamesha visible rahega
+    if (serviceFields) {
+        serviceFields.classList.remove('hidden');
+    }
 
-                if (makingChargeField) makingChargeField.disabled = true;
-                if (stockQty) stockQty.required = false;
-                if (sacField) sacField.required = false;
+    setDisabledInside(serviceFields, false);
 
-                return;
-            }
+    if (!val) {
+        productFields?.classList.add('hidden');
+        makingChargeBlock?.classList.add('hidden');
 
-            if (val === 'service') {
-                serviceFields?.classList.remove('hidden');
-                productFields?.classList.add('hidden');
-                makingChargeBlock?.classList.add('hidden');
+        setDisabledInside(productFields, true);
 
-                setDisabledInside(serviceFields, false);
-                setDisabledInside(productFields, true);
+        if (makingChargeField) makingChargeField.disabled = true;
+        if (stockQty) stockQty.required = false;
 
-                if (makingChargeField) {
-                    makingChargeField.disabled = true;
-                    makingChargeField.value = '';
-                }
+        return;
+    }
 
-                if (stockQty) {
-                    stockQty.required = false;
-                    stockQty.value = '';
-                }
+    if (val === 'service') {
 
-                if (unitField) unitField.value = '';
-                if (sacField) sacField.required = true;
+        productFields?.classList.add('hidden');
+        makingChargeBlock?.classList.add('hidden');
 
-            } else {
-                productFields?.classList.remove('hidden');
-                serviceFields?.classList.add('hidden');
-                makingChargeBlock?.classList.remove('hidden');
+        setDisabledInside(productFields, true);
 
-                setDisabledInside(productFields, false);
-                setDisabledInside(serviceFields, true);
-
-                if (makingChargeField) makingChargeField.disabled = false;
-                if (stockQty) stockQty.required = true;
-
-                if (sacField) {
-                    sacField.required = false;
-                    sacField.value = '';
-                }
-            }
+        if (makingChargeField) {
+            makingChargeField.disabled = true;
+            makingChargeField.value = '';
         }
+
+        if (stockQty) {
+            stockQty.required = false;
+            stockQty.value = '';
+        }
+
+        if (unitField) unitField.value = '';
+
+    } else {
+
+        productFields?.classList.remove('hidden');
+        makingChargeBlock?.classList.remove('hidden');
+
+        setDisabledInside(productFields, false);
+
+        if (makingChargeField) makingChargeField.disabled = false;
+        if (stockQty) stockQty.required = true;
+    }
+}
 
         typeSelect?.addEventListener('change', function () {
             toggleByType(this.value);
