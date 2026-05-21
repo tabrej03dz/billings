@@ -79,6 +79,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::post('store', 'store');
         Route::post('update/{item}', 'update');
         Route::delete('delete/{item}', 'destroy');
+        Route::get('allowed-fields', 'allowedFields');
     });
 
 

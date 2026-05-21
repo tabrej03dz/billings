@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Models\Category;
 use App\Models\Item;
 use App\Services\StockService;
@@ -467,6 +468,47 @@ class ItemController extends Controller
         return response()->json([
             'ok'   => true,
             'data' => $items,
+        ]);
+    }
+
+    public function allowedFields(Request $request)
+    {
+        $businessId = $request->business_id;
+
+        if (!$businessId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Active business not found.',
+                'allowed_fields' => [],
+            ], 422);
+        }
+
+        $business = Business::with('businessType.itemFields')
+            ->find($businessId);
+
+        if (!$business) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Business not found.',
+                'allowed_fields' => [],
+            ], 404);
+        }
+
+        $allowedFields = [];
+
+        if ($business->businessType) {
+            $allowedFields = $business->businessType->itemFields
+                ->pluck('field_name')
+                ->values()
+                ->toArray();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Allowed item fields fetched successfully.',
+            'business_id' => $business->id,
+            'business_type' => $business->businessType?->name,
+            'allowed_fields' => $allowedFields,
         ]);
     }
 }
