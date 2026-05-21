@@ -2475,11 +2475,11 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
     // }
 
 
+
     public function store(Request $r, StockService $stock, $docType)
     {
         $user = $r->user();
 
-        // ✅ Active Business Resolve
         $bid = $user->current_business_id ?? session('active_business_id');
 
         if (!$bid) {
@@ -2492,7 +2492,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 ->withInput();
         }
 
-        // ✅ Business wise plan expiry validation
         if (!$user->hasAnyRole(['super_admin', 'admin'])) {
             $activePlan = UserPlan::where('business_id', $bid)
                 ->where(function ($q) {
@@ -2533,7 +2532,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
             'notes'          => ['nullable', 'string', 'max:2000'],
             'terms'          => ['nullable', 'string', 'max:2000'],
-
             'items_json'     => ['required', 'string'],
 
             'charges_json'   => ['nullable', 'string'],
@@ -2548,10 +2546,10 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             'sgst_percent'   => ['nullable', 'numeric', 'min:0'],
             'igst_percent'   => ['nullable', 'numeric', 'min:0'],
 
-            'payment_method'  => ['nullable', 'string', 'max:255'],
-            'bank_account_id' => ['nullable', 'integer'],
-            'signature'       => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'kots_json'       => ['nullable', 'string', 'max:5000'],
+            'payment_method'   => ['nullable', 'string', 'max:255'],
+            'bank_account_id'  => ['nullable', 'integer'],
+            'signature'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'kots_json'        => ['nullable', 'string', 'max:5000'],
             'remove_signature' => ['nullable', 'boolean'],
         ]);
 
@@ -2616,10 +2614,10 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             return $s;
         };
 
-        $subtotal       = 0.0;
-        $weightedTax    = 0.0;
-        $itemsTaxTotal  = 0.0;
-        $cleanRows      = [];
+        $subtotal      = 0.0;
+        $weightedTax   = 0.0;
+        $itemsTaxTotal = 0.0;
+        $cleanRows     = [];
 
         foreach ($rows as $i => $row) {
             $itemId = $row['item_id'] ?? null;
@@ -2647,12 +2645,17 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 return back()->withErrors(['items' => 'Row ' . ($i + 1) . ' tax % invalid.'])->withInput();
             }
 
-            // ================= SERVICE =================
+            $manualAmount = (float) ($row['manual_amount'] ?? $row['amount'] ?? 0);
+            $amountMode   = strtolower(trim((string) ($row['amount_mode'] ?? 'auto')));
+
+            if ($manualAmount < 0) {
+                return back()->withErrors(['items' => 'Row ' . ($i + 1) . ' manual amount invalid.'])->withInput();
+            }
+
             if ($itemType === 'service') {
-                $fixedPrice = (float) ($row['fixed_price'] ?? $row['price'] ?? 0);
+                $fixedPrice  = (float) ($row['fixed_price'] ?? $row['price'] ?? 0);
                 $serviceRate = (float) ($row['service_rate'] ?? 0);
 
-                // ✅ service me bhi fixed_price priority
                 if ($fixedPrice > 0) {
                     $serviceRate = $fixedPrice;
                 }
@@ -2661,8 +2664,15 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                     return back()->withErrors(['items' => 'Row ' . ($i + 1) . ' service rate invalid.'])->withInput();
                 }
 
-                $lineBase = round($serviceRate * $qty, 2);
-                $lineTax  = round($lineBase * ($taxPct / 100), 2);
+                if ($amountMode === 'manual' && $manualAmount > 0) {
+                    $finalAmount = round($manualAmount, 2);
+                    $lineBase = round($finalAmount / (1 + ($taxPct / 100)), 2);
+                    $lineTax = round($finalAmount - $lineBase, 2);
+                } else {
+                    $lineBase = round($serviceRate * $qty, 2);
+                    $lineTax  = round($lineBase * ($taxPct / 100), 2);
+                    $finalAmount = round($lineBase + $lineTax, 2);
+                }
 
                 $subtotal      += $lineBase;
                 $weightedTax   += ($lineBase * $taxPct);
@@ -2681,7 +2691,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
                     'rate'          => $lineBase,
                     'tax_amount'    => $lineTax,
-                    'amount'        => round($lineBase + $lineTax, 2),
+                    'amount'        => $finalAmount,
 
                     'making_charge' => round($serviceRate, 2),
 
@@ -2698,7 +2708,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 continue;
             }
 
-            // ================= PRODUCT =================
             $goldWt     = (float) ($row['gold_wt'] ?? 0);
             $silverWt   = (float) ($row['silver_wt'] ?? 0);
             $goldRate   = (float) ($row['gold_rate'] ?? 0);
@@ -2708,10 +2717,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             $gemCt = (float) ($row['gemstone_wt'] ?? 0);
             $diaCt = (float) ($row['diamond_wt'] ?? 0);
 
-            // ✅ IMPORTANT: frontend se fixed_price bhejo
-            $fixedPrice   = (float) ($row['fixed_price'] ?? $row['price'] ?? 0);
-            $manualAmount = (float) ($row['manual_amount'] ?? 0);
-            $amountMode   = strtolower(trim((string) ($row['amount_mode'] ?? 'auto')));
+            $fixedPrice = (float) ($row['fixed_price'] ?? $row['price'] ?? 0);
 
             if (
                 $goldWt < 0 ||
@@ -2719,13 +2725,11 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 $goldRate < 0 ||
                 $silverRate < 0 ||
                 $makingRate < 0 ||
-                $fixedPrice < 0 ||
-                $manualAmount < 0
+                $fixedPrice < 0
             ) {
                 return back()->withErrors(['items' => 'Row ' . ($i + 1) . ' invalid values.'])->withInput();
             }
 
-            // ✅ Priority 1: item price/fixed price
             $productBase = $fixedPrice > 0
                 ? $fixedPrice
                 : (($goldWt * $goldRate) + ($silverWt * $silverRate));
@@ -2733,12 +2737,14 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             $makingAmount = round($productBase * ($makingRate / 100), 2);
 
             if ($amountMode === 'manual' && $manualAmount > 0) {
-                $lineBase = round($manualAmount / (1 + ($taxPct / 100)), 2);
+                $finalAmount = round($manualAmount, 2);
+                $lineBase = round($finalAmount / (1 + ($taxPct / 100)), 2);
+                $lineTax = round($finalAmount - $lineBase, 2);
             } else {
                 $lineBase = round(($productBase + $makingAmount) * $qty, 2);
+                $lineTax = round($lineBase * ($taxPct / 100), 2);
+                $finalAmount = round($lineBase + $lineTax, 2);
             }
-
-            $lineTax = round($lineBase * ($taxPct / 100), 2);
 
             $subtotal      += $lineBase;
             $weightedTax   += ($lineBase * $taxPct);
@@ -2768,7 +2774,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
                 'rate'        => $lineBase,
                 'tax_amount'  => $lineTax,
-                'amount'      => round($lineBase + $lineTax, 2),
+                'amount'      => $finalAmount,
             ];
         }
 
@@ -2836,19 +2842,14 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         $business = Business::findOrFail($bid);
         $signaturePath = null;
 
-        // ✅ Remove checked hai to invoice me signature save nahi hoga
         if (!$r->boolean('remove_signature')) {
-
-            // ✅ Agar new upload hai to wahi save hoga
             if ($r->hasFile('signature')) {
                 $signaturePath = $r->file('signature')->store("invoices/{$bid}/signatures", 'public');
 
                 $business->update([
                     'signature' => $signaturePath,
                 ]);
-            } 
-            // ✅ Upload nahi hai to business ka existing signature invoice me save hoga
-            elseif (!empty($business->signature)) {
+            } elseif (!empty($business->signature)) {
                 $signaturePath = $business->signature;
             }
         }
@@ -2956,7 +2957,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
                     'tcs_percent'     => $tcsPercent,
                     'tcs_amount'      => $tcsAmount,
-
                     'round_off'       => $roundOff,
 
                     'total'           => $grandTotal,
@@ -2979,7 +2979,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                     'items_json'      => json_encode($cleanRows),
 
                     'amount_in_words' => '',
-                    'signature' => $signaturePath,
+                    'signature'       => $signaturePath,
 
                     'created_by'      => auth()->user()->id ?? null,
                     'updated_by'      => auth()->user()->id ?? null,
@@ -2999,8 +2999,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                     $qty = (int) ($row['qty'] ?? 1);
 
                     $rate      = round((float) ($row['rate'] ?? 0), 2);
-                    $lineTax   = round((float) ($row['tax_amount'] ?? 0), 2);
-                    $lineTotal = round((float) ($row['amount'] ?? ($rate + $lineTax)), 2);
+                    $lineTotal = round((float) ($row['amount'] ?? $rate), 2);
 
                     InvoiceItem::create([
                         'invoice_id'   => $invoice->id,

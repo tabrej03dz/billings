@@ -2166,30 +2166,36 @@
                 // },
 
 
+                // onAmountEdit(r) {
+                //     const total = n(r.manual_amount, 0);
+                //     r.amount_mode = (total > 0) ? 'manual' : 'auto';
+
+                //     if (r.amount_mode === 'manual') {
+                //         const qty = Math.max(1, n(r.quantity, 1));
+                //         const pct = n(r.tax_percent, 0);
+
+                //         // पहले tax हटेगा
+                //         const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
+
+                //         if (r.item_type === 'service') {
+                //             r.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
+                //         } else {
+                //             // product में making rate भी reverse होगा
+                //             const makingPercent = n(r.making_rate, 0);
+                //             const baseBeforeMaking = makingPercent > 0
+                //                 ? baseAfterTax / (1 + makingPercent / 100)
+                //                 : baseAfterTax;
+
+                //             r.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
+                //         }
+                //     }
+
+                //     this.calc();
+                // },
+
                 onAmountEdit(r) {
                     const total = n(r.manual_amount, 0);
                     r.amount_mode = (total > 0) ? 'manual' : 'auto';
-
-                    if (r.amount_mode === 'manual') {
-                        const qty = Math.max(1, n(r.quantity, 1));
-                        const pct = n(r.tax_percent, 0);
-
-                        // पहले tax हटेगा
-                        const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
-
-                        if (r.item_type === 'service') {
-                            r.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
-                        } else {
-                            // product में making rate भी reverse होगा
-                            const makingPercent = n(r.making_rate, 0);
-                            const baseBeforeMaking = makingPercent > 0
-                                ? baseAfterTax / (1 + makingPercent / 100)
-                                : baseAfterTax;
-
-                            r.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
-                        }
-                    }
-
                     this.calc();
                 },
 
@@ -2207,21 +2213,29 @@
                 //     this.calc();
                 // },
 
+                // onAutoChange(r) {
+                //     if (r.amount_mode !== 'manual') {
+                //         r.manual_amount = this.lineAmount(r);
+                //     } else {
+                //         const total = n(r.manual_amount, 0);
+                //         const qty = Math.max(1, n(r.quantity, 1));
+                //         const pct = n(r.tax_percent, 0);
+                //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
+                //         const perUnit = n((base / qty).toFixed(2), 0);
+
+                //         if (r.item_type === 'service') {
+                //             r.service_rate = perUnit;
+                //         } else {
+                //             r.fixed_price = perUnit;
+                //         }
+                //     }
+
+                //     this.calc();
+                // },
+
                 onAutoChange(r) {
                     if (r.amount_mode !== 'manual') {
                         r.manual_amount = this.lineAmount(r);
-                    } else {
-                        const total = n(r.manual_amount, 0);
-                        const qty = Math.max(1, n(r.quantity, 1));
-                        const pct = n(r.tax_percent, 0);
-                        const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                        const perUnit = n((base / qty).toFixed(2), 0);
-
-                        if (r.item_type === 'service') {
-                            r.service_rate = perUnit;
-                        } else {
-                            r.fixed_price = perUnit;
-                        }
                     }
 
                     this.calc();
@@ -2798,9 +2812,16 @@
                         discount: 0,
                         tax_percent: n(r.tax_percent),
 
+                        // rate: this.lineBase(r),
+                        // tax_amount: this.lineTax(r),
+                        // amount: this.lineAmount(r),
+
+                        amount_mode: r.amount_mode || 'auto',
+                        manual_amount: n(r.manual_amount),
+
                         rate: this.lineBase(r),
                         tax_amount: this.lineTax(r),
-                        amount: this.lineAmount(r),
+                        amount: n(r.manual_amount) > 0 ? n(r.manual_amount) : this.lineAmount(r),
                     }));
 
                     document.getElementById('items_json').value = JSON.stringify(payload);
