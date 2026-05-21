@@ -402,7 +402,7 @@
                                                 </button>
                                             </form>
                                         @endcan --}}
-
+                                        @can($deletePermission)
                                             <form method="POST" action="{{ route('invoices.destroy',$inv->id) }}"
                                                 onsubmit="return confirm('Delete this invoice?')">
                                                 @csrf
