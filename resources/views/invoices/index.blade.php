@@ -210,6 +210,28 @@
                                         };
                                     @endphp
 
+                                    @php
+                                        $invoiceType = strtolower($inv->invoice_type ?? 'tax');
+
+                                        $editPermission = match($invoiceType) {
+                                            'quotation' => 'edit quotation',
+                                            'proforma'  => 'edit proforma',
+                                            default     => 'edit invoice',
+                                        };
+
+                                        $deletePermission = match($invoiceType) {
+                                            'quotation' => 'delete quotation',
+                                            'proforma'  => 'delete proforma',
+                                            default     => 'delete invoice',
+                                        };
+
+                                        $convertPermission = match($invoiceType) {
+                                            'quotation' => 'convert into tax invoice',
+                                            'proforma'  => 'convert into tax invoice',
+                                            default     => null,
+                                        };
+                                    @endphp
+
                                     <span class="shrink-0 text-[10px] px-2 py-0.5 rounded-full border {{ $badge }}">
                                     {{ strtoupper($type) }}
                                 </span>
@@ -298,18 +320,18 @@
                                             View
                                         </a>
 
-                                        @can('edit invoice')
-                                        <a href="{{ route('invoices.edit',$inv->id) }}"
-                                           class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                            Edit
-                                        </a>
+                                        @can($editPermission)
+                                            <a href="{{ route('invoices.edit',$inv->id) }}"
+                                            class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                Edit
+                                            </a>
                                         @endcan
 
 
 
 
                                         {{-- ✅ Convert to Tax Invoice Button --}}
-                                        @if(in_array(strtolower($inv->invoice_type), ['quotation','proforma']))
+                                        {{-- @if(in_array(strtolower($inv->invoice_type), ['quotation','proforma']))
 
                                         <form action="{{ route('invoices.convertToTax', $inv->id) }}" method="POST"
                                             onsubmit="return confirm('Are you sure you want to convert this to Tax Invoice?');"
@@ -323,7 +345,7 @@
                                                     hover:bg-[#35655f] transition shadow">
 
                                                 {{-- icon --}}
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                                                {{-- <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
                                                     viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                         d="M9 17v-6h13M9 5v6h13M5 5h.01M5 17h.01"/>
@@ -332,9 +354,23 @@
                                                 Convert to Tax Invoice
                                             </button>
 
-                                        </form>
+                                        </form> --}} 
 
-                                        @endif
+                                            {{-- @endif --}}
+
+
+                                            @if(in_array($invoiceType, ['quotation','proforma']) && $convertPermission && auth()->user()->can($convertPermission))
+                                                <form action="{{ route('invoices.convertToTax', $inv->id) }}" method="POST"
+                                                    onsubmit="return confirm('Are you sure you want to convert this to Tax Invoice?');">
+
+                                                    @csrf
+
+                                                    <button type="submit"
+                                                        class="w-full text-left px-4 py-2 text-sm text-white bg-[#46837d] hover:bg-[#35655f]">
+                                                        Convert to Tax Invoice
+                                                    </button>
+                                                </form>
+                                            @endif
 
 
 
@@ -356,12 +392,23 @@
                                         <div class="h-px bg-gray-100 dark:bg-neutral-800"></div>
 
                                         {{-- Delete --}}
-                                        @can('delete invoice')
+                                        {{-- @can('delete invoice')
                                             <form method="POST" action="{{ route('invoices.destroy',$inv->id) }}"
                                                   onsubmit="return confirm('Delete this invoice?')">
                                                 @csrf @method('DELETE')
                                                 <button class="w-full text-left px-4 py-2 text-sm text-red-600
                                                        hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        @endcan --}}
+
+                                            <form method="POST" action="{{ route('invoices.destroy',$inv->id) }}"
+                                                onsubmit="return confirm('Delete this invoice?')">
+                                                @csrf
+                                                @method('DELETE')
+
+                                                <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
                                                     Delete
                                                 </button>
                                             </form>
