@@ -124,6 +124,11 @@ Route::post('/register/store', [RegisterController::class, 'store'])->name('regi
     Route::get('/plan/payment/{plan}', [ControllersPlanPaymentController::class, 'show'])
         ->name('plan.payment');
 
+        Route::get('/plans/{plan}/payment', [ControllersPlanPaymentController::class, 'show'])->name('plans.payment');
+        Route::post('/plans/{plan}/payment/order', [ControllersPlanPaymentController::class, 'createOrder'])->name('plans.payment.order');
+        Route::post('/plans/{plan}/payment/success', [ControllersPlanPaymentController::class, 'success'])->name('plans.payment.success');
+
+
 
 //Route::view('dashboard', 'dashboard')
 //    ->middleware(['auth', 'verified'])
@@ -459,6 +464,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('bill-templates/{id}/edit', [BillTemplateController::class, 'edit'])->name('bill-templates.edit');
     Route::put('bill-templates/{id}', [BillTemplateController::class, 'update'])->name('bill-templates.update');
     Route::delete('bill-templates/{id}', [BillTemplateController::class, 'destroy'])->name('bill-templates.destroy');
+    Route::get('bill-templates/customize', [BillTemplateController::class, 'customize'])->name('bill-templates.customize');
+
 
     Route::resource('user-plans', UserPlanController::class);
     Route::get('user-plans.index1/{business}', [UserPlanController::class, 'index1'])->name('user-plans.index1');

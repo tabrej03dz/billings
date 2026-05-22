@@ -160,7 +160,17 @@ class InvoiceController extends Controller
             $bid = $request->user()->businesses()->pluck('businesses.id')->first();
         }
 
-        $business = Business::findOrFail($bid);
+        // $business = Business::findOrFail($bid);
+
+        $business = Business::with('businessType.itemFields')->findOrFail($bid);
+
+        $allowedFields = [];
+
+        if ($business && $business->businessType) {
+            $allowedFields = $business->businessType->itemFields
+                ->pluck('field_name')
+                ->toArray();
+        }
 
         // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
         $taxBase = optional(
@@ -266,6 +276,7 @@ class InvoiceController extends Controller
 
             // ✅ NEW
             'docType'            => $docType,
+            'allowedFields' => $allowedFields,
         ]);
     }
 

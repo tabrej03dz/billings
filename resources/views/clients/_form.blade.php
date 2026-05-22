@@ -45,8 +45,20 @@
 
     // Edit + validation error support
     $selectedState = old('state');
-    if (!$selectedState && !empty($client?->state_code) && !empty($client?->state)) {
-        $selectedState = $client->state_code . ',' . $client->state;
+
+    if (!$selectedState && $client) {
+        $clientStateCode = trim((string) ($client->state_code ?? ''));
+        $clientStateName = trim((string) ($client->state ?? ''));
+
+        foreach ($states as $state) {
+            if (
+                $state['code'] === $clientStateCode ||
+                strtolower($state['name']) === strtolower($clientStateName)
+            ) {
+                $selectedState = $state['code'] . ',' . $state['name'];
+                break;
+            }
+        }
     }
 @endphp
 

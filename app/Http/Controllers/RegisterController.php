@@ -330,12 +330,12 @@ class RegisterController extends Controller
             $isTrial = (int) $request->input('trial', 0) === 1;
 
             if ($planId && $isTrial) {
-                return redirect()->route('bill-template.choose')
+                return redirect()->route('bill-templates.choose')
                     ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
             }
 
             if ($planId && ! $isTrial) {
-                return redirect()->route('plan.payment', ['plan_id' => $planId])
+                return redirect()->route('plan.payment', $planId)
                     ->with('success', 'Registration successful. Please complete payment to start your plan.');
             }
 

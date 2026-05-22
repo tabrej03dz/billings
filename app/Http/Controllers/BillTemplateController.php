@@ -133,6 +133,30 @@ class BillTemplateController extends Controller
         ));
     }
 
+
+        public function customize(Request $request)
+    {
+         $validated = $request->validate([
+            'template_id' => ['required', 'exists:bill_templates,id'],
+        ]);
+
+        $billTemplates = BillTemplate::find($validated);
+
+        $businessId = $request->user()->current_business_id
+            ?? session('active_business_id')
+            ?? $request->user()->businesses()->pluck('businesses.id')->first();
+
+        $business = $businessId ? Business::find($businessId) : null;
+        $selectedTemplateId = $business?->pdf_template_id;
+
+        return view('invoices.pdf_rvg_format', compact(
+            'billTemplates',
+            'q',
+            'business',
+            'selectedTemplateId'
+        ));
+    }
+
     public function saveChosen(Request $request)
     {
         $validated = $request->validate([
