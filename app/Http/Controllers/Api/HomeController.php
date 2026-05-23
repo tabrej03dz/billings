@@ -61,6 +61,7 @@ class HomeController extends Controller
                 'email' => $user->email,
                 'business' => $user->businesses
             ],
+            
         ], 200);
     }
 
