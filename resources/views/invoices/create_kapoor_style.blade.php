@@ -37,6 +37,10 @@
         <script type="application/json" id="categories-json">{!! $categoriesJson !!}</script>
         <script type="application/json" id="metal-rates-json">{!! $metalRatesJson !!}</script>
 
+        <script type="application/json" id="allowed-fields-json">
+            {!! json_encode($allowedFields ?? []) !!}
+        </script>
+
         <div class="flex items-center justify-between bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Create Sales Invoice</h1>
             <button type="button" @click="submitForm()" :disabled="saving"
@@ -199,31 +203,26 @@
             </div>
 
             {{-- ================= TABLE ================= --}}
-            <div
-                class="border rounded border-gray-200 dark:border-neutral-700 bg-[#BFE0E0] dark:bg-neutral-900 overflow-visible my-4">
+            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-[#BFE0E0] dark:bg-neutral-900 overflow-visible my-4">
                 <div class="overflow-x-auto overflow-y-visible">
                     <table class="min-w-full text-sm border-separate border-spacing-0 invoice-table">
                         <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-gray-700 dark:text-neutral-200">
-                            <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs ">
+                            <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
                                 <th>S.No.</th>
                                 <th>Description</th>
                                 <th>HSN / SAC</th>
                                 <th class="text-center">Qty</th>
                                 <th>Rate / Price</th>
 
-                                {{-- Product-only columns --}}
-                                <th x-show="hasProduct()">Making Rate</th>
-                                <th x-show="hasProduct()">Gold Rate (₹/g)</th>
-                                <th x-show="hasProduct()">Gold Wt.(Gm)</th>
-                                <th x-show="hasProduct()">Silver Rate (₹/g)</th>
-                                <th x-show="hasProduct()">Silver Wt.(Gm)</th>
-                                <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
-                                <th x-show="hasProduct()">Gemstone Charge</th>
-                                <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
-                                <th x-show="hasProduct()">Diamond Charge</th>
-
-                                {{-- Service-only column --}}
-                                {{-- <th x-show="hasService()">Service Rate (₹)</th> --}}
+                                <th x-show="showItemField('making_charge')">Making Rate</th>
+                                <th x-show="showItemField('gold_purity')">Gold Rate (₹/g)</th>
+                                <th x-show="showItemField('gold_weight')">Gold Wt.(Gm)</th>
+                                <th x-show="showItemField('silver_purity')">Silver Rate (₹/g)</th>
+                                <th x-show="showItemField('silver_weight')">Silver Wt.(Gm)</th>
+                                <th x-show="showItemField('stone_weight')">Gem Stone Wt.(Ct.)</th>
+                                <th x-show="showItemField('stone_charges')">Gemstone Charge</th>
+                                <th x-show="showItemField('diamond_weight')">Diamond Wt.(Ct.)</th>
+                                <th x-show="showItemField('diamond_charges')">Diamond Charge</th>
 
                                 <th>Tax %</th>
                                 <th>Amount (Editable)</th>
@@ -231,106 +230,81 @@
                             </tr>
                         </thead>
 
-                        <tbody
-                            class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100 bg-[#F3F4F6] dark:bg-[#1A1D23]">
+                        <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100 bg-[#F3F4F6] dark:bg-[#1A1D23]">
                             <template x-for="(row, i) in items" :key="row._k">
                                 <tr>
-                                    <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
+                                    <td class="px-3 py-2 text-center text-xs" x-text="i + 1"></td>
 
-                                    <td class="px-2 py-1 w-[260px] max-w-[260px] align-top ">
-
+                                    <td class="px-2 py-1 w-[260px] max-w-[260px] align-top">
                                         <div class="relative mb-1" @click.away="closeItemDD(i)">
                                             <div class="flex items-center gap-1">
-                                                <input type="text" :id="'item_search_' + i" x-model="row.search"
-                                                    placeholder="Search item by name or sku" @focus="openItemDD(i)"
+                                                <input type="text"
+                                                    :id="'item_search_' + i"
+                                                    x-model="row.search"
+                                                    placeholder="Search item by name or sku"
+                                                    @focus="openItemDD(i)"
                                                     @input.debounce.50ms="openItemDD(i)"
                                                     @keydown.escape.prevent="closeItemDD(i)"
                                                     @keydown.arrow-down.prevent="itemDDDown(i)"
                                                     @keydown.arrow-up.prevent="itemDDUp(i)"
                                                     @keydown.enter.prevent="itemDDEnter(i)"
-                                                    class="flex-1 border rounded px-2 py-1
-                                                    border-gray-300 dark:border-neutral-700
-                                                    bg-white dark:bg-[#242833]
-                                                    text-gray-900 dark:text-neutral-100 text-xs" />
+                                                    class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-xs">
 
                                                 <button type="button"
-                                                    class="px-3 py-1 rounded border
-                                                    border-gray-300 dark:border-neutral-700
-                                                    text-xs whitespace-nowrap
-                                                    hover:bg-gray-50 dark bg-sky-600 dark:hover:bg-sky-800"
+                                                    class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap bg-sky-600 text-white hover:bg-sky-700"
                                                     @click="openItemModal(i)">
                                                     + New
                                                 </button>
                                             </div>
 
-    
-                                            <div x-show="row.ddOpen" x-transition.opacity
-                                                class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
-                                                        bg-white dark:bg-[#242833] shadow-2xl z-[999999]
-                                                        max-h-56 overflow-hidden"
-                                                :style="row.ddStyle + ';width:900px;max-width:95vw;'" style="display:none;" @mousedown.prevent>
+                                            <div x-show="row.ddOpen"
+                                                x-transition.opacity
+                                                class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-[#242833] shadow-2xl z-[999999] max-h-56 overflow-hidden"
+                                                :style="row.ddStyle + ';width:900px;max-width:95vw;'"
+                                                style="display:none;"
+                                                @mousedown.prevent>
 
                                                 <div class="grid grid-cols-12 h-56">
-                                                    
-                                                    <!-- LEFT: list -->
                                                     <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
-                                                    <template x-if="filteredItems(row.search).length === 0">
-                                                        <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
-                                                    </template>
+                                                        <template x-if="filteredItems(row.search).length === 0">
+                                                            <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
+                                                        </template>
 
-                                                    <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">
-                                                        <div
-                                                        class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3
-                                                                hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                                        :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-[#242833]' : ''"
-                                                        @mouseenter="
-                                                            row.ddHi = idx;
-                                                            row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                                                            row.ddPreview = it.description || it.desc || it.long_description || '';
-                                                        "
-                                                        @click="selectItemFromDD(i, it)"
-                                                        >
-                                                        <!-- NAME (no truncate) -->
-                                                        <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
-                                                            x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
+                                                        <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">
+                                                            <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                                :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-[#242833]' : ''"
+                                                                @mouseenter="
+                                                                    row.ddHi = idx;
+                                                                    row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                                                                    row.ddPreview = it.description || it.desc || it.long_description || '';
+                                                                "
+                                                                @click="selectItemFromDD(i, it)">
+                                                                <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
+                                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
 
-                                                        <!-- PRICE -->
-                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[90px] text-right"
-                                                            x-text="it.price ? it.price : ''"></div>
-                                                        </div>
-                                                    </template>
+                                                                <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[90px] text-right"
+                                                                    x-text="it.price ? it.price : ''"></div>
+                                                            </div>
+                                                        </template>
                                                     </div>
 
-                                                    <!-- RIGHT: preview -->
                                                     <div class="col-span-5 p-3 overflow-auto">
-                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
-                                                    <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
-                                                        x-text="row.ddPreviewName || 'Hover on an item'"></div>
-
-                                                    <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
-                                                        x-text="row.ddPreview || 'No description available'"></div>
+                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
+                                                        <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
+                                                            x-text="row.ddPreviewName || 'Hover on an item'"></div>
+                                                        <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
+                                                            x-text="row.ddPreview || 'No description available'"></div>
                                                     </div>
-
-                                                </div>
                                                 </div>
                                             </div>
-
                                         </div>
 
-                                        <!-- ✅ backend compatibility -->
-                                        <input class="py-3 dark:bg-[#242833]" type="hidden"
-                                            :name="'items[' + i + '][item_id]'" :value="row.item_id">
+                                        <input type="hidden" :name="'items[' + i + '][item_id]'" :value="row.item_id">
 
-
-                                        <textarea x-model="row.description" rows="5"
-                                        class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833]
-                                                text-gray-900 dark:text-neutral-100 text-xs resize-y min-h-[160px]"
-                                        placeholder="Enter description..."></textarea>
-
-                                        <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
-                                            x-show="row.item_type"
-                                            x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''">
-                                        </div>
+                                        <textarea x-model="row.description"
+                                            rows="5"
+                                            class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-xs resize-y min-h-[160px]"
+                                            placeholder="Enter description..."></textarea>
                                     </td>
 
                                     <td class="px-3 py-2">
@@ -340,126 +314,106 @@
 
                                     <td class="px-3 py-2 text-center">
                                         <input type="number" min="1" step="1"
-                                            x-model.number="row.quantity" @input="onAutoChange(row)"
+                                            x-model.number="row.quantity"
+                                            @input="onAutoChange(row)"
                                             class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs text-center">
                                     </td>
 
                                     <td class="px-3 py-2">
-                                        <div class="text-[10px] mb-0.5 text-gray-500 dark:text-neutral-400"
-                                            x-text="row.item_type === 'service' ? 'Service Rate' : 'Price'">
-                                        </div>
-
                                         <input type="number" step="0.01" min="0"
-                                            :value="row.item_type === 'service' ? row.service_rate : row.fixed_price"
+                                            x-model.number="row.fixed_price"
                                             @input="
-                                                if (row.item_type === 'service') {
-                                                    row.service_rate = Number($event.target.value || 0);
-                                                } else {
-                                                    row.fixed_price = Number($event.target.value || 0);
-                                                }
+                                                row.service_rate = Number(row.fixed_price || 0);
                                                 onAutoChange(row);
                                             "
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs text-right">
                                     </td>
 
-                                    {{-- Product-only cells --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField('making_charge')">
                                         <input type="number" step="0.01" min="0"
-                                            x-model.number="row.making_rate" @input="onAutoChange(row)"
+                                            x-model.number="row.making_rate"
+                                            @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'gold_rate')"> --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
-
+                                    <td class="px-3 py-2" x-show="showItemField('gold_purity')">
                                         <input type="number" step="0.01" min="0"
-                                            x-model.number="row.gold_rate" @input="onAutoChange(row)"
+                                            x-model.number="row.gold_rate"
+                                            @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-show="hasValue(row.gold_purity)"
                                             x-text="'Purity: ' + row.gold_purity"></div>
                                     </td>
 
-                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'silver_rate')"> --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField('gold_weight')">
+                                        <input type="number" step="0.001" min="0"
+                                            x-model.number="row.gold_wt"
+                                            @input="onAutoChange(row)"
+                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
+                                    </td>
 
+                                    <td class="px-3 py-2" x-show="showItemField('silver_purity')">
                                         <input type="number" step="0.01" min="0"
-                                            x-model.number="row.silver_rate" @input="onAutoChange(row)"
+                                            x-model.number="row.silver_rate"
+                                            @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-show="hasValue(row.silver_purity)"
                                             x-text="'Purity: ' + row.silver_purity"></div>
                                     </td>
 
-                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'silver_wt')"> --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
-
+                                    <td class="px-3 py-2" x-show="showItemField('silver_weight')">
                                         <input type="number" step="0.001" min="0"
-                                            x-model.number="row.silver_wt" @input="onAutoChange(row)"
+                                            x-model.number="row.silver_wt"
+                                            @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'gold_wt')"> --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
-
+                                    <td class="px-3 py-2" x-show="showItemField('stone_weight')">
                                         <input type="number" step="0.001" min="0"
-                                            x-model.number="row.gold_wt" @input="onAutoChange(row)"
-                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
+                                            x-model.number="row.gemstone_wt"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'gemstone_wt')"> --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField('stone_charges')">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.gemstone_charge"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
+                                    </td>
 
+                                    <td class="px-3 py-2" x-show="showItemField('diamond_weight')">
                                         <input type="number" step="0.001" min="0"
-                                            x-model.number="row.gemstone_wt" @input="onAutoChange(row)"
+                                            x-model.number="row.diamond_wt"
+                                            @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
+                                    <td class="px-3 py-2" x-show="showItemField('diamond_charges')">
                                         <input type="number" step="0.01" min="0"
-                                            x-model.number="row.gemstone_charge" @input="onAutoChange(row)"
+                                            x-model.number="row.diamond_charge"
+                                            @input="onAutoChange(row)"
                                             class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
-
-                                    {{-- <td class="px-3 py-2" x-show="showItemField(row, 'diamond_wt')"> --}}
-                                     <td class="px-3 py-2" x-show="row.item_type === 'product'">
-
-                                        <input type="number" step="0.001" min="0"
-                                            x-model.number="row.diamond_wt" @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
-                                    </td>
-
-                                    <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                        <input type="number" step="0.01" min="0"
-                                            x-model.number="row.diamond_charge" @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
-                                    </td>
-
-                                    {{-- Service-only cell --}}
-                                    {{-- <td class="px-3 py-2" x-show="row.item_type === 'service'">
-                                        <input type="number" step="0.01" min="0"
-                                            x-model.number="row.service_rate" @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
-                                        <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400">
-                                            (Service = Item Price)
-                                        </div>
-                                    </td> --}}
 
                                     <td class="px-3 py-2">
                                         <input type="number" step="0.01" min="0" max="100"
-                                            x-model.number="row.tax_percent" @input="onAutoChange(row)"
+                                            x-model.number="row.tax_percent"
+                                            @input="onAutoChange(row)"
                                             class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
-                                    {{-- ✅ Amount editable --}}
                                     <td class="px-3 py-2">
                                         <input type="number" step="0.01" min="0"
-                                            x-model.number="row.manual_amount" @input="onAmountEdit(row)"
+                                            x-model.number="row.manual_amount"
+                                            @input="onAmountEdit(row)"
                                             class="w-32 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs text-right">
+
                                         <div class="mt-0.5 text-[10px]"
-                                            :class="row.amount_mode === 'manual' ? 'text-orange-600' :
-                                                'text-gray-500 dark:text-neutral-400'"
-                                            x-text="row.amount_mode==='manual' ? 'Manual' : ('Auto: ₹ '+ lineAmount(row).toFixed(2))">
+                                            :class="row.amount_mode === 'manual' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
+                                            x-text="row.amount_mode === 'manual' ? 'Manual' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))">
                                         </div>
                                     </td>
 
@@ -471,14 +425,14 @@
                             </template>
 
                             <tr>
-                                <td colspan="30" class="px-3 py-2">
-                                    <button type="button" @click="add()"
-                                        class=" bg-green-500 p-2 m-2 rounded-lg text-white hover:underline text-sm">
+                                <td colspan="17" class="px-3 py-2">
+                                    <button type="button"
+                                        @click="add()"
+                                        class="bg-green-500 px-4 py-2 rounded-lg text-white hover:bg-green-600 text-sm">
                                         + Add Item
                                     </button>
                                 </td>
                             </tr>
-
                         </tbody>
                     </table>
                 </div>
@@ -1268,7 +1222,13 @@
             const ITEMS = readJSON('items-json', []);
             const METAL_RATES = readJSON('metal-rates-json', []);
             const BANKS = readJSON('banks-json', []);
-            const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
+            // const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
+            const CATEGORIES = readJSON('categories-json', []);
+            const ALLOWED_FIELDS = readJSON('allowed-fields-json', []);
+
+            const showAllowedField = (field) => {
+                return ALLOWED_FIELDS.length === 0 || ALLOWED_FIELDS.includes(field);
+            };
 
             const BIZ_STATE_CODE = @js($businessStateCode ?? '');
             const BIZ_GSTIN = @js($businessGstin ?? '');
@@ -1488,11 +1448,17 @@
                 }
             });
 
+           
+
             return {
                 // DATA
                 clients: CLIENTS,
                 itemsData: ITEMS,
                 categories: CATEGORIES,
+
+                 showItemField(field) {
+                    return showAllowedField(field);
+                },
 
 
 
@@ -1502,9 +1468,9 @@
                     return Number(v) > 0 || isNaN(Number(v));
                 },
 
-                showItemField(row, field) {
-                    return row.item_type === 'product' && this.hasValue(row[field]);
-                },
+                // showItemField(row, field) {
+                //     return row.item_type === 'product' && this.hasValue(row[field]);
+                // },
 
 
                 metalRates: METAL_RATES,
@@ -2133,69 +2099,37 @@
                     this.calc();
                 },
 
-                // onAmountEdit(r) {
-                //     const total = n(r.manual_amount, 0);
-                //     r.amount_mode = (total > 0) ? 'manual' : 'auto';
-
-                //     if (r.item_type === 'service') {
-                //         const qty = Math.max(1, n(r.quantity, 1));
-                //         const pct = n(r.tax_percent, 0);
-                //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                //         r.service_rate = n((base / qty).toFixed(2), 0);
-                //     }
-
-                //     this.calc();
-                // },
-
-                // onAmountEdit(r) {
-                //     const total = n(r.manual_amount, 0);
-                //     r.amount_mode = (total > 0) ? 'manual' : 'auto';
-
-                //     const qty = Math.max(1, n(r.quantity, 1));
-                //     const pct = n(r.tax_percent, 0);
-                //     const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                //     const perUnit = n((base / qty).toFixed(2), 0);
-
-                //     if (r.item_type === 'service') {
-                //         r.service_rate = perUnit;
-                //     } else {
-                //         r.fixed_price = perUnit;
-                //     }
-
-                //     this.calc();
-                // },
-
-
-                // onAmountEdit(r) {
-                //     const total = n(r.manual_amount, 0);
-                //     r.amount_mode = (total > 0) ? 'manual' : 'auto';
-
-                //     if (r.amount_mode === 'manual') {
-                //         const qty = Math.max(1, n(r.quantity, 1));
-                //         const pct = n(r.tax_percent, 0);
-
-                //         // पहले tax हटेगा
-                //         const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
-
-                //         if (r.item_type === 'service') {
-                //             r.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
-                //         } else {
-                //             // product में making rate भी reverse होगा
-                //             const makingPercent = n(r.making_rate, 0);
-                //             const baseBeforeMaking = makingPercent > 0
-                //                 ? baseAfterTax / (1 + makingPercent / 100)
-                //                 : baseAfterTax;
-
-                //             r.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
-                //         }
-                //     }
-
-                //     this.calc();
-                // },
 
                 onAmountEdit(r) {
                     const total = n(r.manual_amount, 0);
-                    r.amount_mode = (total > 0) ? 'manual' : 'auto';
+
+                    if (total <= 0) {
+                        r.amount_mode = 'auto';
+                        r.manual_amount = this.lineAmount(r);
+                        this.calc();
+                        return;
+                    }
+
+                    r.amount_mode = 'manual';
+
+                    const qty = Math.max(1, n(r.quantity, 1));
+                    const pct = n(r.tax_percent, 0);
+
+                    // total amount me se tax reverse
+                    let base = pct > 0 ? (total / (1 + (pct / 100))) : total;
+
+                    // making charge bhi reverse
+                    const makingPercent = n(r.making_rate, 0);
+                    if (makingPercent > 0) {
+                        base = base / (1 + (makingPercent / 100));
+                    }
+
+                    const perUnit = n((base / qty).toFixed(2), 0);
+
+                    // dono update karo, item type check nahi
+                    r.fixed_price = perUnit;
+                    r.service_rate = perUnit;
+
                     this.calc();
                 },
 
@@ -2233,9 +2167,20 @@
                 //     this.calc();
                 // },
 
+                // onAutoChange(r) {
+                //     if (r.amount_mode !== 'manual') {
+                //         r.manual_amount = this.lineAmount(r);
+                //     }
+
+                //     this.calc();
+                // },
+
                 onAutoChange(r) {
                     if (r.amount_mode !== 'manual') {
                         r.manual_amount = this.lineAmount(r);
+                    } else {
+                        this.onAmountEdit(r);
+                        return;
                     }
 
                     this.calc();
