@@ -81,7 +81,7 @@ class HomeController extends Controller
             ]);
         }
 
-        $otp = $user->email == 'shorabh.ftp.72@gmail.com' ? 000000 : rand(100000, 999999);
+        $otp = $user->email == 'shorabh.ftp.72@gmail.com' ? "000000" : rand(100000, 999999);
 
         $user->update([
             'otp' => $otp,
