@@ -32,6 +32,15 @@
 
         <div class="grid md:grid-cols-2 gap-4">
 
+            @if($errors->any())
+                <div class="md:col-span-2 bg-red-100 text-red-700 p-3 rounded">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li class="text-sm">{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+
             @if($showField('name'))
                 <div>
                     <label class="block text-sm font-medium mb-1">
