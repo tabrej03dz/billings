@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BillTemplate;
 use App\Models\Business;
+use App\Models\BusinessBillTemplateSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -134,28 +135,76 @@ class BillTemplateController extends Controller
     }
 
 
-        public function customize(Request $request)
-    {
-         $validated = $request->validate([
-            'template_id' => ['required', 'exists:bill_templates,id'],
-        ]);
+    // public function customize(BillTemplate $template, Request $request)
+    // {
 
-        $billTemplates = BillTemplate::find($validated);
+    //     $businessId = $request->user()->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $request->user()->businesses()->pluck('businesses.id')->first();
 
-        $businessId = $request->user()->current_business_id
-            ?? session('active_business_id')
-            ?? $request->user()->businesses()->pluck('businesses.id')->first();
+    //     $business = $businessId ? Business::find($businessId) : null;
 
-        $business = $businessId ? Business::find($businessId) : null;
-        $selectedTemplateId = $business?->pdf_template_id;
+    //     if (!$business) {
+    //         return redirect()
+    //             ->route('bill-templates.choose')
+    //             ->with('error', 'Please select business first.');
+    //     }
 
-        return view('invoices.pdf_rvg_format', compact(
-            'billTemplates',
-            'q',
-            'business',
-            'selectedTemplateId'
-        ));
+    //     $setting = BusinessBillTemplateSetting::firstOrCreate(
+    //         [
+    //             'business_id' => $business->id,
+    //             'bill_template_id' => $template->id,
+    //         ],
+    //         [
+
+    //             'primary_color' => '#d60000',
+    //             'secondary_color' => '#dbd9d6',
+    //             'text_color' => '#111111',
+    //             'font_family' => 'DejaVu Sans',
+    //             'show_logo' => true,
+    //             'show_tagline' => true,
+    //             'show_signature' => true,
+    //             'show_terms' => true,
+    //         ]
+    //     );
+
+    //     return view('invoices.customize.'.$template->page_name, compact(
+    //         'template',
+    //         'business',
+    //         'setting'
+    //     ));
+    // }
+
+
+public function customize(BillTemplate $template, Request $request)
+{
+    $businessId = $request->user()->current_business_id
+        ?? session('active_business_id')
+        ?? $request->user()->businesses()->pluck('businesses.id')->first();
+
+    $business = $businessId ? Business::find($businessId) : null;
+
+    if (!$business) {
+        return redirect()
+            ->route('bill-templates.choose')
+            ->with('error', 'Please select business first.');
     }
+
+    $setting = BusinessBillTemplateSetting::where('business_id', $business->id)
+        ->where('bill_template_id', $template->id)
+        ->first();
+
+    $billTemplate = $template;
+
+
+    return view('invoices.customize.' . $template->page_name, compact(
+        'template',
+        'billTemplate',
+        'business',
+        'setting'
+    ));
+}
+
 
     public function saveChosen(Request $request)
     {

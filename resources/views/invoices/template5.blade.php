@@ -2,6 +2,19 @@
 @php
     $termsText = $inv->terms ?? null;
 
+    $primaryColor   = $templateSetting->primary_color ?? '#7c3aed';
+    $textColor      = $templateSetting->text_color ?? '#0f172a';
+    $mutedColor     = $templateSetting->muted_color ?? '#64748b';
+    $borderColor    = $templateSetting->border_color ?? '#cbd5e1';
+    $secondaryColor = $templateSetting->secondary_color ?? '#e5e7eb';
+    $lightBgColor   = $templateSetting->light_bg_color ?? '#ede9fe';
+    $softBgColor    = $templateSetting->soft_bg_color ?? '#f8fafc';
+    $fontFamily     = $templateSetting->font_family ?? 'DejaVu Sans';
+
+    $showLogo      = $templateSetting->show_logo ?? true;
+    $showSignature = $templateSetting->show_signature ?? true;
+    $showTerms     = $templateSetting->show_terms ?? true;
+
     /** @var \App\Models\Invoice $inv */
     $b = $biz ?? ($inv->business ?? null);
     $c = $client ?? ($inv->client ?? null);
@@ -42,8 +55,9 @@
     $finalTax   = round((float)$finalTax, 2);
     $finalTotal = round((float)$grand_db, 2);
 
-    function inr_words($amount)
-    {
+    if (!function_exists('inr_words')) {
+        function inr_words($amount)
+        {
         $amount = (float)$amount;
         $rupees = (int) floor($amount);
         $paise  = (int) round(($amount - $rupees) * 100);
@@ -92,7 +106,8 @@
 
         $result = $words . ' Rupees';
         if ($paise > 0) $result .= ' and ' . $twoDigits($paise) . ' Paise';
-        return $result;
+            return $result;
+        }
     }
 
     $invoiceNo   = $inv->invoice_number ?? $inv->invoice_no ?? '-';
@@ -131,21 +146,21 @@ $invoiceSignatureUrl = $invoiceSignature
     <title>{{ ucfirst($type) }} {{ $invoiceNo }}</title>
     <style>
         *{ box-sizing:border-box; }
-        body{ font-family:"DejaVu Sans", sans-serif; font-size:12px; background:#f8fafc; margin:0; padding:18px; color:#0f172a; }
+        body{ font-family:"{{ $fontFamily }}", "DejaVu Sans", sans-serif; font-size:12px; background:{{ $softBgColor }}; margin:0; padding:18px; color:{{ $textColor }}; }
         .page{
             background:#fff;
-            border:1px solid #e2e8f0;
+            border:1px solid {{ $secondaryColor }};
             padding:16px;
         }
         table{ width:100%; border-collapse:collapse; }
         .headerBox{
-            border:1px solid #cbd5e1;
+            border:1px solid {{ $borderColor }};
             margin-bottom:14px;
         }
         .headerBox td{ vertical-align:top; padding:12px; }
-        .company{ font-size:22px; font-weight:700; color:#7c3aed; }
+        .company{ font-size:22px; font-weight:700; color:{{ $primaryColor }}; }
         .docType{
-            background:#7c3aed;
+            background:{{ $primaryColor }};
             color:#fff;
             padding:10px;
             text-align:center;
@@ -153,41 +168,41 @@ $invoiceSignatureUrl = $invoiceSignature
             font-weight:700;
         }
         .subBox{
-            border:1px solid #cbd5e1;
+            border:1px solid {{ $borderColor }};
             margin-bottom:14px;
         }
         .subBox td{
             padding:10px;
             vertical-align:top;
-            border-right:1px solid #cbd5e1;
+            border-right:1px solid {{ $borderColor }};
         }
         .subBox td:last-child{ border-right:none; }
-        .label{ font-size:10px; text-transform:uppercase; color:#64748b; font-weight:700; margin-bottom:4px; }
+        .label{ font-size:10px; text-transform:uppercase; color:{{ $mutedColor }}; font-weight:700; margin-bottom:4px; }
         .items th{
-            background:#ede9fe;
-            color:#5b21b6;
+            background:{{ $lightBgColor }};
+            color:{{ $primaryColor }};
             padding:8px;
             text-align:left;
-            border:1px solid #ddd6fe;
+            border:1px solid {{ $secondaryColor }};
         }
         .items td{
             padding:8px;
-            border:1px solid #e5e7eb;
+            border:1px solid {{ $secondaryColor }};
             vertical-align:top;
         }
         .text-right{ text-align:right; }
-        .descSmall{ font-size:10px; color:#6b7280; }
+        .descSmall{ font-size:10px; color:{{ $mutedColor }}; }
         .totals{
             width:44%;
             margin-left:auto;
             margin-top:14px;
         }
         .totals td{
-            border:1px solid #cbd5e1;
+            border:1px solid {{ $borderColor }};
             padding:8px;
         }
         .totals .grand{
-            background:#7c3aed;
+            background:{{ $primaryColor }};
             color:#fff;
             font-weight:700;
         }
@@ -205,7 +220,7 @@ $invoiceSignatureUrl = $invoiceSignature
                 <div>GSTIN: {{ $b_gstin ?: '-' }}</div>
             </td>
             <td style="width:30%; text-align:right;">
-                @if(!empty($logo))
+                @if($showLogo && !empty($logo))
                     <img src="{{ $logo }}" alt="Logo" style="max-width:100px; max-height:70px;"><br><br>
                 @endif
                 <div class="docType">{{ strtoupper($type) }}</div>
@@ -305,18 +320,20 @@ $invoiceSignatureUrl = $invoiceSignature
                 <div class="label">Amount in Words</div>
                 <strong>{{ inr_words($finalTotal) }}</strong>
 
-                @if(!empty($inv->terms))
+                @if($showTerms && !empty($inv->terms))
                     <div class="label" style="margin-top:16px;">Terms & Conditions</div>
                     {!! nl2br(e($inv->terms)) !!}
                 @endif
             </td>
             <td style="width:40%; text-align:right; vertical-align:top;">
+                @if($showSignature)
                 @if(!empty($invoiceSignatureUrl))
                     <img src="{{ $invoiceSignatureUrl }}" alt="Signature" style="max-height:50px;"><br>
                 @endif
 
                 <div class="label">Authorised Signatory</div>
                 <strong>{{ $b->name ?? 'Real Victory Groups' }}</strong>
+                @endif
             </td>
         </tr>
     </table>

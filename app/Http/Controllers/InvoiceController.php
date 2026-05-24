@@ -850,7 +850,17 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         $docType = 'tax';
     }
 
-    $business = \App\Models\Business::findOrFail($bid);
+    // $business = \App\Models\Business::findOrFail($bid);
+
+    $business = \App\Models\Business::with('businessType.itemFields')->findOrFail($bid);
+
+    $allowedFields = [];
+
+    if ($business && $business->businessType) {
+        $allowedFields = $business->businessType->itemFields
+            ->pluck('field_name')
+            ->toArray();
+    }
 
     $taxBase = optional(
         $request->user()
@@ -1048,11 +1058,29 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             // ✅ IMPORTANT FIX:
             // Edit page par price master items.price se nahi,
             // invoice_items.rate / quantity se aayega.
-            $baseAmount = (float) ($it->rate ?? 0);
-            $savedUnitPrice = $qty > 0 ? round($baseAmount / $qty, 2) : 0;
+            // $baseAmount = (float) ($it->rate ?? 0);
+            // $savedUnitPrice = $qty > 0 ? round($baseAmount / $qty, 2) : 0;
 
-            $fixedPrice = $type === 'product' ? $savedUnitPrice : 0;
-            $serviceRate = $type === 'service' ? $savedUnitPrice : 0;
+            // $fixedPrice = $type === 'product' ? $savedUnitPrice : 0;
+            // $serviceRate = $type === 'service' ? $savedUnitPrice : 0;
+
+            $savedRate = (float) ($it->rate ?? 0);
+            $savedMakingRate = (float) ($it->making_rate ?? 0);
+
+            $savedUnitPriceWithMaking = $qty > 0
+                ? round($savedRate / $qty, 2)
+                : 0;
+
+            // ✅ rate में making already included है,
+            // इसलिए edit page पर fixed_price में से making reverse करके original price दिखाएंगे
+            if ($savedMakingRate > 0) {
+                $savedUnitPrice = round($savedUnitPriceWithMaking / (1 + ($savedMakingRate / 100)), 2);
+            } else {
+                $savedUnitPrice = $savedUnitPriceWithMaking;
+            }
+
+            $fixedPrice = $savedUnitPrice;
+            $serviceRate = $savedUnitPrice;
 
             $searchName = '';
             if ($master) {
@@ -1130,6 +1158,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         'docType' => $docType,
 
         'invoiceJson' => json_encode($invoiceJson, JSON_UNESCAPED_UNICODE),
+        'allowedFields' => $allowedFields,
     ]);
 }
 
@@ -4571,6 +4600,169 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         $itemsTaxTotal = 0.0;
         $cleanRows     = [];
 
+        // foreach ($rows as $i => $row) {
+        //     $itemId = $row['item_id'] ?? null;
+
+        //     if (empty($itemId)) {
+        //         return back()
+        //             ->withErrors(['items' => "Row " . ($i + 1) . " में Item select नहीं है."])
+        //             ->withInput();
+        //     }
+
+        //     $itemType = strtolower(trim((string)($row['item_type'] ?? 'product')));
+
+        //     if (!in_array($itemType, ['product', 'service'], true)) {
+        //         $itemType = 'product';
+        //     }
+
+        //     $desc = trim((string)($row['description'] ?? ''));
+
+        //     if ($desc === '') {
+        //         return back()
+        //             ->withErrors(['items' => "Row " . ($i + 1) . " description missing."])
+        //             ->withInput();
+        //     }
+
+        //     $hsn = trim((string)($row['hsn'] ?? ''));
+
+        //     $qty = (int)($row['quantity'] ?? 1);
+        //     $qty = $qty < 1 ? 1 : $qty;
+
+        //     $taxPct = (float)($row['tax_percent'] ?? 0);
+
+        //     if ($taxPct < 0 || $taxPct > 100) {
+        //         return back()
+        //             ->withErrors(['items' => "Row " . ($i + 1) . " tax % invalid."])
+        //             ->withInput();
+        //     }
+
+        //     // ================= SERVICE =================
+        //     if ($itemType === 'service') {
+        //         $fixedPrice  = (float)($row['fixed_price'] ?? $row['price'] ?? 0);
+        //         $serviceRate = (float)($row['service_rate'] ?? 0);
+
+        //         if ($fixedPrice > 0) {
+        //             $serviceRate = $fixedPrice;
+        //         }
+
+        //         if ($serviceRate < 0) {
+        //             return back()
+        //                 ->withErrors(['items' => "Row " . ($i + 1) . " service rate invalid."])
+        //                 ->withInput();
+        //         }
+
+        //         $lineBase = round($serviceRate * $qty, 2);
+        //         $lineTax  = round($lineBase * ($taxPct / 100), 2);
+
+        //         $subtotal      += $lineBase;
+        //         $weightedTax   += ($lineBase * $taxPct);
+        //         $itemsTaxTotal += $lineTax;
+
+        //         $cleanRows[] = [
+        //             'item_id'      => (int)$itemId,
+        //             'item_type'    => 'service',
+        //             'description'  => $desc,
+        //             'hsn'          => $hsn,
+        //             'qty'          => $qty,
+        //             'tax_percent'  => round($taxPct, 2),
+
+        //             'fixed_price'  => round($fixedPrice, 2),
+        //             'service_rate' => round($serviceRate, 2),
+
+        //             'rate'         => $lineBase,
+        //             'tax_amount'   => $lineTax,
+        //             'amount'       => round($lineBase + $lineTax, 2),
+
+        //             'making_charge' => round($serviceRate, 2),
+
+        //             'gold_wt'       => 0,
+        //             'silver_wt'     => 0,
+        //             'gold_rate'     => 0,
+        //             'silver_rate'   => 0,
+        //             'gemstone_wt'   => 0,
+        //             'diamond_wt'    => 0,
+        //             'making_rate'   => 0,
+        //             'stone_charges' => 0,
+        //         ];
+
+        //         continue;
+        //     }
+
+        //     // ================= PRODUCT =================
+        //     $goldWt     = (float)($row['gold_wt'] ?? 0);
+        //     $silverWt   = (float)($row['silver_wt'] ?? 0);
+        //     $goldRate   = (float)($row['gold_rate'] ?? 0);
+        //     $silverRate = (float)($row['silver_rate'] ?? 0);
+        //     $makingRate = (float)($row['making_rate'] ?? 0);
+
+        //     $gemCt = (float)($row['gemstone_wt'] ?? 0);
+        //     $diaCt = (float)($row['diamond_wt'] ?? 0);
+
+        //     // ✅ Main fix: product price priority
+        //     $fixedPrice   = (float)($row['fixed_price'] ?? $row['price'] ?? 0);
+        //     $manualAmount = (float)($row['manual_amount'] ?? 0);
+        //     $amountMode   = strtolower(trim((string)($row['amount_mode'] ?? 'auto')));
+
+        //     if (
+        //         $goldWt < 0 ||
+        //         $silverWt < 0 ||
+        //         $goldRate < 0 ||
+        //         $silverRate < 0 ||
+        //         $makingRate < 0 ||
+        //         $fixedPrice < 0 ||
+        //         $manualAmount < 0
+        //     ) {
+        //         return back()
+        //             ->withErrors(['items' => "Row " . ($i + 1) . " invalid values."])
+        //             ->withInput();
+        //     }
+
+        //     // ✅ Priority 1: fixed_price / item price
+        //     $productBase = $fixedPrice > 0
+        //         ? $fixedPrice
+        //         : (($goldWt * $goldRate) + ($silverWt * $silverRate));
+
+        //     $makingAmount = round($productBase * ($makingRate / 100), 2);
+
+        //     if ($amountMode === 'manual' && $manualAmount > 0) {
+        //         $lineBase = round($manualAmount / (1 + ($taxPct / 100)), 2);
+        //     } else {
+        //         $lineBase = round(($productBase + $makingAmount) * $qty, 2);
+        //     }
+
+        //     $lineTax = round($lineBase * ($taxPct / 100), 2);
+
+        //     $subtotal      += $lineBase;
+        //     $weightedTax   += ($lineBase * $taxPct);
+        //     $itemsTaxTotal += $lineTax;
+
+        //     $cleanRows[] = [
+        //         'item_id'     => (int)$itemId,
+        //         'item_type'   => 'product',
+        //         'description' => $desc,
+        //         'hsn'         => $hsn,
+        //         'qty'         => $qty,
+        //         'tax_percent' => round($taxPct, 2),
+
+        //         'fixed_price' => round($fixedPrice, 2),
+
+        //         'gold_wt'     => round($goldWt, 3),
+        //         'silver_wt'   => round($silverWt, 3),
+        //         'gold_rate'   => round($goldRate, 2),
+        //         'silver_rate' => round($silverRate, 2),
+
+        //         'gemstone_wt' => round($gemCt, 3),
+        //         'diamond_wt'  => round($diaCt, 3),
+
+        //         'making_rate'   => round($makingRate, 2),
+        //         'making_charge' => round($makingAmount, 2),
+
+        //         'rate'        => $lineBase,
+        //         'tax_amount'  => $lineTax,
+        //         'amount'      => round($lineBase + $lineTax, 2),
+        //     ];
+        // }
+
         foreach ($rows as $i => $row) {
             $itemId = $row['item_id'] ?? null;
 
@@ -4578,12 +4770,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 return back()
                     ->withErrors(['items' => "Row " . ($i + 1) . " में Item select नहीं है."])
                     ->withInput();
-            }
-
-            $itemType = strtolower(trim((string)($row['item_type'] ?? 'product')));
-
-            if (!in_array($itemType, ['product', 'service'], true)) {
-                $itemType = 'product';
             }
 
             $desc = trim((string)($row['description'] ?? ''));
@@ -4607,72 +4793,23 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                     ->withInput();
             }
 
-            // ================= SERVICE =================
-            if ($itemType === 'service') {
-                $fixedPrice  = (float)($row['fixed_price'] ?? $row['price'] ?? 0);
-                $serviceRate = (float)($row['service_rate'] ?? 0);
-
-                if ($fixedPrice > 0) {
-                    $serviceRate = $fixedPrice;
-                }
-
-                if ($serviceRate < 0) {
-                    return back()
-                        ->withErrors(['items' => "Row " . ($i + 1) . " service rate invalid."])
-                        ->withInput();
-                }
-
-                $lineBase = round($serviceRate * $qty, 2);
-                $lineTax  = round($lineBase * ($taxPct / 100), 2);
-
-                $subtotal      += $lineBase;
-                $weightedTax   += ($lineBase * $taxPct);
-                $itemsTaxTotal += $lineTax;
-
-                $cleanRows[] = [
-                    'item_id'      => (int)$itemId,
-                    'item_type'    => 'service',
-                    'description'  => $desc,
-                    'hsn'          => $hsn,
-                    'qty'          => $qty,
-                    'tax_percent'  => round($taxPct, 2),
-
-                    'fixed_price'  => round($fixedPrice, 2),
-                    'service_rate' => round($serviceRate, 2),
-
-                    'rate'         => $lineBase,
-                    'tax_amount'   => $lineTax,
-                    'amount'       => round($lineBase + $lineTax, 2),
-
-                    'making_charge' => round($serviceRate, 2),
-
-                    'gold_wt'       => 0,
-                    'silver_wt'     => 0,
-                    'gold_rate'     => 0,
-                    'silver_rate'   => 0,
-                    'gemstone_wt'   => 0,
-                    'diamond_wt'    => 0,
-                    'making_rate'   => 0,
-                    'stone_charges' => 0,
-                ];
-
-                continue;
-            }
-
-            // ================= PRODUCT =================
             $goldWt     = (float)($row['gold_wt'] ?? 0);
             $silverWt   = (float)($row['silver_wt'] ?? 0);
             $goldRate   = (float)($row['gold_rate'] ?? 0);
             $silverRate = (float)($row['silver_rate'] ?? 0);
+
             $makingRate = (float)($row['making_rate'] ?? 0);
 
             $gemCt = (float)($row['gemstone_wt'] ?? 0);
             $diaCt = (float)($row['diamond_wt'] ?? 0);
 
-            // ✅ Main fix: product price priority
-            $fixedPrice   = (float)($row['fixed_price'] ?? $row['price'] ?? 0);
+            $stoneCharges = (float)($row['gemstone_charge'] ?? $row['stone_charges'] ?? 0);
+            $diamondCharges = (float)($row['diamond_charge'] ?? $row['diamond_charges'] ?? 0);
+
+            $fixedPrice = (float)($row['fixed_price'] ?? $row['price'] ?? $row['service_rate'] ?? 0);
+
             $manualAmount = (float)($row['manual_amount'] ?? 0);
-            $amountMode   = strtolower(trim((string)($row['amount_mode'] ?? 'auto')));
+            $amountMode = strtolower(trim((string)($row['amount_mode'] ?? 'auto')));
 
             if (
                 $goldWt < 0 ||
@@ -4680,6 +4817,10 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 $goldRate < 0 ||
                 $silverRate < 0 ||
                 $makingRate < 0 ||
+                $gemCt < 0 ||
+                $diaCt < 0 ||
+                $stoneCharges < 0 ||
+                $diamondCharges < 0 ||
                 $fixedPrice < 0 ||
                 $manualAmount < 0
             ) {
@@ -4688,10 +4829,12 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                     ->withInput();
             }
 
-            // ✅ Priority 1: fixed_price / item price
-            $productBase = $fixedPrice > 0
-                ? $fixedPrice
-                : (($goldWt * $goldRate) + ($silverWt * $silverRate));
+            $metalBase = ($goldWt * $goldRate)
+                + ($silverWt * $silverRate)
+                + $stoneCharges
+                + $diamondCharges;
+
+            $productBase = $fixedPrice > 0 ? $fixedPrice : $metalBase;
 
             $makingAmount = round($productBase * ($makingRate / 100), 2);
 
@@ -4728,9 +4871,12 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 'making_rate'   => round($makingRate, 2),
                 'making_charge' => round($makingAmount, 2),
 
-                'rate'        => $lineBase,
-                'tax_amount'  => $lineTax,
-                'amount'      => round($lineBase + $lineTax, 2),
+                'stone_charges'   => round($stoneCharges, 2),
+                'diamond_charges' => round($diamondCharges, 2),
+
+                'rate'       => $lineBase,
+                'tax_amount' => $lineTax,
+                'amount'     => round($lineBase + $lineTax, 2),
             ];
         }
 
@@ -5267,84 +5413,189 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
     }
 
 
+    // protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    // {
+    //     // $invoice->load(['client','items','business']);
+
+    //     $invoice->load(['client','items.item','business']);
+        
+    //     $inv    = $invoice;
+    //     $biz    = $invoice->business;
+    //     $client = $invoice->client;
+    //     $items  = $invoice->items ?? collect();
+
+    //     // ✅ payment row (same logic)
+    //     $payRow = InvoicePayment::where('invoice_id', $inv->id)
+    //         ->latest('id')
+    //         ->first();
+
+    //     // ✅ charges (same logic)
+    //     if (method_exists($invoice, 'additionalCharges')) {
+    //         $charges = $invoice->additionalCharges()->get(['name','amount']);
+    //     } else {
+    //         $arr = [];
+    //         if (!empty($invoice->charges_json)) {
+    //             $decoded = json_decode($invoice->charges_json, true);
+    //             if (is_array($decoded)) {
+    //                 foreach ($decoded as $c) {
+    //                     $arr[] = (object)[
+    //                         'name'   => (string)($c['name'] ?? ''),
+    //                         'amount' => (float)($c['amount'] ?? 0),
+    //                     ];
+    //                 }
+    //             }
+    //         }
+    //         $charges = collect($arr);
+    //     }
+
+    //     // ✅ totals (same as buildInvoicePdf)
+    //     $subtotal       = (float)($inv->subtotal ?? 0);
+    //     $tax_total      = (float)($inv->tax_amount ?? 0);
+    //     $discount_total = (float)($inv->discount_total ?? 0);
+    //     $charges_total  = (float)($inv->charge_total ?? 0);
+    //     $tcs_percent    = (float)($inv->tcs_percent ?? 0);
+    //     $tcs_amount     = (float)($inv->tcs_amount ?? 0);
+    //     $round_off      = (float)($inv->round_off ?? 0);
+    //     $less_amount    = (float)($inv->less_amount ?? 0);
+    //     $received       = (float)($inv->received_amount ?? 0);
+    //     $grand_total    = (float)($inv->total ?? 0);
+    //     $balance        = (float)($inv->balance ?? 0);
+    //     $cgst_amount    = (float)($inv->cgst_amount ?? 0);
+    //     $sgst_amount    = (float)($inv->sgst_amount ?? 0);
+    //     $igst_amount    = (float)($inv->igst_amount ?? 0);
+
+    //     $taxAmount = (float)($inv->igst_amount + $inv->igst_amount + $inv->igst_amount);
+
+
+    //     // ✅ data URIs (simple pdf me bhi logo/sign aa sakta hai)
+    //     $logoDataUri = $this->imageDataUri($biz?->logo);
+    //     $signDataUri = $this->imageDataUri($biz?->signature);
+    //     $type = $invoice->invoice_type;
+
+
+
+    //     $vm = compact(
+    //         'inv','invoice','biz','client','items','charges','type', 'taxAmount',
+    //         'logoDataUri','signDataUri',
+    //         'subtotal','tax_total','discount_total','charges_total',
+    //         'tcs_percent','tcs_amount','round_off','less_amount',
+    //         'grand_total','received','balance',
+    //         'cgst_amount','sgst_amount','igst_amount',
+    //         'payRow'
+    //     );
+
+    //     // aliases
+    //     $vm['logo'] = $logoDataUri;
+    //     $vm['sign'] = $signDataUri;
+
+    //     // ❌ letter_head deliberately NOT passed
+    //     $view = 'invoices.' . ($biz->billTemplate->page_name ?? 'pdf_simple');
+    //     // $view = 'invoices.' . ('pdf_krinoscco');
+
+    //     return Pdf::loadView($view, $vm)
+    //         ->setPaper('a4');
+    // }
+
+
     protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
     {
-        // $invoice->load(['client','items','business']);
+        $invoice->load(['client', 'items.item', 'business.billTemplate']);
 
-        $invoice->load(['client','items.item','business']);
-        
         $inv    = $invoice;
         $biz    = $invoice->business;
         $client = $invoice->client;
         $items  = $invoice->items ?? collect();
 
-        // ✅ payment row (same logic)
         $payRow = InvoicePayment::where('invoice_id', $inv->id)
             ->latest('id')
             ->first();
 
-        // ✅ charges (same logic)
         if (method_exists($invoice, 'additionalCharges')) {
-            $charges = $invoice->additionalCharges()->get(['name','amount']);
+            $charges = $invoice->additionalCharges()->get(['name', 'amount']);
         } else {
             $arr = [];
+
             if (!empty($invoice->charges_json)) {
                 $decoded = json_decode($invoice->charges_json, true);
+
                 if (is_array($decoded)) {
                     foreach ($decoded as $c) {
-                        $arr[] = (object)[
-                            'name'   => (string)($c['name'] ?? ''),
-                            'amount' => (float)($c['amount'] ?? 0),
+                        $arr[] = (object) [
+                            'name'   => (string) ($c['name'] ?? ''),
+                            'amount' => (float) ($c['amount'] ?? 0),
                         ];
                     }
                 }
             }
+
             $charges = collect($arr);
         }
 
-        // ✅ totals (same as buildInvoicePdf)
-        $subtotal       = (float)($inv->subtotal ?? 0);
-        $tax_total      = (float)($inv->tax_amount ?? 0);
-        $discount_total = (float)($inv->discount_total ?? 0);
-        $charges_total  = (float)($inv->charge_total ?? 0);
-        $tcs_percent    = (float)($inv->tcs_percent ?? 0);
-        $tcs_amount     = (float)($inv->tcs_amount ?? 0);
-        $round_off      = (float)($inv->round_off ?? 0);
-        $less_amount    = (float)($inv->less_amount ?? 0);
-        $received       = (float)($inv->received_amount ?? 0);
-        $grand_total    = (float)($inv->total ?? 0);
-        $balance        = (float)($inv->balance ?? 0);
-        $cgst_amount    = (float)($inv->cgst_amount ?? 0);
-        $sgst_amount    = (float)($inv->sgst_amount ?? 0);
-        $igst_amount    = (float)($inv->igst_amount ?? 0);
+        $subtotal       = (float) ($inv->subtotal ?? 0);
+        $tax_total      = (float) ($inv->tax_amount ?? 0);
+        $discount_total = (float) ($inv->discount_total ?? 0);
+        $charges_total  = (float) ($inv->charge_total ?? 0);
+        $tcs_percent    = (float) ($inv->tcs_percent ?? 0);
+        $tcs_amount     = (float) ($inv->tcs_amount ?? 0);
+        $round_off      = (float) ($inv->round_off ?? 0);
+        $less_amount    = (float) ($inv->less_amount ?? 0);
+        $received       = (float) ($inv->received_amount ?? 0);
+        $grand_total    = (float) ($inv->total ?? 0);
+        $balance        = (float) ($inv->balance ?? 0);
+        $cgst_amount    = (float) ($inv->cgst_amount ?? 0);
+        $sgst_amount    = (float) ($inv->sgst_amount ?? 0);
+        $igst_amount    = (float) ($inv->igst_amount ?? 0);
 
-        $taxAmount = (float)($inv->igst_amount + $inv->igst_amount + $inv->igst_amount);
+        $taxAmount = $cgst_amount + $sgst_amount + $igst_amount;
 
-
-        // ✅ data URIs (simple pdf me bhi logo/sign aa sakta hai)
         $logoDataUri = $this->imageDataUri($biz?->logo);
         $signDataUri = $this->imageDataUri($biz?->signature);
+
         $type = $invoice->invoice_type;
 
+        $billTemplate = $biz?->billTemplate;
 
+        $templateSetting = null;
+
+        if ($biz && $billTemplate) {
+            $templateSetting = \App\Models\BusinessBillTemplateSetting::where('business_id', $biz->id)
+                ->where('bill_template_id', $billTemplate->id)
+                ->first();
+        }
 
         $vm = compact(
-            'inv','invoice','biz','client','items','charges','type', 'taxAmount',
-            'logoDataUri','signDataUri',
-            'subtotal','tax_total','discount_total','charges_total',
-            'tcs_percent','tcs_amount','round_off','less_amount',
-            'grand_total','received','balance',
-            'cgst_amount','sgst_amount','igst_amount',
-            'payRow'
+            'inv',
+            'invoice',
+            'biz',
+            'client',
+            'items',
+            'charges',
+            'type',
+            'taxAmount',
+            'logoDataUri',
+            'signDataUri',
+            'subtotal',
+            'tax_total',
+            'discount_total',
+            'charges_total',
+            'tcs_percent',
+            'tcs_amount',
+            'round_off',
+            'less_amount',
+            'grand_total',
+            'received',
+            'balance',
+            'cgst_amount',
+            'sgst_amount',
+            'igst_amount',
+            'payRow',
+            'templateSetting'
         );
 
-        // aliases
         $vm['logo'] = $logoDataUri;
         $vm['sign'] = $signDataUri;
 
-        // ❌ letter_head deliberately NOT passed
-        $view = 'invoices.' . ($biz->billTemplate->page_name ?? 'pdf_simple');
-        // $view = 'invoices.' . ('pdf_krinoscco');
+        $view = 'invoices.' . ($billTemplate->page_name ?? 'pdf_simple');
 
         return Pdf::loadView($view, $vm)
             ->setPaper('a4');

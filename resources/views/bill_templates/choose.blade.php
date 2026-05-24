@@ -150,7 +150,8 @@
                                     </button>
                                 </form>
 
-                                <a href="{{route('bill-templates.customize', ['template_id' => $billTemplate->id])}}" class="px-4 py-2 rounded text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600">
+                               <a href="{{ route('bill-templates.customize', $billTemplate->id) }}"
+                                class="px-4 py-2 rounded text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600">
                                     Customize
                                 </a>
                             </div>

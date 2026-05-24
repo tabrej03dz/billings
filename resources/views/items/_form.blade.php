@@ -40,7 +40,7 @@
                         @endforeach
                     </ul>
                 </div>
-                @endif
+            @endif
 
             @if($showField('name'))
                 <div>

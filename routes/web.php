@@ -7,6 +7,7 @@ use App\Http\Controllers\BannerSliderController;
 use App\Http\Controllers\BillTemplateController;
 use App\Http\Controllers\BirthdayRecordController;
 use App\Http\Controllers\BirthdayWishLogController;
+use App\Http\Controllers\BusinessBillTemplateSettingController;
 use App\Http\Controllers\BusinessTypeController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ClientController;
@@ -464,8 +465,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('bill-templates/{id}/edit', [BillTemplateController::class, 'edit'])->name('bill-templates.edit');
     Route::put('bill-templates/{id}', [BillTemplateController::class, 'update'])->name('bill-templates.update');
     Route::delete('bill-templates/{id}', [BillTemplateController::class, 'destroy'])->name('bill-templates.destroy');
-    Route::get('bill-templates/customize', [BillTemplateController::class, 'customize'])->name('bill-templates.customize');
+    Route::get('bill-templates/customize/{template}', [BillTemplateController::class, 'customize'])->name('bill-templates.customize');
 
+
+    Route::get('/bill-template/customize/{template}', [BusinessBillTemplateSettingController::class, 'edit'])
+        ->name('bill-template.customize');
+
+    Route::post('/bill-template/customize/{template}', [BusinessBillTemplateSettingController::class, 'save'])
+        ->name('bill-template.customize.save');
+
+    Route::post('bill-templates/customize/reset/{template}', [BusinessBillTemplateSettingController::class, 'resetCustomize'])
+        ->name('bill-template.customize.reset');
 
     Route::resource('user-plans', UserPlanController::class);
     Route::get('user-plans.index1/{business}', [UserPlanController::class, 'index1'])->name('user-plans.index1');

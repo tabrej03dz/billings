@@ -37,13 +37,12 @@
         <script type="application/json" id="metal-rates-json">{!! $metalRatesJson !!}</script>
         <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
         <script type="application/json" id="invoice-json">{!! $invoiceJson !!}</script>
+        <script type="application/json" id="allowed-fields-json">
+            {!! json_encode($allowedFields ?? []) !!}
+        </script>
 
         <div class="flex items-center justify-between">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Edit Sales Invoice</h1>
-{{--            <button @click="$refs.form.requestSubmit()"--}}
-{{--                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">--}}
-{{--                Update--}}
-{{--            </button>--}}
             <button type="button"
                     @click="submitForm()"
                     :disabled="saving"
@@ -214,279 +213,229 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm border-separate border-spacing-0 invoice-table">
                         <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
-                        <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
-                            <th>S.No.</th>
-                            <th>Description</th>
-                            <th>HSN / SAC</th>
-                            <th class="text-center">Qty</th>
+                            <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
+                                <th>S.No.</th>
+                                <th>Description</th>
+                                <th>HSN / SAC</th>
+                                <th class="text-center">Qty</th>
+                                <th>Price</th>
 
-                            <th>Rate / Price</th>
+                                <th x-show="showItemField('making_charge')">Making Charge</th>
+                                <th x-show="showItemField('gold_purity')">Gold Rate (₹/g)</th>
+                                <th x-show="showItemField('gold_weight')">Gold Wt.(Gm)</th>
+                                <th x-show="showItemField('silver_purity')">Silver Rate (₹/g)</th>
+                                <th x-show="showItemField('silver_weight')">Silver Wt.(Gm)</th>
+                                <th x-show="showItemField('stone_weight')">Gem Stone Wt.(Ct.)</th>
+                                <th x-show="showItemField('stone_charges')">Gemstone Charge</th>
+                                <th x-show="showItemField('diamond_weight')">Diamond Wt.(Ct.)</th>
+                                <th x-show="showItemField('diamond_charges')">Diamond Charge</th>
 
-                            {{-- Product-only columns --}}
-                            {{-- <th x-show="items.some(row => showItemField(row, 'making_rate'))">Making Rate</th>
-                            <th x-show="items.some(row => showItemField(row, 'gold_rate'))">Gold Rate (₹/g)</th>
-                            <th x-show="items.some(row => showItemField(row, 'silver_rate'))">Silver Rate (₹/g)</th>
-                            <th x-show="items.some(row => showItemField(row, 'silver_wt'))">Silver Wt.(Gm)</th>
-                            <th x-show="items.some(row => showItemField(row, 'gold_wt'))">Gold Wt.(Gm)</th>
-                            <th x-show="items.some(row => showItemField(row, 'gemstone_wt'))">Gem Stone Wt.(Ct.)</th>
-                            <th x-show="items.some(row => showItemField(row, 'diamond_wt'))">Diamond Wt.(Ct.)</th> --}}
-
-                            <th x-show="hasProduct()">Making Rate</th>
-                            <th x-show="hasProduct()">Gold Rate (₹/g)</th>
-                            <th x-show="hasProduct()">Gold Wt.(Gm)</th>
-                            <th x-show="hasProduct()">Silver Rate (₹/g)</th>
-                            <th x-show="hasProduct()">Silver Wt.(Gm)</th>
-                            <th x-show="hasProduct()">Gem Stone Wt.(Ct.)</th>
-                            <th x-show="hasProduct()">Gemstone Charge</th>
-                            <th x-show="hasProduct()">Diamond Wt.(Ct.)</th>
-                            <th x-show="hasProduct()">Diamond Charge</th>
-
-                            {{-- Service-only column --}}
-                            {{-- <th x-show="hasService()">Service Rate (₹)</th> --}}
-
-                            <th>Tax %</th>
-                            <th>Amount (Editable)</th>
-                            <th></th>
-                        </tr>
+                                <th>Tax %</th>
+                                <th>Amount (Editable)</th>
+                                <th></th>
+                            </tr>
                         </thead>
 
                         <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">
-                        <template x-for="(row, i) in items" :key="row._k">
-                            <tr>
-                                <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
-                                <td class="px-3 py-2">
-                                    <div class="flex items-center gap-2 mb-2">
+                            <template x-for="(row, i) in items" :key="row._k">
+                                <tr>
+                                    <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
 
-                                        <div class="flex-1 relative" @click.outside="closeItemDD(i)">
+                                    <td class="px-3 py-2">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <div class="flex-1 relative" @click.outside="closeItemDD(i)">
+                                                <input type="text"
+                                                    :id="'item_search_' + i"
+                                                    class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
+                                                    placeholder="Search item..."
+                                                    x-model="row.search"
+                                                    @focus="openItemDD(i)"
+                                                    @input.debounce.50ms="openItemDD(i)"
+                                                    @keydown.escape.prevent="closeItemDD(i)"
+                                                    @keydown.arrow-down.prevent="itemDDDown(i)"
+                                                    @keydown.arrow-up.prevent="itemDDUp(i)"
+                                                    @keydown.enter.prevent="itemDDPick(i)">
 
-                                            <input type="text"
-                                                class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700
-                                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                                placeholder="Search item..."
-                                                x-model="row.search"
-                                                @focus="openItemDD(i)"
-                                                @input.debounce.50ms="openItemDD(i)"
-                                                @keydown.escape.prevent="closeItemDD(i)"
-                                                @keydown.arrow-down.prevent="itemDDDown(i)"
-                                                @keydown.arrow-up.prevent="itemDDUp(i)"
-                                                @keydown.enter.prevent="itemDDPick(i)"
-                                            >
+                                                <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
 
-                                            <!-- backend hidden value -->
-                                            <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
+                                                <div x-show="row.ddOpen"
+                                                    x-transition.opacity
+                                                    class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl z-[999999] overflow-hidden"
+                                                    :style="row.ddStyle + ';width:900px;max-width:95vw;'"
+                                                    style="display:none;"
+                                                    @mousedown.prevent.stop>
 
-                                            <!-- dropdown -->
-                                            <div x-show="row.ddOpen"
-                                                x-transition.opacity
-                                                class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
-                                                        bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
-                                                        overflow-hidden"
-                                                :style="row.ddStyle + ';width:900px;max-width:95vw;'"
-                                                style="display:none;"
-                                                @mousedown.prevent.stop>
+                                                    <div class="grid grid-cols-12 h-72">
+                                                        <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
+                                                            <template x-if="filteredItems(row.search).length === 0">
+                                                                <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                                                                    No results
+                                                                </div>
+                                                            </template>
 
-                                                <div class="grid grid-cols-12 h-72">
+                                                            <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
+                                                                <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                                    :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                                    @mouseenter="
+                                                                        row.ddHi = idx;
+                                                                        row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                                                                        row.ddPreview = it.description || it.desc || it.long_description || '';
+                                                                    "
+                                                                    @mousedown.prevent.stop="selectItemFromDD(i, it)">
 
-                                                    <!-- LEFT: list -->
-                                                    <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
+                                                                    <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
+                                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
 
-                                                        <template x-if="filteredItems(row.search).length === 0">
-                                                            <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
-                                                                No results
-                                                            </div>
-                                                        </template>
+                                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[110px] text-right"
+                                                                        x-text="it.price ? '₹ ' + Number(it.price).toFixed(2) : ''"></div>
+                                                                </div>
+                                                            </template>
+                                                        </div>
 
-                                                        <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
-                                                            <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3
-                                                                        hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                                                :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                                                @mouseenter="
-                                                                    row.ddHi = idx;
-                                                                    row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                                                                    row.ddPreview = it.description || it.desc || it.long_description || '';
-                                                                "
-                                                                @mousedown.prevent.stop="selectItemFromDD(i, it)">
-
-                                                                <!-- NAME (no truncate) -->
-                                                                <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
-                                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
-
-                                                                <!-- TYPE / PRICE (right aligned) -->
-                                                                <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[110px] text-right"
-                                                                    x-text="(it.type || '').toUpperCase()"></div>
-                                                            </div>
-                                                        </template>
+                                                        <div class="col-span-5 p-3 overflow-auto">
+                                                            <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
+                                                            <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
+                                                                x-text="row.ddPreviewName || 'Hover on an item'"></div>
+                                                            <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
+                                                                x-text="row.ddPreview || 'No description available'"></div>
+                                                        </div>
                                                     </div>
-
-                                                    <!-- RIGHT: preview -->
-                                                    <div class="col-span-5 p-3 overflow-auto">
-                                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
-
-                                                        <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
-                                                            x-text="row.ddPreviewName || 'Hover on an item'"></div>
-
-                                                        <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
-                                                            x-text="row.ddPreview || 'No description available'"></div>
-                                                    </div>
-
                                                 </div>
                                             </div>
+
+                                            <button type="button"
+                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                @click="openItemModal(i)">
+                                                + New
+                                            </button>
                                         </div>
 
-                                        <button type="button"
-                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap
-                                                    hover:bg-gray-50 dark:hover:bg-neutral-800"
-                                                @click="openItemModal(i)">
-                                            + New
-                                        </button>
-                                    </div>
-
-                                    <!-- textarea (height increased) -->
-                                    <textarea x-model="row.description" required rows="6"
-                                            class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700
-                                                    bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs
-                                                    resize-y leading-tight min-h-[120px]"
+                                        <textarea x-model="row.description" required rows="6"
+                                            class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs resize-y leading-tight min-h-[120px]"
                                             placeholder="Enter description..."></textarea>
+                                    </td>
 
-                                    <div class="mt-1 text-[10px] text-gray-500 dark:text-neutral-400"
-                                        x-show="row.item_type"
-                                        x-text="row.item_type ? ('Type: ' + row.item_type.toUpperCase()) : ''"></div>
-                                </td>
+                                    <td class="px-3 py-2">
+                                        <input x-model="row.hsn"
+                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
+                                    <td class="px-3 py-2 text-center">
+                                        <input type="number" min="1" step="1"
+                                            x-model.number="row.quantity"
+                                            @input="onAutoChange(row)"
+                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
+                                    </td>
 
-                                <td class="px-3 py-2">
-                                    <input x-model="row.hsn"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                    <td class="px-3 py-2">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.fixed_price"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
+                                    </td>
 
-                                <td class="px-3 py-2 text-center">
-                                    <input type="number" min="1" step="1"
-                                           x-model.number="row.quantity" @input="onAutoChange(row)"
-                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('making_charge')">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.making_rate"
+                                            @input="onAutoChange(row)"
+                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                <td class="px-3 py-2">
-                                    <div class="text-[10px] mb-0.5 text-gray-500 dark:text-neutral-400"
-                                        x-text="row.item_type === 'service' ? 'Service Rate' : 'Price'">
-                                    </div>
+                                    <td class="px-3 py-2" x-show="showItemField('gold_purity')">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.gold_rate"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                        <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
+                                            x-show="hasValue(row.gold_purity)"
+                                            x-text="'Purity: ' + row.gold_purity"></div>
+                                    </td>
 
-                                    <input type="number" step="0.01" min="0"
-                                        :value="row.item_type === 'service' ? row.service_rate : row.fixed_price"
-                                        @input="
-                                            if (row.item_type === 'service') {
-                                                row.service_rate = Number($event.target.value || 0);
-                                            } else {
-                                                row.fixed_price = Number($event.target.value || 0);
-                                            }
-                                            onAutoChange(row);
-                                        "
-                                        class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('gold_weight')">
+                                        <input type="number" step="0.001" min="0"
+                                            x-model.number="row.gold_wt"
+                                            @input="onAutoChange(row)"
+                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                {{-- Product-only cells --}}
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.01" min="0"
-                                           x-model.number="row.making_rate" @input="onAutoChange(row)"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('silver_purity')">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.silver_rate"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                        <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
+                                            x-show="hasValue(row.silver_purity)"
+                                            x-text="'Purity: ' + row.silver_purity"></div>
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.01" min="0"
-                                           x-model.number="row.gold_rate" @input="onAutoChange(row)"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                         x-text="row.gold_purity ? ('Purity: ' + row.gold_purity) : ''"></div>
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('silver_weight')">
+                                        <input type="number" step="0.001" min="0"
+                                            x-model.number="row.silver_wt"
+                                            @input="onAutoChange(row)"
+                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.001" min="0"
-                                           x-model.number="row.gold_wt" @input="onAutoChange(row)"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('stone_weight')">
+                                        <input type="number" step="0.001" min="0"
+                                            x-model.number="row.gemstone_wt"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.01" min="0"
-                                           x-model.number="row.silver_rate" @input="onAutoChange(row)"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                         x-text="row.silver_purity ? ('Purity: ' + row.silver_purity) : ''"></div>
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('stone_charges')">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.gemstone_charge"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.001" min="0"
-                                           x-model.number="row.silver_wt" @input="onAutoChange(row)"
-                                           class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                    <td class="px-3 py-2" x-show="showItemField('diamond_weight')">
+                                        <input type="number" step="0.001" min="0"
+                                            x-model.number="row.diamond_wt"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                
+                                    <td class="px-3 py-2" x-show="showItemField('diamond_charges')">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.diamond_charge"
+                                            @input="onAutoChange(row)"
+                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.001" min="0"
-                                           x-model.number="row.gemstone_wt" @input="onAutoChange(row)"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                    <td class="px-3 py-2">
+                                        <input type="number" step="0.01" min="0" max="100"
+                                            x-model.number="row.tax_percent"
+                                            @input="onAutoChange(row)"
+                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.01" min="0"
-                                        x-model.number="row.gemstone_charge" @input="onAutoChange(row)"
-                                        class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                    <td class="px-3 py-2">
+                                        <input type="number" step="0.01" min="0"
+                                            x-model.number="row.manual_amount"
+                                            @input="onAmountEdit(row)"
+                                            class="w-32 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.001" min="0"
-                                           x-model.number="row.diamond_wt" @input="onAutoChange(row)"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
+                                        <div class="mt-0.5 text-[10px]"
+                                            :class="row.amount_mode === 'manual' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
+                                            x-text="row.amount_mode === 'manual' ? 'Manual' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))">
+                                        </div>
+                                    </td>
 
-                                <td class="px-3 py-2" x-show="row.item_type === 'product'">
-                                    <input type="number" step="0.01" min="0"
-                                        x-model.number="row.diamond_charge" @input="onAutoChange(row)"
-                                        class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
-
-                                {{-- Service-only cell --}}
-                                {{-- <td class="px-3 py-2" x-show="row.item_type === 'service'">
-                                    <input type="number" step="0.01" min="0"
-                                           x-model.number="row.service_rate" @input="onAutoChange(row)"
-                                           class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400">
-                                        (Service = Item Price)
-                                    </div>
-                                </td> --}}
-
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.01" min="0" max="100"
-                                           x-model.number="row.tax_percent" @input="onAutoChange(row)"
-                                           class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                </td>
-
-                                {{-- Amount editable (manual override) --}}
-                                <td class="px-3 py-2">
-                                    <input type="number" step="0.01" min="0"
-                                           x-model.number="row.manual_amount"
-                                           @input="onAmountEdit(row)"
-                                           class="w-32 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
-                                    <div class="mt-0.5 text-[10px]"
-                                         :class="row.amount_mode==='manual' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
-                                         x-text="row.amount_mode==='manual' ? 'Manual' : ('Auto: ₹ '+ lineAmount(row).toFixed(2))">
-                                    </div>
-                                </td>
-
-                                <td class="px-3 py-2 text-right">
-                                    <button type="button" @click="remove(i)"
+                                    <td class="px-3 py-2 text-right">
+                                        <button type="button" @click="remove(i)"
                                             class="text-red-600 hover:underline text-lg leading-none">×</button>
+                                    </td>
+                                </tr>
+                            </template>
+
+                            <tr>
+                                <td colspan="30" class="px-3 py-2">
+                                    <button type="button" @click="add()" class="text-blue-600 hover:underline text-sm">
+                                        + Add Item
+                                    </button>
                                 </td>
                             </tr>
-                        </template>
-
-                        <tr>
-                            <td colspan="30" class="px-3 py-2">
-                                <button type="button" @click="add()" class="text-blue-600 hover:underline text-sm">
-                                    + Add Item
-                                </button>
-                            </td>
-                        </tr>
-
                         </tbody>
                     </table>
                 </div>
@@ -998,1136 +947,6 @@
 
 
 
-{{-- <script>
-    function invoiceForm() {
-        const readJSON = (id, fallback) => {
-            try {
-                const el = document.getElementById(id);
-                return JSON.parse(el?.textContent || JSON.stringify(fallback));
-            } catch (e) {
-                return fallback;
-            }
-        };
-
-        const CLIENTS = readJSON('clients-json', []);
-        const ITEMS = readJSON('items-json', []);
-        const METAL_RATES = readJSON('metal-rates-json', []);
-        const BANKS = readJSON('banks-json', []);
-        const INVOICE = readJSON('invoice-json', {});
-        const CATEGORIES = readJSON('categories-json', []);
-
-        const BIZ_STATE_CODE = @js($businessStateCode ?? '');
-        const BIZ_GSTIN = @js($businessGstin ?? '');
-        const DEFAULT_TERMS = @js($defaultTerms ?? '');
-        const TODAY = @js($today);
-        const DOC_TYPE = @js($docType);
-
-        const n = (v, d = 0) => {
-            const x = Number(v);
-            return Number.isFinite(x) ? x : d;
-        };
-
-        const s = (v) => (v ?? '').toString();
-        const lower = (v) => s(v).toLowerCase();
-        const money = (v) => '₹ ' + n(v).toFixed(2);
-
-        const normalizeGstin = (v) => s(v).toUpperCase().replace(/[^0-9A-Z]/g, '').trim();
-
-        const validateGstinLocal = (gstin) => {
-            const g = normalizeGstin(gstin);
-            if (!g) return { ok: true, empty: true, message: '' };
-
-            if (g.length !== 15) {
-                return { ok: false, message: 'GSTIN must be 15 characters.' };
-            }
-
-            const re = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-            if (!re.test(g)) {
-                return { ok: false, message: 'GSTIN format invalid hai.' };
-            }
-
-            return { ok: true, message: 'GSTIN looks valid.' };
-        };
-
-        const rowTemplate = () => ({
-            _k: Date.now() + Math.random(),
-
-            item_id: null,
-            item_type: null,
-
-            search: '',
-            ddOpen: false,
-            ddHi: 0,
-            ddStyle: '',
-            ddPreviewName: '',
-            ddPreview: '',
-
-            description: '',
-            hsn: '',
-            quantity: 1,
-
-            making_rate: 0,
-            gold_purity: null,
-            silver_purity: null,
-            gold_rate: 0,
-            silver_rate: 0,
-            silver_wt: 0,
-            gold_wt: 0,
-            gemstone_wt: 0,
-            diamond_wt: 0,
-
-            gemstone_charge: 0,
-            diamond_charge: 0,
-
-            service_rate: 0,
-
-            // ✅ IMPORTANT
-            fixed_price: 0,
-
-            tax_percent: 0,
-
-            amount_mode: 'auto',
-            manual_amount: 0,
-        });
-
-        const chargeTemplate = () => ({
-            _k: Date.now() + Math.random(),
-            name: '',
-            amount: 0,
-        });
-
-        return {
-            clients: CLIENTS,
-
-
-            hasValue(v) {
-                if (v === null || v === undefined) return false;
-                if (String(v).trim() === '') return false;
-                return Number(v) > 0 || isNaN(Number(v));
-            },
-
-            showItemField(row, field) {
-                return row.item_type === 'product' && this.hasValue(row[field]);
-            },
-
-
-
-            itemsData: ITEMS,
-            metalRates: METAL_RATES,
-            banks: BANKS,
-            categories: CATEGORIES,
-
-            saving: false,
-            savingClient: false,
-            savingItem: false,
-
-            clientId: '',
-            clientSearch: '',
-            party: {
-                name: '',
-                address: '',
-                state: '',
-                state_code: '',
-                mobile: '',
-                gstin: '',
-                pincode: '',
-            },
-
-            clientDD: {
-                open: false,
-                hi: 0,
-                style: '',
-            },
-
-            hdr: {
-                date: TODAY,
-                transport_mode: 'By Hand',
-                gst_no: BIZ_GSTIN,
-                reverse_charge: false,
-                terms: DEFAULT_TERMS,
-            },
-
-            basePrefix: @js($basePrefix ?? ''),
-            computedPrefix: INVOICE.invoice_prefix || @js($suggestedPrefix ?? ''),
-            invoiceNo: INVOICE.invoice_number || @js($invoice->invoice_number ?? ''),
-
-            items: [],
-
-            ui: {
-                showCharges: false,
-                showDiscount: false,
-            },
-
-            charges: [],
-
-            discount: {
-                type: 'flat',
-                value: 0,
-            },
-
-            tcs: {
-                apply: false,
-                percent: 0,
-            },
-
-            roundOff: {
-                enabled: false,
-            },
-
-            payment: {
-                received: 0,
-                mode: 'cash',
-                markFullyPaid: false,
-                bank_account_id: '',
-            },
-
-            pay: {
-                cash: 0,
-                upi: 0,
-                card: 0,
-                cheque: 0,
-                credit_excess: 0,
-                advance: 0,
-                online_mode: '',
-                online_ref: '',
-                upi_id: '',
-                card_last4: '',
-                card_ref: '',
-                cheque_no: '',
-                bank_name: '',
-            },
-
-            modals: {
-                client: false,
-                item: false,
-            },
-
-            newClientError: '',
-            newItemError: '',
-            activeRowIndex: null,
-            clientAutoSelect: true,
-            itemAutoSelect: true,
-
-            newClient: {
-                name: '',
-                mobile: '',
-                address: '',
-                state: '',
-                state_code: '',
-                gstin: '',
-                pincode: '',
-                state_pick: '',
-            },
-
-            newItem: {
-                type: 'product',
-                name: '',
-                sku: '',
-                description: '',
-                category_id: '',
-                tax_rate: 0,
-                hsn: '',
-                sac: '',
-                price: 0,
-                making_charge: 0,
-                gold_weight: 0,
-                gold_purity: '',
-                silver_weight: 0,
-                silver_purity: '',
-                stone_weight: 0,
-                diamond_weight: 0,
-            },
-
-            clientGstCheck: {
-                touched: false,
-                ok: true,
-                msg: '',
-            },
-
-            confirmLoadModal: false,
-            pendingInvoicePreview: null,
-            pendingInvoiceData: null,
-
-            money,
-
-            csrf() {
-                return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            },
-
-            inferItemType(it) {
-                const type = lower(it?.type).trim();
-                return ['product', 'service'].includes(type) ? type : 'product';
-            },
-
-            findMasterItem(itemId) {
-                return (this.itemsData || []).find(x => String(x.id) === String(itemId));
-            },
-
-            getItemSearchLabel(itemId) {
-                const it = this.findMasterItem(itemId);
-                if (!it) return '';
-                return it.sku ? `${it.name} (${it.sku})` : (it.name || '');
-            },
-
-            syncParty() {
-                const c = (this.clients || []).find(x => String(x.id) === String(this.clientId));
-
-                if (!c) {
-                    this.party = {
-                        name: '',
-                        address: '',
-                        state: '',
-                        state_code: '',
-                        mobile: '',
-                        gstin: '',
-                        pincode: '',
-                    };
-                    return;
-                }
-
-                this.party = {
-                    name: c.name || '',
-                    address: c.address || '',
-                    state: c.state || '',
-                    state_code: c.state_code || '',
-                    mobile: c.mobile || '',
-                    gstin: c.gstin || '',
-                    pincode: c.pincode || '',
-                };
-
-                this.clientSearch = c.mobile ? `${c.name} (${c.mobile})` : (c.name || '');
-            },
-
-            openClientDD() {
-                this.clientDD.open = true;
-                this.clientDD.hi = 0;
-                this.$nextTick(() => this.setClientDDPos());
-            },
-
-            closeClientDD() {
-                this.clientDD.open = false;
-            },
-
-            setClientDDPos() {
-                const input = document.querySelector('input[x-model="clientSearch"]');
-                if (!input) return;
-                const r = input.getBoundingClientRect();
-                this.clientDD.style = `top:${r.bottom + 4}px;left:${r.left}px;width:${r.width}px;`;
-            },
-
-            filteredClients() {
-                const q = lower(this.clientSearch).trim();
-                const list = this.clients || [];
-
-                if (!q) return list;
-
-                return list.filter(c =>
-                    lower(c.name).includes(q) ||
-                    lower(c.mobile).includes(q) ||
-                    lower(c.gstin).includes(q) ||
-                    lower(c.state_code).includes(q)
-                );
-            },
-
-            selectClientFromDD(c) {
-                this.clientId = String(c.id);
-                this.clientSearch = c.mobile ? `${c.name} (${c.mobile})` : (c.name || '');
-                this.closeClientDD();
-                this.syncParty();
-            },
-
-            clientDDDown() {
-                const list = this.filteredClients();
-                if (!list.length) return;
-                this.clientDD.hi = Math.min(list.length - 1, this.clientDD.hi + 1);
-            },
-
-            clientDDUp() {
-                this.clientDD.hi = Math.max(0, this.clientDD.hi - 1);
-            },
-
-            clientDDPick() {
-                const c = this.filteredClients()[this.clientDD.hi];
-                if (c) this.selectClientFromDD(c);
-            },
-
-            filteredItems(q) {
-                const query = lower(q).trim();
-                const list = this.itemsData || [];
-
-                if (!query) return list;
-
-                return list.filter(it =>
-                    lower(it.name).includes(query) ||
-                    lower(it.sku).includes(query) ||
-                    lower(it.description || it.desc || it.long_description).includes(query)
-                );
-            },
-
-            openItemDD(i) {
-                const row = this.items[i];
-                if (!row) return;
-
-                row.ddOpen = true;
-                row.ddHi = 0;
-
-                this.$nextTick(() => this.setItemDDPos(i));
-            },
-
-            closeItemDD(i) {
-                const row = this.items[i];
-                if (!row) return;
-
-                row.ddOpen = false;
-            },
-
-            setItemDDPos(i) {
-                const input = document.getElementById('item_search_' + i);
-                if (!input) return;
-
-                const r = input.getBoundingClientRect();
-                this.items[i].ddStyle = `top:${r.bottom + 4}px;left:${r.left}px;`;
-            },
-
-            itemDDDown(i) {
-                const row = this.items[i];
-                if (!row) return;
-
-                const len = this.filteredItems(row.search).length;
-                if (!len) return;
-
-                row.ddHi = Math.min(len - 1, row.ddHi + 1);
-            },
-
-            itemDDUp(i) {
-                const row = this.items[i];
-                if (!row) return;
-
-                row.ddHi = Math.max(0, row.ddHi - 1);
-            },
-
-            itemDDPick(i) {
-                const row = this.items[i];
-                if (!row) return;
-
-                const it = this.filteredItems(row.search)[row.ddHi];
-                if (it) this.selectItemFromDD(i, it);
-            },
-
-            itemDDEnter(i) {
-                this.itemDDPick(i);
-            },
-
-            selectItemFromDD(i, it) {
-                const row = this.items[i];
-                if (!row) return;
-
-                row.search = it.sku ? `${it.name} (${it.sku})` : (it.name || '');
-                row.ddOpen = false;
-
-                this.pickItem(i, it.id);
-            },
-
-            findMetalRate(type, purity) {
-                const t = lower(type);
-                const p = s(purity).trim();
-
-                const rec = (this.metalRates || []).find(r =>
-                    lower(r.metal_type) === t &&
-                    s(r.purity).trim() === p
-                );
-
-                return rec ? n(rec.rate_per_gram ?? rec.rate, 0) : 0;
-            },
-
-            resetRowForService(r) {
-                r.making_rate = 0;
-                r.gold_purity = null;
-                r.silver_purity = null;
-                r.gold_rate = 0;
-                r.silver_rate = 0;
-                r.gold_wt = 0;
-                r.silver_wt = 0;
-                r.gemstone_wt = 0;
-                r.diamond_wt = 0;
-                r.fixed_price = 0;
-
-                r.gemstone_charge = 0;
-                r.diamond_charge = 0;
-            },
-
-            resetRowForProduct(r) {
-                r.service_rate = 0;
-            },
-
-            pickItem(i, id) {
-                const it = this.findMasterItem(id);
-                if (!it) return;
-
-                const r = this.items[i];
-                if (!r) return;
-
-                r.item_id = String(it.id);
-                r.item_type = this.inferItemType(it);
-
-                r.search = it.sku ? `${it.name} (${it.sku})` : (it.name || '');
-                r.description = it.description || it.name || '';
-                r.tax_percent = n(it.tax_rate, 0);
-
-                r.amount_mode = 'auto';
-                r.manual_amount = 0;
-
-                if (r.item_type === 'service') {
-                    r.hsn = it.sac || '';
-                    r.quantity = Math.max(1, n(r.quantity, 1));
-                    r.service_rate = n(it.price, 0);
-
-                    this.resetRowForService(r);
-
-                    r.manual_amount = this.lineAmount(r);
-                    this.calc();
-                    return;
-                }
-
-                r.hsn = it.hsn || it.sac || '';
-                r.quantity = Math.max(1, n(r.quantity, 1));
-
-                this.resetRowForProduct(r);
-
-                // ✅ IMPORTANT: product price priority
-                r.fixed_price = n(it.price, 0);
-
-                r.gold_wt = n(it.gold_weight ?? it.gold_wt, 0);
-                r.silver_wt = n(it.silver_weight ?? it.silver_wt, 0);
-
-                r.gold_purity = s(it.gold_purity ?? it.purity).trim() || null;
-                r.silver_purity = s(it.silver_purity).trim() || null;
-
-                r.gemstone_wt = n(it.stone_weight ?? it.gemstone_wt, 0);
-                r.diamond_wt = n(it.diamond_weight ?? it.diamond_wt, 0);
-
-                r.gemstone_charge = n(it.gemstone_charge ?? it.stone_charge, 0);
-                r.diamond_charge = n(it.diamond_charge, 0);
-
-                r.making_rate = n(it.making_charge ?? it.making_rate, 0);
-
-                r.gold_rate = this.findMetalRate('gold', r.gold_purity);
-                r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
-
-                r.manual_amount = this.lineAmount(r);
-                this.calc();
-            },
-
-            add() {
-                this.items.push(rowTemplate());
-                this.calc();
-            },
-
-            remove(i) {
-                this.items.splice(i, 1);
-                if (!this.items.length) this.items.push(rowTemplate());
-                this.calc();
-            },
-
-            hasProduct() {
-                return (this.items || []).some(r => r.item_type === 'product');
-            },
-
-            hasService() {
-                return (this.items || []).some(r => r.item_type === 'service');
-            },
-
-            onAutoChange(row) {
-                if (!row) return;
-
-                row.amount_mode = 'auto';
-                row.manual_amount = this.lineAmount(row);
-
-                this.calc();
-            },
-
-            // onAmountEdit(row) {
-            //     if (!row) return;
-
-            //     const total = n(row.manual_amount, 0);
-            //     row.amount_mode = total > 0 ? 'manual' : 'auto';
-
-            //     if (row.item_type === 'service' && row.amount_mode === 'manual') {
-            //         const qty = Math.max(1, n(row.quantity, 1));
-            //         const pct = n(row.tax_percent, 0);
-            //         const base = pct > 0 ? total / (1 + pct / 100) : total;
-            //         row.service_rate = n((base / qty).toFixed(2), 0);
-            //     }
-
-            //     this.calc();
-            // },
-
-            onAmountEdit(row) {
-                if (!row) return;
-
-                const total = n(row.manual_amount, 0);
-                row.amount_mode = total > 0 ? 'manual' : 'auto';
-
-                if (row.amount_mode === 'manual') {
-                    const qty = Math.max(1, n(row.quantity, 1));
-                    const pct = n(row.tax_percent, 0);
-
-                    // tax reverse
-                    const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
-
-                    if (row.item_type === 'service') {
-                        row.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
-                    } else {
-                        // making reverse
-                        const makingPercent = n(row.making_rate, 0);
-                        const baseBeforeMaking = makingPercent > 0
-                            ? baseAfterTax / (1 + makingPercent / 100)
-                            : baseAfterTax;
-
-                        row.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
-                    }
-                }
-
-                this.calc();
-            },
-
-            // ✅ MAIN FIX: Making Rate ko percentage maana jayega.
-            // Formula: productBase + (productBase * making_rate / 100), uske baad tax.
-            lineBase(r) {
-                const qty = Math.max(1, n(r.quantity, 1));
-                const pct = n(r.tax_percent, 0);
-
-                // ✅ Manual amount tabhi use hoga jab user amount box edit kare.
-                if (r.amount_mode === 'manual' || r.amount_mode === 'manual_user') {
-                    const total = n(r.manual_amount, 0);
-                    const base = pct > 0 ? total / (1 + pct / 100) : total;
-                    return Math.max(0, n(base.toFixed(2), 0));
-                }
-
-                // ✅ Service: service rate * qty
-                if (r.item_type === 'service') {
-                    return Math.max(0, n((n(r.service_rate, 0) * qty).toFixed(2), 0));
-                }
-
-                // ✅ Product base priority:
-                // 1) fixed_price/item price agar hai to us par making % lagega
-                // 2) warna gold + silver value par making % lagega
-                const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
-                const silverAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
-                // const metalBase = goldAmt + silverAmt;
-
-                const gemstoneCharge = n(r.gemstone_charge, 0);
-                const diamondCharge = n(r.diamond_charge, 0);
-                const metalBase = goldAmt + silverAmt + gemstoneCharge + diamondCharge;
-
-                // const productBase = n(r.fixed_price, 0) > 0
-                //     ? n(r.fixed_price, 0)
-                //     : metalBase;
-
-                const basePrice = n(r.fixed_price, 0) > 0
-                    ? n(r.fixed_price, 0)
-                    : (goldAmt + silverAmt);
-
-                const productBase = basePrice + gemstoneCharge + diamondCharge;
-
-                const makingPercent = n(r.making_rate, 0);
-                const makingAmount = productBase * (makingPercent / 100);
-
-                return Math.max(0, n(((productBase + makingAmount) * qty).toFixed(2), 0));
-            },
-
-            lineTax(r) {
-                const base = this.lineBase(r);
-                const pct = n(r.tax_percent, 0);
-                return n((base * (pct / 100)).toFixed(2), 0);
-            },
-
-            lineAmount(r) {
-                if (r.amount_mode === 'manual' || r.amount_mode === 'manual_user') {
-                    return n(n(r.manual_amount, 0).toFixed(2), 0);
-                }
-
-                return n((this.lineBase(r) + this.lineTax(r)).toFixed(2), 0);
-            },
-
-            // subtotal() {
-            //     return n((this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0).toFixed(2), 0);
-            // },
-
-
-            subtotal() {
-            return n((this.items || []).reduce((sum, r) => {
-                if (r.amount_mode === 'manual' || r.amount_mode === 'manual_user') {
-                    const pct = n(r.tax_percent, 0);
-                    const total = n(r.manual_amount, 0);
-
-                    if (pct > 0) {
-                        return sum + n((total / (1 + pct / 100)).toFixed(2), 0);
-                    }
-
-                    return sum + total;
-                }
-
-                return sum + this.lineBase(r);
-            }, 0).toFixed(2), 0);
-        },
-
-            avgTaxPercentRaw() {
-                const baseSum = (this.items || []).reduce((sum, r) => sum + this.lineBase(r), 0);
-                if (baseSum <= 0) return 0;
-
-                const weighted = (this.items || []).reduce((sum, r) => {
-                    return sum + this.lineBase(r) * n(r.tax_percent, 0);
-                }, 0);
-
-                return weighted / baseSum;
-            },
-
-            avgTaxPercent() {
-                return n(this.avgTaxPercentRaw().toFixed(2), 0);
-            },
-
-            itemsTaxTotal() {
-                return n((this.items || []).reduce((sum, r) => sum + this.lineTax(r), 0).toFixed(2), 0);
-            },
-
-            chargesTotal() {
-                return n((this.charges || []).reduce((sum, c) => sum + n(c.amount, 0), 0).toFixed(2), 0);
-            },
-
-            chargesPayload() {
-                return (this.charges || [])
-                    .filter(c => s(c.name).trim() || n(c.amount, 0) > 0)
-                    .map(c => ({
-                        name: s(c.name).trim(),
-                        amount: n(c.amount, 0),
-                    }));
-            },
-
-            discountAmount() {
-                const base = this.subtotal();
-                const v = n(this.discount.value, 0);
-
-                if (this.discount.type === 'percent') {
-                    return n((base * (v / 100)).toFixed(2), 0);
-                }
-
-                return n(v.toFixed(2), 0);
-            },
-
-            taxableAmount() {
-                return n(Math.max(0, this.subtotal() - this.discountAmount() + this.chargesTotal()).toFixed(2), 0);
-            },
-
-            sgst() {
-                if (!this.isIntra()) return 0;
-                return n((this.itemsTaxTotal() / 2).toFixed(2), 0);
-            },
-
-            cgst() {
-                if (!this.isIntra()) return 0;
-                return n((this.itemsTaxTotal() / 2).toFixed(2), 0);
-            },
-
-            igst() {
-                if (this.isIntra()) return 0;
-                return n(this.itemsTaxTotal().toFixed(2), 0);
-            },
-
-            tcsAmount() {
-                if (!this.tcs.apply) return 0;
-
-                const pct = n(this.tcs.percent, 0);
-                if (pct <= 0) return 0;
-
-                return n((this.taxableAmount() * (pct / 100)).toFixed(2), 0);
-            },
-
-            totalBeforeRound() {
-                return n((this.taxableAmount() + this.itemsTaxTotal() + this.tcsAmount()).toFixed(2), 0);
-            },
-
-            roundOffAmount() {
-                if (!this.roundOff.enabled) return 0;
-
-                const raw = this.totalBeforeRound();
-                const rounded = Math.round(raw);
-
-                return n((rounded - raw).toFixed(2), 0);
-            },
-
-            totalPayable() {
-                return n((this.totalBeforeRound() + this.roundOffAmount()).toFixed(2), 0);
-            },
-
-            balanceAmount() {
-                const total = this.totalPayable();
-                const received = n(this.payment.received, 0);
-                const advance = n(this.pay.advance, 0);
-                const credit = n(this.pay.credit_excess, 0);
-
-                return n(Math.max(0, total - received - advance - credit).toFixed(2), 0);
-            },
-
-            isIntra() {
-                const b = s(BIZ_STATE_CODE).replace(/\D+/g, '').replace(/^0+/, '');
-                const p = s(this.party.state_code).replace(/\D+/g, '').replace(/^0+/, '');
-
-                return b !== '' && p !== '' && b === p;
-            },
-
-            addCharge() {
-                this.charges.push(chargeTemplate());
-                this.calc();
-            },
-
-            removeCharge(i) {
-                this.charges.splice(i, 1);
-                if (!this.charges.length) this.charges.push(chargeTemplate());
-                this.calc();
-            },
-
-            toggleFullyPaid() {
-                if (this.payment.markFullyPaid) {
-                    this.payment.received = this.totalPayable();
-                }
-
-                this.onReceivedInput();
-            },
-
-            onReceivedInput() {
-                const amt = n(this.payment.received, 0);
-
-                this.pay.cash = 0;
-                this.pay.upi = 0;
-                this.pay.card = 0;
-                this.pay.cheque = 0;
-
-                if (this.payment.mode === 'cash') {
-                    this.pay.cash = amt;
-                } else if (this.payment.mode === 'upi' || this.payment.mode === 'bank') {
-                    this.pay.upi = amt;
-                } else if (this.payment.mode === 'card') {
-                    this.pay.card = amt;
-                } else if (this.payment.mode === 'cheque') {
-                    this.pay.cheque = amt;
-                }
-
-                this.calc();
-            },
-
-            calc() {
-                return this.totalPayable();
-            },
-
-            init() {
-                this.$watch('clientId', () => this.syncParty());
-
-                const cid = INVOICE.client_id ?? INVOICE.client?.id ?? '';
-                this.clientId = cid ? String(cid) : '';
-
-                this.hdr.date = INVOICE.invoice_date || TODAY;
-                this.hdr.transport_mode = INVOICE.transport_mode || 'By Hand';
-                this.hdr.gst_no = INVOICE.gst_no || BIZ_GSTIN;
-                this.hdr.reverse_charge = !!Number(INVOICE.reverse_charge || 0);
-                this.hdr.terms = INVOICE.terms || DEFAULT_TERMS;
-
-                this.computedPrefix = INVOICE.invoice_prefix || this.computedPrefix;
-                this.invoiceNo = INVOICE.invoice_number || this.invoiceNo;
-
-                this.discount = {
-                    type: INVOICE.discount_type || 'flat',
-                    value: n(INVOICE.discount_value ?? INVOICE.discount_total, 0),
-                };
-
-                let chargeData = INVOICE.charges_json || [];
-
-                if (typeof chargeData === 'string') {
-                    try {
-                        chargeData = JSON.parse(chargeData || '[]');
-                    } catch (e) {
-                        chargeData = [];
-                    }
-                }
-
-                this.charges = Array.isArray(chargeData) && chargeData.length
-                    ? chargeData.map(c => ({
-                        _k: Date.now() + Math.random(),
-                        name: c.name || '',
-                        amount: n(c.amount, 0),
-                    }))
-                    : [chargeTemplate()];
-
-                this.tcs = {
-                    apply: n(INVOICE.tcs_percent, 0) > 0,
-                    percent: n(INVOICE.tcs_percent, 0),
-                };
-
-                this.roundOff = {
-                    enabled: n(INVOICE.round_off, 0) !== 0,
-                };
-
-                this.payment.mode = INVOICE.payment_method || 'cash';
-                this.payment.bank_account_id = INVOICE.bank_account_id ? String(INVOICE.bank_account_id) : '';
-                this.payment.received = n(INVOICE.received ?? INVOICE.received_amount, 0);
-
-                this.pay.cash = n(INVOICE.pay_cash, 0);
-                this.pay.upi = n(INVOICE.pay_upi, 0);
-                this.pay.card = n(INVOICE.pay_card, 0);
-                this.pay.cheque = n(INVOICE.pay_cheque, 0);
-                this.pay.credit_excess = n(INVOICE.credit_sales_excess, 0);
-                this.pay.advance = n(INVOICE.advance_amount, 0);
-
-                this.pay.online_mode = INVOICE.online_mode || '';
-                this.pay.online_ref = INVOICE.online_ref || '';
-                this.pay.upi_id = INVOICE.upi_id || '';
-                this.pay.card_last4 = INVOICE.card_last4 || '';
-                this.pay.card_ref = INVOICE.card_ref || '';
-                this.pay.cheque_no = INVOICE.cheque_no || '';
-                this.pay.bank_name = INVOICE.bank_name || '';
-
-                const invoiceRows = Array.isArray(INVOICE.items) ? INVOICE.items : [];
-
-                this.items = invoiceRows.length ? invoiceRows.map(old => {
-                    const r = rowTemplate();
-                    const master = this.findMasterItem(old.item_id);
-
-                    r.item_id = old.item_id ? String(old.item_id) : null;
-
-                    r.item_type = lower(
-                        master?.type ||
-                        old.item_type ||
-                        'product'
-                    ).trim();
-
-                    if (!['product', 'service'].includes(r.item_type)) {
-                        r.item_type = 'product';
-                    }
-
-                    r.search = master
-                        ? (master.sku ? `${master.name} (${master.sku})` : master.name)
-                        : (old.search || '');
-
-                    r.description = old.description || master?.description || master?.name || '';
-                    r.hsn = old.hsn || old.hsn_code || old.sac_code || master?.hsn || master?.sac || '';
-                    r.quantity = Math.max(1, n(old.quantity, old.qty ?? 1));
-
-                    r.tax_percent = n(old.tax_percent, master?.tax_rate ?? 0);
-
-                    r.making_rate = n(old.making_rate ?? old.making_charge, 0);
-
-                    r.gold_purity = old.gold_purity || master?.gold_purity || null;
-                    r.silver_purity = old.silver_purity || master?.silver_purity || null;
-
-                    r.gold_rate = n(old.gold_rate, 0);
-                    r.silver_rate = n(old.silver_rate, 0);
-
-                    r.silver_wt = n(old.silver_wt, 0);
-                    r.gold_wt = n(old.gold_wt, 0);
-
-                    r.gemstone_wt = n(old.gemstone_wt ?? old.gemstone_wt_ct, 0);
-                    r.diamond_wt = n(old.diamond_wt ?? old.diamond_wt_ct, 0);
-
-                    r.gemstone_charge = n(old.gemstone_charge ?? old.stone_charge, 0);
-                    r.diamond_charge = n(old.diamond_charge, 0);
-
-                    // ✅ Product price priority in edit
-                    if (r.item_type === 'product') {
-                        r.fixed_price = n(old.fixed_price, 0);
-
-                        if (r.fixed_price <= 0 && master) {
-                            r.fixed_price = n(master.price, 0);
-                        }
-
-                        if (r.fixed_price <= 0 && n(old.rate, 0) > 0) {
-                            r.fixed_price = n((n(old.rate, 0) / r.quantity).toFixed(2), 0);
-                        }
-
-                        r.service_rate = 0;
-
-                        // ✅ edit page par old wrong manual amount ignore hoga
-                        r.amount_mode = 'auto';
-                        r.manual_amount = this.lineAmount(r);
-                    } else {
-                        r.fixed_price = 0;
-
-                        r.service_rate = n(old.service_rate, 0);
-
-                        if (r.service_rate <= 0 && master) {
-                            r.service_rate = n(master.price, 0);
-                        }
-
-                        if (r.service_rate <= 0 && n(old.rate, 0) > 0) {
-                            r.service_rate = n((n(old.rate, 0) / r.quantity).toFixed(2), 0);
-                        }
-
-                        r.amount_mode = 'auto';
-                        r.manual_amount = this.lineAmount(r);
-                    }
-
-                    return r;
-                }) : [rowTemplate()];
-
-                this.syncParty();
-                this.onReceivedInput();
-                this.calc();
-            },
-
-            // beforeSubmit() {
-            //     const payload = (this.items || []).map(r => ({
-            //         item_id: r.item_id ?? null,
-            //         item_type: r.item_type ?? null,
-            //         description: r.description || '',
-            //         hsn: r.hsn || '',
-            //         quantity: Math.max(1, n(r.quantity, 1)),
-
-            //         // ✅ making_rate is percentage. Backend compatibility ke liye making_charge bhi bhej rahe hain.
-            //         making_rate: n(r.making_rate),
-            //         making_charge: n(r.making_rate),
-            //         making_charge: n(r.making_rate),
-            //         gold_purity: r.gold_purity || null,
-            //         silver_purity: r.silver_purity || null,
-            //         gold_rate: n(r.gold_rate),
-            //         silver_rate: n(r.silver_rate),
-            //         silver_wt: n(r.silver_wt),
-            //         gold_wt: n(r.gold_wt),
-            //         gemstone_wt: n(r.gemstone_wt),
-            //         diamond_wt: n(r.diamond_wt),
-
-            //         service_rate: n(r.service_rate),
-
-            //         // ✅ IMPORTANT: backend ko price milega
-            //         fixed_price: n(r.fixed_price),
-
-            //         discount: 0,
-            //         tax_percent: n(r.tax_percent),
-
-            //         amount_mode: r.amount_mode || 'auto',
-            //         manual_amount: n(r.manual_amount),
-
-            //         rate: this.lineBase(r),
-            //         tax_amount: this.lineTax(r),
-            //         amount: this.lineAmount(r),
-            //     }));
-
-            //     document.getElementById('items_json').value = JSON.stringify(payload);
-
-            //     this.onReceivedInput();
-            //     this.$refs.form.submit();
-            // },
-
-
-            beforeSubmit() {
-                const payload = (this.items || []).map(r => ({
-                    item_id: r.item_id ?? null,
-                    item_type: r.item_type ?? null,
-                    description: r.description || '',
-                    hsn: r.hsn || '',
-                    quantity: Math.max(1, n(r.quantity, 1)),
-
-                    making_rate: n(r.making_rate),
-                    making_charge: n(r.making_rate),
-
-                    gold_purity: r.gold_purity || null,
-                    silver_purity: r.silver_purity || null,
-                    gold_rate: n(r.gold_rate),
-                    silver_rate: n(r.silver_rate),
-                    silver_wt: n(r.silver_wt),
-                    gold_wt: n(r.gold_wt),
-                    gemstone_wt: n(r.gemstone_wt),
-                    diamond_wt: n(r.diamond_wt),
-
-                    gemstone_charge: n(r.gemstone_charge),
-                    diamond_charge: n(r.diamond_charge),
-
-                    service_rate: n(r.service_rate),
-                    fixed_price: n(r.fixed_price),
-
-                    discount: 0,
-                    tax_percent: n(r.tax_percent),
-
-                    amount_mode: r.amount_mode || 'auto',
-                    manual_amount: n(r.manual_amount),
-
-                    rate: this.lineBase(r),
-                    tax_amount: this.lineTax(r),
-                    amount: this.lineAmount(r),
-                }));
-
-                document.getElementById('items_json').value = JSON.stringify(payload);
-
-                this.onReceivedInput();
-                this.$refs.form.submit();
-            },
-
-            submitForm() {
-                if (this.saving) return;
-
-                const g = normalizeGstin(this.hdr.gst_no);
-                const res = validateGstinLocal(g);
-
-                if (g && !res.ok) {
-                    const ok = confirm("⚠️ GSTIN invalid lag raha hai.\n\n" + res.message + "\n\nPhir bhi Update karna hai?");
-                    if (!ok) return;
-                }
-
-                this.saving = true;
-                this.$refs.form.requestSubmit();
-            },
-
-            blankRow() {
-                return rowTemplate();
-            },
-
-            openClientModal() {
-                this.modals.client = true;
-            },
-
-            closeClientModal() {
-                this.modals.client = false;
-            },
-
-            openItemModal(i) {
-                this.activeRowIndex = i;
-                this.modals.item = true;
-            },
-
-            closeItemModal() {
-                this.modals.item = false;
-            },
-
-            applyClientState() {
-                const val = this.newClient.state_pick || '';
-                const [code, name] = val.split(',');
-                this.newClient.state_code = code || '';
-                this.newClient.state = name || '';
-            },
-
-            onClientGstinInput() {
-                const g = normalizeGstin(this.newClient.gstin);
-                const res = validateGstinLocal(g);
-
-                this.clientGstCheck.touched = !!g;
-                this.clientGstCheck.ok = res.ok;
-                this.clientGstCheck.msg = res.message;
-            },
-
-            cancelApplyLastInvoice() {
-                this.confirmLoadModal = false;
-                this.pendingInvoicePreview = null;
-                this.pendingInvoiceData = null;
-            },
-
-            confirmApplyLastInvoice() {
-                this.cancelApplyLastInvoice();
-            },
-
-            scrollItemDDIntoView() {},
-        };
-    }
-</script> --}}
-
-
 <script>
     function invoiceForm() {
         const readJSON = (id, fallback) => {
@@ -2144,6 +963,11 @@
         const METAL_RATES = readJSON('metal-rates-json', []);
         const BANKS = readJSON('banks-json', []);
         const INVOICE = readJSON('invoice-json', {});
+        const ALLOWED_FIELDS = readJSON('allowed-fields-json', []);
+
+        const showAllowedField = (field) => {
+            return ALLOWED_FIELDS.length === 0 || ALLOWED_FIELDS.includes(field);
+        };
         const CATEGORIES = readJSON('categories-json', []);
 
         const BIZ_STATE_CODE = @js($businessStateCode ?? '');
@@ -2236,11 +1060,13 @@
                 return Number(v) > 0 || isNaN(Number(v));
             },
 
-            showItemField(row, field) {
-                return row.item_type === 'product' && this.hasValue(row[field]);
+            // showItemField(row, field) {
+            //     return row.item_type === 'product' && this.hasValue(row[field]);
+            // },
+
+            showItemField(field) {
+                return showAllowedField(field);
             },
-
-
 
             itemsData: ITEMS,
             metalRates: METAL_RATES,
@@ -2682,11 +1508,24 @@
             //     const total = n(row.manual_amount, 0);
             //     row.amount_mode = total > 0 ? 'manual' : 'auto';
 
-            //     if (row.item_type === 'service' && row.amount_mode === 'manual') {
+            //     if (row.amount_mode === 'manual') {
             //         const qty = Math.max(1, n(row.quantity, 1));
             //         const pct = n(row.tax_percent, 0);
-            //         const base = pct > 0 ? total / (1 + pct / 100) : total;
-            //         row.service_rate = n((base / qty).toFixed(2), 0);
+
+            //         // tax reverse
+            //         const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
+
+            //         if (row.item_type === 'service') {
+            //             row.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
+            //         } else {
+            //             // making reverse
+            //             const makingPercent = n(row.making_rate, 0);
+            //             const baseBeforeMaking = makingPercent > 0
+            //                 ? baseAfterTax / (1 + makingPercent / 100)
+            //                 : baseAfterTax;
+
+            //             row.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
+            //         }
             //     }
 
             //     this.calc();
@@ -2702,20 +1541,17 @@
                     const qty = Math.max(1, n(row.quantity, 1));
                     const pct = n(row.tax_percent, 0);
 
-                    // tax reverse
                     const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
 
-                    if (row.item_type === 'service') {
-                        row.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
-                    } else {
-                        // making reverse
-                        const makingPercent = n(row.making_rate, 0);
-                        const baseBeforeMaking = makingPercent > 0
-                            ? baseAfterTax / (1 + makingPercent / 100)
-                            : baseAfterTax;
+                    const makingPercent = showAllowedField('making_charge')
+                        ? n(row.making_rate, 0)
+                        : 0;
 
-                        row.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
-                    }
+                    const baseBeforeMaking = makingPercent > 0
+                        ? baseAfterTax / (1 + makingPercent / 100)
+                        : baseAfterTax;
+
+                    row.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
                 }
 
                 this.calc();
@@ -2727,43 +1563,41 @@
                 const qty = Math.max(1, n(r.quantity, 1));
                 const pct = n(r.tax_percent, 0);
 
-                // ✅ Manual amount tabhi use hoga jab user amount box edit kare.
                 if (r.amount_mode === 'manual' || r.amount_mode === 'manual_user') {
                     const total = n(r.manual_amount ?? r.amount, 0);
                     const base = pct > 0 ? total / (1 + pct / 100) : total;
                     return Math.max(0, n(base.toFixed(2), 0));
                 }
 
-                // ✅ Service: service rate * qty
-                if (r.item_type === 'service') {
-                    return Math.max(0, n((n(r.service_rate, 0) * qty).toFixed(2), 0));
-                }
+                const goldAmt = showAllowedField('gold_weight') || showAllowedField('gold_purity')
+                    ? n(r.gold_wt, 0) * n(r.gold_rate, 0)
+                    : 0;
 
-                // ✅ Product base priority:
-                // 1) fixed_price/item price agar hai to us par making % lagega
-                // 2) warna gold + silver value par making % lagega
-                const goldAmt = n(r.gold_wt, 0) * n(r.gold_rate, 0);
-                const silverAmt = n(r.silver_wt, 0) * n(r.silver_rate, 0);
-                // const metalBase = goldAmt + silverAmt;
+                const silverAmt = showAllowedField('silver_weight') || showAllowedField('silver_purity')
+                    ? n(r.silver_wt, 0) * n(r.silver_rate, 0)
+                    : 0;
 
-                const gemstoneCharge = n(r.gemstone_charge, 0);
-                const diamondCharge = n(r.diamond_charge, 0);
+                const gemstoneCharge = showAllowedField('stone_charges')
+                    ? n(r.gemstone_charge, 0)
+                    : 0;
+
+                const diamondCharge = showAllowedField('diamond_charges')
+                    ? n(r.diamond_charge, 0)
+                    : 0;
+
                 const metalBase = goldAmt + silverAmt + gemstoneCharge + diamondCharge;
-
-                // const productBase = n(r.fixed_price, 0) > 0
-                //     ? n(r.fixed_price, 0)
-                //     : metalBase;
 
                 const basePrice = n(r.fixed_price, 0) > 0
                     ? n(r.fixed_price, 0)
-                    : (goldAmt + silverAmt);
+                    : metalBase;
 
-                const productBase = basePrice + gemstoneCharge + diamondCharge;
+                const makingPercent = showAllowedField('making_charge')
+                    ? n(r.making_rate, 0)
+                    : 0;
 
-                const makingPercent = n(r.making_rate, 0);
-                const makingAmount = productBase * (makingPercent / 100);
+                const makingAmount = basePrice * (makingPercent / 100);
 
-                return Math.max(0, n(((productBase + makingAmount) * qty).toFixed(2), 0));
+                return Math.max(0, n(((basePrice + makingAmount) * qty).toFixed(2), 0));
             },
 
             lineTax(r) {
@@ -3102,50 +1936,6 @@
                 this.onReceivedInput();
                 this.calc();
             },
-
-            // beforeSubmit() {
-            //     const payload = (this.items || []).map(r => ({
-            //         item_id: r.item_id ?? null,
-            //         item_type: r.item_type ?? null,
-            //         description: r.description || '',
-            //         hsn: r.hsn || '',
-            //         quantity: Math.max(1, n(r.quantity, 1)),
-
-            //         // ✅ making_rate is percentage. Backend compatibility ke liye making_charge bhi bhej rahe hain.
-            //         making_rate: n(r.making_rate),
-            //         making_charge: n(r.making_rate),
-            //         making_charge: n(r.making_rate),
-            //         gold_purity: r.gold_purity || null,
-            //         silver_purity: r.silver_purity || null,
-            //         gold_rate: n(r.gold_rate),
-            //         silver_rate: n(r.silver_rate),
-            //         silver_wt: n(r.silver_wt),
-            //         gold_wt: n(r.gold_wt),
-            //         gemstone_wt: n(r.gemstone_wt),
-            //         diamond_wt: n(r.diamond_wt),
-
-            //         service_rate: n(r.service_rate),
-
-            //         // ✅ IMPORTANT: backend ko price milega
-            //         fixed_price: n(r.fixed_price),
-
-            //         discount: 0,
-            //         tax_percent: n(r.tax_percent),
-
-            //         amount_mode: r.amount_mode || 'auto',
-            //         manual_amount: n(r.manual_amount),
-
-            //         rate: this.lineBase(r),
-            //         tax_amount: this.lineTax(r),
-            //         amount: this.lineAmount(r),
-            //     }));
-
-            //     document.getElementById('items_json').value = JSON.stringify(payload);
-
-            //     this.onReceivedInput();
-            //     this.$refs.form.submit();
-            // },
-
 
             beforeSubmit() {
                 const payload = (this.items || []).map(r => ({
