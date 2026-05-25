@@ -116,7 +116,7 @@
                 </button>
 
                 <button type="submit"
-                        formaction="{{ route('bill-template.customize.reset', $templateId) }}"
+                        formaction="{{ route('bill-template.customize.reset', $template->id) }}"
                         formmethod="POST"
                         onclick="return confirm('Are you sure you want to reset this template customization?')"
                         class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold">

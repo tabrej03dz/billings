@@ -6,6 +6,28 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Template Setting
+    |--------------------------------------------------------------------------
+    | Controller se $templateSetting aa raha hai.
+    | Agar customization record nahi mila to original default colors use honge.
+    */
+    $setting = $templateSetting ?? null;
+
+    $primaryColor   = $setting->primary_color ?? '#111827';
+    $textColor      = $setting->text_color ?? '#111827';
+    $mutedColor     = $setting->muted_color ?? '#6b7280';
+    $borderColor    = $setting->border_color ?? '#374151';
+    $secondaryColor = $setting->secondary_color ?? '#d1d5db';
+    $lightBgColor   = $setting->light_bg_color ?? '#9ca3af';
+    $softBgColor    = $setting->soft_bg_color ?? '#ffffff';
+    $fontFamily     = $setting->font_family ?? 'DejaVu Sans';
+
+    $showLogo      = (bool) ($setting->show_logo ?? true);
+    $showSignature = (bool) ($setting->show_signature ?? true);
+    $showTerms     = (bool) ($setting->show_terms ?? true);
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -18,16 +40,8 @@
     $igst_db = (float)($igst_amount ?? ($inv->igst_amount ?? 0));
 
     $grand_db = (float)($grand_total ?? ($inv->total ?? 0));
-    $received_db = (float)($received ?? ($inv->received_amount ?? 0));
 
     $pay = $payRow ?? null;
-    $cashAmt   = (float)($pay->cash_amount ?? 0);
-    $onlineAmt = (float)($pay->online_amount ?? 0);
-    $cardAmt   = (float)($pay->card_amount ?? 0);
-    $chequeAmt = (float)($pay->cheque_amount ?? 0);
-    $creditExcess = (float)($pay->credit_sales_excess_amount ?? 0);
-    $advanceAmt   = (float)($pay->advance_amount ?? 0);
-
     $receivedTot = $inv->received_amount ?? 0;
     $balanceNow = (float)($balance ?? ($inv->balance ?? max(0, $grand_db - $receivedTot)));
 
@@ -41,57 +55,70 @@
     $finalTax   = round((float)$finalTax, 2);
     $finalTotal = round((float)$grand_db, 2);
 
-    function inr_words($amount)
-    {
-        $amount = (float)$amount;
-        $rupees = (int) floor($amount);
-        $paise  = (int) round(($amount - $rupees) * 100);
+    if (!function_exists('inr_words')) {
+        function inr_words($amount)
+        {
+            $amount = (float)$amount;
+            $rupees = (int) floor($amount);
+            $paise  = (int) round(($amount - $rupees) * 100);
 
-        $ones = [
-            '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-            'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
-        ];
-        $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+            $ones = [
+                '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+                'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
+            ];
 
-        $twoDigits = function($n) use ($ones,$tens){
-            $n = (int)$n;
-            if ($n == 0) return '';
-            if ($n < 20) return $ones[$n];
-            return trim($tens[(int)($n/10)] . ' ' . $ones[$n%10]);
-        };
+            $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
 
-        $parts = [];
+            $twoDigits = function($n) use ($ones, $tens) {
+                $n = (int)$n;
+                if ($n == 0) return '';
+                if ($n < 20) return $ones[$n];
+                return trim($tens[(int)($n / 10)] . ' ' . $ones[$n % 10]);
+            };
 
-        if ($rupees >= 10000000) {
-            $cr = (int) floor($rupees / 10000000);
-            $parts[] = $twoDigits($cr) . ' Crore';
-            $rupees = $rupees % 10000000;
+            $parts = [];
+
+            if ($rupees >= 10000000) {
+                $cr = (int) floor($rupees / 10000000);
+                $parts[] = $twoDigits($cr) . ' Crore';
+                $rupees = $rupees % 10000000;
+            }
+
+            if ($rupees >= 100000) {
+                $lk = (int) floor($rupees / 100000);
+                $parts[] = $twoDigits($lk) . ' Lakh';
+                $rupees = $rupees % 100000;
+            }
+
+            if ($rupees >= 1000) {
+                $th = (int) floor($rupees / 1000);
+                $parts[] = $twoDigits($th) . ' Thousand';
+                $rupees = $rupees % 1000;
+            }
+
+            if ($rupees >= 100) {
+                $hd = (int) floor($rupees / 100);
+                $parts[] = $ones[$hd] . ' Hundred';
+                $rupees = $rupees % 100;
+            }
+
+            if ($rupees > 0) {
+                $parts[] = $twoDigits($rupees);
+            }
+
+            $words = trim(implode(' ', array_filter($parts)));
+            if ($words === '') {
+                $words = 'Zero';
+            }
+
+            $result = $words . ' Rupees';
+
+            if ($paise > 0) {
+                $result .= ' and ' . $twoDigits($paise) . ' Paise';
+            }
+
+            return $result;
         }
-        if ($rupees >= 100000) {
-            $lk = (int) floor($rupees / 100000);
-            $parts[] = $twoDigits($lk) . ' Lakh';
-            $rupees = $rupees % 100000;
-        }
-        if ($rupees >= 1000) {
-            $th = (int) floor($rupees / 1000);
-            $parts[] = $twoDigits($th) . ' Thousand';
-            $rupees = $rupees % 1000;
-        }
-        if ($rupees >= 100) {
-            $hd = (int) floor($rupees / 100);
-            $parts[] = $ones[$hd] . ' Hundred';
-            $rupees = $rupees % 100;
-        }
-        if ($rupees > 0) {
-            $parts[] = $twoDigits($rupees);
-        }
-
-        $words = trim(implode(' ', array_filter($parts)));
-        if ($words === '') $words = 'Zero';
-
-        $result = $words . ' Rupees';
-        if ($paise > 0) $result .= ' and ' . $twoDigits($paise) . ' Paise';
-        return $result;
     }
 
     $invoiceNo   = $inv->invoice_number ?? $inv->invoice_no ?? '-';
@@ -111,16 +138,15 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+
     $invoiceSignature = $inv->signature ?? null;
 
-$invoiceSignatureUrl = $invoiceSignature
-    ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
-        ? $invoiceSignature
-        : public_path('storage/' . $invoiceSignature))
-    : null;
+    $invoiceSignatureUrl = $invoiceSignature
+        ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+            ? $invoiceSignature
+            : public_path('storage/' . $invoiceSignature))
+        : null;
 @endphp
-
-{{-- @include('invoices.partials.shared_logic') --}}
 
 <!doctype html>
 <html>
@@ -134,21 +160,19 @@ $invoiceSignatureUrl = $invoiceSignature
     size: A4;
 }
 
-* {
-    box-sizing: border-box;
-}
-
+html,
 body {
     margin: 0;
     padding: 0;
-    font-family: DejaVu Sans, sans-serif;
+    width: 210mm;
+    min-height: 297mm;
+    font-family: "{{ $fontFamily }}", DejaVu Sans, sans-serif;
     font-size: 12px;
-    color: #111827;
+    color: {{ $textColor }};
 }
 
 .invoice-wrap {
-    width: 100%;
-    min-height: 297mm;
+    width: 210mm;
     display: table;
     table-layout: fixed;
 }
@@ -156,7 +180,7 @@ body {
 .sidebar {
     display: table-cell;
     width: 28%;
-    background: #111827;
+    background: {{ $primaryColor }};
     color: #fff;
     padding: 22px 16px;
     vertical-align: top;
@@ -165,8 +189,8 @@ body {
 .content {
     display: table-cell;
     width: 72%;
-    background: #fff;
-    padding: 35px 28px;
+    background: {{ $softBgColor }};
+    padding: 25px 24px;
     vertical-align: top;
 }
 
@@ -204,15 +228,15 @@ body {
 .side-text {
     font-size: 11px;
     line-height: 1.65;
-    color: #e5e7eb;
+    color: {{ $secondaryColor }};
 }
 
 .doc-title {
     font-size: 34px;
     font-weight: bold;
-    color: #111827;
+    color: {{ $primaryColor }};
     letter-spacing: 1px;
-    border-bottom: 3px solid #111827;
+    border-bottom: 3px solid {{ $primaryColor }};
     padding-bottom: 8px;
     margin-bottom: 16px;
 }
@@ -223,13 +247,13 @@ table {
 }
 
 .meta td {
-    border: 1px solid #9ca3af;
+    border: 1px solid {{ $lightBgColor }};
     padding: 8px 10px;
     font-size: 12px;
 }
 
 .bill-box {
-    border: 2px solid #374151;
+    border: 2px solid {{ $borderColor }};
     padding: 12px 14px;
     margin-top: 16px;
     margin-bottom: 16px;
@@ -243,7 +267,7 @@ table {
 }
 
 .items th {
-    background: #111827;
+    background: {{ $primaryColor }};
     color: #fff;
     padding: 9px 8px;
     font-size: 12px;
@@ -251,7 +275,7 @@ table {
 }
 
 .items td {
-    border-bottom: 1px solid #d1d5db;
+    border-bottom: 1px solid {{ $secondaryColor }};
     padding: 8px;
     vertical-align: top;
 }
@@ -262,7 +286,7 @@ table {
 
 .desc {
     font-size: 10px;
-    color: #6b7280;
+    color: {{ $mutedColor }};
     margin-top: 3px;
 }
 
@@ -270,16 +294,16 @@ table {
     width: 48%;
     margin-left: auto;
     margin-top: 18px;
-    border: 2px solid #374151;
+    border: 2px solid {{ $borderColor }};
 }
 
 .summary td {
     padding: 8px 10px;
-    border-bottom: 1px solid #9ca3af;
+    border-bottom: 1px solid {{ $lightBgColor }};
 }
 
 .summary .total td {
-    background: #111827;
+    background: {{ $primaryColor }};
     color: #fff;
     font-weight: bold;
     font-size: 14px;
@@ -287,6 +311,11 @@ table {
 
 .words {
     margin-top: 20px;
+    line-height: 1.6;
+}
+
+.terms {
+    margin-top: 18px;
     line-height: 1.6;
 }
 
@@ -300,6 +329,13 @@ table {
     margin-bottom: 6px;
 }
 
+.sign-line {
+    border-top: 1px solid {{ $primaryColor }};
+    width: 180px;
+    margin-left: auto;
+    padding-top: 8px;
+}
+
 .no-break {
     page-break-inside: avoid;
 }
@@ -310,24 +346,25 @@ table {
 
 <div class="invoice-wrap">
 
-    {{-- LEFT SIDEBAR --}}
     <div class="sidebar">
 
-        <div class="logo">
-            @if(!empty($logo))
-                <img src="{{ $logo }}" alt="Logo">
-            @endif
-        </div>
+        @if($showLogo)
+            <div class="logo">
+                @if(!empty($logo))
+                    <img src="{{ $logo }}" alt="Logo">
+                @endif
+            </div>
+        @endif
 
         <div class="company">
-            {{ $b->name ?? 'Real Victory Groups' }}
+            {{ $b->name ?? $b->business_name ?? 'Real Victory Groups' }}
         </div>
 
         <div class="line"></div>
 
         <div class="side-title">Address</div>
         <div class="side-text">
-            {{ $b_addr }}
+            {{ $b_addr ?: '-' }}
             @if($b_city), {{ $b_city }} @endif
             @if($b_state), {{ $b_state }} @endif
             @if($b_pin) - {{ $b_pin }} @endif
@@ -349,7 +386,6 @@ table {
 
     </div>
 
-    {{-- RIGHT CONTENT --}}
     <div class="content">
 
         <div class="doc-title">
@@ -399,9 +435,9 @@ table {
             </thead>
 
             <tbody>
-                @foreach($items as $it)
+                @forelse($items as $it)
                     @php
-                        $name = $it->item->name ?? $it->name ?? 'service';
+                        $name = $it->item->name ?? $it->name ?? 'Service';
                         $desc = $it->description ?? '';
                         $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
                         $qty  = (float)($it->quantity ?? 1);
@@ -411,16 +447,18 @@ table {
                         $lineBase = (float)($it->line_base ?? ($rate * $qty));
 
                         $lineTax = (float)($it->tax_amount ?? 0);
+
                         if ($lineTax <= 0 && !empty($it->tax_percent)) {
                             $lineTax = round(($lineBase * (float)$it->tax_percent) / 100, 2);
                         }
 
                         $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
+
                         if ($lineTotal <= 0) {
                             $lineTotal = $lineBase + $lineTax;
                         }
 
-                        if($single){
+                        if ($single) {
                             $lineBase  = $taxable;
                             $lineTax   = $finalTax;
                             $lineTotal = $finalTotal;
@@ -440,7 +478,11 @@ table {
                         <td class="text-right">{{ $fmt2($lineTax) }}</td>
                         <td class="text-right">{{ $fmt2($lineTotal) }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="6" style="text-align:center;">No items found</td>
+                    </tr>
+                @endforelse
             </tbody>
         </table>
 
@@ -466,6 +508,34 @@ table {
                 </tr>
             @endif
 
+            @if(!empty($discount_total) && (float)$discount_total > 0)
+                <tr>
+                    <td>Discount</td>
+                    <td class="text-right">₹ {{ $fmt2($discount_total) }}</td>
+                </tr>
+            @endif
+
+            @if(!empty($charges_total) && (float)$charges_total > 0)
+                <tr>
+                    <td>Additional Charges</td>
+                    <td class="text-right">₹ {{ $fmt2($charges_total) }}</td>
+                </tr>
+            @endif
+
+            @if(!empty($tcs_amount) && (float)$tcs_amount > 0)
+                <tr>
+                    <td>TCS @if(!empty($tcs_percent)) ({{ $fmt2($tcs_percent) }}%) @endif</td>
+                    <td class="text-right">₹ {{ $fmt2($tcs_amount) }}</td>
+                </tr>
+            @endif
+
+            @if(!empty($less_amount) && (float)$less_amount > 0)
+                <tr>
+                    <td>Less Amount</td>
+                    <td class="text-right">₹ {{ $fmt2($less_amount) }}</td>
+                </tr>
+            @endif
+
             <tr>
                 <td>Round Off</td>
                 <td class="text-right">₹ {{ $fmt2($inv->round_off ?? 0) }}</td>
@@ -487,15 +557,26 @@ table {
             {{ inr_words($finalTotal) }} Only
         </div>
 
-        <div class="sign no-break">
-            @if(!empty($invoiceSignatureUrl))
-                <img src="{{ $invoiceSignatureUrl }}" alt="Signature"><br>
-            @endif
-
-            <div style="border-top:1px solid #111827; width:180px; margin-left:auto; padding-top:8px;">
-                Authorised Signatory
+        @if($showTerms && !empty($termsText))
+            <div class="terms no-break">
+                <strong>Terms & Conditions:</strong><br>
+                {!! nl2br(e($termsText)) !!}
             </div>
-        </div>
+        @endif
+
+        @if($showSignature)
+            <div class="sign no-break">
+                @if(!empty($invoiceSignatureUrl))
+                    <img src="{{ $invoiceSignatureUrl }}" alt="Signature"><br>
+                @elseif(!empty($sign))
+                    <img src="{{ $sign }}" alt="Signature"><br>
+                @endif
+
+                <div class="sign-line">
+                    Authorised Signatory
+                </div>
+            </div>
+        @endif
 
     </div>
 </div>

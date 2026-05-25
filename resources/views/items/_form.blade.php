@@ -294,13 +294,47 @@
                     </div>
                 @endif
 
-                @if($showField('making_charge'))
+                {{-- @if($showField('making_charge'))
                     <div id="makingChargeBlock" class="hidden">
                         <label class="block text-sm font-medium mb-1">Making Charge (%)</label>
                         <input id="makingChargeField" type="number" step="0.01" min="0" max="100" name="making_charge"
                                value="{{ old('making_charge', $item->making_charge ?? '') }}"
                                class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
                                placeholder="Example: 10">
+                    </div>
+                @endif --}}
+
+                @if($showField('making_charge'))
+                    <div id="makingChargeBlock" class="hidden md:col-span-2">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Making Charge Type</label>
+                                <select id="makingChargeType" name="making_charge_type"
+                                        class="rv-select mt-1 w-full border rounded px-3 py-2">
+                                    <option value="percentage"
+                                        @selected(old('making_charge_type', $item->making_charge_type ?? 'percentage') === 'percentage')>
+                                        Percent (%)
+                                    </option>
+                                    <option value="fixed"
+                                        @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'fixed')>
+                                        Fixed Amount (₹)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label id="makingChargeLabel" class="block text-sm font-medium mb-1">
+                                    Making Charge (%)
+                                </label>
+                                <input id="makingChargeField" type="number" step="0.01" min="0"
+                                    name="making_charge"
+                                    value="{{ old('making_charge', $item->making_charge ?? '') }}"
+                                    class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                                    placeholder="Example: 10">
+                            </div>
+
+                        </div>
                     </div>
                 @endif
 
@@ -483,4 +517,26 @@
 
         toggleByType(typeSelect?.value || 'product');
     })();
+</script>
+
+<script>
+    const makingChargeType = document.getElementById('makingChargeType');
+const makingChargeLabel = document.getElementById('makingChargeLabel');
+
+function updateMakingChargeUI() {
+    if (!makingChargeType || !makingChargeField || !makingChargeLabel) return;
+
+    if (makingChargeType.value === 'fixed') {
+        makingChargeLabel.innerText = 'Making Charge (₹)';
+        makingChargeField.placeholder = 'Example: 500';
+        makingChargeField.removeAttribute('max');
+    } else {
+        makingChargeLabel.innerText = 'Making Charge (%)';
+        makingChargeField.placeholder = 'Example: 10';
+        makingChargeField.setAttribute('max', '100');
+    }
+}
+
+makingChargeType?.addEventListener('change', updateMakingChargeUI);
+updateMakingChargeUI();
 </script>

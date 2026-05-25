@@ -1,11 +1,5 @@
-{{-- ==========================================
-   FILE: resources/views/invoices/edit_kapoor_style.blade.php
-   NOTE: SAME as create_kapoor_style.blade.php (full copy)
-   FIX: ✅ Edit page par Client + Items selected show honge (Alpine select binding fix)
-========================================== --}}
 <x-layouts.app :title="__('Edit Sales Invoice')">
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4" style="margin: -35px">
-
         <style>
             .invoice-table th,
             .invoice-table td {
@@ -72,13 +66,6 @@
 
                     <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
                     <div class="flex gap-2">
-{{--                        <select name="client_id" x-model="clientId"--}}
-{{--                                class="flex-1 border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">--}}
-{{--                            <option value="">-- Select Client --</option>--}}
-{{--                            <template x-for="c in clients" :key="c.id">--}}
-{{--                                <option :value="String(c.id)" x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></option>--}}
-{{--                            </template>--}}
-{{--                        </select>--}}
                         <div class="flex-1 relative"
                              @click.outside="closeClientDD()">
 
@@ -722,10 +709,6 @@
             <input type="hidden" id="items_json" name="items_json">
 
             <div class="text-right">
-{{--                <button @click="$refs.form.requestSubmit()"--}}
-{{--                        class="mt-3 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">--}}
-{{--                    Update--}}
-{{--                </button>--}}
                 <button type="button"
                         @click="submitForm()"
                         :disabled="saving"
@@ -795,11 +778,6 @@
                             <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Address</label>
                             <input x-model="newClient.address" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="Full address">
                         </div>
-
-{{--                        <div class="md:col-span-2">--}}
-{{--                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">GSTIN</label>--}}
-{{--                            <input x-model="newClient.gstin" class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700" placeholder="optional">--}}
-{{--                        </div>--}}
                         <div class="md:col-span-2">
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Client GSTIN (Optional)</label>
 
@@ -1020,6 +998,7 @@
             hsn: '',
             quantity: 1,
 
+            making_charge_type: 'percent',
             making_rate: 0,
             gold_purity: null,
             silver_purity: null,
@@ -1059,10 +1038,6 @@
                 if (String(v).trim() === '') return false;
                 return Number(v) > 0 || isNaN(Number(v));
             },
-
-            // showItemField(row, field) {
-            //     return row.item_type === 'product' && this.hasValue(row[field]);
-            // },
 
             showItemField(field) {
                 return showAllowedField(field);
@@ -1466,6 +1441,7 @@
                 r.diamond_charge = n(it.diamond_charge, 0);
 
                 r.making_rate = n(it.making_charge ?? it.making_rate, 0);
+                r.making_charge_type = it.making_charge_type || 'percent';
 
                 r.gold_rate = this.findMetalRate('gold', r.gold_purity);
                 r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
@@ -1501,35 +1477,6 @@
 
                 this.calc();
             },
-
-            // onAmountEdit(row) {
-            //     if (!row) return;
-
-            //     const total = n(row.manual_amount, 0);
-            //     row.amount_mode = total > 0 ? 'manual' : 'auto';
-
-            //     if (row.amount_mode === 'manual') {
-            //         const qty = Math.max(1, n(row.quantity, 1));
-            //         const pct = n(row.tax_percent, 0);
-
-            //         // tax reverse
-            //         const baseAfterTax = pct > 0 ? total / (1 + pct / 100) : total;
-
-            //         if (row.item_type === 'service') {
-            //             row.service_rate = n((baseAfterTax / qty).toFixed(2), 0);
-            //         } else {
-            //             // making reverse
-            //             const makingPercent = n(row.making_rate, 0);
-            //             const baseBeforeMaking = makingPercent > 0
-            //                 ? baseAfterTax / (1 + makingPercent / 100)
-            //                 : baseAfterTax;
-
-            //             row.fixed_price = n((baseBeforeMaking / qty).toFixed(2), 0);
-            //         }
-            //     }
-
-            //     this.calc();
-            // },
 
             onAmountEdit(row) {
                 if (!row) return;
@@ -1591,11 +1538,18 @@
                     ? n(r.fixed_price, 0)
                     : metalBase;
 
-                const makingPercent = showAllowedField('making_charge')
-                    ? n(r.making_rate, 0)
-                    : 0;
+                let makingAmount = 0;
 
-                const makingAmount = basePrice * (makingPercent / 100);
+                if (showAllowedField('making_charge')) {
+                    const makingType = r.making_charge_type || 'percent';
+                    const makingRate = n(r.making_rate, 0);
+
+                    if (makingType === 'fixed') {
+                        makingAmount = makingRate;
+                    } else {
+                        makingAmount = productBase * (makingRate / 100);
+                    }
+                }
 
                 return Math.max(0, n(((basePrice + makingAmount) * qty).toFixed(2), 0));
             },
@@ -1879,6 +1833,7 @@
                     r.tax_percent = n(old.tax_percent, master?.tax_rate ?? 0);
 
                     r.making_rate = n(old.making_rate ?? old.making_charge, 0);
+                    r.making_charge_type = old.making_charge_type || master?.making_charge_type || 'percent';
 
                     r.gold_purity = old.gold_purity || master?.gold_purity || null;
                     r.silver_purity = old.silver_purity || master?.silver_purity || null;
@@ -1945,8 +1900,10 @@
                     hsn: r.hsn || '',
                     quantity: Math.max(1, n(r.quantity, 1)),
 
+                    making_charge_type: r.making_charge_type || 'percent',
                     making_rate: n(r.making_rate),
                     making_charge: n(r.making_rate),
+                    making_charge_type: r.making_charge_type || 'percent',
 
                     gold_purity: r.gold_purity || null,
                     silver_purity: r.silver_purity || null,

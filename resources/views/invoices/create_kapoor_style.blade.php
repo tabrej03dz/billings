@@ -1,9 +1,6 @@
-
 <x-layouts.app :title="__('Create Sales Invoice')">
-
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl  px-3 sm:px-6 py-4"
         style="margin: -35px">
-
         <style>
             .invoice-table th,
             .invoice-table td {
@@ -19,7 +16,6 @@
                 font-size: 12px;
             }
         </style>
-
         {{-- errors --}}
         @if ($errors->any())
             <div class="p-3 rounded border border-red-300 bg-red-50 text-red-700">
@@ -40,7 +36,6 @@
         <script type="application/json" id="allowed-fields-json">
             {!! json_encode($allowedFields ?? []) !!}
         </script>
-
         <div class="flex items-center justify-between bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Create Sales Invoice</h1>
             <button type="button" @click="submitForm()" :disabled="saving"
@@ -57,7 +52,6 @@
         <form x-ref="form" method="POST" action="{{ route('invoices.store', $docType) }}"
             enctype="multipart/form-data" @submit.prevent="beforeSubmit">
             @csrf
-
             {{-- TOP PANELS --}}
             <div class="grid lg:grid-cols-4 gap-4">
 
@@ -454,9 +448,6 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-neutral-300">Terms and
                             Conditions</label>
-                        {{-- <textarea name="terms" rows="4"
-                            class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm">{{ old('terms', $defaultTerms) }}</textarea> --}}
-
                             <textarea name="terms" rows="4" x-model="hdr.terms"
                                 class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-gray-900 dark:text-neutral-100 text-sm"></textarea>
                     </div>
@@ -1202,9 +1193,6 @@
     </div>
 
     <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
-
-
-
     <script>
 
         function invoiceForm() {
@@ -1361,6 +1349,7 @@
                 hsn: '',
                 quantity: 1,
 
+                making_charge_type: 'percent',
                 making_rate: 0,
                 gold_purity: null,
                 silver_purity: null,
@@ -1467,10 +1456,6 @@
                     if (String(v).trim() === '') return false;
                     return Number(v) > 0 || isNaN(Number(v));
                 },
-
-                // showItemField(row, field) {
-                //     return row.item_type === 'product' && this.hasValue(row[field]);
-                // },
 
 
                 metalRates: METAL_RATES,
@@ -2091,6 +2076,7 @@
                     r.gemstone_charge = n(it.gemstone_charge ?? it.stone_charge ?? 0, 0);
                     r.diamond_charge = n(it.diamond_charge ?? 0, 0);
 
+                    r.making_charge_type = it.making_charge_type || 'percent';
                     r.making_rate = n(it.making_charge ?? it.making_rate, 0);
                     r.gold_rate = this.findMetalRate('gold', r.gold_purity);
                     r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
@@ -2133,48 +2119,6 @@
                     this.calc();
                 },
 
-                // onAutoChange(r) {
-                //     if (r.amount_mode !== 'manual') {
-                //         r.manual_amount = this.lineAmount(r);
-                //     } else if (r.item_type === 'service') {
-                //         const total = n(r.manual_amount, 0);
-                //         const qty = Math.max(1, n(r.quantity, 1));
-                //         const pct = n(r.tax_percent, 0);
-                //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                //         r.service_rate = n((base / qty).toFixed(2), 0);
-                //     }
-
-                //     this.calc();
-                // },
-
-                // onAutoChange(r) {
-                //     if (r.amount_mode !== 'manual') {
-                //         r.manual_amount = this.lineAmount(r);
-                //     } else {
-                //         const total = n(r.manual_amount, 0);
-                //         const qty = Math.max(1, n(r.quantity, 1));
-                //         const pct = n(r.tax_percent, 0);
-                //         const base = (pct > 0) ? (total / (1 + (pct / 100))) : total;
-                //         const perUnit = n((base / qty).toFixed(2), 0);
-
-                //         if (r.item_type === 'service') {
-                //             r.service_rate = perUnit;
-                //         } else {
-                //             r.fixed_price = perUnit;
-                //         }
-                //     }
-
-                //     this.calc();
-                // },
-
-                // onAutoChange(r) {
-                //     if (r.amount_mode !== 'manual') {
-                //         r.manual_amount = this.lineAmount(r);
-                //     }
-
-                //     this.calc();
-                // },
-
                 onAutoChange(r) {
                     if (r.amount_mode !== 'manual') {
                         r.manual_amount = this.lineAmount(r);
@@ -2216,13 +2160,6 @@
                     const gemstoneCharge = n(r.gemstone_charge, 0);
                     const diamondCharge = n(r.diamond_charge, 0);
 
-                    // const metalBase = goldAmt + silvAmt + gemstoneCharge + diamondCharge;
-
-                    // const productBase = n(r.fixed_price, 0) > 0
-                    //     ? n(r.fixed_price, 0)
-                    //     : metalBase;
-
-
                     const extraCharges = gemstoneCharge + diamondCharge;
 
                     const productBase =
@@ -2232,11 +2169,17 @@
                         extraCharges;
 
                     // ✅ making_rate percentage hai.
-                    // Example: productBase 10000, making_rate 10 => makingAmount 1000
-                    const makingPercent = n(r.making_rate, 0);
-                    const makingAmount = productBase * (makingPercent / 100);
+                    const makingType = r.making_charge_type || 'percent';
+                    const makingRate = n(r.making_rate, 0);
 
-                    // ✅ Pehle base + making %, phir lineTax() tax lagayega.
+                    let makingAmount = 0;
+
+                    if (makingType === 'fixed') {
+                        makingAmount = makingRate;
+                    } else {
+                        makingAmount = productBase * (makingRate / 100);
+                    }
+
                     return Math.max(0, n(((productBase + makingAmount) * qty).toFixed(2), 0));
                 },
 
@@ -2737,8 +2680,9 @@
                         hsn: r.hsn || '',
                         quantity: Math.max(1, n(r.quantity, 1)),
 
-                        making_rate: n(r.making_rate), // percentage
-                        making_charge: n(r.making_rate), // ✅ backend column compatibility
+                        making_charge_type: r.making_charge_type || 'percent',
+                        making_rate: n(r.making_rate),
+                        making_charge: n(r.making_rate),
                         gold_purity: r.gold_purity || null,
                         silver_purity: r.silver_purity || null,
                         gold_rate: n(r.gold_rate),
@@ -2756,10 +2700,6 @@
 
                         discount: 0,
                         tax_percent: n(r.tax_percent),
-
-                        // rate: this.lineBase(r),
-                        // tax_amount: this.lineTax(r),
-                        // amount: this.lineAmount(r),
 
                         amount_mode: r.amount_mode || 'auto',
                         manual_amount: n(r.manual_amount),
@@ -2785,20 +2725,10 @@
                         const ok = confirm("⚠️ GSTIN invalid lag raha hai.\n\n" + res.message + "\n\nPhir bhi Save karna hai?");
                         if (!ok) return;
                     }
-
                     this.saving = true;
                     this.$refs.form.requestSubmit();
                 },
-
-                // ---------- COMPAT ----------
-                // blankRow() {
-                //     return rowTemplate();
-                // },
-
-                // scrollItemDDIntoView() {},
             };
         }
-
     </script>
-
 </x-layouts.app>
