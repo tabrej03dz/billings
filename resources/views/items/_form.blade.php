@@ -193,6 +193,7 @@
                                 <option value="">Select Gold Purity</option>
                                 <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
                                 <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
+                                <option value="20K (833)" @selected(old('gold_purity', $item->gold_purity ?? '') == '20K (833)')>20K (833)</option>
                                 <option value="18K (750)" @selected(old('gold_purity', $item->gold_purity ?? '') == '18K (750)')>18K (750)</option>
                                 <option value="14K (585)" @selected(old('gold_purity', $item->gold_purity ?? '') == '14K (585)')>14K (585)</option>
                             </select>
