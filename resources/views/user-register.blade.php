@@ -229,7 +229,7 @@
 
                         <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6">
                             @csrf
-
+                            <input type="hidden" name="payment_done" value="{{ request('payment_done', 0) }}">
                             <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
                             <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
                             <input type="hidden" name="current_step" id="current_step" value="{{ old('current_step', 1) }}">
@@ -496,9 +496,9 @@
 
                                     <label for="terms" class="text-xs sm:text-sm text-slate-600 leading-6">
                                         I agree to the
-                                        <a href="#" class="font-bold text-slate-900 hover:text-blue-600">Terms & Conditions</a>
+                                        <a href="{{ route('terms-conditions')}}" class="font-bold text-slate-900 hover:text-blue-600">Terms & Conditions</a>
                                         and
-                                        <a href="#" class="font-bold text-slate-900 hover:text-blue-600">Privacy Policy</a>.
+                                        <a href="{{ route('privacy-policy') }}" class="font-bold text-slate-900 hover:text-blue-600">Privacy Policy</a>.
                                     </label>
                                 </div>
                             </div>

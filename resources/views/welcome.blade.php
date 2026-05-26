@@ -393,7 +393,7 @@
                                     Start Free Trial
                                 </a>
 
-                                <a href="{{ route('user.register', ['plan_id' => $plan->id, 'trial' => 0]) }}"
+                                <a href="{{ route('plan.payment', ['plan' => $plan->id, 'trial' => 0]) }}"
                                     class="block text-center rounded-full py-4 font-black
                                     {{ $isPopular ? 'bg-white text-mvBlue' : 'bg-mvDark text-white' }}">
                                     Start Plan

@@ -50,62 +50,148 @@ class PlanPaymentController extends Controller
         ]);
     }
 
+    // public function success(Request $request, Plan $plan)
+    // {
+    //     $request->validate([
+    //         'razorpay_order_id' => 'required',
+    //         'razorpay_payment_id' => 'required',
+    //         'razorpay_signature' => 'required',
+    //     ]);
+
+    //     $signature = hash_hmac(
+    //         'sha256',
+    //         $request->razorpay_order_id . '|' . $request->razorpay_payment_id,
+    //         config('services.razorpay.secret')
+    //     );
+
+    //     if ($signature !== $request->razorpay_signature) {
+    //         return back()->with('error', 'Payment verification failed.');
+    //     }
+
+    //     $user = Auth::user();
+
+    //     $plan = Plan::with('permissions')->findOrFail($plan->id);
+
+    //     $businessId = $user->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $user->businesses()->pluck('businesses.id')->first();
+
+    //     if (!$businessId) {
+    //         return back()->with('error', 'Business not found. Please select business first.');
+    //     }
+
+    //     DB::transaction(function () use ($businessId, $user, $plan) {
+    //         UserPlan::where('business_id', $businessId)
+    //             ->where('status', 1)
+    //             ->update([
+    //                 'status' => 0,
+    //             ]);
+
+    //         UserPlan::create([
+    //             'business_id' => $businessId,
+    //             'user_id'     => $user->id,
+    //             'plan_id'     => $plan->id,
+    //             'start_date'  => Carbon::today(),
+    //             'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
+    //             'status'      => 1,
+    //         ]);
+
+    //         $permissions = $plan->permissions->pluck('name')->toArray();
+
+    //         $user->syncPermissions($permissions);
+
+    //         app(PermissionRegistrar::class)->forgetCachedPermissions();
+    //     });
+
+    //     return redirect()
+    //         ->route('bill-templates.choose')
+    //         ->with('success', 'Payment successful. Plan activated and permissions assigned.');
+    // }
+
     public function success(Request $request, Plan $plan)
-    {
-        $request->validate([
-            'razorpay_order_id' => 'required',
-            'razorpay_payment_id' => 'required',
-            'razorpay_signature' => 'required',
+{
+    $request->validate([
+        'razorpay_order_id' => 'required',
+        'razorpay_payment_id' => 'required',
+        'razorpay_signature' => 'required',
+    ]);
+
+    $signature = hash_hmac(
+        'sha256',
+        $request->razorpay_order_id . '|' . $request->razorpay_payment_id,
+        config('services.razorpay.secret')
+    );
+
+    if (! hash_equals($signature, $request->razorpay_signature)) {
+        return back()->with('error', 'Payment verification failed.');
+    }
+
+    $plan = Plan::with('permissions')->findOrFail($plan->id);
+
+    session([
+        'paid_plan_id' => $plan->id,
+        'paid_razorpay_order_id' => $request->razorpay_order_id,
+        'paid_razorpay_payment_id' => $request->razorpay_payment_id,
+        'paid_razorpay_signature' => $request->razorpay_signature,
+        'payment_done' => true,
+    ]);
+
+    if (! Auth::check()) {
+        return redirect()
+            ->route('user.register', [
+                'plan_id' => $plan->id,
+                'trial' => 0,
+                'payment_done' => 1,
+            ])
+            ->with('success', 'Payment successful. Please create your account.');
+    }
+
+    $user = Auth::user();
+
+    $businessId = $user->current_business_id
+        ?? session('active_business_id')
+        ?? $user->businesses()->pluck('businesses.id')->first();
+
+    if (! $businessId) {
+        return redirect()
+            ->route('businesses.create')
+            ->with('success', 'Payment successful. Now add your business details.');
+    }
+
+    DB::transaction(function () use ($businessId, $user, $plan) {
+        UserPlan::where('business_id', $businessId)
+            ->where('status', 1)
+            ->update(['status' => 0]);
+
+        UserPlan::create([
+            'business_id' => $businessId,
+            'user_id'     => $user->id,
+            'plan_id'     => $plan->id,
+            'start_date'  => Carbon::today(),
+            'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
+            'status'      => 1,
         ]);
 
-        $signature = hash_hmac(
-            'sha256',
-            $request->razorpay_order_id . '|' . $request->razorpay_payment_id,
-            config('services.razorpay.secret')
-        );
+        $permissions = $plan->permissions->pluck('name')->toArray();
 
-        if ($signature !== $request->razorpay_signature) {
-            return back()->with('error', 'Payment verification failed.');
-        }
-
-        $user = Auth::user();
-
-        $plan = Plan::with('permissions')->findOrFail($plan->id);
-
-        $businessId = $user->current_business_id
-            ?? session('active_business_id')
-            ?? $user->businesses()->pluck('businesses.id')->first();
-
-        if (!$businessId) {
-            return back()->with('error', 'Business not found. Please select business first.');
-        }
-
-        DB::transaction(function () use ($businessId, $user, $plan) {
-            UserPlan::where('business_id', $businessId)
-                ->where('status', 1)
-                ->update([
-                    'status' => 0,
-                ]);
-
-            UserPlan::create([
-                'business_id' => $businessId,
-                'user_id'     => $user->id,
-                'plan_id'     => $plan->id,
-                'start_date'  => Carbon::today(),
-                'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
-                'status'      => 1,
-            ]);
-
-            $permissions = $plan->permissions->pluck('name')->toArray();
-
+        if (! empty($permissions)) {
             $user->syncPermissions($permissions);
+        }
 
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
-        });
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    });
 
-        return redirect()
-            ->route('bill-templates.choose')
-            ->with('success', 'Payment successful. Plan activated and permissions assigned.');
-    }
+    session()->forget([
+        'paid_plan_id',
+        'paid_razorpay_order_id',
+        'paid_razorpay_payment_id',
+        'paid_razorpay_signature',
+        'payment_done',
+    ]);
+
+    return redirect()
+        ->route('bill-templates.choose')
+        ->with('success', 'Payment successful. Plan activated and permissions assigned.');
+}
 
 }
