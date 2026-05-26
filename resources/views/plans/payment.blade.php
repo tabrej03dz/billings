@@ -158,12 +158,87 @@ document.getElementById('payBtn').onclick = function () {
             theme: {
                 color: "#2624CC"
             }
+//         };
+
+//         let rzp = new Razorpay(options);
+//         rzp.open();
+//     });
+// };
+// </script>
+
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+const payBtn = document.getElementById('payBtn');
+
+payBtn.addEventListener('click', async function () {
+    payBtn.disabled = true;
+    payBtn.innerText = 'Please wait...';
+
+    try {
+        const response = await fetch("{{ route('plans.payment.order', $plan->id) }}", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.message || 'Order create nahi ho paaya.');
+            console.log('Order Error:', data);
+            return;
+        }
+
+        if (!data.key || !data.order_id || !data.amount) {
+            alert('Razorpay order data incomplete hai.');
+            console.log('Invalid Razorpay Data:', data);
+            return;
+        }
+
+        const options = {
+            key: data.key,
+            amount: data.amount,
+            currency: "INR",
+            name: "MyVictory Billing",
+            description: "MyVictory Billing Plan",
+            order_id: data.order_id,
+
+            handler: function (response) {
+                document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                document.getElementById('razorpay_signature').value = response.razorpay_signature;
+
+                document.getElementById('paymentForm').submit();
+            },
+
+            prefill: {
+                name: "{{ auth()->user()->name ?? '' }}",
+                email: "{{ auth()->user()->email ?? '' }}"
+            },
+
+            theme: {
+                color: "#2624CC"
+            }
         };
 
-        let rzp = new Razorpay(options);
+        const rzp = new Razorpay(options);
         rzp.open();
-    });
-};
+
+    } catch (error) {
+        alert('Payment start nahi ho paaya. Console check karo.');
+        console.error('Payment JS Error:', error);
+    } finally {
+        payBtn.disabled = false;
+        payBtn.innerText = "Pay ₹{{ number_format($plan->price, 2) }}";
+    }
+});
 </script>
 
 @endsection
