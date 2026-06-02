@@ -233,6 +233,7 @@
                             <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
                             <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
                             <input type="hidden" name="current_step" id="current_step" value="{{ old('current_step', 1) }}">
+                            
 
                             <div class="form-step space-y-5" data-step="1">
                                 <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
@@ -244,23 +245,34 @@
 
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                                    <input type="text" name="name" value="{{ old('name') }}" required
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                           placeholder="Enter your full name">
+                                    <input type="text" name="name"
+                                        value="{{ old('name', session('paid_name')) }}"
+                                        required
+                                        class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                        placeholder="Enter your full name">
                                 </div>
 
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
 
                                     <div class="flex flex-col sm:flex-row gap-3">
-                                        <input type="email" name="email" id="email" value="{{ old('email') }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Enter your email address">
+                                        <input type="email" name="email" id="email"
+                                            value="{{ old('email', session('paid_email')) }}"
+                                            required
+                                            class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                            placeholder="Enter your email address">
 
-                                        <button type="button" id="sendOtpBtn"
+                                        {{-- <button type="button" id="sendOtpBtn"
                                                 class="shrink-0 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-yellow-300 transition">
                                             Send OTP
-                                        </button>
+                                        </button> --}}
+                                        @if(!session('email_verified'))
+                                            {{-- Send OTP + Verify OTP fields yahan rahenge --}}
+                                        @else
+                                            <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 font-bold">
+                                                Email already verified via successful payment.
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <p id="otpStatus" class="mt-2 text-xs text-slate-500"></p>
@@ -280,7 +292,7 @@
                                         </button>
                                     </div>
 
-                                    <input type="hidden" id="emailVerified" value="0">
+                                    <input type="hidden" id="emailVerified" value="{{ session('payment_done') && session('paid_email') ? 1 : 0 }}">
                                     <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-500"></p>
                                 </div>
 

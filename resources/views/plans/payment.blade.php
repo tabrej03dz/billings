@@ -100,6 +100,28 @@
                     </div>
                 </div>
 
+                @if((int) request('trial', 0) === 0 && !auth()->check())
+                    <div class="mt-8 space-y-4">
+                        <div>
+                            <label class="block text-sm font-black text-slate-700 mb-2">
+                                Name
+                            </label>
+                            <input type="text" id="customer_name"
+                                class="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold focus:outline-none focus:ring-2 focus:ring-mvBlue"
+                                placeholder="Enter your name" required>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-black text-slate-700 mb-2">
+                                Email
+                            </label>
+                            <input type="email" id="customer_email"
+                                class="w-full rounded-2xl border border-slate-300 px-5 py-4 font-bold focus:outline-none focus:ring-2 focus:ring-mvBlue"
+                                placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                @endif
+
                 <button id="payBtn"
                     class="mt-8 w-full rounded-full brand-gradient text-white py-4 font-black shadow-xl hover:opacity-90">
                     Pay ₹{{ number_format($plan->price, 2) }}
@@ -118,6 +140,9 @@
     <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
     <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
     <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+
+    <input type="hidden" name="name" id="payment_name">
+    <input type="hidden" name="email" id="payment_email">
 </form>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
@@ -142,17 +167,42 @@ document.getElementById('payBtn').onclick = function () {
             description: "MyVictory Billing Plan",
             order_id: data.order_id,
 
+            // handler: function (response) {
+            //     document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+            //     document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+            //     document.getElementById('razorpay_signature').value = response.razorpay_signature;
+
+            //     const customerName = document.getElementById('customer_name')?.value || "{{ auth()->user()->name ?? '' }}";
+            //     const customerEmail = document.getElementById('customer_email')?.value || "{{ auth()->user()->email ?? '' }}";
+
+            //     document.getElementById('payment_name').value = customerName;
+            //     document.getElementById('payment_email').value = customerEmail;
+
+            //     document.getElementById('paymentForm').submit();
+            // },
+
             handler: function (response) {
                 document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
                 document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
                 document.getElementById('razorpay_signature').value = response.razorpay_signature;
 
+                document.getElementById('payment_name').value =
+                    document.getElementById('customer_name')?.value || '';
+
+                document.getElementById('payment_email').value =
+                    document.getElementById('customer_email')?.value || '';
+
                 document.getElementById('paymentForm').submit();
             },
 
+            // prefill: {
+            //     name: "{{ auth()->user()->name ?? '' }}",
+            //     email: "{{ auth()->user()->email ?? '' }}"
+            // },
+
             prefill: {
-                name: "{{ auth()->user()->name ?? '' }}",
-                email: "{{ auth()->user()->email ?? '' }}"
+                name: document.getElementById('customer_name')?.value || "{{ auth()->user()->name ?? '' }}",
+                email: document.getElementById('customer_email')?.value || "{{ auth()->user()->email ?? '' }}"
             },
 
             theme: {
@@ -214,6 +264,12 @@ payBtn.addEventListener('click', async function () {
                 document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
                 document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
                 document.getElementById('razorpay_signature').value = response.razorpay_signature;
+
+                document.getElementById('payment_name').value =
+                document.getElementById('customer_name')?.value || '';
+
+                document.getElementById('payment_email').value =
+                document.getElementById('customer_email')?.value || '';
 
                 document.getElementById('paymentForm').submit();
             },

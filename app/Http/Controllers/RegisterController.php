@@ -603,6 +603,8 @@ public function store(Request $request)
                 'paid_razorpay_payment_id',
                 'paid_razorpay_signature',
                 'payment_done',
+                'paid_name',
+                'paid_email',
             ]);
 
             return redirect()->route('bill-templates.choose')

@@ -299,4 +299,25 @@ class PlanController extends Controller
 
         return $slug;
     }
+
+
+
+
+
+
+
+
+    public function myPlans(Request $request)
+    {
+        $userPlans = UserPlan::with(['plan', 'business'])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User plans fetched successfully.',
+            'data' => $userPlans,
+        ]);
+    }
 }

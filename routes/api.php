@@ -210,6 +210,8 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::put('/plans/{id}', [PlanController::class, 'update']);
     Route::delete('/plans/{id}', [PlanController::class, 'destroy']);
 
+    Route::get('/my-plans', [PlanController::class, 'myPlans']);
+
     Route::patch('/plans/{id}/toggle-status', [PlanController::class, 'toggleStatus']);
 
     Route::get('/choose-plans', [PlanController::class, 'choose']);
