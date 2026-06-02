@@ -208,6 +208,7 @@
                                 <th>Price</th>
 
                                 <th x-show="showItemField('making_charge')">Making Charge</th>
+                                <th x-show="showItemField('making_charge')">Making Type</th>
                                 <th x-show="showItemField('gold_purity')">Gold Rate (₹/g)</th>
                                 <th x-show="showItemField('gold_weight')">Gold Wt.(Gm)</th>
                                 <th x-show="showItemField('silver_purity')">Silver Rate (₹/g)</th>
@@ -326,6 +327,22 @@
                                             x-model.number="row.making_rate"
                                             @input="onAutoChange(row)"
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </td>
+
+                                    <td class="px-3 py-2" x-show="showItemField('making_charge')">
+                                        <select x-model="row.making_charge_type"
+                                            @change="onAutoChange(row)"
+                                            class="w-36 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+
+                                            <option value="percentage">Percent (%)</option>
+                                            <option value="fixed">Fixed Amount (₹)</option>
+                                            <option value="per_gram">Per Gram</option>
+                                            <option value="per_product">Whole Product</option>
+                                        </select>
+
+                                        <div class="mt-0.5 text-[10px] text-blue-600"
+                                            x-text="makingTypeLabel(row)">
+                                        </div>
                                     </td>
 
                                     <td class="px-3 py-2" x-show="showItemField('gold_purity')">
@@ -998,7 +1015,8 @@
             hsn: '',
             quantity: 1,
 
-            making_charge_type: 'percent',
+            // making_charge_type: 'percent',
+            making_charge_type: 'percentage',
             making_rate: 0,
             gold_purity: null,
             silver_purity: null,
@@ -1180,6 +1198,17 @@
             pendingInvoiceData: null,
 
             money,
+
+            makingTypeLabel(row) {
+                const type = row.making_charge_type || 'percentage';
+
+                if (type === 'percentage') return 'Percent (%)';
+                if (type === 'fixed') return 'Fixed Amount';
+                if (type === 'per_gram') return '₹ / Gram';
+                if (type === 'per_product') return 'Whole Product';
+
+                return 'Percent (%)';
+            },
 
             csrf() {
                 return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -1441,8 +1470,9 @@
                 r.diamond_charge = n(it.diamond_charge, 0);
 
                 r.making_rate = n(it.making_charge ?? it.making_rate, 0);
-                r.making_charge_type = it.making_charge_type || 'percent';
+                // r.making_charge_type = it.making_charge_type || 'percent';
 
+                r.making_charge_type = it.making_charge_type || 'percentage';
                 r.gold_rate = this.findMetalRate('gold', r.gold_purity);
                 r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
 
@@ -1540,14 +1570,30 @@
 
                 let makingAmount = 0;
 
+                // if (showAllowedField('making_charge')) {
+                //     const makingType = r.making_charge_type || 'percent';
+                //     const makingRate = n(r.making_rate, 0);
+
+                //     if (makingType === 'fixed') {
+                //         makingAmount = makingRate;
+                //     } else {
+                //         makingAmount = productBase * (makingRate / 100);
+                //     }
+                // }
+
                 if (showAllowedField('making_charge')) {
-                    const makingType = r.making_charge_type || 'percent';
+                    const makingType = r.making_charge_type || 'percentage';
                     const makingRate = n(r.making_rate, 0);
 
-                    if (makingType === 'fixed') {
+                    if (makingType === 'percentage') {
+                        makingAmount = basePrice * (makingRate / 100);
+                    } else if (makingType === 'fixed') {
                         makingAmount = makingRate;
-                    } else {
-                        makingAmount = productBase * (makingRate / 100);
+                    } else if (makingType === 'per_gram') {
+                        const totalWeight = n(r.gold_wt, 0) + n(r.silver_wt, 0);
+                        makingAmount = totalWeight * makingRate;
+                    } else if (makingType === 'per_product') {
+                        makingAmount = makingRate;
                     }
                 }
 
@@ -1903,7 +1949,9 @@
                     making_charge_type: r.making_charge_type || 'percent',
                     making_rate: n(r.making_rate),
                     making_charge: n(r.making_rate),
-                    making_charge_type: r.making_charge_type || 'percent',
+                    // making_charge_type: r.making_charge_type || 'percent',
+
+                    making_charge_type: r.making_charge_type || 'percentage',
 
                     gold_purity: r.gold_purity || null,
                     silver_purity: r.silver_purity || null,

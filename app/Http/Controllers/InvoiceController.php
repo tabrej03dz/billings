@@ -2829,10 +2829,23 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             $silverRate = (float) ($row['silver_rate'] ?? 0);
             $makingRate = (float) ($row['making_rate'] ?? 0);
 
-            $makingChargeType = strtolower(trim((string) ($row['making_charge_type'] ?? 'percent')));
+            // $makingChargeType = strtolower(trim((string) ($row['making_charge_type'] ?? 'percent')));
 
-            if (!in_array($makingChargeType, ['fixed', 'percent'], true)) {
-                $makingChargeType = 'percent';
+            // if (!in_array($makingChargeType, ['fixed', 'percent'], true)) {
+            //     $makingChargeType = 'percent';
+            // }
+
+            $makingChargeType = strtolower(trim((string) ($row['making_charge_type'] ?? 'percentage')));
+
+            $allowedMakingTypes = [
+                'percentage',
+                'fixed',
+                'per_gram',
+                'per_product',
+            ];
+
+            if (!in_array($makingChargeType, $allowedMakingTypes, true)) {
+                $makingChargeType = 'percentage';
             }
 
             $gemCt = (float) ($row['gemstone_wt'] ?? 0);
@@ -2862,10 +2875,28 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
             // $makingAmount = round($basePrice * ($makingRate / 100), 2);
 
-            if ($makingChargeType === 'fixed') {
-                $makingAmount = round($makingRate, 2);
-            } else {
+            // if ($makingChargeType === 'fixed') {
+            //     $makingAmount = round($makingRate, 2);
+            // } else {
+            //     $makingAmount = round($basePrice * ($makingRate / 100), 2);
+            // }
+
+
+            if ($makingChargeType === 'percentage') {
                 $makingAmount = round($basePrice * ($makingRate / 100), 2);
+
+            } elseif ($makingChargeType === 'fixed') {
+                $makingAmount = round($makingRate, 2);
+
+            } elseif ($makingChargeType === 'per_gram') {
+                $totalMetalWeight = $goldWt + $silverWt;
+                $makingAmount = round($totalMetalWeight * $makingRate, 2);
+
+            } elseif ($makingChargeType === 'per_product') {
+                $makingAmount = round($makingRate, 2);
+
+            } else {
+                $makingAmount = 0;
             }
 
             $lineBase = round(
@@ -3154,7 +3185,9 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                         'making_charge' => (float) ($row['making_charge'] ?? 0),
 
                         'making_rate' => (float) ($row['making_rate'] ?? 0),
-                        'making_charge_type' => $row['making_charge_type'] ?? 'percent',
+                        // 'making_charge_type' => $row['making_charge_type'] ?? 'percent',
+
+                        'making_charge_type' => $row['making_charge_type'] ?? 'percentage',
 
                         'discount'    => 0,
                         'tax_percent' => (float) ($row['tax_percent'] ?? 0),
@@ -4322,10 +4355,23 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
             $makingRate = (float)($row['making_rate'] ?? 0);
 
-            $makingChargeType = strtolower(trim((string)($row['making_charge_type'] ?? 'percent')));
+            // $makingChargeType = strtolower(trim((string)($row['making_charge_type'] ?? 'percent')));
 
-            if (!in_array($makingChargeType, ['fixed', 'percent'], true)) {
-                $makingChargeType = 'percent';
+            // if (!in_array($makingChargeType, ['fixed', 'percent'], true)) {
+            //     $makingChargeType = 'percent';
+            // }
+
+            $makingChargeType = strtolower(trim((string)($row['making_charge_type'] ?? 'percentage')));
+
+            $allowedMakingTypes = [
+                'percentage',
+                'fixed',
+                'per_gram',
+                'per_product',
+            ];
+
+            if (!in_array($makingChargeType, $allowedMakingTypes, true)) {
+                $makingChargeType = 'percentage';
             }
 
             $gemCt = (float)($row['gemstone_wt'] ?? 0);
@@ -4364,17 +4410,29 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
             $productBase = $fixedPrice > 0 ? $fixedPrice : $metalBase;
 
-            $makingChargeType = strtolower(trim((string)($row['making_charge_type'] ?? 'percent')));
-
-            if (!in_array($makingChargeType, ['fixed', 'percent'], true)) {
-                $makingChargeType = 'percent';
-            }
             // $makingAmount = round($productBase * ($makingRate / 100), 2);
 
-            if ($makingChargeType === 'fixed') {
-                $makingAmount = round($makingRate, 2);
-            } else {
+            // if ($makingChargeType === 'fixed') {
+            //     $makingAmount = round($makingRate, 2);
+            // } else {
+            //     $makingAmount = round($productBase * ($makingRate / 100), 2);
+            // }
+
+            if ($makingChargeType === 'percentage') {
                 $makingAmount = round($productBase * ($makingRate / 100), 2);
+
+            } elseif ($makingChargeType === 'fixed') {
+                $makingAmount = round($makingRate, 2);
+
+            } elseif ($makingChargeType === 'per_gram') {
+                $totalMetalWeight = $goldWt + $silverWt;
+                $makingAmount = round($totalMetalWeight * $makingRate, 2);
+
+            } elseif ($makingChargeType === 'per_product') {
+                $makingAmount = round($makingRate, 2);
+
+            } else {
+                $makingAmount = 0;
             }
 
             if ($amountMode === 'manual' && $manualAmount > 0) {
@@ -4626,8 +4684,9 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                         //     ? (float)($row['service_rate'] ?? $row['making_charge'] ?? 0)
                         //     : null,
 
-                        'making_charge_type' => $row['making_charge_type'] ?? 'percent',
+                        // 'making_charge_type' => $row['making_charge_type'] ?? 'percent',
 
+                        'making_charge_type' => $row['making_charge_type'] ?? 'percentage',
                         'making_charge' => (float)($row['making_charge'] ?? 0),
 
                         'making_rate' => (float)($row['making_rate'] ?? 0),

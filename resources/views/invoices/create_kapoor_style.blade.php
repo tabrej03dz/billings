@@ -209,6 +209,7 @@
                                 <th>Rate / Price</th>
 
                                 <th x-show="showItemField('making_charge')">Making Rate</th>
+                                <th x-show="showItemField('making_charge')">Making Type</th>
                                 <th x-show="showItemField('gold_purity')">Gold Rate (₹/g)</th>
                                 <th x-show="showItemField('gold_weight')">Gold Wt.(Gm)</th>
                                 <th x-show="showItemField('silver_purity')">Silver Rate (₹/g)</th>
@@ -330,6 +331,22 @@
                                             class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
                                     </td>
 
+                                    <td class="px-3 py-2" x-show="showItemField('making_charge')">
+                                        <select x-model="row.making_charge_type"
+                                            @change="onAutoChange(row)"
+                                            class="w-36 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-[#242833] text-xs">
+
+                                            <option value="percentage">Percent (%)</option>
+                                            <option value="fixed">Fixed Amount (₹)</option>
+                                            <option value="per_gram">Per Gram</option>
+                                            <option value="per_product">Whole Product</option>
+                                        </select>
+
+                                        <div class="mt-0.5 text-[10px] text-blue-600"
+                                            x-text="makingTypeLabel(row)">
+                                        </div>
+                                    </td>
+
                                     <td class="px-3 py-2" x-show="showItemField('gold_purity')">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gold_rate"
@@ -419,7 +436,7 @@
                             </template>
 
                             <tr>
-                                <td colspan="17" class="px-3 py-2">
+                                <td colspan="18" class="px-3 py-2">
                                     <button type="button"
                                         @click="add()"
                                         class="bg-green-500 px-4 py-2 rounded-lg text-white hover:bg-green-600 text-sm">
@@ -1349,7 +1366,8 @@
                 hsn: '',
                 quantity: 1,
 
-                making_charge_type: 'percent',
+                // making_charge_type: 'percent',
+                making_charge_type: 'percentage',
                 making_rate: 0,
                 gold_purity: null,
                 silver_purity: null,
@@ -1598,6 +1616,17 @@
                 },
 
                 money,
+
+                makingTypeLabel(row) {
+                    const type = row.making_charge_type || 'percentage';
+
+                    if (type === 'percentage') return 'Making: % of product amount';
+                    if (type === 'fixed') return 'Making: fixed amount';
+                    if (type === 'per_gram') return 'Making: ₹ per gram';
+                    if (type === 'per_product') return 'Making: whole product';
+
+                    return 'Making: % of product amount';
+                },
 
                 filteredItems(q) {
                     const query = lower(q).trim();
@@ -2076,7 +2105,9 @@
                     r.gemstone_charge = n(it.gemstone_charge ?? it.stone_charge ?? 0, 0);
                     r.diamond_charge = n(it.diamond_charge ?? 0, 0);
 
-                    r.making_charge_type = it.making_charge_type || 'percent';
+                    // r.making_charge_type = it.making_charge_type || 'percent';
+
+                    r.making_charge_type = it.making_charge_type || 'percentage';
                     r.making_rate = n(it.making_charge ?? it.making_rate, 0);
                     r.gold_rate = this.findMetalRate('gold', r.gold_purity);
                     r.silver_rate = this.findMetalRate('silver', r.silver_purity || '999');
@@ -2169,15 +2200,31 @@
                         extraCharges;
 
                     // ✅ making_rate percentage hai.
-                    const makingType = r.making_charge_type || 'percent';
+                    // const makingType = r.making_charge_type || 'percent';
+                    // const makingRate = n(r.making_rate, 0);
+
+                    // let makingAmount = 0;
+
+                    // if (makingType === 'fixed') {
+                    //     makingAmount = makingRate;
+                    // } else {
+                    //     makingAmount = productBase * (makingRate / 100);
+                    // }
+
+                    const makingType = r.making_charge_type || 'percentage';
                     const makingRate = n(r.making_rate, 0);
 
                     let makingAmount = 0;
 
-                    if (makingType === 'fixed') {
-                        makingAmount = makingRate;
-                    } else {
+                    if (makingType === 'percentage') {
                         makingAmount = productBase * (makingRate / 100);
+                    } else if (makingType === 'fixed') {
+                        makingAmount = makingRate;
+                    } else if (makingType === 'per_gram') {
+                        const totalWeight = n(r.gold_wt, 0) + n(r.silver_wt, 0);
+                        makingAmount = totalWeight * makingRate;
+                    } else if (makingType === 'per_product') {
+                        makingAmount = makingRate;
                     }
 
                     return Math.max(0, n(((productBase + makingAmount) * qty).toFixed(2), 0));
@@ -2680,7 +2727,9 @@
                         hsn: r.hsn || '',
                         quantity: Math.max(1, n(r.quantity, 1)),
 
-                        making_charge_type: r.making_charge_type || 'percent',
+                        // making_charge_type: r.making_charge_type || 'percent',
+
+                        making_charge_type: r.making_charge_type || 'percentage',
                         making_rate: n(r.making_rate),
                         making_charge: n(r.making_rate),
                         gold_purity: r.gold_purity || null,

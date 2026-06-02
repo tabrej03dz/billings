@@ -317,9 +317,20 @@
                                         @selected(old('making_charge_type', $item->making_charge_type ?? 'percentage') === 'percentage')>
                                         Percent (%)
                                     </option>
+
                                     <option value="fixed"
                                         @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'fixed')>
                                         Fixed Amount (₹)
+                                    </option>
+
+                                    <option value="per_gram"
+                                        @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'per_gram')>
+                                        Per Gram Making Charge
+                                    </option>
+
+                                    <option value="per_product"
+                                        @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'per_product')>
+                                        Whole Product Making Charge
                                     </option>
                                 </select>
                             </div>
@@ -522,22 +533,30 @@
 
 <script>
     const makingChargeType = document.getElementById('makingChargeType');
-const makingChargeLabel = document.getElementById('makingChargeLabel');
+    const makingChargeLabel = document.getElementById('makingChargeLabel');
+    const makingChargeField = document.getElementById('makingChargeField');
 
-function updateMakingChargeUI() {
-    if (!makingChargeType || !makingChargeField || !makingChargeLabel) return;
+    function updateMakingChargeUI() {
+        if (!makingChargeType || !makingChargeField || !makingChargeLabel) return;
 
-    if (makingChargeType.value === 'fixed') {
-        makingChargeLabel.innerText = 'Making Charge (₹)';
-        makingChargeField.placeholder = 'Example: 500';
         makingChargeField.removeAttribute('max');
-    } else {
-        makingChargeLabel.innerText = 'Making Charge (%)';
-        makingChargeField.placeholder = 'Example: 10';
-        makingChargeField.setAttribute('max', '100');
-    }
-}
 
-makingChargeType?.addEventListener('change', updateMakingChargeUI);
-updateMakingChargeUI();
+        if (makingChargeType.value === 'percentage') {
+            makingChargeLabel.innerText = 'Making Charge (%)';
+            makingChargeField.placeholder = 'Example: 10';
+            makingChargeField.setAttribute('max', '100');
+        } else if (makingChargeType.value === 'fixed') {
+            makingChargeLabel.innerText = 'Fixed Making Charge (₹)';
+            makingChargeField.placeholder = 'Example: 500';
+        } else if (makingChargeType.value === 'per_gram') {
+            makingChargeLabel.innerText = 'Making Charge (₹ / Gram)';
+            makingChargeField.placeholder = 'Example: 500 per gram';
+        } else {
+            makingChargeLabel.innerText = 'Whole Product Making Charge (₹)';
+            makingChargeField.placeholder = 'Example: 5000 total making';
+        }
+    }
+
+    makingChargeType?.addEventListener('change', updateMakingChargeUI);
+    updateMakingChargeUI();
 </script>

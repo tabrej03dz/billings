@@ -12,8 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('items', function (Blueprint $table) {
-            $table->enum('making_charge_type', ['percentage', 'fixed'])->after('making_charge')->default('percentage')->comment('percentage or fixed');
-
+            $table->enum('making_charge_type', ['percentage', 'fixed', 'per_gram', 'per_product'])->after('making_charge')->default('percentage')->comment('percentage or fixed');
         });
     }
 
