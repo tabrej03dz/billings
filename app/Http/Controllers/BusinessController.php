@@ -12,21 +12,62 @@ use Illuminate\Validation\Rule;
 
 class BusinessController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     // Show only businesses the user belongs to,
+    //     // unless they have a permission to view all.
+    //     if ($request->user()->hasRole('super admin') ||$request->user()->can('view all businesses')) {
+    //         $businesses = Business::latest()->paginate(15);
+    //     } else {
+    //         $businesses = $request->user()
+    //             ->businesses()
+    //             ->withPivot('role')
+    //             ->latest('business_user.created_at')
+    //             ->paginate(15);
+    //     }
+
+    //     return view('businesses.index', compact('businesses'));
+    // }
+
+
     public function index(Request $request)
     {
-        // Show only businesses the user belongs to,
-        // unless they have a permission to view all.
-        if ($request->user()->hasRole('super admin') ||$request->user()->can('view all businesses')) {
-            $businesses = Business::latest()->paginate(15);
+        $search = trim((string) $request->query('search'));
+        $status = $request->query('status');
+        $perPage = (int) $request->query('per_page', 15);
+
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100]) ? $perPage : 15;
+
+        if ($request->user()->hasRole('super admin') || $request->user()->can('view all businesses')) {
+            $query = Business::query()->latest();
         } else {
-            $businesses = $request->user()
+            $query = $request->user()
                 ->businesses()
                 ->withPivot('role')
-                ->latest('business_user.created_at')
-                ->paginate(15);
+                ->latest('business_user.created_at');
         }
 
-        return view('businesses.index', compact('businesses'));
+        $businesses = $query
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('slug', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('gstin', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                });
+            })
+            ->when($status === 'active', function ($q) {
+                $q->where('is_active', 1);
+            })
+            ->when($status === 'inactive', function ($q) {
+                $q->where('is_active', 0);
+            })
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('businesses.index', compact('businesses', 'search', 'status', 'perPage'));
     }
 
     public function create()
