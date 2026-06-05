@@ -167,20 +167,6 @@ document.getElementById('payBtn').onclick = function () {
             description: "MyVictory Billing Plan",
             order_id: data.order_id,
 
-            // handler: function (response) {
-            //     document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
-            //     document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
-            //     document.getElementById('razorpay_signature').value = response.razorpay_signature;
-
-            //     const customerName = document.getElementById('customer_name')?.value || "{{ auth()->user()->name ?? '' }}";
-            //     const customerEmail = document.getElementById('customer_email')?.value || "{{ auth()->user()->email ?? '' }}";
-
-            //     document.getElementById('payment_name').value = customerName;
-            //     document.getElementById('payment_email').value = customerEmail;
-
-            //     document.getElementById('paymentForm').submit();
-            // },
-
             handler: function (response) {
                 document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
                 document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;

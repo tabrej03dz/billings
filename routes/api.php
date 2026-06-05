@@ -15,10 +15,15 @@ use App\Http\Controllers\Api\InstallmentReminderController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\BillRequestController;
 use App\Http\Controllers\Api\PlanController;
+use App\Http\Controllers\Api\PlanPaymentController;
 use App\Http\Controllers\Api\PurchaseController;
 
 Route::get('items1/', [ItemController::class, 'index1']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
+
+    Route::post('/plans/{plan}/create-order', [PlanPaymentController::class, 'createOrder']);
+
+    Route::post('/plans/payment/verify', [PlanPaymentController::class, 'verifyPayment']);
 
 Route::get('/birthday-wishes/run', [BirthdayWishController::class, 'run']);
 // Route::get('/anniversary-wishes/run', [AnniversaryController::class, 'run']);
@@ -219,6 +224,10 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
 
     Route::get('/banner-sliders', [BannerSliderController::class, 'index']);
+
+    
+
+    Route::get('/my-active-plan', [PlanPaymentController::class, 'myActivePlan']);
 
 
 });
