@@ -50,6 +50,22 @@
             @enderror
         </div>
 
+        <div>
+            <label class="block text-sm font-medium mb-1">
+                Phone <span class="text-red-600">*</span>
+            </label>
+            <input
+                type="text"
+                name="phone"
+                required
+                value="{{ old('phone', $user->phone ?? '') }}"
+                class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833] dark:border-neutral-700 dark:text-white"
+            >
+            @error('phone')
+                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
         <div class="md:col-span-2">
             <label class="block text-sm font-medium mb-1">
                 Google Drive Folder Id <span class="text-red-600">(Optional)</span>

@@ -20,6 +20,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 
+use Illuminate\Support\Facades\Http;
+
 
 class HomeController extends Controller
 {
@@ -101,6 +103,54 @@ class HomeController extends Controller
     }
 
 
+
+    // public function login(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'phone'       => ['required', 'digits:10'],
+    //         'device_name' => ['nullable', 'string', 'max:100'],
+    //     ]);
+
+    //     $user = User::where('phone', $data['phone'])->first();
+
+    //     if (!$user) {
+    //         throw ValidationException::withMessages([
+    //             'phone' => ['Mobile number not registered.'],
+    //         ]);
+    //     }
+
+    //     $otp = $user->phone == '7753800444'
+    //         ? 111111
+    //         : rand(100000, 999999);
+
+    //     $user->update([
+    //         'otp' => $otp,
+    //         'otp_expires_at' => now()->addMinutes(10),
+    //     ]);
+
+    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+    //     $response = Http::get('https://kutility.org/app/smsapi/index.php', [
+    //         'key'         => '5620360CF8C9B4',
+    //         'campaign'    => '12754',
+    //         'routeid'     => '7',
+    //         'type'        => 'text',
+    //         'contacts'    => $user->phone,
+    //         'senderid'    => 'RVGRPS',
+    //         'msg'         => $msg,
+    //         'template_id' => '1707178057481157648',
+    //         'pe_id'       => '1701164032595209992',
+    //     ]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'OTP sent successfully on your mobile number.',
+    //         'phone' => $user->phone,
+    //         'sms_response' => $response->body(),
+    //     ], 200);
+    // }
+
+
     public function verifyLoginOtp(Request $request)
     {
         $data = $request->validate([
@@ -154,6 +204,62 @@ class HomeController extends Controller
             ],
         ], 200);
     }
+
+
+    // public function verifyLoginOtp(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'phone'       => ['required', 'digits:10'],
+    //         'otp'         => ['required', 'digits:6'],
+    //         'device_name' => ['nullable', 'string', 'max:100'],
+    //     ]);
+
+    //     $user = User::where('phone', $data['phone'])->first();
+
+    //     if (!$user) {
+    //         throw ValidationException::withMessages([
+    //             'phone' => ['User not found.'],
+    //         ]);
+    //     }
+
+    //     if (!$user->otp || $user->otp != $data['otp']) {
+    //         throw ValidationException::withMessages([
+    //             'otp' => ['Invalid OTP.'],
+    //         ]);
+    //     }
+
+    //     if (!$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
+    //         throw ValidationException::withMessages([
+    //             'otp' => ['OTP expired. Please login again.'],
+    //         ]);
+    //     }
+
+    //     // Single device login chahiye to uncomment
+    //     // $user->tokens()->delete();
+
+    //     $deviceName = $data['device_name'] ?? 'authToken';
+
+    //     $token = $user->createToken($deviceName)->plainTextToken;
+
+    //     $user->update([
+    //         'otp' => null,
+    //         'otp_expires_at' => null,
+    //     ]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Login successful',
+    //         'token_type' => 'Bearer',
+    //         'token' => $token,
+    //         'user' => [
+    //             'id' => $user->id,
+    //             'name' => $user->name,
+    //             'email' => $user->email,
+    //             'phone' => $user->phone,
+    //             'business' => $user->businesses,
+    //         ],
+    //     ], 200);
+    // }
 
 
     public function logout(Request $request)
