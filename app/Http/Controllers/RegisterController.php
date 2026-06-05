@@ -520,6 +520,7 @@ public function store(Request $request)
         'rounding_step' => ['nullable', 'numeric', 'min:0'],
 
         'terms' => ['required', 'accepted'],
+        'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
     ]);
 
     DB::beginTransaction();
@@ -528,6 +529,7 @@ public function store(Request $request)
         $user = User::create([
             'name' => $request->name,
             'email' => strtolower(trim($request->email)),
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
         ]);
 

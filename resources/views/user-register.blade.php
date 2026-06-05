@@ -262,10 +262,16 @@
                                             class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
                                             placeholder="Enter your email address">
 
-                                        {{-- <button type="button" id="sendOtpBtn"
-                                                class="shrink-0 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-yellow-300 transition">
-                                            Send OTP
-                                        </button> --}}
+                                        @if(!session('email_verified'))
+                                            <button type="button" id="sendOtpBtn"
+                                                    class="shrink-0 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-yellow-300 transition">
+                                                Send OTP
+                                            </button>
+                                        @else
+                                            <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 font-bold">
+                                                Email already verified via successful payment.
+                                            </div>
+                                        @endif
                                         @if(!session('email_verified'))
                                             {{-- Send OTP + Verify OTP fields yahan rahenge --}}
                                         @else
@@ -294,6 +300,15 @@
 
                                     <input type="hidden" id="emailVerified" value="{{ session('payment_done') && session('paid_email') ? 1 : 0 }}">
                                     <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-500"></p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Owner Phone Number</label>
+                                    <input type="text" name="phone" id="owner_phone"
+                                        value="{{ old('phone') }}"
+                                        required
+                                        class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                        placeholder="Enter owner phone number">
                                 </div>
 
                                 <div class="grid sm:grid-cols-2 gap-4">
@@ -335,16 +350,18 @@
                                 <div class="grid sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Business Email</label>
-                                        <input type="email" name="business_email" value="{{ old('business_email') }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Business email">
+                                        <input type="email" name="business_email" id="business_email"
+                                            value="{{ old('business_email', old('email', session('paid_email'))) }}" required
+                                            class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                            placeholder="Business email">
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Mobile Number</label>
-                                        <input type="text" name="mobile" value="{{ old('mobile') }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Business mobile number">
+                                        <input type="text" name="mobile" id="business_mobile"
+                                            value="{{ old('mobile', old('phone')) }}" required
+                                            class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                            placeholder="Business mobile number">
                                     </div>
                                 </div>
 
@@ -587,6 +604,11 @@
     const sendOtpBtn = document.getElementById('sendOtpBtn');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
     const emailInput = document.getElementById('email');
+
+    const ownerPhoneInput = document.getElementById('owner_phone');
+    const businessMobileInput = document.getElementById('business_mobile');
+
+    const businessEmailInput = document.getElementById('business_email');
     const emailOtpInput = document.getElementById('emailOtp');
     const otpStatus = document.getElementById('otpStatus');
     const verifyOtpStatus = document.getElementById('verifyOtpStatus');
@@ -973,6 +995,10 @@
                 emailVerifiedInput.value = '0';
             }
 
+            if (businessEmailInput && !businessEmailInput.dataset.userEdited) {
+                businessEmailInput.value = this.value;
+            }
+
             verifyOtpStatus.textContent = '';
             setFieldErrorState(emailInput, false);
             setFieldErrorState(emailOtpInput, false);
@@ -1018,6 +1044,35 @@
                 currentStepInput.value = currentStep + 1;
             }
         });
+    }
+
+    if (businessEmailInput) {
+        businessEmailInput.addEventListener('input', function () {
+            this.dataset.userEdited = '1';
+        });
+
+        if (emailInput && !businessEmailInput.value) {
+            businessEmailInput.value = emailInput.value;
+        }
+    }
+
+
+    if (ownerPhoneInput) {
+        ownerPhoneInput.addEventListener('input', function () {
+            if (businessMobileInput && !businessMobileInput.dataset.userEdited) {
+                businessMobileInput.value = this.value;
+            }
+        });
+    }
+
+    if (businessMobileInput) {
+        businessMobileInput.addEventListener('input', function () {
+            this.dataset.userEdited = '1';
+        });
+
+        if (ownerPhoneInput && !businessMobileInput.value) {
+            businessMobileInput.value = ownerPhoneInput.value;
+        }
     }
 
     bindFieldListeners();
