@@ -67,141 +67,86 @@ class HomeController extends Controller
     //     ], 200);
     // }
 
-    public function login(Request $request)
-    {
-        $data = $request->validate([
-            'email'       => ['required', 'email'],
-            'password'    => ['required', 'string', 'min:4'],
-            'device_name' => ['nullable', 'string', 'max:100'],
-        ]);
-
-        $user = User::where('email', $data['email'])->first();
-
-        if (!$user || !Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid email or password.'],
-            ]);
-        }
-
-        $otp = $user->email == 'shorabh.ftp.72@gmail.com' ? 111111 : rand(100000, 999999);
-
-        $user->update([
-            'otp' => $otp,
-            'otp_expires_at' => now()->addMinutes(10),
-        ]);
-
-        Mail::raw("Your login OTP is: {$otp}. This OTP is valid for 10 minutes.", function ($message) use ($user) {
-            $message->to($user->email)
-                    ->subject('Your Login OTP');
-        });
-
-        return response()->json([
-            'status' => true,
-            'message' => 'OTP sent successfully on your email.',
-            'email' => $user->email,
-        ], 200);
-    }
-
-
-
     // public function login(Request $request)
     // {
     //     $data = $request->validate([
-    //         'phone'       => ['required', 'digits:10'],
+    //         'email'       => ['required', 'email'],
+    //         'password'    => ['required', 'string', 'min:4'],
     //         'device_name' => ['nullable', 'string', 'max:100'],
     //     ]);
 
-    //     $user = User::where('phone', $data['phone'])->first();
+    //     $user = User::where('email', $data['email'])->first();
 
-    //     if (!$user) {
+    //     if (!$user || !Hash::check($data['password'], $user->password)) {
     //         throw ValidationException::withMessages([
-    //             'phone' => ['Mobile number not registered.'],
+    //             'email' => ['Invalid email or password.'],
     //         ]);
     //     }
 
-    //     $otp = $user->phone == '7753800444'
-    //         ? 111111
-    //         : rand(100000, 999999);
+    //     $otp = $user->email == 'shorabh.ftp.72@gmail.com' ? 111111 : rand(100000, 999999);
 
     //     $user->update([
     //         'otp' => $otp,
     //         'otp_expires_at' => now()->addMinutes(10),
     //     ]);
 
-    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
-
-    //     $response = Http::get('https://kutility.org/app/smsapi/index.php', [
-    //         'key'         => '5620360CF8C9B4',
-    //         'campaign'    => '12754',
-    //         'routeid'     => '7',
-    //         'type'        => 'text',
-    //         'contacts'    => $user->phone,
-    //         'senderid'    => 'RVGRPS',
-    //         'msg'         => $msg,
-    //         'template_id' => '1707178057481157648',
-    //         'pe_id'       => '1701164032595209992',
-    //     ]);
+    //     Mail::raw("Your login OTP is: {$otp}. This OTP is valid for 10 minutes.", function ($message) use ($user) {
+    //         $message->to($user->email)
+    //                 ->subject('Your Login OTP');
+    //     });
 
     //     return response()->json([
     //         'status' => true,
-    //         'message' => 'OTP sent successfully on your mobile number.',
-    //         'phone' => $user->phone,
-    //         'sms_response' => $response->body(),
+    //         'message' => 'OTP sent successfully on your email.',
+    //         'email' => $user->email,
     //     ], 200);
     // }
 
 
-    public function verifyLoginOtp(Request $request)
+
+    public function login(Request $request)
     {
         $data = $request->validate([
-            'email'       => ['required', 'email'],
-            'otp'         => ['required', 'digits:6'],
+            'phone'       => ['required', 'digits:10'],
             'device_name' => ['nullable', 'string', 'max:100'],
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $user = User::where('phone', $data['phone'])->first();
 
         if (!$user) {
             throw ValidationException::withMessages([
-                'email' => ['User not found.'],
+                'phone' => ['Mobile number not registered.'],
             ]);
         }
 
-        if (!$user->otp || $user->otp != $data['otp']) {
-            throw ValidationException::withMessages([
-                'otp' => ['Invalid OTP.'],
-            ]);
-        }
-
-        if (!$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
-            throw ValidationException::withMessages([
-                'otp' => ['OTP expired. Please login again.'],
-            ]);
-        }
-
-        // Single device login chahiye to ye line uncomment kar dena
-        // $user->tokens()->delete();
-
-        $deviceName = $data['device_name'] ?? 'authToken';
-
-        $token = $user->createToken($deviceName)->plainTextToken;
+        $otp = $user->phone == '7753800444'
+            ? 111111
+            : rand(100000, 999999);
 
         $user->update([
-            'otp' => null,
-            'otp_expires_at' => null,
+            'otp' => $otp,
+            'otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+        $response = Http::get('https://kutility.org/app/smsapi/index.php', [
+            'key'         => '5620360CF8C9B4',
+            'campaign'    => '12754',
+            'routeid'     => '7',
+            'type'        => 'text',
+            'contacts'    => $user->phone,
+            'senderid'    => 'RVGRPS',
+            'msg'         => $msg,
+            'template_id' => '1707178057481157648',
+            'pe_id'       => '1701164032595209992',
         ]);
 
         return response()->json([
             'status' => true,
-            'message' => 'Login successful',
-            'token_type' => 'Bearer',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'business' => $user->businesses,
-            ],
+            'message' => 'OTP sent successfully on your mobile number.',
+            'phone' => $user->phone,
+            'sms_response' => $response->body(),
         ], 200);
     }
 
@@ -209,16 +154,16 @@ class HomeController extends Controller
     // public function verifyLoginOtp(Request $request)
     // {
     //     $data = $request->validate([
-    //         'phone'       => ['required', 'digits:10'],
+    //         'email'       => ['required', 'email'],
     //         'otp'         => ['required', 'digits:6'],
     //         'device_name' => ['nullable', 'string', 'max:100'],
     //     ]);
 
-    //     $user = User::where('phone', $data['phone'])->first();
+    //     $user = User::where('email', $data['email'])->first();
 
     //     if (!$user) {
     //         throw ValidationException::withMessages([
-    //             'phone' => ['User not found.'],
+    //             'email' => ['User not found.'],
     //         ]);
     //     }
 
@@ -234,7 +179,7 @@ class HomeController extends Controller
     //         ]);
     //     }
 
-    //     // Single device login chahiye to uncomment
+    //     // Single device login chahiye to ye line uncomment kar dena
     //     // $user->tokens()->delete();
 
     //     $deviceName = $data['device_name'] ?? 'authToken';
@@ -255,11 +200,66 @@ class HomeController extends Controller
     //             'id' => $user->id,
     //             'name' => $user->name,
     //             'email' => $user->email,
-    //             'phone' => $user->phone,
     //             'business' => $user->businesses,
     //         ],
     //     ], 200);
     // }
+
+
+    public function verifyLoginOtp(Request $request)
+    {
+        $data = $request->validate([
+            'phone'       => ['required', 'digits:10'],
+            'otp'         => ['required', 'digits:6'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'phone' => ['User not found.'],
+            ]);
+        }
+
+        if (!$user->otp || $user->otp != $data['otp']) {
+            throw ValidationException::withMessages([
+                'otp' => ['Invalid OTP.'],
+            ]);
+        }
+
+        if (!$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
+            throw ValidationException::withMessages([
+                'otp' => ['OTP expired. Please login again.'],
+            ]);
+        }
+
+        // Single device login chahiye to uncomment
+        // $user->tokens()->delete();
+
+        $deviceName = $data['device_name'] ?? 'authToken';
+
+        $token = $user->createToken($deviceName)->plainTextToken;
+
+        $user->update([
+            'otp' => null,
+            'otp_expires_at' => null,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Login successful',
+            'token_type' => 'Bearer',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'business' => $user->businesses,
+            ],
+        ], 200);
+    }
 
 
     public function logout(Request $request)
