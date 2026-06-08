@@ -1,5 +1,5 @@
 <x-layouts.app :title="__('New Purchase')">
-    <form action="{{ route('purchases.store') }}" method="POST" class="space-y-4">
+    <form action="{{ route('purchases.store') }}" method="POST" enctype="multipart/form-data" class="space-y-5">
         @csrf
 
         @if ($errors->any())

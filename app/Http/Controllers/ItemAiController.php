@@ -39,45 +39,45 @@ class ItemAiController extends Controller
                                 [
                                     'type' => 'input_text',
                                     'text' => '
-You are a jewellery billing item extractor.
+                                    You are a jewellery billing item extractor.
 
-Analyze this product photo and return ONLY valid JSON.
+                                    Analyze this product photo and return ONLY valid JSON.
 
-Use this exact JSON format:
-{
-  "name": "",
-  "type": "product",
-  "description": "",
-  "metal_type": "gold",
-  "purity": "",
-  "gross_weight": null,
-  "metal_weight": null,
-  "stone_weight": null,
-  "stone_charges": null,
-  "gold_weight": null,
-  "gold_purity": "",
-  "silver_weight": null,
-  "silver_purity": "",
-  "diamond_weight": null,
-  "diamond_charges": null,
-  "making_charge": null,
-  "price": null,
-  "cost_price": null,
-  "stock_qty": 1,
-  "unit": "pcs",
-  "tax_rate": 3,
-  "sac": null,
-  "sku": ""
-}
+                                    Use this exact JSON format:
+                                    {
+                                    "name": "",
+                                    "type": "product",
+                                    "description": "",
+                                    "metal_type": "gold",
+                                    "purity": "",
+                                    "gross_weight": null,
+                                    "metal_weight": null,
+                                    "stone_weight": null,
+                                    "stone_charges": null,
+                                    "gold_weight": null,
+                                    "gold_purity": "",
+                                    "silver_weight": null,
+                                    "silver_purity": "",
+                                    "diamond_weight": null,
+                                    "diamond_charges": null,
+                                    "making_charge": null,
+                                    "price": null,
+                                    "cost_price": null,
+                                    "stock_qty": 1,
+                                    "unit": "pcs",
+                                    "tax_rate": 3,
+                                    "sac": null,
+                                    "sku": ""
+                                    }
 
-Rules:
-- Do not guess exact price or weight if not visible.
-- If item looks like gold jewellery, metal_type = gold.
-- If item looks like silver jewellery, metal_type = silver.
-- If unknown, metal_type = other.
-- type should be product.
-- Return only JSON, no markdown.
-'
+                                    Rules:
+                                    - Do not guess exact price or weight if not visible.
+                                    - If item looks like gold jewellery, metal_type = gold.
+                                    - If item looks like silver jewellery, metal_type = silver.
+                                    - If unknown, metal_type = other.
+                                    - type should be product.
+                                    - Return only JSON, no markdown.
+                                    '
                                 ],
                                 [
                                     'type' => 'input_image',

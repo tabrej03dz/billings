@@ -85,7 +85,11 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::post('update/{item}', 'update');
         Route::delete('delete/{item}', 'destroy');
         Route::get('allowed-fields', 'allowedFields');
+
     });
+
+    Route::post('ai/scan', [\App\Http\Controllers\Api\ItemAiController::class, 'photoEntry']);
+
 
 
 

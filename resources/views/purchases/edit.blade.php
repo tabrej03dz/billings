@@ -1,5 +1,5 @@
 <x-layouts.app :title="__('Edit Purchase #'.($purchase->invoice_no ?? $purchase->id))">
-    <form action="{{ route('purchases.update', $purchase) }}" method="POST" class="space-y-4">
+    <form action="{{ route('purchases.update', $purchase) }}" method="POST" enctype="multipart/form-data" class="space-y-5">
         @csrf
         @method('PUT')
 
