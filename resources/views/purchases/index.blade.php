@@ -38,6 +38,10 @@
                             @csrf @method('DELETE')
                             <button class="text-red-600 hover:underline">Delete</button>
                         </form>
+                        <a href="{{ route('purchases.show', $p->id) }}"
+                            class="text-blue-600 hover:underline">
+                                View
+                            </a>
                     </td>
                 </tr>
             @empty

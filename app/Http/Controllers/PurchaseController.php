@@ -367,4 +367,17 @@ class PurchaseController extends Controller
             abort(403);
         }
     }
+
+
+    public function show(Purchase $purchase)
+    {
+        $this->authorizeBusiness($purchase);
+
+        $purchase->load([
+            'supplier',
+            'items.item',
+        ]);
+
+        return view('purchases.show', compact('purchase'));
+    }
 }
