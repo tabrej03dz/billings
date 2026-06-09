@@ -21,7 +21,7 @@ class PurchaseController extends Controller
 
     public function index(Request $request)
     {
-        $businessId = $request->user()->business_id ?? null;
+        $businessId = $request->business_id ?? $request->user()->business_id ?? null;
 
         $purchases = Purchase::with(['supplier', 'items.item'])
             ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
