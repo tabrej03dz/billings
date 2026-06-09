@@ -165,25 +165,25 @@
                         </td>
 
                         <td class="px-3 py-1">
-                            <input type="number" step="0.01"
+                            <input type="number" step="0.01" name="items[{{ $i }}][cgst_amount]"
                                    class="w-24 border rounded px-2 py-1 purchase-cgst-input bg-gray-100"
                                    value="{{ $row['cgst_amount'] ?? 0 }}" readonly>
                         </td>
 
                         <td class="px-3 py-1">
-                            <input type="number" step="0.01"
+                            <input type="number" step="0.01" name="items[{{ $i }}][sgst_amount]"
                                    class="w-24 border rounded px-2 py-1 purchase-sgst-input bg-gray-100"
                                    value="{{ $row['sgst_amount'] ?? 0 }}" readonly>
                         </td>
 
                         <td class="px-3 py-1">
-                            <input type="number" step="0.01"
+                            <input type="number" step="0.01" name="items[{{ $i }}][igst_amount]"
                                    class="w-24 border rounded px-2 py-1 purchase-igst-input bg-gray-100"
                                    value="{{ $row['igst_amount'] ?? 0 }}" readonly>
                         </td>
 
                         <td class="px-3 py-1">
-                            <input type="number" step="0.01"
+                            <input type="number" step="0.01" name="items[{{ $i }}][total_amount]"
                                    class="w-28 border rounded px-2 py-1 purchase-line-total-input bg-gray-100"
                                    value="{{ $row['total_amount'] ?? 0 }}" readonly>
                         </td>
@@ -215,21 +215,21 @@
 
             <div>
                 <label class="block text-sm font-medium mb-1">CGST</label>
-                <input type="number" step="0.01" id="purchase-cgst-total"
+                <input type="number" step="0.01" name="cgst_amount" id="purchase-cgst-total"
                     class="w-full border rounded px-3 py-2 bg-gray-100" readonly
                     value="{{ old('cgst_amount', $purchase->cgst_amount ?? 0) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-medium mb-1">SGST</label>
-                <input type="number" step="0.01" id="purchase-sgst-total"
+                <input type="number" step="0.01" name="sgst_amount" id="purchase-sgst-total"
                     class="w-full border rounded px-3 py-2 bg-gray-100" readonly
                     value="{{ old('sgst_amount', $purchase->sgst_amount ?? 0) }}">
             </div>
 
             <div>
                 <label class="block text-sm font-medium mb-1">IGST</label>
-                <input type="number" step="0.01" id="purchase-igst-total"
+                <input type="number" step="0.01" name="igst_amount" id="purchase-igst-total"
                     class="w-full border rounded px-3 py-2 bg-gray-100" readonly
                     value="{{ old('igst_amount', $purchase->igst_amount ?? 0) }}">
             </div>
@@ -257,7 +257,7 @@
 
             <div>
                 <label class="block text-sm font-medium mb-1">Due Amount</label>
-                <input type="number" step="0.01" id="purchase-due"
+                <input type="number" step="0.01" name="due_amount" id="purchase-due"
                     class="w-full border rounded px-3 py-2 bg-red-50 font-bold text-red-700" readonly
                     value="{{ old('due_amount', $purchase->due_amount ?? 0) }}">
             </div>
@@ -387,12 +387,10 @@
                         <select name="items[${index}][qty_unit]"
                                 class="w-28 border rounded px-2 py-1 bg-white text-gray-900"
                                 required>
-
                             <option value="pcs">Pcs</option>
                             <option value="gram">Gram</option>
                             <option value="kg">Kg</option>
                             <option value="carat">Carat</option>
-
                         </select>
                     </td>
 
@@ -409,19 +407,19 @@
                     </td>
 
                     <td class="px-3 py-1">
-                        <input type="number" step="0.01" class="w-24 border rounded px-2 py-1 purchase-cgst-input bg-gray-100" value="0" readonly>
+                        <input type="number" step="0.01" name="items[${index}][cgst_amount]" class="w-24 border rounded px-2 py-1 purchase-cgst-input bg-gray-100" value="0" readonly>
                     </td>
 
                     <td class="px-3 py-1">
-                        <input type="number" step="0.01" class="w-24 border rounded px-2 py-1 purchase-sgst-input bg-gray-100" value="0" readonly>
+                        <input type="number" step="0.01" name="items[${index}][sgst_amount]" class="w-24 border rounded px-2 py-1 purchase-sgst-input bg-gray-100" value="0" readonly>
                     </td>
 
                     <td class="px-3 py-1">
-                        <input type="number" step="0.01" class="w-24 border rounded px-2 py-1 purchase-igst-input bg-gray-100" value="0" readonly>
+                        <input type="number" step="0.01" name="items[${index}][igst_amount]" class="w-24 border rounded px-2 py-1 purchase-igst-input bg-gray-100" value="0" readonly>
                     </td>
 
                     <td class="px-3 py-1">
-                        <input type="number" step="0.01" class="w-28 border rounded px-2 py-1 purchase-line-total-input bg-gray-100" value="0" readonly>
+                        <input type="number" step="0.01" name="items[${index}][total_amount]" class="w-28 border rounded px-2 py-1 purchase-line-total-input bg-gray-100" value="0" readonly>
                     </td>
 
                     <td class="px-3 py-1 text-right">
