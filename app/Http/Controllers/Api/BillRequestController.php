@@ -945,10 +945,10 @@ class BillRequestController extends Controller
         //     'user_id' => 'nullable|integer',
         // ]);
 
-        // $bid = $request->business_id;
-        // $userId = $request->user_id;
-        $bid = 2;
-        $userId = 5;
+        $bid = $request->business_id;
+        $userId = $request->user_id;
+        // $bid = 2;
+        // $userId = 5;
 
         try {
             $invoice = DB::transaction(function () use ($billRequest, $bid, $userId) {
