@@ -13,6 +13,7 @@ use App\Models\Business;
 use App\Models\Client;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\InvoicePayment;
 use App\Models\Item;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
