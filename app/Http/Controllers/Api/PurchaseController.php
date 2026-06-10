@@ -354,7 +354,7 @@ class PurchaseController extends Controller
 
     private function validatePurchase(Request $request): array
     {
-        $businessId = auth()->user()->business_id ?? null;
+        $businessId = $request->user()->business_id ?? null;
 
         return $request->validate([
             'supplier_id' => [
