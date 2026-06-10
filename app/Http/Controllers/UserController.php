@@ -14,10 +14,55 @@ use Spatie\Permission\Models\Role;
 class UserController extends Controller
 {
 
+    // public function index(Request $request)
+    // {
+    //     $user = $request->user();
+    //     $show = $request->query('show'); // active | deleted
+
+    //     $baseQuery = \App\Models\User::query();
+
+    //     if ($show === 'deleted') {
+    //         $baseQuery->onlyTrashed();
+    //     }
+
+    //     // SUPER ADMIN
+    //     if ($user->hasRole('super admin') || $user->can('view all users')) {
+
+    //         $businessId = $request->query('business_id');
+
+    //         if ($businessId) {
+    //             $baseQuery->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
+    //                 ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
+    //         } else {
+    //             $baseQuery->withCount('businesses');
+    //         }
+
+    //         $users = $baseQuery->latest()->paginate(15)->withQueryString();
+    //         $allBusinesses = \App\Models\Business::orderBy('name')->get();
+
+    //         return view('users.index', compact('users', 'allBusinesses', 'businessId', 'show'));
+    //     }
+
+    //     // NON SUPER
+    //     $activeId = $user->current_business_id ?? session('active_business_id')
+    //         ?? $user->businesses()->value('business_id');
+
+    //     abort_if(!$activeId, 403, 'No business selected.');
+
+    //     $users = $baseQuery
+    //         ->whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
+    //         ->with(['businesses' => fn($q) => $q->where('business_id', $activeId)])
+    //         ->latest()
+    //         ->paginate(15);
+
+    //     return view('users.index', compact('users', 'show'));
+    // }
+
+
     public function index(Request $request)
     {
         $user = $request->user();
-        $show = $request->query('show'); // active | deleted
+        $show = $request->query('show');
 
         $baseQuery = \App\Models\User::query();
 
@@ -25,37 +70,59 @@ class UserController extends Controller
             $baseQuery->onlyTrashed();
         }
 
+        // Filters
+        $search = trim($request->query('search', ''));
+        $businessId = $request->query('business_id');
+
+        if ($search) {
+            $baseQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
         // SUPER ADMIN
         if ($user->hasRole('super admin') || $user->can('view all users')) {
 
-            $businessId = $request->query('business_id');
-
             if ($businessId) {
-                $baseQuery->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
-                    ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
-            } else {
-                $baseQuery->withCount('businesses');
+                $baseQuery->whereHas('businesses', function ($q) use ($businessId) {
+                    $q->where('business_id', $businessId);
+                });
             }
 
-            $users = $baseQuery->latest()->paginate(15)->withQueryString();
+            $baseQuery->withCount('businesses');
+
+            $users = $baseQuery
+                ->latest()
+                ->paginate(15)
+                ->withQueryString();
+
             $allBusinesses = \App\Models\Business::orderBy('name')->get();
 
-            return view('users.index', compact('users', 'allBusinesses', 'businessId', 'show'));
+            return view('users.index', compact(
+                'users',
+                'allBusinesses',
+                'businessId',
+                'search',
+                'show'
+            ));
         }
 
-        // NON SUPER
-        $activeId = $user->current_business_id ?? session('active_business_id')
+        // NON SUPER ADMIN
+        $activeId = $user->current_business_id
+            ?? session('active_business_id')
             ?? $user->businesses()->value('business_id');
 
         abort_if(!$activeId, 403, 'No business selected.');
 
         $users = $baseQuery
             ->whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
-            ->with(['businesses' => fn($q) => $q->where('business_id', $activeId)])
+            ->withCount('businesses')
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('users.index', compact('users', 'show'));
+        return view('users.index', compact('users', 'search', 'show'));
     }
 
 

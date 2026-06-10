@@ -27,6 +27,60 @@
 
         </div>
 
+        <div class="bg-white dark:bg-neutral-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <form method="GET" class="flex flex-wrap gap-3 items-end">
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Search</label>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Name or Email"
+                        class="border rounded px-3 py-2 w-64 dark:bg-neutral-800"
+                    >
+                </div>
+
+                @if(auth()->user()->hasRole('super admin') || auth()->user()->can('view all users'))
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Business</label>
+                        <select
+                            name="business_id"
+                            class="border rounded px-3 py-2 w-64 dark:bg-neutral-800"
+                        >
+                            <option value="">All Businesses</option>
+
+                            @foreach($allBusinesses as $business)
+                                <option
+                                    value="{{ $business->id }}"
+                                    @selected(request('business_id') == $business->id)
+                                >
+                                    {{ $business->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
+                <input type="hidden" name="show" value="{{ request('show') }}">
+
+                <button
+                    type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded"
+                >
+                    Filter
+                </button>
+
+                <a
+                    href="{{ route('users.index', request('show') ? ['show' => request('show')] : []) }}"
+                    class="px-4 py-2 bg-gray-500 text-white rounded"
+                >
+                    Reset
+                </a>
+
+            </form>
+        </div>
+
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                 <thead class=" bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">

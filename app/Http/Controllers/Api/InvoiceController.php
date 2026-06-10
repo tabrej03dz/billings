@@ -159,102 +159,102 @@ class InvoiceController extends Controller
     //     ]);
     // }
 
-// public function index(Request $request, $type = 'tax')
-// {
-//     $me = $request->user();
-//     $bid = $this->activeBusinessId($request);
+    // public function index(Request $request, $type = 'tax')
+    // {
+    //     $me = $request->user();
+    //     $bid = $this->activeBusinessId($request);
 
-//     $type = $this->normalizeDocType((string) $type);
+    //     $type = $this->normalizeDocType((string) $type);
 
-//     return response()->json([
-//         'business_id' => $bid,
-//         'type' => $type,
-//         'count' => Invoice::withoutGlobalScopes()
-//             ->where('business_id', $bid)
-//             ->where('invoice_type', $type)
-//             ->count(),
-//         'invoices' => Invoice::withoutGlobalScopes()
-//             ->where('business_id', $bid)
-//             ->where('invoice_type', $type)
-//             ->get([
-//                 'id',
-//                 'invoice_number',
-//                 'invoice_type',
-//                 'business_id'
-//             ]),
-//     ]);
-// }
+    //     return response()->json([
+    //         'business_id' => $bid,
+    //         'type' => $type,
+    //         'count' => Invoice::withoutGlobalScopes()
+    //             ->where('business_id', $bid)
+    //             ->where('invoice_type', $type)
+    //             ->count(),
+    //         'invoices' => Invoice::withoutGlobalScopes()
+    //             ->where('business_id', $bid)
+    //             ->where('invoice_type', $type)
+    //             ->get([
+    //                 'id',
+    //                 'invoice_number',
+    //                 'invoice_type',
+    //                 'business_id'
+    //             ]),
+    //     ]);
+    // }
 
 
-public function index(Request $request, $type = 'tax')
-{
-    $me = $request->user();
-    $bid = $this->activeBusinessId($request);
+    public function index(Request $request, $type = 'tax')
+    {
+        $me = $request->user();
+        $bid = $this->activeBusinessId($request);
 
-    $type = $this->normalizeDocType((string) $type);
+        $type = $this->normalizeDocType((string) $type);
 
-    if (!$me->can($this->requiredPerm($type))) {
+        if (!$me->can($this->requiredPerm($type))) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Permission denied'
+            ], 403);
+        }
+
+        $search   = trim((string) $request->input('search', ''));
+        $fromDate = $request->input('from_date');
+        $toDate   = $request->input('to_date');
+        $status   = $request->input('status');
+        $perPage  = (int) $request->input('per_page', 20);
+
+        $q = Invoice::withoutGlobalScopes()
+            ->with('client:id,name')
+            ->where('business_id', $bid)
+            ->where('invoice_type', $type);
+
+        if ($search !== '') {
+            $q->where(function ($query) use ($search) {
+                $query->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhere('total', 'like', "%{$search}%")
+                    ->orWhere('balance', 'like', "%{$search}%")
+                    ->orWhere('received_amount', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($client) use ($search) {
+                        $client->where('name', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%")
+                            ->orWhere('gstin', 'like', "%{$search}%")
+                            ->orWhere('pan', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($fromDate) {
+            $q->whereDate('invoice_date', '>=', $fromDate);
+        }
+
+        if ($toDate) {
+            $q->whereDate('invoice_date', '<=', $toDate);
+        }
+
+        if ($status === 'paid') {
+            $q->where('balance', '<=', 0);
+        } elseif ($status === 'unpaid') {
+            $q->where('received_amount', '<=', 0);
+        } elseif ($status === 'partial') {
+            $q->where('received_amount', '>', 0)
+            ->where('balance', '>', 0);
+        }
+
+        $invoices = $q->latest('invoice_date')
+            ->latest('id')
+            ->paginate($perPage);
+
         return response()->json([
-            'ok' => false,
-            'message' => 'Permission denied'
-        ], 403);
+            'ok' => true,
+            'business_id' => $bid,
+            'type' => $type,
+            'data' => $invoices,
+        ]);
     }
-
-    $search   = trim((string) $request->input('search', ''));
-    $fromDate = $request->input('from_date');
-    $toDate   = $request->input('to_date');
-    $status   = $request->input('status');
-    $perPage  = (int) $request->input('per_page', 20);
-
-    $q = Invoice::withoutGlobalScopes()
-        ->with('client:id,name')
-        ->where('business_id', $bid)
-        ->where('invoice_type', $type);
-
-    if ($search !== '') {
-        $q->where(function ($query) use ($search) {
-            $query->where('invoice_number', 'like', "%{$search}%")
-                ->orWhere('total', 'like', "%{$search}%")
-                ->orWhere('balance', 'like', "%{$search}%")
-                ->orWhere('received_amount', 'like', "%{$search}%")
-                ->orWhereHas('client', function ($client) use ($search) {
-                    $client->where('name', 'like', "%{$search}%")
-                        ->orWhere('mobile', 'like', "%{$search}%")
-                        ->orWhere('gstin', 'like', "%{$search}%")
-                        ->orWhere('pan', 'like', "%{$search}%")
-                        ->orWhere('address', 'like', "%{$search}%");
-                });
-        });
-    }
-
-    if ($fromDate) {
-        $q->whereDate('invoice_date', '>=', $fromDate);
-    }
-
-    if ($toDate) {
-        $q->whereDate('invoice_date', '<=', $toDate);
-    }
-
-    if ($status === 'paid') {
-        $q->where('balance', '<=', 0);
-    } elseif ($status === 'unpaid') {
-        $q->where('received_amount', '<=', 0);
-    } elseif ($status === 'partial') {
-        $q->where('received_amount', '>', 0)
-          ->where('balance', '>', 0);
-    }
-
-    $invoices = $q->latest('invoice_date')
-        ->latest('id')
-        ->paginate($perPage);
-
-    return response()->json([
-        'ok' => true,
-        'business_id' => $bid,
-        'type' => $type,
-        'data' => $invoices,
-    ]);
-}
 
 
     public function update(Request $request, Invoice $invoice)
