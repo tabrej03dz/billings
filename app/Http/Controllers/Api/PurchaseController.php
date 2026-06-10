@@ -349,4 +349,146 @@ class PurchaseController extends Controller
             ], 403));
         }
     }
+
+
+    private function validatePurchase(Request $request): array
+    {
+        $businessId = auth()->user()->business_id ?? null;
+
+        return $request->validate([
+            'supplier_id' => [
+                'nullable',
+                Rule::exists('clients', 'id')
+                    ->when($businessId, fn ($rule) => $rule->where('business_id', $businessId)),
+            ],
+
+            'invoice_no'      => 'nullable|string|max:50',
+            'invoice_date'    => 'required|date',
+
+            'tax_type'        => 'nullable|in:intra_state,inter_state',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'round_off'       => 'nullable|numeric',
+            'paid_amount'     => 'nullable|numeric|min:0',
+
+            'items' => 'required|array|min:1',
+
+            'items.*.item_id' => [
+                'required',
+                Rule::exists('items', 'id')
+                    ->when($businessId, fn ($rule) => $rule->where('business_id', $businessId)),
+            ],
+
+            'items.*.qty'           => 'required|numeric|min:0.001',
+            'items.*.qty_unit'      => 'required|string|in:pcs,gram,kg,carat,pair,set,dozen',
+            'items.*.rate'          => 'required|numeric|min:0',
+            'items.*.gst_rate'      => 'nullable|numeric|min:0',
+
+            'items.*.gross_weight'  => 'nullable|numeric',
+            'items.*.metal_weight'  => 'nullable|numeric',
+            'items.*.stone_weight'  => 'nullable|numeric',
+
+            'bill_file'             => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+    }
+
+    private function calculatePurchase(array $data): array
+    {
+        $taxType = $data['tax_type'] ?? 'intra_state';
+
+        $subtotal = 0;
+        $cgstTotal = 0;
+        $sgstTotal = 0;
+        $igstTotal = 0;
+
+        $items = [];
+
+        foreach ($data['items'] as $row) {
+            $qty = (float) $row['qty'];
+            $qtyUnit = $row['qty_unit'] ?? 'pcs';
+            $rate = (float) $row['rate'];
+            $gstRate = (float) ($row['gst_rate'] ?? 0);
+
+            $taxableAmount = round($qty * $rate, 2);
+
+            $cgstRate = 0;
+            $sgstRate = 0;
+            $igstRate = 0;
+
+            $cgstAmount = 0;
+            $sgstAmount = 0;
+            $igstAmount = 0;
+
+            if ($taxType === 'intra_state') {
+                $cgstRate = $gstRate / 2;
+                $sgstRate = $gstRate / 2;
+
+                $cgstAmount = round(($taxableAmount * $cgstRate) / 100, 2);
+                $sgstAmount = round(($taxableAmount * $sgstRate) / 100, 2);
+            }
+
+            if ($taxType === 'inter_state') {
+                $igstRate = $gstRate;
+                $igstAmount = round(($taxableAmount * $igstRate) / 100, 2);
+            }
+
+            $lineTotal = round($taxableAmount + $cgstAmount + $sgstAmount + $igstAmount, 2);
+
+            $subtotal += $taxableAmount;
+            $cgstTotal += $cgstAmount;
+            $sgstTotal += $sgstAmount;
+            $igstTotal += $igstAmount;
+
+            $items[] = [
+                'item_id'         => $row['item_id'],
+                'qty'             => $qty,
+                'qty_unit'        => $qtyUnit,
+
+                'gross_weight'    => $row['gross_weight'] ?? null,
+                'metal_weight'    => $row['metal_weight'] ?? null,
+                'stone_weight'    => $row['stone_weight'] ?? null,
+
+                'rate'            => $rate,
+                'amount'          => $taxableAmount,
+                'taxable_amount'  => $taxableAmount,
+
+                'gst_rate'        => $gstRate,
+
+                'cgst_rate'       => $cgstRate,
+                'sgst_rate'       => $sgstRate,
+                'igst_rate'       => $igstRate,
+
+                'cgst_amount'     => $cgstAmount,
+                'sgst_amount'     => $sgstAmount,
+                'igst_amount'     => $igstAmount,
+
+                'total_amount'    => $lineTotal,
+            ];
+        }
+
+        $discountAmount = (float) ($data['discount_amount'] ?? 0);
+        $roundOff = (float) ($data['round_off'] ?? 0);
+        $paidAmount = (float) ($data['paid_amount'] ?? 0);
+
+        $totalAmount = round(
+            $subtotal + $cgstTotal + $sgstTotal + $igstTotal - $discountAmount + $roundOff,
+            2
+        );
+
+        $dueAmount = round($totalAmount - $paidAmount, 2);
+
+        return [
+            'items' => $items,
+            'summary' => [
+                'subtotal'        => round($subtotal, 2),
+                'discount_amount' => round($discountAmount, 2),
+                'cgst_amount'     => round($cgstTotal, 2),
+                'sgst_amount'     => round($sgstTotal, 2),
+                'igst_amount'     => round($igstTotal, 2),
+                'round_off'       => round($roundOff, 2),
+                'total_amount'    => $totalAmount,
+                'paid_amount'     => round($paidAmount, 2),
+                'due_amount'      => $dueAmount,
+            ],
+        ];
+    }
 }
