@@ -21,7 +21,7 @@ class ItemController extends Controller
        
         $bid = $this->resolveBusinessId($request);
 
-        $items = Item::where('business_id', $request->business_id)->count();
+        // $items = Item::where('business_id', $request->business_id)->count();
 
         // return response()->json([
         //     'business_id' => $request->business_id,
