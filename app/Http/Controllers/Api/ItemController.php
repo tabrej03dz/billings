@@ -18,7 +18,15 @@ class ItemController extends Controller
 {
     public function index(Request $request)
     {
+       
         $bid = $this->resolveBusinessId($request);
+
+        $items = Item::where('business_id', $request->business_id)->count();
+
+        // return response()->json([
+        //     'business_id' => $request->business_id,
+        //     'items' => Item::select('id', 'name', 'business_id')->get(),
+        // ]);
 
         $q           = trim((string) $request->get('q', ''));
         $category_id = $request->integer('category_id');
@@ -26,7 +34,7 @@ class ItemController extends Controller
         $perPage     = (int) ($request->get('per_page', 15));
         $perPage     = ($perPage > 0 && $perPage <= 100) ? $perPage : 15;
 
-        $items = Item::query()
+        $items = Item::withoutGlobalScope('business')
             ->with('category:id,name')
             ->where('business_id', $bid)
             ->when($q !== '', function ($w) use ($q) {
@@ -997,22 +1005,49 @@ class ItemController extends Controller
     /**
      * Business resolve (same style as your other controllers)
      */
+    // private function resolveBusinessId(Request $request): int
+    // {
+    //     $user = $request->user();
+
+
+    //     $bid = $user?->current_business_id ?? session('active_business_id');
+
+    //     if (!$bid && $user) {
+    //         $bid = $user->businesses()->pluck('businesses.id')->first();
+    //     }
+
+    //     abort_unless($bid, 422, 'Active business not found.');
+
+    //     return (int) $bid;
+    // }
+
+
+    // private function resolveBusinessId(Request $request): int
+    // {
+    //     $bid = (int) $request->input('business_id');
+
+    //     abort_unless($bid > 0, 422, 'business_id is required.');
+
+    //     return $bid;
+    // }
+
+
     private function resolveBusinessId(Request $request): int
     {
+        $bid = (int) $request->input('business_id');
+
+        abort_unless($bid > 0, 422, 'business_id is required.');
+
         $user = $request->user();
 
+        $hasBusiness = $user->businesses()
+            ->where('businesses.id', $bid)
+            ->exists();
 
-        $bid = $user?->current_business_id ?? session('active_business_id');
+        abort_unless($hasBusiness, 403, 'You do not have access to this business.');
 
-        if (!$bid && $user) {
-            $bid = $user->businesses()->pluck('businesses.id')->first();
-        }
-
-        abort_unless($bid, 422, 'Active business not found.');
-
-        return (int) $bid;
+        return $bid;
     }
-
 
 
 
