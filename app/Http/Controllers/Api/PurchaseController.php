@@ -241,97 +241,287 @@ class PurchaseController extends Controller
     //     ]);
     // }
 
-    public function update(Request $request, Purchase $purchase)
-{
-    $this->authorizeBusiness($request, $purchase);
+//     public function update(Request $request, Purchase $purchase)
+// {
+//     $this->authorizeBusiness($request, $purchase);
 
-    $data = $this->validatePurchase($request);
+//     $data = $this->validatePurchase($request);
 
-    $oldBillPath = $purchase->bill_file;
-    $newBillPath = null;
-    $billFilePath = $oldBillPath;
+//     $oldBillPath = $purchase->bill_file;
+//     $newBillPath = null;
+//     $billFilePath = $oldBillPath;
 
-    if ($request->hasFile('bill_file')) {
-        $newBillPath = $request->file('bill_file')->store('purchase-bills', 'public');
-        $billFilePath = $newBillPath;
-    }
+//     if ($request->hasFile('bill_file')) {
+//         $newBillPath = $request->file('bill_file')->store('purchase-bills', 'public');
+//         $billFilePath = $newBillPath;
+//     }
 
-    try {
+//     try {
 
-        $purchase = DB::transaction(function () use ($purchase, $data, $billFilePath) {
+//         $purchase = DB::transaction(function () use ($purchase, $data, $billFilePath) {
 
-            $purchase->load('items.item');
+//             $purchase->load('items.item');
 
-            $this->stock->rollbackReference($purchase);
+//             $this->stock->rollbackReference($purchase);
 
-            $purchase->items()->delete();
+//             $purchase->items()->delete();
 
-            $calculated = $this->calculatePurchase($data);
+//             $calculated = $this->calculatePurchase($data);
 
-            $purchase->update([
-                'supplier_id'       => $data['supplier_id'] ?? null,
-                'invoice_no'        => $data['invoice_no'] ?? null,
-                'invoice_date'      => $data['invoice_date'],
-                'tax_type'          => $data['tax_type'] ?? 'intra_state',
-                'bill_file'         => $billFilePath,
+//             $purchase->update([
+//                 'supplier_id'       => $data['supplier_id'] ?? null,
+//                 'invoice_no'        => $data['invoice_no'] ?? null,
+//                 'invoice_date'      => $data['invoice_date'],
+//                 'tax_type'          => $data['tax_type'] ?? 'intra_state',
+//                 'bill_file'         => $billFilePath,
 
-                'subtotal'          => $calculated['summary']['subtotal'],
-                'discount_amount'   => $calculated['summary']['discount_amount'],
-                'cgst_amount'       => $calculated['summary']['cgst_amount'],
-                'sgst_amount'       => $calculated['summary']['sgst_amount'],
-                'igst_amount'       => $calculated['summary']['igst_amount'],
-                'round_off'         => $calculated['summary']['round_off'],
-                'total_amount'      => $calculated['summary']['total_amount'],
-                'paid_amount'       => $calculated['summary']['paid_amount'],
-                'due_amount'        => $calculated['summary']['due_amount'],
-            ]);
+//                 'subtotal'          => $calculated['summary']['subtotal'],
+//                 'discount_amount'   => $calculated['summary']['discount_amount'],
+//                 'cgst_amount'       => $calculated['summary']['cgst_amount'],
+//                 'sgst_amount'       => $calculated['summary']['sgst_amount'],
+//                 'igst_amount'       => $calculated['summary']['igst_amount'],
+//                 'round_off'         => $calculated['summary']['round_off'],
+//                 'total_amount'      => $calculated['summary']['total_amount'],
+//                 'paid_amount'       => $calculated['summary']['paid_amount'],
+//                 'due_amount'        => $calculated['summary']['due_amount'],
+//             ]);
 
-            foreach ($calculated['items'] as $row) {
-                $purchase->items()->create($row);
-            }
+//             foreach ($calculated['items'] as $row) {
+//                 $purchase->items()->create($row);
+//             }
 
-            $purchase->load('items.item');
+//             $purchase->load('items.item');
 
-            $this->stock->recordPurchase($purchase);
+//             $this->stock->recordPurchase($purchase);
 
-            return $purchase->load([
-                'supplier',
-                'items.item'
-            ]);
-        });
+//             return $purchase->load([
+//                 'supplier',
+//                 'items.item'
+//             ]);
+//         });
 
-        if ($newBillPath && $oldBillPath) {
-            Storage::disk('public')->delete($oldBillPath);
-        }
+//         if ($newBillPath && $oldBillPath) {
+//             Storage::disk('public')->delete($oldBillPath);
+//         }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Purchase updated successfully.',
-            'data' => $purchase,
-        ]);
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'Purchase updated successfully.',
+//             'data' => $purchase,
+//         ]);
 
-    } catch (\Throwable $e) {
+//     } catch (\Throwable $e) {
 
-        if ($newBillPath) {
-            Storage::disk('public')->delete($newBillPath);
-        }
+//         if ($newBillPath) {
+//             Storage::disk('public')->delete($newBillPath);
+//         }
 
-        throw $e;
-    }
-}
+//         throw $e;
+//     }
+// }
 
-    public function destroy(Request $request, Purchase $purchase)
+//     public function destroy(Request $request, Purchase $purchase)
+//     {
+//         $this->authorizeBusiness($request, $purchase);
+
+//         DB::transaction(function () use ($purchase) {
+//             $purchase->load('items.item');
+
+//             $this->stock->rollbackReference($purchase);
+
+//             $purchase->items()->delete();
+//             $purchase->delete();
+//         });
+
+//         return response()->json([
+//             'status' => true,
+//             'message' => 'Purchase deleted and stock reverted successfully.',
+//         ]);
+//     }
+
+//     protected function authorizeBusiness(Request $request, Purchase $purchase): void
+//     {
+//         $currentBusinessId = $request->user()->business_id ?? null;
+
+//         if ($currentBusinessId && $purchase->business_id !== $currentBusinessId) {
+//             abort(response()->json([
+//                 'status' => false,
+//                 'message' => 'Unauthorized business access.',
+//             ], 403));
+//         }
+//     }
+
+
+//     private function validatePurchase(Request $request): array
+//     {
+//         $businessId = $request->user()->business_id ?? null;
+
+//         return $request->validate([
+//             'supplier_id' => [
+//                 'nullable',
+//                 Rule::exists('clients', 'id')
+//                     ->when($businessId, fn ($rule) => $rule->where('business_id', $businessId)),
+//             ],
+
+//             'invoice_no'      => 'nullable|string|max:50',
+//             'invoice_date'    => 'required|date',
+
+//             'tax_type'        => 'nullable|in:intra_state,inter_state',
+//             'discount_amount' => 'nullable|numeric|min:0',
+//             'round_off'       => 'nullable|numeric',
+//             'paid_amount'     => 'nullable|numeric|min:0',
+
+//             'items' => 'required|array|min:1',
+
+//             'items.*.item_id' => [
+//                 'required',
+//                 Rule::exists('items', 'id')
+//                     ->when($businessId, fn ($rule) => $rule->where('business_id', $businessId)),
+//             ],
+
+//             'items.*.qty'           => 'required|numeric|min:0.001',
+//             'items.*.qty_unit'      => 'required|string|in:pcs,gram,kg,carat,pair,set,dozen',
+//             'items.*.rate'          => 'required|numeric|min:0',
+//             'items.*.gst_rate'      => 'nullable|numeric|min:0',
+
+//             'items.*.gross_weight'  => 'nullable|numeric',
+//             'items.*.metal_weight'  => 'nullable|numeric',
+//             'items.*.stone_weight'  => 'nullable|numeric',
+
+//             'bill_file'             => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+//         ]);
+//     }
+
+
+
+
+    public function update(Request $request, $purchase)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | IMPORTANT:
+        | Route model binding/global scope issue avoid karne ke liye
+        | Purchase $purchase ki jagah id se manually fetch kar rahe hain.
+        |--------------------------------------------------------------------------
+        */
+
+        $purchase = Purchase::withoutGlobalScopes()
+            ->with(['items.item'])
+            ->findOrFail($purchase);
+
         $this->authorizeBusiness($request, $purchase);
 
-        DB::transaction(function () use ($purchase) {
-            $purchase->load('items.item');
+        // update me validation purchase ke actual business_id ke hisab se hoga
+        $data = $this->validatePurchase($request, $purchase->business_id);
 
+        $oldBillPath = $purchase->bill_file;
+        $newBillPath = null;
+        $billFilePath = $oldBillPath;
+
+        if ($request->hasFile('bill_file')) {
+            $newBillPath = $request->file('bill_file')->store('purchase-bills', 'public');
+            $billFilePath = $newBillPath;
+        }
+
+        try {
+            $purchase = DB::transaction(function () use ($purchase, $data, $billFilePath) {
+
+                $purchase->load(['items.item']);
+
+                // old stock rollback
+                $this->stock->rollbackReference($purchase);
+
+                // old purchase items delete
+                $purchase->items()->delete();
+
+                $calculated = $this->calculatePurchase($data);
+
+                $purchase->update([
+                    'supplier_id'       => $data['supplier_id'] ?? null,
+                    'invoice_no'        => $data['invoice_no'] ?? null,
+                    'invoice_date'      => $data['invoice_date'],
+                    'tax_type'          => $data['tax_type'] ?? 'intra_state',
+                    'bill_file'         => $billFilePath,
+
+                    'subtotal'          => $calculated['summary']['subtotal'],
+                    'discount_amount'   => $calculated['summary']['discount_amount'],
+                    'cgst_amount'       => $calculated['summary']['cgst_amount'],
+                    'sgst_amount'       => $calculated['summary']['sgst_amount'],
+                    'igst_amount'       => $calculated['summary']['igst_amount'],
+                    'round_off'         => $calculated['summary']['round_off'],
+                    'total_amount'      => $calculated['summary']['total_amount'],
+                    'paid_amount'       => $calculated['summary']['paid_amount'],
+                    'due_amount'        => $calculated['summary']['due_amount'],
+                ]);
+
+                foreach ($calculated['items'] as $row) {
+                    $purchase->items()->create($row);
+                }
+
+                $purchase->unsetRelation('items');
+
+                $purchase->load([
+                    'supplier',
+                    'items.item',
+                ]);
+
+                // new stock add
+                $this->stock->recordPurchase($purchase);
+
+                return $purchase;
+            });
+
+            if ($newBillPath && $oldBillPath) {
+                Storage::disk('public')->delete($oldBillPath);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Purchase updated successfully.',
+                'data' => $purchase,
+            ]);
+
+        } catch (\Throwable $e) {
+            if ($newBillPath) {
+                Storage::disk('public')->delete($newBillPath);
+            }
+
+            throw $e;
+        }
+    }
+
+    public function destroy(Request $request, $purchase)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Route model binding/global scope issue avoid
+        |--------------------------------------------------------------------------
+        */
+
+        $purchase = Purchase::withoutGlobalScopes()
+            ->with(['items.item'])
+            ->findOrFail($purchase);
+
+        $this->authorizeBusiness($request, $purchase);
+
+        $oldBillPath = $purchase->bill_file;
+
+        DB::transaction(function () use ($purchase) {
+            $purchase->load(['items.item']);
+
+            // stock revert
             $this->stock->rollbackReference($purchase);
 
+            // child rows delete
             $purchase->items()->delete();
+
+            // purchase delete
             $purchase->delete();
         });
+
+        if ($oldBillPath) {
+            Storage::disk('public')->delete($oldBillPath);
+        }
 
         return response()->json([
             'status' => true,
@@ -341,9 +531,18 @@ class PurchaseController extends Controller
 
     protected function authorizeBusiness(Request $request, Purchase $purchase): void
     {
-        $currentBusinessId = $request->user()->business_id ?? null;
+        $currentBusinessId = $request->business_id
+            ?? $request->user()->business_id
+            ?? null;
 
-        if ($currentBusinessId && $purchase->business_id !== $currentBusinessId) {
+        /*
+        |--------------------------------------------------------------------------
+        | Agar request me business_id aa rahi hai to purchase usi business ka hona chahiye.
+        | Agar admin/user ka business_id null hai to allow rahega.
+        |--------------------------------------------------------------------------
+        */
+
+        if ($currentBusinessId && (int) $purchase->business_id !== (int) $currentBusinessId) {
             abort(response()->json([
                 'status' => false,
                 'message' => 'Unauthorized business access.',
@@ -351,10 +550,12 @@ class PurchaseController extends Controller
         }
     }
 
-
-    private function validatePurchase(Request $request): array
+    private function validatePurchase(Request $request, ?int $businessId = null): array
     {
-        $businessId = $request->user()->business_id ?? null;
+        $businessId = $businessId
+            ?? $request->business_id
+            ?? $request->user()->business_id
+            ?? null;
 
         return $request->validate([
             'supplier_id' => [
