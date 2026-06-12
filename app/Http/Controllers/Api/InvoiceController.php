@@ -51,6 +51,35 @@ class InvoiceController extends Controller
         return $bid;
     }
 
+
+    protected function requestBusinessId(Request $request): int
+    {
+        $user = $request->user();
+
+        $bid = (int) (
+            $request->input('business_id')
+            ?? $request->query('business_id')
+            ?? $request->header('X-Business-Id')
+            ?? $user->current_business_id
+            ?? session('active_business_id')
+            ?? 0
+        );
+
+        if (!$bid) {
+            $bid = (int) ($user->businesses()->pluck('businesses.id')->first() ?? 0);
+        }
+
+        abort_unless($bid > 0, 422, 'business_id is required.');
+
+        $hasBusiness = $user->businesses()
+            ->where('businesses.id', $bid)
+            ->exists();
+
+        abort_unless($hasBusiness, 403, 'You do not have access to this business.');
+
+        return $bid;
+    }
+
     protected function normalizeDocType(string $docType): string
     {
         $docType = strtolower(trim($docType));
@@ -831,50 +860,143 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     // GET /api/invoices/{invoice}/pdf  (stream inline)
     // ------------------------------------------------------------
+    // public function pdf(Request $request, Invoice $invoice)
+    // {
+    //     $bid = $this->activeBusinessId($request);
+    //     if ((int)$invoice->business_id !== (int)$bid) {
+    //         return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
+    //     }
+
+    //     // If already saved
+    //     if (!empty($invoice->pdf_url) && Storage::disk('public')->exists($invoice->pdf_url)) {
+    //         $path = Storage::disk('public')->path($invoice->pdf_url);
+    //         return response()->file($path, ['Content-Type'=>'application/pdf']);
+    //     }
+
+    //     // else generate on fly (simple template)
+    //     $invoice->load(['client','items','business']);
+    //     $pdf = Pdf::loadView('invoices.pdf_simple', [
+    //         'invoice'=>$invoice,
+    //         'inv'=>$invoice,
+    //         'biz'=>$invoice->business,
+    //         'client'=>$invoice->client,
+    //         'items'=>$invoice->items,
+    //     ])->setPaper('a4');
+
+    //     return response($pdf->output(), 200, ['Content-Type'=>'application/pdf']);
+    // }
+
     public function pdf(Request $request, Invoice $invoice)
     {
-        $bid = $this->activeBusinessId($request);
-        if ((int)$invoice->business_id !== (int)$bid) {
-            return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
+        $bid = $this->requestBusinessId($request);
+
+        if ((int) $invoice->business_id !== (int) $bid) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Unauthorized',
+            ], 403);
         }
 
-        // If already saved
-        if (!empty($invoice->pdf_url) && Storage::disk('public')->exists($invoice->pdf_url)) {
-            $path = Storage::disk('public')->path($invoice->pdf_url);
-            return response()->file($path, ['Content-Type'=>'application/pdf']);
+        try {
+            $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
+            $disk = Storage::disk('public');
+
+            $invoice = $invoice->fresh(['client', 'items', 'business']);
+
+            if (!empty($invoice->pdf_url)) {
+                $path = $this->normalizePdfPath($invoice->pdf_url);
+
+                if ($path && $disk->exists($path)) {
+                    return response($disk->get($path), 200, [
+                        'Content-Type'        => 'application/pdf',
+                        'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+                    ]);
+                }
+
+                $invoice->update(['pdf_url' => null]);
+            }
+
+            $pdf = $this->simplePdfBuild($invoice);
+            $output = $pdf->output();
+
+            $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+            if (!$disk->exists('invoices')) {
+                $disk->makeDirectory('invoices');
+            }
+
+            $disk->put($fileName, $output);
+
+            $invoice->update(['pdf_url' => $fileName]);
+
+            return response($output, 200, [
+                'Content-Type'        => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('API Invoice PDF failed', [
+                'invoice_id' => $invoice->id ?? null,
+                'error'      => $e->getMessage(),
+                'line'       => $e->getLine(),
+                'file'       => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'ok'      => false,
+                'message' => 'PDF generate failed',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        // else generate on fly (simple template)
-        $invoice->load(['client','items','business']);
-        $pdf = Pdf::loadView('invoices.pdf_simple', [
-            'invoice'=>$invoice,
-            'inv'=>$invoice,
-            'biz'=>$invoice->business,
-            'client'=>$invoice->client,
-            'items'=>$invoice->items,
-        ])->setPaper('a4');
-
-        return response($pdf->output(), 200, ['Content-Type'=>'application/pdf']);
     }
 
     // ------------------------------------------------------------
     // GET /api/invoices/{invoice}/pdf-url
     // ------------------------------------------------------------
+    // public function pdfUrl(Request $request, Invoice $invoice)
+    // {
+    //     $bid = $this->activeBusinessId($request);
+    //     if ((int)$invoice->business_id !== (int)$bid) {
+    //         return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
+    //     }
+
+    //     if (!empty($invoice->pdf_url) && Storage::disk('public')->exists($invoice->pdf_url)) {
+    //         return response()->json([
+    //             'ok'=>true,
+    //             'url'=> Storage::disk('public')->url($invoice->pdf_url),
+    //         ]);
+    //     }
+
+    //     return response()->json(['ok'=>false,'message'=>'PDF not found'], 404);
+    // }
+
+
     public function pdfUrl(Request $request, Invoice $invoice)
     {
-        $bid = $this->activeBusinessId($request);
-        if ((int)$invoice->business_id !== (int)$bid) {
-            return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
-        }
+        $bid = $this->requestBusinessId($request);
 
-        if (!empty($invoice->pdf_url) && Storage::disk('public')->exists($invoice->pdf_url)) {
+        if ((int) $invoice->business_id !== (int) $bid) {
             return response()->json([
-                'ok'=>true,
-                'url'=> Storage::disk('public')->url($invoice->pdf_url),
-            ]);
+                'ok' => false,
+                'message' => 'Unauthorized',
+            ], 403);
         }
 
-        return response()->json(['ok'=>false,'message'=>'PDF not found'], 404);
+        if (!empty($invoice->pdf_url)) {
+            $path = $this->normalizePdfPath($invoice->pdf_url);
+
+            if ($path && Storage::disk('public')->exists($path)) {
+                return response()->json([
+                    'ok'  => true,
+                    'url' => Storage::disk('public')->url($path),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'ok' => false,
+            'message' => 'PDF not found',
+        ], 404);
     }
 
     // ------------------------------------------------------------
@@ -1146,7 +1268,16 @@ protected function imageDataUri(?string $pathOrUrl): ?string
         $vm['sign'] = $signDataUri;
 
         // ✅ FIXED: safe view resolve + fallback if missing
-        $view = 'invoices.' . (($biz?->billTemplate->page_name) ?: 'pdf_simple');
+        // $view = 'invoices.' . (($biz?->billTemplate->page_name) ?: 'pdf_simple');
+
+        $templatePage = $biz?->billTemplate?->page_name ?? 'pdf_simple';
+
+        $view = 'invoices.' . $templatePage;
+
+        if (!view()->exists($view)) {
+            $view = 'invoices.pdf_simple';
+        }
+
         if (!view()->exists($view)) {
             $view = 'invoices.pdf_simple';
         }
