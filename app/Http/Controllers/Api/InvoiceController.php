@@ -24,18 +24,18 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------
-    // protected function activeBusinessId(Request $request): int
-    // {
-    //     $me = $request->user();
-    //     $bid = (int)($me->current_business_id ?? session('active_business_id') ?? 0);
-    //     if (!$bid) {
-    //         $bid = (int)($me->businesses()->pluck('businesses.id')->first() ?? 0);
-    //     }
-    //     if (!$bid) abort(422, 'Active business not found.');
-    //     return $bid;
-    // }
-
     protected function activeBusinessId(Request $request): int
+    {
+        $me = $request->user();
+        $bid = (int)($me->current_business_id ?? session('active_business_id') ?? 0);
+        if (!$bid) {
+            $bid = (int)($me->businesses()->pluck('businesses.id')->first() ?? 0);
+        }
+        if (!$bid) abort(422, 'Active business not found.');
+        return $bid;
+    }
+
+    protected function activeBusinessId1(Request $request): int
     { $bid = (int) $request->input('business_id');
 
         abort_unless($bid > 0, 422, 'business_id is required.');
@@ -189,7 +189,7 @@ class InvoiceController extends Controller
     public function index(Request $request, $type = 'tax')
     {
         $me = $request->user();
-        $bid = $this->activeBusinessId($request);
+        $bid = $this->activeBusinessId1($request);
 
         $type = $this->normalizeDocType((string) $type);
 
