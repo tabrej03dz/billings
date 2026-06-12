@@ -886,24 +886,13 @@ class InvoiceController extends Controller
     //     return response($pdf->output(), 200, ['Content-Type'=>'application/pdf']);
     // }
 
-    public function pdf(Request $request, Invoice $invoice)
+    public function pdf(Request $request, $invoice)
     {
-        // $bid = $this->requestBusinessId($request);
-
-        $bid = $this->ensureInvoiceAccess($request, $invoice);
-
-        if ((int) $invoice->business_id !== (int) $bid) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Unauthorized',
-            ], 403);
-        }
+        $invoice = $this->findInvoiceForUser($request, $invoice);
 
         try {
             $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
             $disk = Storage::disk('public');
-
-            $invoice = $invoice->fresh(['client', 'items', 'business']);
 
             if (!empty($invoice->pdf_url)) {
                 $path = $this->normalizePdfPath($invoice->pdf_url);
@@ -915,7 +904,11 @@ class InvoiceController extends Controller
                     ]);
                 }
 
-                $invoice->update(['pdf_url' => null]);
+                Invoice::withoutGlobalScopes()
+                    ->where('id', $invoice->id)
+                    ->update(['pdf_url' => null]);
+
+                $invoice->pdf_url = null;
             }
 
             $pdf = $this->simplePdfBuild($invoice);
@@ -929,7 +922,9 @@ class InvoiceController extends Controller
 
             $disk->put($fileName, $output);
 
-            $invoice->update(['pdf_url' => $fileName]);
+            Invoice::withoutGlobalScopes()
+                ->where('id', $invoice->id)
+                ->update(['pdf_url' => $fileName]);
 
             return response($output, 200, [
                 'Content-Type'        => 'application/pdf',
@@ -973,9 +968,30 @@ class InvoiceController extends Controller
     // }
 
 
-    public function pdfUrl(Request $request, Invoice $invoice)
+    // public function pdfUrl(Request $request, Invoice $invoice)
+    // {
+    //     $bid = $this->ensureInvoiceAccess($request, $invoice);
+
+    //     if (!empty($invoice->pdf_url)) {
+    //         $path = $this->normalizePdfPath($invoice->pdf_url);
+
+    //         if ($path && Storage::disk('public')->exists($path)) {
+    //             return response()->json([
+    //                 'ok'  => true,
+    //                 'url' => Storage::disk('public')->url($path),
+    //             ]);
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'ok' => false,
+    //         'message' => 'PDF not found',
+    //     ], 404);
+    // }
+
+    public function pdfUrl(Request $request, $invoice)
     {
-        $bid = $this->ensureInvoiceAccess($request, $invoice);
+        $invoice = $this->findInvoiceForUser($request, $invoice);
 
         if (!empty($invoice->pdf_url)) {
             $path = $this->normalizePdfPath($invoice->pdf_url);
@@ -1041,71 +1057,133 @@ class InvoiceController extends Controller
 
 
 
-public function show(Request $request, Invoice $invoice)
-{
+// public function show(Request $request, Invoice $invoice)
+// {
    
-    // $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-    // $disk = Storage::disk('public');
+//     // $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//     // $disk = Storage::disk('public');
 
-    // // Always use fresh relations for PDF
-    // $invoice = $invoice->fresh(['client', 'items', 'business']);
+//     // // Always use fresh relations for PDF
+//     // $invoice = $invoice->fresh(['client', 'items', 'business']);
 
-     $bid = $this->ensureInvoiceAccess($request, $invoice);
+//      $bid = $this->ensureInvoiceAccess($request, $invoice);
 
-    $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//     $disk = Storage::disk('public');
+
+//     $invoice = $invoice->fresh(['client', 'items', 'business']);
+
+//     try {
+//         // ✅ 1) If DB has pdf_url and file exists => return file content
+//         if (!empty($invoice->pdf_url)) {
+//             $path = $this->normalizePdfPath($invoice->pdf_url);
+
+//             if ($path && $disk->exists($path)) {
+//                 $content = $disk->get($path);
+
+//                 return response($content, 200, [
+//                     'Content-Type'        => 'application/pdf',
+//                     'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+//                 ]);
+//             }
+
+//             // file missing but db has path -> reset
+//             $invoice->update(['pdf_url' => null]);
+//         }
+
+//         // ✅ 2) Generate fresh pdf
+//         $pdf = $this->simplePdfBuild($invoice);
+
+//         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+//         // ensure folder exists
+//         if (!$disk->exists('invoices')) {
+//             $disk->makeDirectory('invoices');
+//         }
+
+//         // save
+//         $disk->put($fileName, $pdf->output());
+
+//         // update db
+//         $invoice->update(['pdf_url' => $fileName]);
+
+//         // return inline
+//         return response($pdf->output(), 200, [
+//             'Content-Type'        => 'application/pdf',
+//             'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+//         ]);
+//     } catch (\Throwable $e) {
+//         Log::error('API Invoice PDF failed', [
+//             'invoice_id' => $invoice->id ?? null,
+//             'error'      => $e->getMessage(),
+//         ]);
+
+//         return response()->json([
+//             'status'  => false,
+//             'message' => 'PDF generate failed',
+//             'error'   => $e->getMessage(), // production me remove
+//         ], 500);
+//     }
+// }
+
+
+public function show(Request $request, $invoice)
+{
+    $invoice = $this->findInvoiceForUser($request, $invoice);
+
+    $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
     $disk = Storage::disk('public');
 
-    $invoice = $invoice->fresh(['client', 'items', 'business']);
-
     try {
-        // ✅ 1) If DB has pdf_url and file exists => return file content
         if (!empty($invoice->pdf_url)) {
             $path = $this->normalizePdfPath($invoice->pdf_url);
 
             if ($path && $disk->exists($path)) {
-                $content = $disk->get($path);
-
-                return response($content, 200, [
+                return response($disk->get($path), 200, [
                     'Content-Type'        => 'application/pdf',
                     'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
                 ]);
             }
 
-            // file missing but db has path -> reset
-            $invoice->update(['pdf_url' => null]);
+            Invoice::withoutGlobalScopes()
+                ->where('id', $invoice->id)
+                ->update(['pdf_url' => null]);
+
+            $invoice->pdf_url = null;
         }
 
-        // ✅ 2) Generate fresh pdf
         $pdf = $this->simplePdfBuild($invoice);
+        $output = $pdf->output();
 
         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
-        // ensure folder exists
         if (!$disk->exists('invoices')) {
             $disk->makeDirectory('invoices');
         }
 
-        // save
-        $disk->put($fileName, $pdf->output());
+        $disk->put($fileName, $output);
 
-        // update db
-        $invoice->update(['pdf_url' => $fileName]);
+        Invoice::withoutGlobalScopes()
+            ->where('id', $invoice->id)
+            ->update(['pdf_url' => $fileName]);
 
-        // return inline
-        return response($pdf->output(), 200, [
+        return response($output, 200, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
         ]);
+
     } catch (\Throwable $e) {
         Log::error('API Invoice PDF failed', [
             'invoice_id' => $invoice->id ?? null,
             'error'      => $e->getMessage(),
+            'line'       => $e->getLine(),
+            'file'       => $e->getFile(),
         ]);
 
         return response()->json([
-            'status'  => false,
+            'ok'      => false,
             'message' => 'PDF generate failed',
-            'error'   => $e->getMessage(), // production me remove
+            'error'   => $e->getMessage(),
         ], 500);
     }
 }
@@ -1196,83 +1274,272 @@ protected function imageDataUri(?string $pathOrUrl): ?string
     /**
      * Build invoice PDF (same controller)
      */
+    // protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    // {
+    //     $invoice->load(['client', 'items', 'business']);
+
+    //     $inv    = $invoice;
+    //     $biz    = $invoice->business;
+    //     $client = $invoice->client;
+    //     $items  = $invoice->items ?? collect();
+
+    //     // ✅ payment row
+    //     $payRow = InvoicePayment::where('invoice_id', $inv->id)
+    //         ->latest('id')
+    //         ->first();
+
+    //     // ✅ charges
+    //     if (method_exists($invoice, 'additionalCharges')) {
+    //         $charges = $invoice->additionalCharges()->get(['name', 'amount']);
+    //     } else {
+    //         $arr = [];
+    //         if (!empty($invoice->charges_json)) {
+    //             $decoded = json_decode($invoice->charges_json, true);
+    //             if (is_array($decoded)) {
+    //                 foreach ($decoded as $c) {
+    //                     $arr[] = (object)[
+    //                         'name'   => (string)($c['name'] ?? ''),
+    //                         'amount' => (float)($c['amount'] ?? 0),
+    //                     ];
+    //                 }
+    //             }
+    //         }
+    //         $charges = collect($arr);
+    //     }
+
+    //     // ✅ totals
+    //     $subtotal       = (float)($inv->subtotal ?? 0);
+    //     $tax_total      = (float)($inv->tax_amount ?? 0);
+    //     $discount_total = (float)($inv->discount_total ?? 0);
+    //     $charges_total  = (float)($inv->charge_total ?? 0);
+    //     $tcs_percent    = (float)($inv->tcs_percent ?? 0);
+    //     $tcs_amount     = (float)($inv->tcs_amount ?? 0);
+    //     $round_off      = (float)($inv->round_off ?? 0);
+    //     $less_amount    = (float)($inv->less_amount ?? 0);
+    //     $received       = (float)($inv->received_amount ?? 0);
+    //     $grand_total    = (float)($inv->total ?? 0);
+    //     $balance        = (float)($inv->balance ?? 0);
+
+    //     $cgst_amount    = (float)($inv->cgst_amount ?? 0);
+    //     $sgst_amount    = (float)($inv->sgst_amount ?? 0);
+    //     $igst_amount    = (float)($inv->igst_amount ?? 0);
+
+    //     // ✅ FIXED: correct taxAmount
+    //     $taxAmount = (float)($cgst_amount + $sgst_amount + $igst_amount);
+
+    //     // ✅ data URIs (logo/sign)
+    //     $logoDataUri = $this->imageDataUri($biz?->logo);
+    //     $signDataUri = $this->imageDataUri($biz?->signature);
+
+    //     $type = $invoice->invoice_type;
+
+    //     $vm = compact(
+    //         'inv','invoice','biz','client','items','charges','type','taxAmount',
+    //         'logoDataUri','signDataUri',
+    //         'subtotal','tax_total','discount_total','charges_total',
+    //         'tcs_percent','tcs_amount','round_off','less_amount',
+    //         'grand_total','received','balance',
+    //         'cgst_amount','sgst_amount','igst_amount',
+    //         'payRow'
+    //     );
+
+    //     // aliases
+    //     $vm['logo'] = $logoDataUri;
+    //     $vm['sign'] = $signDataUri;
+
+    //     // ✅ FIXED: safe view resolve + fallback if missing
+    //     // $view = 'invoices.' . (($biz?->billTemplate->page_name) ?: 'pdf_simple');
+
+    //     $templatePage = $biz?->billTemplate?->page_name ?? 'pdf_simple';
+
+    //     $view = 'invoices.' . $templatePage;
+
+    //     if (!view()->exists($view)) {
+    //         $view = 'invoices.pdf_simple';
+    //     }
+
+    //     if (!view()->exists($view)) {
+    //         $view = 'invoices.pdf_simple';
+    //     }
+
+    //     return Pdf::loadView($view, $vm)->setPaper('a4');
+    // }
+
+
     protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
     {
-        $invoice->load(['client', 'items', 'business']);
+        /*
+        |--------------------------------------------------------------------------
+        | Safe relations loading without global scope issue
+        |--------------------------------------------------------------------------
+        | client, items, business teeno PDF ke liye required hain.
+        | Isliye yaha normal $invoice->load(['client','items','business'])
+        | ki jagah manual safe loading use kar rahe hain.
+        */
 
-        $inv    = $invoice;
-        $biz    = $invoice->business;
-        $client = $invoice->client;
-        $items  = $invoice->items ?? collect();
+        $inv = $invoice;
 
-        // ✅ payment row
-        $payRow = InvoicePayment::where('invoice_id', $inv->id)
+        // ✅ Business required - without global scopes
+        $biz = Business::withoutGlobalScopes()
+            ->where('id', $invoice->business_id)
+            ->first();
+
+        // ✅ Client required - without global scopes if Client model has scope
+        $client = null;
+
+        if (!empty($invoice->client_id)) {
+            $client = Client::withoutGlobalScopes()
+                ->where('id', $invoice->client_id)
+                ->first();
+        }
+
+        // ✅ Items required - without global scopes if InvoiceItem model has scope
+        $items = InvoiceItem::withoutGlobalScopes()
+            ->where('invoice_id', $invoice->id)
+            ->orderBy('id')
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment row
+        |--------------------------------------------------------------------------
+        */
+        $payRow = InvoicePayment::withoutGlobalScopes()
+            ->where('invoice_id', $inv->id)
             ->latest('id')
             ->first();
 
-        // ✅ charges
+        /*
+        |--------------------------------------------------------------------------
+        | Additional charges
+        |--------------------------------------------------------------------------
+        */
         if (method_exists($invoice, 'additionalCharges')) {
-            $charges = $invoice->additionalCharges()->get(['name', 'amount']);
+            try {
+                $charges = $invoice->additionalCharges()
+                    ->withoutGlobalScopes()
+                    ->get(['name', 'amount']);
+            } catch (\Throwable $e) {
+                $charges = collect();
+            }
         } else {
             $arr = [];
+
             if (!empty($invoice->charges_json)) {
                 $decoded = json_decode($invoice->charges_json, true);
+
                 if (is_array($decoded)) {
                     foreach ($decoded as $c) {
-                        $arr[] = (object)[
-                            'name'   => (string)($c['name'] ?? ''),
-                            'amount' => (float)($c['amount'] ?? 0),
+                        $arr[] = (object) [
+                            'name'   => (string) ($c['name'] ?? ''),
+                            'amount' => (float) ($c['amount'] ?? 0),
                         ];
                     }
                 }
             }
+
             $charges = collect($arr);
         }
 
-        // ✅ totals
-        $subtotal       = (float)($inv->subtotal ?? 0);
-        $tax_total      = (float)($inv->tax_amount ?? 0);
-        $discount_total = (float)($inv->discount_total ?? 0);
-        $charges_total  = (float)($inv->charge_total ?? 0);
-        $tcs_percent    = (float)($inv->tcs_percent ?? 0);
-        $tcs_amount     = (float)($inv->tcs_amount ?? 0);
-        $round_off      = (float)($inv->round_off ?? 0);
-        $less_amount    = (float)($inv->less_amount ?? 0);
-        $received       = (float)($inv->received_amount ?? 0);
-        $grand_total    = (float)($inv->total ?? 0);
-        $balance        = (float)($inv->balance ?? 0);
+        /*
+        |--------------------------------------------------------------------------
+        | Totals
+        |--------------------------------------------------------------------------
+        */
+        $subtotal       = (float) ($inv->subtotal ?? 0);
+        $tax_total      = (float) ($inv->tax_amount ?? 0);
+        $discount_total = (float) ($inv->discount_total ?? 0);
+        $charges_total  = (float) ($inv->charge_total ?? 0);
 
-        $cgst_amount    = (float)($inv->cgst_amount ?? 0);
-        $sgst_amount    = (float)($inv->sgst_amount ?? 0);
-        $igst_amount    = (float)($inv->igst_amount ?? 0);
+        $tcs_percent    = (float) ($inv->tcs_percent ?? 0);
+        $tcs_amount     = (float) ($inv->tcs_amount ?? 0);
+        $round_off      = (float) ($inv->round_off ?? 0);
+        $less_amount    = (float) ($inv->less_amount ?? 0);
 
-        // ✅ FIXED: correct taxAmount
-        $taxAmount = (float)($cgst_amount + $sgst_amount + $igst_amount);
+        $received       = (float) ($inv->received_amount ?? 0);
+        $grand_total    = (float) ($inv->total ?? 0);
+        $balance        = (float) ($inv->balance ?? 0);
 
-        // ✅ data URIs (logo/sign)
+        $cgst_amount    = (float) ($inv->cgst_amount ?? 0);
+        $sgst_amount    = (float) ($inv->sgst_amount ?? 0);
+        $igst_amount    = (float) ($inv->igst_amount ?? 0);
+
+        // ✅ Correct total tax amount
+        $taxAmount = (float) ($cgst_amount + $sgst_amount + $igst_amount);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logo and signature
+        |--------------------------------------------------------------------------
+        */
         $logoDataUri = $this->imageDataUri($biz?->logo);
         $signDataUri = $this->imageDataUri($biz?->signature);
 
-        $type = $invoice->invoice_type;
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice type
+        |--------------------------------------------------------------------------
+        */
+        $type = strtolower((string) ($invoice->invoice_type ?? 'tax'));
 
+        /*
+        |--------------------------------------------------------------------------
+        | View data
+        |--------------------------------------------------------------------------
+        */
         $vm = compact(
-            'inv','invoice','biz','client','items','charges','type','taxAmount',
-            'logoDataUri','signDataUri',
-            'subtotal','tax_total','discount_total','charges_total',
-            'tcs_percent','tcs_amount','round_off','less_amount',
-            'grand_total','received','balance',
-            'cgst_amount','sgst_amount','igst_amount',
+            'inv',
+            'invoice',
+            'biz',
+            'client',
+            'items',
+            'charges',
+            'type',
+            'taxAmount',
+            'logoDataUri',
+            'signDataUri',
+            'subtotal',
+            'tax_total',
+            'discount_total',
+            'charges_total',
+            'tcs_percent',
+            'tcs_amount',
+            'round_off',
+            'less_amount',
+            'grand_total',
+            'received',
+            'balance',
+            'cgst_amount',
+            'sgst_amount',
+            'igst_amount',
             'payRow'
         );
 
-        // aliases
+        // ✅ aliases for old blade templates
         $vm['logo'] = $logoDataUri;
         $vm['sign'] = $signDataUri;
 
-        // ✅ FIXED: safe view resolve + fallback if missing
-        // $view = 'invoices.' . (($biz?->billTemplate->page_name) ?: 'pdf_simple');
+        /*
+        |--------------------------------------------------------------------------
+        | Template resolve
+        |--------------------------------------------------------------------------
+        | billTemplate relation direct use nahi karenge kyuki usme bhi global scope
+        | issue aa sakta hai. Isliye business ko manually load kiya hai.
+        */
 
-        $templatePage = $biz?->billTemplate?->page_name ?? 'pdf_simple';
+        $templatePage = 'pdf_simple';
+
+        try {
+            if ($biz && method_exists($biz, 'billTemplate')) {
+                $billTemplate = $biz->billTemplate()->first();
+
+                if ($billTemplate && !empty($billTemplate->page_name)) {
+                    $templatePage = $billTemplate->page_name;
+                }
+            }
+        } catch (\Throwable $e) {
+            $templatePage = 'pdf_simple';
+        }
 
         $view = 'invoices.' . $templatePage;
 
@@ -1280,11 +1547,13 @@ protected function imageDataUri(?string $pathOrUrl): ?string
             $view = 'invoices.pdf_simple';
         }
 
-        if (!view()->exists($view)) {
-            $view = 'invoices.pdf_simple';
-        }
-
-        return Pdf::loadView($view, $vm)->setPaper('a4');
+        /*
+        |--------------------------------------------------------------------------
+        | Generate PDF
+        |--------------------------------------------------------------------------
+        */
+        return Pdf::loadView($view, $vm)
+            ->setPaper('a4');
     }
 
 
@@ -1338,4 +1607,34 @@ protected function imageDataUri(?string $pathOrUrl): ?string
 
     return $bid;
 }
+
+
+
+
+protected function findInvoiceForUser(Request $request, $invoiceId): Invoice
+{
+    $user = $request->user();
+
+    $invoice = Invoice::withoutGlobalScopes()
+        ->with([
+            'client',
+            'items',
+            'business',
+        ])
+        ->where('id', $invoiceId)
+        ->firstOrFail();
+
+    $invoiceBusinessId = (int) $invoice->business_id;
+
+    abort_unless($invoiceBusinessId > 0, 422, 'Invoice business not found.');
+
+    $hasAccess = $user->businesses()
+        ->where('businesses.id', $invoiceBusinessId)
+        ->exists();
+
+    abort_unless($hasAccess, 403, 'You do not have access to this invoice business.');
+
+    return $invoice;
+}
+
 }
