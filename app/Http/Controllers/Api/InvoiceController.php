@@ -286,16 +286,17 @@ class InvoiceController extends Controller
     }
 
 
-    public function update(Request $request, Invoice $invoice)
+    public function update(Request $request, $invoice)
     {
-        $bid = $this->activeBusinessId($request);
+        $invoice = $this->findInvoiceForUser($request, $invoice);
+        $bid = (int) $invoice->business_id;
 
-        if ((int) $invoice->business_id !== (int) $bid) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Unauthorized',
-            ], 403);
-        }
+        // if ((int) $invoice->business_id !== (int) $bid) {
+        //     return response()->json([
+        //         'ok' => false,
+        //         'message' => 'Unauthorized',
+        //     ], 403);
+        // }
 
         $docType = $this->normalizeDocType((string) ($invoice->invoice_type ?? 'tax'));
 
@@ -382,7 +383,7 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $biz = Business::find($bid);
+        $biz = Business::withoutGlobalScopes()->find($bid);
         if (!$biz) {
             return response()->json([
                 'ok' => false,
@@ -390,7 +391,10 @@ class InvoiceController extends Controller
             ], 404);
         }
 
-        $client = Client::where('business_id', $bid)->find((int) $data['client_id']);
+        $client = Client::withoutGlobalScopes()
+            ->where('business_id', $bid)
+            ->where('id', (int) $data['client_id'])
+            ->first();
         if (!$client) {
             return response()->json([
                 'ok' => false,
@@ -613,7 +617,8 @@ class InvoiceController extends Controller
         }
 
         if (
-            Invoice::where('business_id', $bid)
+            Invoice::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('invoice_number', $reqInvoiceNo)
                 ->where('id', '!=', $invoice->id)
                 ->exists()
@@ -663,7 +668,9 @@ class InvoiceController extends Controller
             $pay,
             $chargesJson
         ) {
-            $invoice->update([
+            Invoice::withoutGlobalScopes()
+                ->where('id', $invoice->id)
+                ->update([
                 'client_id'             => (int) $data['client_id'],
                 'invoice_date'          => $invoiceDate,
 
@@ -709,10 +716,10 @@ class InvoiceController extends Controller
                 'amount_in_words'       => '',
             ]);
 
-            InvoiceItem::where('invoice_id', $invoice->id)->delete();
+            InvoiceItem::withoutGlobalScopes()->where('invoice_id', $invoice->id)->delete();
 
             foreach ($cleanRows as $row) {
-                InvoiceItem::create([
+                InvoiceItem::withoutGlobalScopes()->create([
                     'invoice_id'      => $invoice->id,
                     'item_id'         => $row['item_id'],
                     'description'     => $row['description'],
@@ -741,7 +748,7 @@ class InvoiceController extends Controller
             }
 
             if ($docType === 'tax') {
-                $payRow = InvoicePayment::where('invoice_id', $invoice->id)->latest('id')->first();
+                $payRow = InvoicePayment::withoutGlobalScopes()->where('invoice_id', $invoice->id)->latest('id')->first();
 
                 if (!$payRow) {
                     $payRow = new InvoicePayment();
@@ -796,16 +803,70 @@ class InvoiceController extends Controller
     // ------------------------------------------------------------
     // DELETE /api/invoices/{invoice}
     // ------------------------------------------------------------
-    public function destroy(Request $request, Invoice $invoice)
+    public function destroy(Request $request, $invoice)
     {
-        $bid = $this->activeBusinessId($request);
-        if ((int)$invoice->business_id !== (int)$bid) {
-            return response()->json(['ok'=>false,'message'=>'Unauthorized'], 403);
+        $invoice = $this->findInvoiceForUser($request, $invoice);
+
+        try {
+            DB::transaction(function () use ($invoice) {
+                // ✅ tax invoice hai to stock rollback pehle
+                if (($invoice->invoice_type ?? 'tax') === 'tax') {
+                    if (method_exists($this->stock, 'rollbackSale')) {
+                        $invoiceForStock = Invoice::withoutGlobalScopes()
+                            ->with(['items'])
+                            ->where('id', $invoice->id)
+                            ->first();
+
+                        if ($invoiceForStock) {
+                            $this->stock->rollbackSale($invoiceForStock);
+                        }
+                    }
+                }
+
+                // ✅ invoice payments delete
+                InvoicePayment::withoutGlobalScopes()
+                    ->where('invoice_id', $invoice->id)
+                    ->delete();
+
+                // ✅ invoice items delete
+                InvoiceItem::withoutGlobalScopes()
+                    ->where('invoice_id', $invoice->id)
+                    ->delete();
+
+                // ✅ pdf file delete if exists
+                if (!empty($invoice->pdf_url)) {
+                    $path = $this->normalizePdfPath($invoice->pdf_url);
+
+                    if ($path && Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                    }
+                }
+
+                // ✅ invoice delete without global scopes
+                Invoice::withoutGlobalScopes()
+                    ->where('id', $invoice->id)
+                    ->delete();
+            });
+
+            return response()->json([
+                'ok' => true,
+                'message' => 'Invoice deleted successfully',
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('API Invoice delete failed', [
+                'invoice_id' => $invoice->id ?? null,
+                'error'      => $e->getMessage(),
+                'line'       => $e->getLine(),
+                'file'       => $e->getFile(),
+            ]);
+
+            return response()->json([
+                'ok'      => false,
+                'message' => 'Invoice delete failed',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        $invoice->delete();
-
-        return response()->json(['ok'=>true,'message'=>'Deleted']);
     }
 
 
