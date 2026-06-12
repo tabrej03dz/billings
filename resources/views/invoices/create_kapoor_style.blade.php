@@ -1649,24 +1649,56 @@
 
                 normalizeItemType(v) {
                     const t = s(v).toLowerCase().trim();
-                    return (t === 'product' || t === 'service') ? t : 'service';
+
+                    if (t === 'product' || t === 'service') {
+                        return t;
+                    }
+
+                    return '';
                 },
+
+                // inferItemType(it) {
+                //     const explicitType = this.normalizeItemType(it?.type || it?.item_type || '');
+
+                //     if (explicitType === 'product' || explicitType === 'service') {
+                //         return explicitType;
+                //     }
+
+                //     const hasServicePrice =
+                //         Number(it?.price || 0) > 0 &&
+                //         Number(it?.gold_weight ?? it?.gold_wt ?? 0) <= 0 &&
+                //         Number(it?.silver_weight ?? it?.silver_wt ?? 0) <= 0 &&
+                //         Number(it?.making_charge ?? it?.making_rate ?? 0) <= 0;
+
+                //     if (hasServicePrice) {
+                //         return 'service';
+                //     }
+
+                //     const hasProductData =
+                //         Number(it?.gold_weight ?? it?.gold_wt ?? 0) > 0 ||
+                //         Number(it?.silver_weight ?? it?.silver_wt ?? 0) > 0 ||
+                //         Number(it?.stone_weight ?? it?.gemstone_wt ?? 0) > 0 ||
+                //         Number(it?.diamond_weight ?? it?.diamond_wt ?? 0) > 0 ||
+                //         Number(it?.making_charge ?? it?.making_rate ?? 0) > 0 ||
+                //         !!(it?.gold_purity) ||
+                //         !!(it?.silver_purity);
+
+                //     if (hasProductData) {
+                //         return 'product';
+                //     }
+
+                //     if ((it?.sac || '') && !(it?.hsn || '')) {
+                //         return 'service';
+                //     }
+
+                //     return 'service';
+                // },
 
                 inferItemType(it) {
                     const explicitType = this.normalizeItemType(it?.type || it?.item_type || '');
 
-                    if (explicitType === 'product' || explicitType === 'service') {
+                    if (explicitType) {
                         return explicitType;
-                    }
-
-                    const hasServicePrice =
-                        Number(it?.price || 0) > 0 &&
-                        Number(it?.gold_weight ?? it?.gold_wt ?? 0) <= 0 &&
-                        Number(it?.silver_weight ?? it?.silver_wt ?? 0) <= 0 &&
-                        Number(it?.making_charge ?? it?.making_rate ?? 0) <= 0;
-
-                    if (hasServicePrice) {
-                        return 'service';
                     }
 
                     const hasProductData =
@@ -1676,7 +1708,8 @@
                         Number(it?.diamond_weight ?? it?.diamond_wt ?? 0) > 0 ||
                         Number(it?.making_charge ?? it?.making_rate ?? 0) > 0 ||
                         !!(it?.gold_purity) ||
-                        !!(it?.silver_purity);
+                        !!(it?.silver_purity) ||
+                        !!(it?.hsn);
 
                     if (hasProductData) {
                         return 'product';
@@ -1686,7 +1719,9 @@
                         return 'service';
                     }
 
-                    return 'service';
+                    // ✅ Blank / empty item ko product treat karo,
+                    // taki baad me gold rate + gold weight daalne par amount calculate ho.
+                    return 'product';
                 },
 
                 resetRowForService(r) {
@@ -2150,7 +2185,35 @@
                     this.calc();
                 },
 
+                // onAutoChange(r) {
+                //     if (r.amount_mode !== 'manual') {
+                //         r.manual_amount = this.lineAmount(r);
+                //     } else {
+                //         this.onAmountEdit(r);
+                //         return;
+                //     }
+
+                //     this.calc();
+                // },
+
                 onAutoChange(r) {
+                    // ✅ Agar service type hai lekin user ne metal/stone/diamond field bhar diya,
+                    // to row ko product bana do.
+                    const hasMetalOrJewelleryValue =
+                        n(r.gold_rate, 0) > 0 ||
+                        n(r.gold_wt, 0) > 0 ||
+                        n(r.silver_rate, 0) > 0 ||
+                        n(r.silver_wt, 0) > 0 ||
+                        n(r.gemstone_wt, 0) > 0 ||
+                        n(r.gemstone_charge, 0) > 0 ||
+                        n(r.diamond_wt, 0) > 0 ||
+                        n(r.diamond_charge, 0) > 0 ||
+                        n(r.making_rate, 0) > 0;
+
+                    if (hasMetalOrJewelleryValue) {
+                        r.item_type = 'product';
+                    }
+
                     if (r.amount_mode !== 'manual') {
                         r.manual_amount = this.lineAmount(r);
                     } else {
