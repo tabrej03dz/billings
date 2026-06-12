@@ -21,44 +21,125 @@ class PurchaseController extends Controller
         $this->stock = $stock;
     }
 
+    // public function index(Request $request)
+    // {
+    //     $businessId = $request->business_id ?? $request->user()->business_id ?? null;
+
+    //     $purchases = Purchase::with(['supplier', 'items.item'])
+    //         ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->latest('invoice_date')
+    //         ->paginate($request->get('per_page', 20));
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Purchases fetched successfully.',
+    //         'data' => $purchases,
+    //     ]);
+    // }
+
     public function index(Request $request)
-    {
-        $businessId = $request->business_id ?? $request->user()->business_id ?? null;
+{
+    $businessId = $request->business_id
+        ?? $request->user()->business_id
+        ?? null;
 
-        $purchases = Purchase::with(['supplier', 'items.item'])
-            ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
-            ->latest('invoice_date')
-            ->paginate($request->get('per_page', 20));
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Purchases fetched successfully.',
-            'data' => $purchases,
+    $query = Purchase::withoutGlobalScopes()
+        ->with([
+            'supplier',
+            'items.item',
         ]);
+
+    if ($businessId) {
+        $query->where('business_id', $businessId);
     }
+
+    if ($request->filled('search')) {
+        $search = $request->search;
+
+        $query->where(function ($q) use ($search) {
+            $q->where('invoice_no', 'like', "%{$search}%")
+                ->orWhereHas('supplier', function ($supplierQuery) use ($search) {
+                    $supplierQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%");
+                });
+        });
+    }
+
+    if ($request->filled('supplier_id')) {
+        $query->where('supplier_id', $request->supplier_id);
+    }
+
+    if ($request->filled('from_date')) {
+        $query->whereDate('invoice_date', '>=', $request->from_date);
+    }
+
+    if ($request->filled('to_date')) {
+        $query->whereDate('invoice_date', '<=', $request->to_date);
+    }
+
+    $purchases = $query
+        ->orderByDesc('invoice_date')
+        ->orderByDesc('id')
+        ->paginate($request->get('per_page', 20));
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Purchases fetched successfully.',
+        'data' => $purchases,
+    ]);
+}
+
+    // public function formData(Request $request)
+    // {
+    //     $businessId = $request->user()->business_id ?? null;
+
+    //     $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->where('is_active', true)
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Purchase form data fetched successfully.',
+    //         'data' => [
+    //             'suppliers' => $suppliers,
+    //             'items' => $items,
+    //         ],
+    //     ]);
+    // }
+
 
     public function formData(Request $request)
-    {
-        $businessId = $request->user()->business_id ?? null;
+{
+    $businessId = $request->business_id
+        ?? $request->user()->business_id
+        ?? null;
 
-        $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
-            ->orderBy('name')
-            ->get();
+    $suppliers = Client::withoutGlobalScopes()
+        ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
+        ->orderBy('name')
+        ->get();
 
-        $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+    $items = Item::withoutGlobalScopes()
+        ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get();
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Purchase form data fetched successfully.',
-            'data' => [
-                'suppliers' => $suppliers,
-                'items' => $items,
-            ],
-        ]);
-    }
+    return response()->json([
+        'status' => true,
+        'message' => 'Purchase form data fetched successfully.',
+        'data' => [
+            'suppliers' => $suppliers,
+            'items' => $items,
+        ],
+    ]);
+}
 
     public function show(Request $request, Purchase $purchase)
     {
