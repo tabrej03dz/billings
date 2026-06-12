@@ -888,7 +888,9 @@ class InvoiceController extends Controller
 
     public function pdf(Request $request, Invoice $invoice)
     {
-        $bid = $this->requestBusinessId($request);
+        // $bid = $this->requestBusinessId($request);
+
+        $bid = $this->ensureInvoiceAccess($request, $invoice);
 
         if ((int) $invoice->business_id !== (int) $bid) {
             return response()->json([
@@ -973,14 +975,7 @@ class InvoiceController extends Controller
 
     public function pdfUrl(Request $request, Invoice $invoice)
     {
-        $bid = $this->requestBusinessId($request);
-
-        if ((int) $invoice->business_id !== (int) $bid) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Unauthorized',
-            ], 403);
-        }
+        $bid = $this->ensureInvoiceAccess($request, $invoice);
 
         if (!empty($invoice->pdf_url)) {
             $path = $this->normalizePdfPath($invoice->pdf_url);
@@ -1049,10 +1044,17 @@ class InvoiceController extends Controller
 public function show(Request $request, Invoice $invoice)
 {
    
+    // $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+    // $disk = Storage::disk('public');
+
+    // // Always use fresh relations for PDF
+    // $invoice = $invoice->fresh(['client', 'items', 'business']);
+
+     $bid = $this->ensureInvoiceAccess($request, $invoice);
+
     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
     $disk = Storage::disk('public');
 
-    // Always use fresh relations for PDF
     $invoice = $invoice->fresh(['client', 'items', 'business']);
 
     try {
@@ -1284,4 +1286,56 @@ protected function imageDataUri(?string $pathOrUrl): ?string
 
         return Pdf::loadView($view, $vm)->setPaper('a4');
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    protected function ensureInvoiceAccess(Request $request, Invoice $invoice): int
+    {
+        $user = $request->user();
+
+        $invoiceBusinessId = (int) $invoice->business_id;
+
+        abort_unless($invoiceBusinessId > 0, 422, 'Invoice business not found.');
+
+        $hasAccess = $user->businesses()
+            ->where('businesses.id', $invoiceBusinessId)
+            ->exists();
+
+        abort_unless($hasAccess, 403, 'You do not have access to this invoice business.');
+
+        return $invoiceBusinessId;
+    }
+
+
+
+    protected function selectedBusinessId(Request $request): int
+{
+    $user = $request->user();
+
+    $bid = (int) (
+        $request->input('business_id')
+        ?? $request->query('business_id')
+        ?? $request->header('X-Business-Id')
+        ?? 0
+    );
+
+    abort_unless($bid > 0, 422, 'business_id is required.');
+
+    $hasAccess = $user->businesses()
+        ->where('businesses.id', $bid)
+        ->exists();
+
+    abort_unless($hasAccess, 403, 'You do not have access to this business.');
+
+    return $bid;
+}
 }
