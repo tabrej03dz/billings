@@ -119,7 +119,7 @@ class HomeController extends Controller
             ]);
         }
 
-        $otp = $user->phone == '7753800444'
+        $otp = $user->phone == '7753800444' || $user->phone == '8948467535'
             ? 111111
             : rand(100000, 999999);
 
