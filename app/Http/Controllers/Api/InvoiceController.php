@@ -307,7 +307,7 @@ class InvoiceController extends Controller
             'invoice_number' => ['required', 'string', 'max:255'],
 
             'transport_mode' => ['nullable', 'string', 'max:255'],
-            'gst_no'         => ['nullable', 'string', 'max:50'],
+            // 'gst_no'         => ['nullable', 'string', 'max:50'],
             'reverse_charge' => ['nullable'],
 
             'notes'          => ['nullable', 'string', 'max:2000'],
@@ -701,7 +701,7 @@ class InvoiceController extends Controller
                 'balance'               => $docType === 'tax' ? $balance : $grandTotal,
 
                 'payment_method'        => $data['payment_method'] ?? null,
-                'gst_no'                => $data['gst_no'] ?: null,
+                // 'gst_no'                => $data['gst_no'] ?: null,
                 'transport_mode'        => !empty($data['transport_mode']) ? $data['transport_mode'] : null,
                 'reverse_charge'        => !empty($data['reverse_charge']) ? 1 : 0,
 
