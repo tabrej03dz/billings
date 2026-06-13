@@ -1168,7 +1168,11 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
                 'tax_percent' => $taxPercent,
 
-                'amount_mode' => 'manual',
+                // 'amount_mode' => 'manual',
+                // 'manual_amount' => $finalAmount,
+                // 'amount' => $finalAmount,
+
+                'amount_mode' => 'auto',
                 'manual_amount' => $finalAmount,
                 'amount' => $finalAmount,
                 'making_charge_type' => $type === 'product' ? $makingChargeType : 'percent',

@@ -421,8 +421,8 @@
                                             class="w-32 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
 
                                         <div class="mt-0.5 text-[10px]"
-                                            :class="row.amount_mode === 'manual' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
-                                            x-text="row.amount_mode === 'manual' ? 'Manual' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))">
+                                            :class="row.amount_mode === 'manual_user' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
+                                            x-text="row.amount_mode === 'manual_user' ? 'Manual' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))">
                                         </div>
                                     </td>
 
@@ -1035,6 +1035,8 @@
             // ✅ IMPORTANT
             fixed_price: 0,
 
+            price_priority: false,
+
             tax_percent: 0,
 
             amount_mode: 'auto',
@@ -1499,8 +1501,32 @@
                 return (this.items || []).some(r => r.item_type === 'service');
             },
 
+            // onAutoChange(row) {
+            //     if (!row) return;
+
+            //     row.amount_mode = 'auto';
+            //     row.manual_amount = this.lineAmount(row);
+
+            //     this.calc();
+            // },
+
             onAutoChange(row) {
                 if (!row) return;
+
+                const hasJewelleryValue =
+                    n(row.gold_rate, 0) > 0 ||
+                    n(row.gold_wt, 0) > 0 ||
+                    n(row.silver_rate, 0) > 0 ||
+                    n(row.silver_wt, 0) > 0 ||
+                    n(row.gemstone_wt, 0) > 0 ||
+                    n(row.gemstone_charge, 0) > 0 ||
+                    n(row.diamond_wt, 0) > 0 ||
+                    n(row.diamond_charge, 0) > 0 ||
+                    n(row.making_rate, 0) > 0;
+
+                if (hasJewelleryValue) {
+                    row.item_type = 'product';
+                }
 
                 row.amount_mode = 'auto';
                 row.manual_amount = this.lineAmount(row);
@@ -1508,11 +1534,15 @@
                 this.calc();
             },
 
+
+            
+
             onAmountEdit(row) {
                 if (!row) return;
 
                 const total = n(row.manual_amount, 0);
-                row.amount_mode = total > 0 ? 'manual' : 'auto';
+                // row.amount_mode = total > 0 ? 'manual' : 'auto';
+                row.amount_mode = total > 0 ? 'manual_user' : 'auto';
 
                 if (row.amount_mode === 'manual') {
                     const qty = Math.max(1, n(row.quantity, 1));
@@ -1540,7 +1570,13 @@
                 const qty = Math.max(1, n(r.quantity, 1));
                 const pct = n(r.tax_percent, 0);
 
-                if (r.amount_mode === 'manual' || r.amount_mode === 'manual_user') {
+                // if (r.amount_mode === 'manual' || r.amount_mode === 'manual_user') {
+                //     const total = n(r.manual_amount ?? r.amount, 0);
+                //     const base = pct > 0 ? total / (1 + pct / 100) : total;
+                //     return Math.max(0, n(base.toFixed(2), 0));
+                // }
+
+                if (r.amount_mode === 'manual_user') {
                     const total = n(r.manual_amount ?? r.amount, 0);
                     const base = pct > 0 ? total / (1 + pct / 100) : total;
                     return Math.max(0, n(base.toFixed(2), 0));
@@ -1564,8 +1600,16 @@
 
                 const metalBase = goldAmt + silverAmt + gemstoneCharge + diamondCharge;
 
-                const basePrice = n(r.fixed_price, 0) > 0
-                    ? n(r.fixed_price, 0)
+                // const basePrice = n(r.fixed_price, 0) > 0
+                //     ? n(r.fixed_price, 0)
+                //     : metalBase;
+
+                const fixedPrice = n(r.fixed_price, 0);
+
+                // ✅ Price field me value hai to price priority.
+                // ✅ Price empty/0 hai to gold/silver/stone/diamond se amount banega.
+                const basePrice = fixedPrice > 0
+                    ? fixedPrice
                     : metalBase;
 
                 let makingAmount = 0;
