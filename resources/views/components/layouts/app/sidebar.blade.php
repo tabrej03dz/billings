@@ -268,6 +268,25 @@
             </flux:navlist>
         @endcan
 
+
+
+        @if(session()->has('impersonator_id'))
+            <div class="bg-yellow-100 border-b border-yellow-300 text-yellow-900 px-6 py-3 flex items-center justify-between">
+                <div>
+                    You are logged in as 
+                    <strong>{{ auth()->user()->name }}</strong>
+                    from Super Admin account.
+                </div>
+
+                <form action="{{ route('impersonate.exit') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm">
+                        Exit User
+                    </button>
+                </form>
+            </div>
+        @endif
+
         @can('show api keys')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
