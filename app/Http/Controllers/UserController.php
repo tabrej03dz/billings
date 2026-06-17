@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Business;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -278,6 +279,78 @@ class UserController extends Controller
         $user->forceDelete();
 
         return back()->with('success', 'User permanently deleted.');
+    }
+
+
+
+
+    public function impersonate(User $user)
+    {
+        $admin = auth()->user();
+
+        abort_if(!$admin, 403);
+
+        // Sirf super admin ya view all users permission wale ko allow
+        abort_if(
+            !$admin->hasRole('super admin') && !$admin->can('view all users'),
+            403,
+            'You are not allowed to login as this user.'
+        );
+
+        // Khud ke account me login as na kare
+        abort_if($admin->id === $user->id, 403, 'You cannot impersonate yourself.');
+
+        // Deleted user me login na ho
+        abort_if(method_exists($user, 'trashed') && $user->trashed(), 403, 'Cannot impersonate deleted user.');
+
+        // Super admin kisi dusre super admin me login na kare
+        abort_if($user->hasRole('super admin'), 403, 'Cannot impersonate super admin user.');
+
+        session([
+            'impersonator_id' => $admin->id,
+            'impersonator_name' => $admin->name,
+            'previous_active_business_id' => session('active_business_id'),
+        ]);
+
+        // Target user ka active business set kar do
+        $activeBusinessId = $user->current_business_id
+            ?? $user->businesses()->value('businesses.id');
+
+        if ($activeBusinessId) {
+            session(['active_business_id' => $activeBusinessId]);
+        } else {
+            session()->forget('active_business_id');
+        }
+
+        Auth::login($user);
+
+        return redirect()->route('dashboard')
+            ->with('success', 'You are now logged in as ' . $user->name);
+    }
+
+
+    public function exitImpersonate()
+    {
+        abort_if(!session()->has('impersonator_id'), 403, 'No impersonation session found.');
+
+        $admin = User::findOrFail(session('impersonator_id'));
+
+        Auth::login($admin);
+
+        if (session()->has('previous_active_business_id')) {
+            session(['active_business_id' => session('previous_active_business_id')]);
+        } else {
+            session()->forget('active_business_id');
+        }
+
+        session()->forget([
+            'impersonator_id',
+            'impersonator_name',
+            'previous_active_business_id',
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'You are back to your super admin account.');
     }
 
 }

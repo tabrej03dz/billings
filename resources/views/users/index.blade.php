@@ -97,7 +97,7 @@
                         <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">{{ $u->name }}</td>
                         <td class="px-6 py-3">{{ $u->email }}</td>
                         <td class="px-6 py-3">{{ $u->businesses_count }}</td>
-                        <td class="px-6 py-3 space-x-2">
+                        {{-- <td class="px-6 py-3 space-x-2">
 
                             @if(!$u->trashed())
                                 <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 p-2 text-white">Edit</a>
@@ -117,6 +117,48 @@
                                 <form action="{{ route('users.force', $u->id) }}" method="POST" class="inline-block"
                                       onsubmit="return confirm('Permanently delete?');">
                                     @csrf @method('DELETE')
+                                    <button class="bg-black p-2 text-white">Force Delete</button>
+                                </form>
+                            @endif
+
+                            <a href="{{ route('users.permissions', $u->id) }}" class="bg-sky-600 p-2 text-white">Permissions</a>
+                        </td> --}}
+
+
+                        <td class="px-6 py-3 space-x-2">
+
+                            @if(!$u->trashed())
+                                <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 p-2 text-white">Edit</a>
+
+                                @if(auth()->id() !== $u->id && (auth()->user()->hasRole('super admin') || auth()->user()->can('view all users')))
+                                    @if(!$u->hasRole('super admin'))
+                                        <form action="{{ route('users.impersonate', $u->id) }}" method="POST" class="inline-block"
+                                            onsubmit="return confirm('Login as {{ $u->name }}?');">
+                                            @csrf
+                                            <button class="bg-purple-600 p-2 text-white">
+                                                Login As
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
+
+                                <form action="{{ route('users.destroy', $u->id) }}" method="POST" class="inline-block"
+                                    onsubmit="return confirm('Delete this user?');">
+                                    @csrf 
+                                    @method('DELETE')
+                                    <button class="bg-red-600 p-2 text-white">Delete</button>
+                                </form>
+
+                            @else
+                                <form action="{{ route('users.restore', $u->id) }}" method="POST" class="inline-block">
+                                    @csrf
+                                    <button class="bg-green-600 p-2 text-white">Restore</button>
+                                </form>
+
+                                <form action="{{ route('users.force', $u->id) }}" method="POST" class="inline-block"
+                                    onsubmit="return confirm('Permanently delete?');">
+                                    @csrf 
+                                    @method('DELETE')
                                     <button class="bg-black p-2 text-white">Force Delete</button>
                                 </form>
                             @endif

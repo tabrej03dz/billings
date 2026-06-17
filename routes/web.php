@@ -32,6 +32,7 @@ use App\Models\PlanPaymentController;
 use App\Models\UserPlan;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\UserController;
 
 // frontend web routes:::::
 
@@ -524,6 +525,14 @@ Route::middleware(['auth'])->group(function () {
         // business types
 
     Route::resource('business-types', BusinessTypeController::class);
+
+
+
+    Route::post('/users/{user}/impersonate', [UserController::class, 'impersonate'])
+        ->name('users.impersonate');
+
+    Route::post('/impersonate/exit', [UserController::class, 'exitImpersonate'])
+        ->name('impersonate.exit');
     
 
 });
