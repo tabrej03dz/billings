@@ -1,6 +1,5 @@
 @php
     /** @var \App\Models\Invoice $inv */
-
     $b = $biz ?? ($inv->business ?? null);
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
@@ -322,12 +321,13 @@
             <th style="width:22%;">Item Details</th>
             <th style="width:8%;">HSN</th>
             <th style="width:8%;">Purity</th>
-            <th style="width:8%;">Gross Wt.</th>
+            {{-- <th style="width:8%;">Gross Wt.</th> --}}
             <th style="width:8%;">Net Wt.</th>
             <th style="width:9%;">Gold Rate</th>
             <th style="width:9%;">Gold Value</th>
             <th style="width:8%;">Making</th>
-            <th style="width:8%;">Stone / Gem</th>
+            <th style="width:8%;">Gemstone</th>
+            <th style="width:8%;">Diamond</th>
             <th style="width:8%;">Total</th>
         </tr>
         </thead>
@@ -415,9 +415,35 @@
                     $silverAmount = $silverWeight * $silverRate;
                 }
 
-                $diamondAmount = (float)($it->diamond_amount ?? 0);
-                $stoneAmount   = (float)($it->stone_amount ?? 0);
-                $gemstonePrice = (float)($it->gemstone_price ?? $it->gemstone_amount ?? 0);
+                // $diamondAmount = (float)($it->diamond_amount ?? 0);
+                // $stoneAmount   = (float)($it->stone_amount ?? 0);
+                // $gemstonePrice = (float)($it->gemstone_price ?? $it->gemstone_amount ?? 0);
+
+
+
+                $extraPrice = $itemExtraPrices[(int)($it->item_id ?? 0)] ?? [];
+
+                $diamondAmount = (float) (
+                    $it->diamond_charges
+                    ?? $it->diamond_price
+                    ?? $extraPrice['diamond_price']
+                    ?? 0
+                );
+
+                $gemstonePrice = (float) (
+                    $it->stone_charges
+                    ?? $it->gemstone_amount
+                    ?? $it->stone_amount
+                    ?? $it->stone_price
+                    ?? $extraPrice['gemstone_price']
+                    ?? 0
+                );
+
+                $stoneAmount = 0;
+
+                $stoneGemTotal = $diamondAmount + $gemstonePrice;
+
+
 
                 // making_charge database me percentage save hai
                 $makingPercent = (float)($it->making_charge ?? $it->making_rate ?? $it->making_amount ?? 0);
@@ -481,9 +507,9 @@
                     {{ $purity ?: '-' }}
                 </td>
 
-                <td class="text-right">
+                {{-- <td class="text-right">
                     {{ $grossWeight ? $fmt3($grossWeight) . ' gm' : '-' }}
-                </td>
+                </td> --}}
 
                 <td class="text-right">
                     {{ $netWeight ? $fmt3($netWeight) . ' gm' : '-' }}
@@ -506,7 +532,7 @@
                     @endif
                 </td>
 
-                <td class="text-right">
+                {{-- <td class="text-right">
                     ₹ {{ $fmt2($stoneGemTotal) }}
 
                     @if($diamondAmount)
@@ -519,6 +545,22 @@
 
                     @if($gemstonePrice)
                         <br><span class="small-text">Gem: ₹{{ $fmt2($gemstonePrice) }}</span>
+                    @endif
+                </td> --}}
+
+                <td class="text-right">
+                    @if($gemstonePrice > 0)
+                        ₹ {{ $fmt2($gemstonePrice) }}
+                    @else
+                        -
+                    @endif
+                </td>
+
+                <td class="text-right">
+                    @if($diamondAmount > 0)
+                        ₹ {{ $fmt2($diamondAmount) }}
+                    @else
+                        -
                     @endif
                 </td>
 
