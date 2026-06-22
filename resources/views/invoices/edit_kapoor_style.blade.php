@@ -57,182 +57,182 @@
 
             {{-- TOP PANELS --}}
             {{-- TOP PANELS - COMPACT --}}
-            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
+            {{-- TOP PANELS --}}
+            <div class="grid lg:grid-cols-2 gap-4">
 
-                <div class="grid lg:grid-cols-12 gap-4">
-
-                    {{-- LEFT: Bill To --}}
-                    <div class="lg:col-span-8">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100">
-                                Bill To
-                            </div>
-                        </div>
-
-                        <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">
-                            Party
-                        </label>
-
-                        <div class="flex items-center gap-2 w-full">
-                            <div class="relative flex-1 min-w-0" @click.outside="closeClientDD()">
-
-                                <input type="text"
-                                    class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm"
-                                    placeholder="Search client by name / mobile..."
-                                    x-model="clientSearch"
-                                    @focus="openClientDD()"
-                                    @input="openClientDD()"
-                                    @keydown.arrow-down.prevent="clientDDDown()"
-                                    @keydown.arrow-up.prevent="clientDDUp()"
-                                    @keydown.enter.prevent="clientDDPick()">
-
-                                <input type="hidden" name="client_id" :value="clientId">
-
-                                <div x-show="clientDD.open"
-                                    x-transition.opacity
-                                    class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
-                                        bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
-                                        max-h-72 overflow-auto"
-                                    :style="clientDD.style"
-                                    style="display:none;"
-                                    @mousedown.prevent.stop>
-
-                                    <template x-if="filteredClients().length === 0">
-                                        <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
-                                            No results
-                                        </div>
-                                    </template>
-
-                                    <template x-for="(c, idx) in filteredClients().slice(0,80)" :key="c.id">
-                                        <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
-                                            hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                            :class="idx === clientDD.hi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                            @mouseenter="clientDD.hi = idx"
-                                            @mousedown.prevent.stop="selectClientFromDD(c)">
-
-                                            <div class="truncate"
-                                                x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></div>
-
-                                            <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
-                                                x-text="c.state_code ? ('GST ' + c.state_code) : ''"></div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-
-                            <button type="button"
-                                class="w-[90px] shrink-0 px-4 py-2 rounded-lg bg-[#4C8DFF] hover:bg-[#6CA8FF] text-white text-sm font-medium"
-                                @click="openClientModal()">
-                                + New
-                            </button>
-                        </div>
-
-                        {{-- Compact Party Details --}}
-                        <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                            <div>
-                                <div class="text-gray-500 dark:text-neutral-400">Name</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.name || '-'"></div>
-                            </div>
-
-                            <div>
-                                <div class="text-gray-500 dark:text-neutral-400">Phone</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.mobile || '-'"></div>
-                            </div>
-
-                            <div>
-                                <div class="text-gray-500 dark:text-neutral-400">State</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.state || '-'"></div>
-                            </div>
-
-                            <div>
-                                <div class="text-gray-500 dark:text-neutral-400">State Code</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.state_code || '-'"></div>
-                            </div>
-
-                            <div>
-                                <div class="text-gray-500 dark:text-neutral-400">Pin</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.pincode || '-'"></div>
-                            </div>
-
-                            <div>
-                                <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.gstin || 'Unregistered'"></div>
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
-                                <div class="font-semibold truncate"
-                                    :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
-                                    x-text="isIntra() ? 'Intra State (CGST+SGST)' : 'Inter State (IGST)'">
-                                </div>
-                            </div>
-
-                            <div class="col-span-2 md:col-span-4">
-                                <div class="text-gray-500 dark:text-neutral-400">Address</div>
-                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
-                                    x-text="party.address || '-'"></div>
-                            </div>
+                {{-- LEFT: Bill To --}}
+                <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                    <div class="mb-3">
+                        <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100">
+                            Bill To
                         </div>
                     </div>
 
-                    {{-- RIGHT: Invoice Details --}}
-                    <div class="lg:col-span-4 lg:border-l lg:pl-4 border-gray-200 dark:border-neutral-700">
-                        <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100 mb-2">
+                    <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">
+                        Party
+                    </label>
+
+                    {{-- Search + New Button Same Row --}}
+                    <div class="flex items-center gap-2 w-full">
+                        <div class="relative flex-1 min-w-[350px]" @click.outside="closeClientDD()">
+
+                            <input type="text"
+                                class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
+                                    bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm"
+                                placeholder="Search client by name / mobile..."
+                                x-model="clientSearch"
+                                @focus="openClientDD()"
+                                @input="openClientDD()"
+                                @keydown.arrow-down.prevent="clientDDDown()"
+                                @keydown.arrow-up.prevent="clientDDUp()"
+                                @keydown.enter.prevent="clientDDPick()">
+
+                            <input type="hidden" name="client_id" :value="clientId">
+
+                            <div x-show="clientDD.open"
+                                x-transition.opacity
+                                class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
+                                    bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
+                                    max-h-72 overflow-auto"
+                                :style="clientDD.style"
+                                style="display:none;"
+                                @mousedown.prevent.stop>
+
+                                <template x-if="filteredClients().length === 0">
+                                    <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                                        No results
+                                    </div>
+                                </template>
+
+                                <template x-for="(c, idx) in filteredClients().slice(0,80)" :key="c.id">
+                                    <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
+                                        hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                        :class="idx === clientDD.hi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                        @mouseenter="clientDD.hi = idx"
+                                        @mousedown.prevent.stop="selectClientFromDD(c)">
+
+                                        <div class="truncate"
+                                            x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></div>
+
+                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
+                                            x-text="c.state_code ? ('GST ' + c.state_code) : ''"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <button type="button"
+                            class="w-[95px] shrink-0 px-4 py-2 rounded-lg bg-[#4C8DFF] hover:bg-[#6CA8FF] text-white text-sm font-medium"
+                            @click="openClientModal()">
+                            + New
+                        </button>
+                    </div>
+
+                    {{-- Party Details --}}
+                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">Name</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.name || '-'"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">Phone</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.mobile || '-'"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">State</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.state || '-'"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">State Code</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.state_code || '-'"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">Pin</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.pincode || '-'"></div>
+                        </div>
+
+                        <div>
+                            <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.gstin || 'Unregistered'"></div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
+                            <div class="font-semibold truncate"
+                                :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
+                                x-text="isIntra() ? 'Intra State (CGST+SGST)' : 'Inter State (IGST)'">
+                            </div>
+                        </div>
+
+                        <div class="col-span-2 md:col-span-4">
+                            <div class="text-gray-500 dark:text-neutral-400">Address</div>
+                            <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                x-text="party.address || '-'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- RIGHT: Invoice Details --}}
+                <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                    <div class="mb-3">
+                        <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100">
                             Invoice Details
                         </div>
-
-                        <div class="grid md:grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                    Date
-                                </label>
-                                <input type="date"
-                                    name="invoice_date"
-                                    x-model="hdr.date"
-                                    required
-                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                    Bill No.
-                                </label>
-                                <input :value="invoiceNo"
-                                    readonly
-                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                    Invoice Prefix
-                                </label>
-                                <input :value="computedPrefix"
-                                    readonly
-                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
-
-                                <input type="hidden" name="invoice_prefix" :value="computedPrefix">
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
-                                    Transport Mode
-                                </label>
-                                <input type="text"
-                                    name="transport_mode"
-                                    x-model="hdr.transport_mode"
-                                    placeholder="By Hand"
-                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                            </div>
-                        </div>
                     </div>
 
+                    <div class="grid md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                Date
+                            </label>
+                            <input type="date"
+                                name="invoice_date"
+                                x-model="hdr.date"
+                                required
+                                class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                Bill No.
+                            </label>
+                            <input :value="invoiceNo"
+                                readonly
+                                class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                Invoice Prefix
+                            </label>
+                            <input :value="computedPrefix"
+                                readonly
+                                class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+
+                            <input type="hidden" name="invoice_prefix" :value="computedPrefix">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                Transport Mode
+                            </label>
+                            <input type="text"
+                                name="transport_mode"
+                                x-model="hdr.transport_mode"
+                                placeholder="By Hand"
+                                class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                        </div>
+                    </div>
                 </div>
             </div>
 

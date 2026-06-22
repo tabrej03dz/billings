@@ -34,6 +34,6 @@ class Business extends Model
 
     public function businessType()
     {
-        return $this->belongsTo(\App\Models\BusinessType::class);
+        return $this->belongsTo(\App\Models\BusinessType::class, 'type');
     }
 }

@@ -48,7 +48,6 @@
         $selectedState = $business->state_code . ',' . $business->state; // "09,Uttar Pradesh"
     }
 
-    $selectedBusinessType = old('type', $business->type ?? '');
 @endphp
 
 <div class="space-y-6">
@@ -103,8 +102,9 @@
                 Business Type <span class="text-red-600">*</span>
             </label>
 
+                
             <select
-                name="business_type_id"
+                name="type"
                 required
                 class="mt-1 w-full border rounded px-3 py-2
                 bg-gray-300 dark:bg-[#242833] text-gray-700 dark:text-gray-300 border-gray-600
@@ -113,8 +113,9 @@
                 <option value="">-- Select Business Type --</option>
 
                 @foreach($businessTypes as $businessType)
+                
                     <option value="{{ $businessType->id ?? $businessType->id }}"
-                        {{ (string)$selectedBusinessType === (string)($businessType->slug ?? $businessType->id) ? 'selected' : '' }}>
+                        {{ $business->type == ($businessType->id) ? 'selected' : '' }}>
                         {{ $businessType->name }}
                     </option>
                 @endforeach

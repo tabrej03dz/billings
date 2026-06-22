@@ -369,7 +369,7 @@ class BusinessController extends Controller
             ],
 
             // ✅ Dynamic Business Type
-            'business_type_id' => [
+            'type' => [
                 'required',
                 'integer',
                 Rule::exists('business_types', 'id'),
@@ -465,6 +465,7 @@ class BusinessController extends Controller
 
             $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
         }
+
 
         $business->update($data);
 
