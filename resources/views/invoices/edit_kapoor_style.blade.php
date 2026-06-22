@@ -56,284 +56,334 @@
             @method('PUT')
 
             {{-- TOP PANELS --}}
-            <div class="grid lg:grid-cols-4 gap-4">
+            {{-- TOP PANELS - COMPACT --}}
+            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-4">
 
-                {{-- LEFT: Bill To --}}
-                <div class="lg:col-span-2 p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                    <div class="flex items-center justify-between mb-2">
-                        <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100">Bill To</div>
-                    </div>
+                <div class="grid lg:grid-cols-12 gap-4">
 
-                    <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
-                    <div class="flex gap-2">
-                        <div class="flex-1 relative"
-                             @click.outside="closeClientDD()">
-
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">Party</label>
-
-                            <!-- input -->
-                            <input type="text"
-                                   class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
-                  bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm"
-                                   placeholder="Search client by name / mobile..."
-                                   x-model="clientSearch"
-                                   @focus="openClientDD()"
-                                   @input="openClientDD()"
-                                   @keydown.arrow-down.prevent="clientDDDown()"
-                                   @keydown.arrow-up.prevent="clientDDUp()"
-                                   @keydown.enter.prevent="clientDDPick()"
-                            >
-
-                            <!-- hidden actual value -->
-                            <input type="hidden" name="client_id" :value="clientId">
-
-                            <!-- dropdown -->
-                            <div x-show="clientDD.open"
-                                 x-transition.opacity
-                                 class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
-                bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
-                max-h-72 overflow-auto"
-                                 :style="clientDD.style"
-                                 style="display:none;"
-                                 @mousedown.prevent.stop>
-
-                                <template x-if="filteredClients().length === 0">
-                                    <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">No results</div>
-                                </template>
-
-                                <template x-for="(c, idx) in filteredClients().slice(0,80)" :key="c.id">
-                                    <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
-                        hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                         :class="idx === clientDD.hi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                         @mouseenter="clientDD.hi = idx"
-                                         @mousedown.prevent.stop="selectClientFromDD(c)">
-
-                                        <div class="truncate"
-                                             x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></div>
-
-                                        <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
-                                             x-text="c.state_code ? ('GST ' + c.state_code) : ''"></div>
-                                    </div>
-                                </template>
+                    {{-- LEFT: Bill To --}}
+                    <div class="lg:col-span-8">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100">
+                                Bill To
                             </div>
                         </div>
 
+                        <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300 mb-1">
+                            Party
+                        </label>
 
-                        <button type="button"
-                                class="px-3 py-2 rounded border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 hover:bg-gray-50 dark:hover:bg-neutral-800 text-sm"
+                        <div class="flex items-center gap-2 w-full">
+                            <div class="relative flex-1 min-w-0" @click.outside="closeClientDD()">
+
+                                <input type="text"
+                                    class="w-full border rounded px-3 py-2 border-gray-300 dark:border-neutral-700
+                                        bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm"
+                                    placeholder="Search client by name / mobile..."
+                                    x-model="clientSearch"
+                                    @focus="openClientDD()"
+                                    @input="openClientDD()"
+                                    @keydown.arrow-down.prevent="clientDDDown()"
+                                    @keydown.arrow-up.prevent="clientDDUp()"
+                                    @keydown.enter.prevent="clientDDPick()">
+
+                                <input type="hidden" name="client_id" :value="clientId">
+
+                                <div x-show="clientDD.open"
+                                    x-transition.opacity
+                                    class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700
+                                        bg-white dark:bg-neutral-900 shadow-2xl z-[999999]
+                                        max-h-72 overflow-auto"
+                                    :style="clientDD.style"
+                                    style="display:none;"
+                                    @mousedown.prevent.stop>
+
+                                    <template x-if="filteredClients().length === 0">
+                                        <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                                            No results
+                                        </div>
+                                    </template>
+
+                                    <template x-for="(c, idx) in filteredClients().slice(0,80)" :key="c.id">
+                                        <div class="px-3 py-2 text-xs cursor-pointer flex items-center justify-between gap-3
+                                            hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                            :class="idx === clientDD.hi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                            @mouseenter="clientDD.hi = idx"
+                                            @mousedown.prevent.stop="selectClientFromDD(c)">
+
+                                            <div class="truncate"
+                                                x-text="c.mobile ? (c.name + ' (' + c.mobile + ')') : c.name"></div>
+
+                                            <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap"
+                                                x-text="c.state_code ? ('GST ' + c.state_code) : ''"></div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <button type="button"
+                                class="w-[90px] shrink-0 px-4 py-2 rounded-lg bg-[#4C8DFF] hover:bg-[#6CA8FF] text-white text-sm font-medium"
                                 @click="openClientModal()">
-                            + New
-                        </button>
+                                + New
+                            </button>
+                        </div>
+
+                        {{-- Compact Party Details --}}
+                        <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                            <div>
+                                <div class="text-gray-500 dark:text-neutral-400">Name</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.name || '-'"></div>
+                            </div>
+
+                            <div>
+                                <div class="text-gray-500 dark:text-neutral-400">Phone</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.mobile || '-'"></div>
+                            </div>
+
+                            <div>
+                                <div class="text-gray-500 dark:text-neutral-400">State</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.state || '-'"></div>
+                            </div>
+
+                            <div>
+                                <div class="text-gray-500 dark:text-neutral-400">State Code</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.state_code || '-'"></div>
+                            </div>
+
+                            <div>
+                                <div class="text-gray-500 dark:text-neutral-400">Pin</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.pincode || '-'"></div>
+                            </div>
+
+                            <div>
+                                <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.gstin || 'Unregistered'"></div>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
+                                <div class="font-semibold truncate"
+                                    :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
+                                    x-text="isIntra() ? 'Intra State (CGST+SGST)' : 'Inter State (IGST)'">
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 md:col-span-4">
+                                <div class="text-gray-500 dark:text-neutral-400">Address</div>
+                                <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
+                                    x-text="party.address || '-'"></div>
+                            </div>
+                        </div>
                     </div>
 
-                    {{-- details --}}
-                    <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">Name</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.name || '-'"></div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">Phone</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.mobile || '-'"></div>
-                        </div>
-                        <div class="col-span-2">
-                            <div class="text-gray-500 dark:text-neutral-400">Add</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.address || '-'"></div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">State</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state || '-'"></div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">State Code</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.state_code || '-'"></div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">Pin</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.pincode || '-'"></div>
-                        </div>
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">GSTIN</div>
-                            <div class="font-semibold text-gray-800 dark:text-neutral-100" x-text="party.gstin || 'Unregistered'"></div>
+                    {{-- RIGHT: Invoice Details --}}
+                    <div class="lg:col-span-4 lg:border-l lg:pl-4 border-gray-200 dark:border-neutral-700">
+                        <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100 mb-2">
+                            Invoice Details
                         </div>
 
+                        <div class="grid md:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                    Date
+                                </label>
+                                <input type="date"
+                                    name="invoice_date"
+                                    x-model="hdr.date"
+                                    required
+                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                            </div>
 
-                        <div>
-                            <div class="text-gray-500 dark:text-neutral-400">GST Type</div>
-                            <div class="font-semibold" :class="isIntra() ? 'text-green-600' : 'text-purple-600'"
-                                 x-text="isIntra() ? 'Intra State (CGST+SGST)' : 'Inter State (IGST)'"></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                    Bill No.
+                                </label>
+                                <input :value="invoiceNo"
+                                    readonly
+                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                    Invoice Prefix
+                                </label>
+                                <input :value="computedPrefix"
+                                    readonly
+                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
+
+                                <input type="hidden" name="invoice_prefix" :value="computedPrefix">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
+                                    Transport Mode
+                                </label>
+                                <input type="text"
+                                    name="transport_mode"
+                                    x-model="hdr.transport_mode"
+                                    placeholder="By Hand"
+                                    class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {{-- RIGHT: Invoice meta --}}
-                <div class="lg:col-span-2 p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                    <div class="grid md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Date</label>
-                            <input type="date" name="invoice_date" x-model="hdr.date" required
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Bill No.</label>
-                            <input :value="invoiceNo" readonly
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Invoice Prefix</label>
-                            <input :value="computedPrefix" readonly
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200 text-sm">
-                            <input type="hidden" name="invoice_prefix" :value="computedPrefix">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">Transport Mode</label>
-                            <input type="text" name="transport_mode" x-model="hdr.transport_mode" placeholder="By Hand"
-                                   class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-sm">
-                        </div>
-                    </div>
                 </div>
             </div>
 
             {{-- ================= TABLE ================= --}}
-            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border-separate border-spacing-0 invoice-table">
-                        <thead class="bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-200">
-                            <tr class="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium text-left text-xs">
-                                <th>S.No.</th>
-                                <th>Description</th>
-                                <th>HSN / SAC</th>
-                                <th class="text-center">Qty</th>
-                                <th>Price</th>
+            {{-- ================= ITEMS ================= --}}
+            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-[#BFE0E0] dark:bg-neutral-900 my-4 overflow-visible">
 
-                                <th x-show="showItemField('making_charge')">Making Charge</th>
-                                <th x-show="showItemField('making_charge')">Making Type</th>
-                                <th x-show="showItemField('gold_purity')">Gold Rate (₹/g)</th>
-                                <th x-show="showItemField('gold_weight')">Gold Wt.(Gm)</th>
-                                <th x-show="showItemField('silver_purity')">Silver Rate (₹/g)</th>
-                                <th x-show="showItemField('silver_weight')">Silver Wt.(Gm)</th>
-                                <th x-show="showItemField('stone_weight')">Gem Stone Wt.(Ct.)</th>
-                                <th x-show="showItemField('stone_charges')">Gemstone Charge</th>
-                                <th x-show="showItemField('diamond_weight')">Diamond Wt.(Ct.)</th>
-                                <th x-show="showItemField('diamond_charges')">Diamond Charge</th>
+                <div class="bg-[#BFE0E0] dark:bg-neutral-800 px-4 py-3">
+                    <h2 class="text-sm font-semibold text-gray-800 dark:text-neutral-100">
+                        Invoice Items
+                    </h2>
+                </div>
 
-                                <th>Tax %</th>
-                                <th>Amount (Editable)</th>
-                                <th></th>
-                            </tr>
-                        </thead>
+                <div class="p-3 space-y-3 bg-[#F3F4F6] dark:bg-[#1A1D23]">
+                    <template x-for="(row, i) in items" :key="row._k">
+                        <div class="rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3">
 
-                        <tbody class="divide-y divide-gray-200 dark:divide-neutral-700 text-gray-900 dark:text-neutral-100">
-                            <template x-for="(row, i) in items" :key="row._k">
-                                <tr>
-                                    <td class="px-3 py-2 text-center text-xs" x-text="i+1"></td>
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="text-xs font-semibold text-gray-700 dark:text-neutral-200">
+                                    Item #<span x-text="i + 1"></span>
+                                </div>
 
-                                    <td class="px-3 py-2">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <div class="flex-1 relative" @click.outside="closeItemDD(i)">
-                                                <input type="text"
-                                                    :id="'item_search_' + i"
-                                                    class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                                    placeholder="Search item..."
-                                                    x-model="row.search"
-                                                    @focus="openItemDD(i)"
-                                                    @input.debounce.50ms="openItemDD(i)"
-                                                    @keydown.escape.prevent="closeItemDD(i)"
-                                                    @keydown.arrow-down.prevent="itemDDDown(i)"
-                                                    @keydown.arrow-up.prevent="itemDDUp(i)"
-                                                    @keydown.enter.prevent="itemDDPick(i)">
+                                <button type="button" @click="remove(i)"
+                                    class="text-red-600 hover:text-red-700 text-xl leading-none">
+                                    ×
+                                </button>
+                            </div>
 
-                                                <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
+                            <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
 
-                                                <div x-show="row.ddOpen"
-                                                    x-transition.opacity
-                                                    class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl z-[999999] overflow-hidden"
-                                                    :style="row.ddStyle + ';width:900px;max-width:95vw;'"
-                                                    style="display:none;"
-                                                    @mousedown.prevent.stop>
+                                {{-- LEFT: Description --}}
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">
+                                        Description
+                                    </label>
 
-                                                    <div class="grid grid-cols-12 h-72">
-                                                        <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
-                                                            <template x-if="filteredItems(row.search).length === 0">
-                                                                <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
-                                                                    No results
-                                                                </div>
-                                                            </template>
-
-                                                            <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
-                                                                <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3 hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                                                    :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                                                    @mouseenter="
-                                                                        row.ddHi = idx;
-                                                                        row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                                                                        row.ddPreview = it.description || it.desc || it.long_description || '';
-                                                                    "
-                                                                    @mousedown.prevent.stop="selectItemFromDD(i, it)">
-
-                                                                    <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
-                                                                        x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
-
-                                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[110px] text-right"
-                                                                        x-text="it.price ? '₹ ' + Number(it.price).toFixed(2) : ''"></div>
-                                                                </div>
-                                                            </template>
-                                                        </div>
-
-                                                        <div class="col-span-5 p-3 overflow-auto">
-                                                            <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">Preview</div>
-                                                            <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
-                                                                x-text="row.ddPreviewName || 'Hover on an item'"></div>
-                                                            <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
-                                                                x-text="row.ddPreview || 'No description available'"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <div class="relative mb-2" @click.outside="closeItemDD(i)">
+                                        <div class="flex items-center gap-1">
+                                            <input type="text"
+                                                :id="'item_search_' + i"
+                                                class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
+                                                placeholder="Search item..."
+                                                x-model="row.search"
+                                                @focus="openItemDD(i)"
+                                                @input.debounce.50ms="openItemDD(i)"
+                                                @keydown.escape.prevent="closeItemDD(i)"
+                                                @keydown.arrow-down.prevent="itemDDDown(i)"
+                                                @keydown.arrow-up.prevent="itemDDUp(i)"
+                                                @keydown.enter.prevent="itemDDPick(i)">
 
                                             <button type="button"
-                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap hover:bg-gray-50 dark:hover:bg-neutral-800"
+                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap bg-sky-600 text-white hover:bg-sky-700"
                                                 @click="openItemModal(i)">
                                                 + New
                                             </button>
                                         </div>
 
-                                        <textarea x-model="row.description" required rows="6"
-                                            class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs resize-y leading-tight min-h-[120px]"
-                                            placeholder="Enter description..."></textarea>
-                                    </td>
+                                        <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
 
-                                    <td class="px-3 py-2">
+                                        <div x-show="row.ddOpen"
+                                            x-transition.opacity
+                                            class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl z-[999999] overflow-hidden"
+                                            :style="row.ddStyle + ';width:900px;max-width:95vw;'"
+                                            style="display:none;"
+                                            @mousedown.prevent.stop>
+
+                                            <div class="grid grid-cols-12 h-72">
+                                                <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
+                                                    <template x-if="filteredItems(row.search).length === 0">
+                                                        <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
+                                                            No results
+                                                        </div>
+                                                    </template>
+
+                                                    <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
+                                                        <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3 hover:bg-gray-100 dark:hover:bg-neutral-800"
+                                                            :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                            @mouseenter="
+                                                                row.ddHi = idx;
+                                                                row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                                                                row.ddPreview = it.description || it.desc || it.long_description || '';
+                                                            "
+                                                            @mousedown.prevent.stop="selectItemFromDD(i, it)">
+
+                                                            <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
+                                                                x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
+
+                                                            <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[110px] text-right"
+                                                                x-text="it.price ? '₹ ' + Number(it.price).toFixed(2) : ''"></div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+
+                                                <div class="col-span-5 p-3 overflow-auto">
+                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">
+                                                        Preview
+                                                    </div>
+                                                    <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
+                                                        x-text="row.ddPreviewName || 'Hover on an item'"></div>
+                                                    <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
+                                                        x-text="row.ddPreview || 'No description available'"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <textarea x-model="row.description"
+                                        required
+                                        rows="6"
+                                        class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs resize-y leading-tight min-h-[160px]"
+                                        placeholder="Enter description..."></textarea>
+                                </div>
+
+                                {{-- RIGHT: Fields - 4 in one row --}}
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 content-start">
+
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">HSN / SAC</label>
                                         <input x-model="row.hsn"
-                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2 text-center">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Qty</label>
                                         <input type="number" min="1" step="1"
                                             x-model.number="row.quantity"
                                             @input="onAutoChange(row)"
-                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
+                                    </div>
 
-                                    <td class="px-3 py-2">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Price</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.fixed_price"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('making_charge')">
+                                    <div x-show="showItemField('making_charge')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Making Charge</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.making_rate"
                                             @input="onAutoChange(row)"
-                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('making_charge')">
+                                    <div x-show="showItemField('making_charge')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Making Type</label>
                                         <select x-model="row.making_charge_type"
                                             @change="onAutoChange(row)"
-                                            class="w-36 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                             <option value="percentage">Percent (%)</option>
                                             <option value="fixed">Fixed Amount (₹)</option>
                                             <option value="per_gram">Per Gram</option>
@@ -343,105 +393,111 @@
                                         <div class="mt-0.5 text-[10px] text-blue-600"
                                             x-text="makingTypeLabel(row)">
                                         </div>
-                                    </td>
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('gold_purity')">
+                                    <div x-show="showItemField('gold_purity')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gold Rate (₹/g)</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gold_rate"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-show="hasValue(row.gold_purity)"
                                             x-text="'Purity: ' + row.gold_purity"></div>
-                                    </td>
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('gold_weight')">
+                                    <div x-show="showItemField('gold_weight')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gold Wt.(Gm)</label>
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gold_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('silver_purity')">
+                                    <div x-show="showItemField('silver_purity')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Silver Rate (₹/g)</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.silver_rate"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
                                         <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-show="hasValue(row.silver_purity)"
                                             x-text="'Purity: ' + row.silver_purity"></div>
-                                    </td>
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('silver_weight')">
+                                    <div x-show="showItemField('silver_weight')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Silver Wt.(Gm)</label>
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.silver_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-24 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('stone_weight')">
+                                    <div x-show="showItemField('stone_weight')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gem Stone Wt.(Ct.)</label>
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gemstone_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('stone_charges')">
+                                    <div x-show="showItemField('stone_charges')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gemstone Charge</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gemstone_charge"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('diamond_weight')">
+                                    <div x-show="showItemField('diamond_weight')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Diamond Wt.(Ct.)</label>
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.diamond_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2" x-show="showItemField('diamond_charges')">
+                                    <div x-show="showItemField('diamond_charges')">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Diamond Charge</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.diamond_charge"
                                             @input="onAutoChange(row)"
-                                            class="w-28 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Tax %</label>
                                         <input type="number" step="0.01" min="0" max="100"
                                             x-model.number="row.tax_percent"
                                             @input="onAutoChange(row)"
-                                            class="w-20 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </td>
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                    </div>
 
-                                    <td class="px-3 py-2">
+                                    <div class="col-span-1">
+                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Amount</label>
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.manual_amount"
                                             @input="onAmountEdit(row)"
-                                            class="w-32 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
+                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
 
                                         <div class="mt-0.5 text-[10px]"
                                             :class="row.amount_mode === 'manual_user' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
                                             x-text="row.amount_mode === 'manual_user' ? 'Manual' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))">
                                         </div>
-                                    </td>
+                                    </div>
 
-                                    <td class="px-3 py-2 text-right">
-                                        <button type="button" @click="remove(i)"
-                                            class="text-red-600 hover:underline text-lg leading-none">×</button>
-                                    </td>
-                                </tr>
-                            </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
 
-                            <tr>
-                                <td colspan="30" class="px-3 py-2">
-                                    <button type="button" @click="add()" class="text-blue-600 hover:underline text-sm">
-                                        + Add Item
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div>
+                        <button type="button"
+                            @click="add()"
+                            class="bg-green-500 px-4 py-2 rounded-lg text-white hover:bg-green-600 text-sm">
+                            + Add Item
+                        </button>
+                    </div>
                 </div>
             </div>
 

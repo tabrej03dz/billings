@@ -3,6 +3,7 @@
     $b = $biz ?? ($inv->business ?? null);
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
+    $itemExtraPrices = $itemExtraPrices ?? [];
 
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $fmt3 = fn($v) => number_format((float)$v, 3, '.', '');
@@ -21,8 +22,6 @@
     $received    = (float)($received ?? ($inv->received_amount ?? 0));
     $balance     = (float)($balance ?? ($inv->balance ?? max(0, $grandTotal - $received)));
 
-    $isIGST = $igstAmount > 0;
-
     $bName   = $b->name ?? 'Your Jewellery Store';
     $bAddr   = trim((string)($b->address ?? ''));
     $bCity   = trim((string)($b->city ?? ''));
@@ -37,65 +36,210 @@
     $cGstin  = $c->gstin ?? $c->gst_number ?? '';
     $cPan    = $c->pan ?? $c->pan_number ?? '';
 
-    function inr_words_jewellery($amount)
-    {
-        $amount = (float)$amount;
-        $rupees = (int) floor($amount);
-        $paise  = (int) round(($amount - $rupees) * 100);
+    if (!function_exists('inr_words_jewellery')) {
+        function inr_words_jewellery($amount)
+        {
+            $amount = (float)$amount;
+            $rupees = (int) floor($amount);
+            $paise  = (int) round(($amount - $rupees) * 100);
 
-        $ones = [
-            '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-            'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
-        ];
+            $ones = [
+                '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+                'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
+            ];
 
-        $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+            $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
 
-        $twoDigits = function($n) use ($ones, $tens) {
-            $n = (int)$n;
-            if ($n == 0) return '';
-            if ($n < 20) return $ones[$n];
-            return trim($tens[(int)($n / 10)] . ' ' . $ones[$n % 10]);
-        };
+            $twoDigits = function($n) use ($ones, $tens) {
+                $n = (int)$n;
 
-        $parts = [];
+                if ($n == 0) {
+                    return '';
+                }
 
-        if ($rupees >= 10000000) {
-            $cr = (int) floor($rupees / 10000000);
-            $parts[] = $twoDigits($cr) . ' Crore';
-            $rupees %= 10000000;
+                if ($n < 20) {
+                    return $ones[$n];
+                }
+
+                return trim($tens[(int)($n / 10)] . ' ' . $ones[$n % 10]);
+            };
+
+            $parts = [];
+
+            if ($rupees >= 10000000) {
+                $cr = (int) floor($rupees / 10000000);
+                $parts[] = $twoDigits($cr) . ' Crore';
+                $rupees %= 10000000;
+            }
+
+            if ($rupees >= 100000) {
+                $lk = (int) floor($rupees / 100000);
+                $parts[] = $twoDigits($lk) . ' Lakh';
+                $rupees %= 100000;
+            }
+
+            if ($rupees >= 1000) {
+                $th = (int) floor($rupees / 1000);
+                $parts[] = $twoDigits($th) . ' Thousand';
+                $rupees %= 1000;
+            }
+
+            if ($rupees >= 100) {
+                $hd = (int) floor($rupees / 100);
+                $parts[] = $ones[$hd] . ' Hundred';
+                $rupees %= 100;
+            }
+
+            if ($rupees > 0) {
+                $parts[] = $twoDigits($rupees);
+            }
+
+            $words = trim(implode(' ', array_filter($parts)));
+
+            if ($words === '') {
+                $words = 'Zero';
+            }
+
+            $result = $words . ' Rupees';
+
+            if ($paise > 0) {
+                $result .= ' and ' . $twoDigits($paise) . ' Paise';
+            }
+
+            return $result . ' Only';
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Column Visibility
+    |--------------------------------------------------------------------------
+    | Agar kisi column ki poore invoice me value 0/null/empty hai,
+    | to wo column header ke sath hide ho jayega.
+    */
+
+    $showHsn       = false;
+    $showPurity    = false;
+    $showNetWt     = false;
+    $showGoldRate  = false;
+    $showGoldValue = false;
+    $showMaking    = false;
+    $showGemstone  = false;
+    $showDiamond   = false;
+
+    foreach ($items as $itCheck) {
+        $hsnCheck = $itCheck->hsn_code ?? $itCheck->sac_code ?? $itCheck->hsn ?? null;
+
+        $purityCheck = $itCheck->purity ?? $itCheck->karat ?? null;
+
+        $goldWeightCheck = (float)($itCheck->gold_wt ?? $itCheck->net_weight ?? $itCheck->net_wt ?? 0);
+        $silverWeightCheck = (float)($itCheck->silver_wt ?? 0);
+
+        $netWeightCheck = (float)($itCheck->net_weight ?? $itCheck->net_wt ?? $goldWeightCheck);
+
+        $goldRateCheck = (float)($itCheck->gold_rate ?? 0);
+        $silverRateCheck = (float)($itCheck->silver_rate ?? 0);
+
+        $goldAmountCheck = (float)($itCheck->gold_amount ?? 0);
+        $silverAmountCheck = (float)($itCheck->silver_amount ?? 0);
+
+        if ($goldAmountCheck <= 0 && $goldWeightCheck > 0 && $goldRateCheck > 0) {
+            $goldAmountCheck = $goldWeightCheck * $goldRateCheck;
         }
 
-        if ($rupees >= 100000) {
-            $lk = (int) floor($rupees / 100000);
-            $parts[] = $twoDigits($lk) . ' Lakh';
-            $rupees %= 100000;
+        if ($silverAmountCheck <= 0 && $silverWeightCheck > 0 && $silverRateCheck > 0) {
+            $silverAmountCheck = $silverWeightCheck * $silverRateCheck;
         }
 
-        if ($rupees >= 1000) {
-            $th = (int) floor($rupees / 1000);
-            $parts[] = $twoDigits($th) . ' Thousand';
-            $rupees %= 1000;
+        $itemIdCheck = (int)($itCheck->item_id ?? 0);
+        $extraPriceCheck = $itemExtraPrices[$itemIdCheck] ?? [];
+
+        $diamondAmountCheck = (float) (
+            $itCheck->diamond_charges
+            ?? $itCheck->diamond_price
+            ?? $extraPriceCheck['diamond_price']
+            ?? 0
+        );
+
+        $gemstonePriceCheck = (float) (
+            $itCheck->stone_charges
+            ?? $itCheck->gemstone_amount
+            ?? $itCheck->stone_amount
+            ?? $itCheck->stone_price
+            ?? $extraPriceCheck['gemstone_price']
+            ?? 0
+        );
+
+        $metalAmountCheck = $goldAmountCheck + $silverAmountCheck;
+
+        $makingPercentCheck = (float)($itCheck->making_charge ?? $itCheck->making_rate ?? $itCheck->making_amount ?? 0);
+        $makingChargeCheck = $metalAmountCheck * ($makingPercentCheck / 100);
+
+        if (!empty($hsnCheck) && $hsnCheck !== '-') {
+            $showHsn = true;
         }
 
-        if ($rupees >= 100) {
-            $hd = (int) floor($rupees / 100);
-            $parts[] = $ones[$hd] . ' Hundred';
-            $rupees %= 100;
+        if (!empty($purityCheck) && $purityCheck !== '-') {
+            $showPurity = true;
         }
 
-        if ($rupees > 0) {
-            $parts[] = $twoDigits($rupees);
+        if ($netWeightCheck > 0) {
+            $showNetWt = true;
         }
 
-        $words = trim(implode(' ', array_filter($parts)));
-        if ($words === '') $words = 'Zero';
-
-        $result = $words . ' Rupees';
-        if ($paise > 0) {
-            $result .= ' and ' . $twoDigits($paise) . ' Paise';
+        if ($goldRateCheck > 0) {
+            $showGoldRate = true;
         }
 
-        return $result . ' Only';
+        if ($goldAmountCheck > 0) {
+            $showGoldValue = true;
+        }
+
+        if ($makingChargeCheck > 0) {
+            $showMaking = true;
+        }
+
+        if ($gemstonePriceCheck > 0) {
+            $showGemstone = true;
+        }
+
+        if ($diamondAmountCheck > 0) {
+            $showDiamond = true;
+        }
+    }
+
+    $itemColspan = 3; // #, Item Details, Total
+
+    if ($showHsn) {
+        $itemColspan++;
+    }
+
+    if ($showPurity) {
+        $itemColspan++;
+    }
+
+    if ($showNetWt) {
+        $itemColspan++;
+    }
+
+    if ($showGoldRate) {
+        $itemColspan++;
+    }
+
+    if ($showGoldValue) {
+        $itemColspan++;
+    }
+
+    if ($showMaking) {
+        $itemColspan++;
+    }
+
+    if ($showGemstone) {
+        $itemColspan++;
+    }
+
+    if ($showDiamond) {
+        $itemColspan++;
     }
 @endphp
 
@@ -274,12 +418,28 @@
 
         <div class="company-info">
             {{ $bAddr }}
-            @if($bCity), {{ $bCity }} @endif
-            @if($bState), {{ $bState }} @endif
+
+            @if($bCity)
+                , {{ $bCity }}
+            @endif
+
+            @if($bState)
+                , {{ $bState }}
+            @endif
+
             <br>
-            Mobile: {{ $bMobile ?: '-' }}
-            @if($bEmail) | Email: {{ $bEmail }} @endif
-            @if($bGstin) | GSTIN: {{ $bGstin }} @endif
+
+            @if($bMobile)
+                Mobile: {{ $bMobile }}
+            @endif
+
+            @if($bEmail)
+                | Email: {{ $bEmail }}
+            @endif
+
+            @if($bGstin)
+                | GSTIN: {{ $bGstin }}
+            @endif
         </div>
 
         <div class="invoice-title">Jewellery Tax Invoice</div>
@@ -290,26 +450,46 @@
             <td style="width:50%;">
                 <strong>Bill To:</strong><br>
                 {{ strtoupper($cName) }}<br>
-                {{ $cAddr }}<br>
-                Mobile: {{ $cMobile ?: '-' }}<br>
-                GSTIN: {{ $cGstin ?: '-' }}<br>
-                PAN: {{ $cPan ?: '-' }}
+
+                @if(!empty($cAddr) && $cAddr !== '-')
+                    {{ $cAddr }}<br>
+                @endif
+
+                @if(!empty($cMobile))
+                    Mobile: {{ $cMobile }}<br>
+                @endif
+
+                @if(!empty($cGstin))
+                    GSTIN: {{ $cGstin }}<br>
+                @endif
+
+                @if(!empty($cPan))
+                    PAN: {{ $cPan }}
+                @endif
             </td>
 
             <td style="width:25%;">
                 <strong>Invoice No:</strong><br>
                 {{ $invoiceNo }}<br><br>
 
-                <strong>Payment Method:</strong><br>
-                {{ $inv->payment_method ?? '-' }}
+                @if(!empty($inv->payment_method))
+                    <strong>Payment Method:</strong><br>
+                    {{ $inv->payment_method }}
+                @endif
             </td>
 
             <td style="width:25%;">
                 <strong>Invoice Date:</strong><br>
                 {{ $dmy($invoiceDate) }}<br><br>
 
-                <strong>Place of Supply:</strong><br>
-                {{ $inv->place_of_supply_state ?? $c->state ?? '-' }}
+                @php
+                    $placeOfSupply = $inv->place_of_supply_state ?? $c->state ?? null;
+                @endphp
+
+                @if(!empty($placeOfSupply))
+                    <strong>Place of Supply:</strong><br>
+                    {{ $placeOfSupply }}
+                @endif
             </td>
         </tr>
     </table>
@@ -319,92 +499,68 @@
         <tr>
             <th style="width:4%;">#</th>
             <th style="width:22%;">Item Details</th>
-            <th style="width:8%;">HSN</th>
-            <th style="width:8%;">Purity</th>
-            {{-- <th style="width:8%;">Gross Wt.</th> --}}
-            <th style="width:8%;">Net Wt.</th>
-            <th style="width:9%;">Gold Rate</th>
-            <th style="width:9%;">Gold Value</th>
-            <th style="width:8%;">Making</th>
-            <th style="width:8%;">Gemstone</th>
-            <th style="width:8%;">Diamond</th>
+
+            @if($showHsn)
+                <th style="width:8%;">HSN</th>
+            @endif
+
+            @if($showPurity)
+                <th style="width:8%;">Purity</th>
+            @endif
+
+            @if($showNetWt)
+                <th style="width:8%;">Net Wt.</th>
+            @endif
+
+            @if($showGoldRate)
+                <th style="width:9%;">Gold Rate</th>
+            @endif
+
+            @if($showGoldValue)
+                <th style="width:9%;">Gold Value</th>
+            @endif
+
+            @if($showMaking)
+                <th style="width:8%;">Making</th>
+            @endif
+
+            @if($showGemstone)
+                <th style="width:8%;">Gemstone</th>
+            @endif
+
+            @if($showDiamond)
+                <th style="width:8%;">Diamond</th>
+            @endif
+
             <th style="width:8%;">Total</th>
         </tr>
         </thead>
 
         <tbody>
         @forelse($items as $index => $it)
-            {{-- @php
-                $name = $it->item->name ?? $it->name ?? $it->item_name ?? 'Jewellery Product';
-                $desc = $it->description ?? '';
-                $hsn = $it->hsn_code ?? $it->sac_code ?? $it->hsn ?? '-';
-
-                $qty = (float)($it->quantity ?? 1);
-                $unit = $it->unit ?? '';
-
-                $grossWeight = $it->gross_weight ?? $it->gross_wt ?? null;
-                $netWeight   = $it->net_weight ?? $it->net_wt ?? null;
-                $lessWeight  = $it->less_weight ?? $it->less_wt ?? null;
-
-                $purity = $it->purity ?? $it->karat ?? null;
-                $huid   = $it->huid ?? $it->hallmark_uid ?? null;
-
-                $goldRate   = $it->gold_rate ?? $it->metal_rate ?? $it->rate ?? 0;
-                $goldAmount = $it->gold_amount ?? $it->metal_amount ?? null;
-
-                $diamondAmount = $it->diamond_amount ?? 0;
-                $stoneAmount   = $it->stone_amount ?? 0;
-                $gemstonePrice = $it->gemstone_price ?? $it->gemstone_amount ?? 0;
-
-                $makingCharge = $it->making_charge ?? $it->making_amount ?? 0;
-                $makingPerGram = $it->making_per_gram ?? null;
-                $wastage = $it->wastage ?? $it->wastage_percent ?? null;
-
-                $taxPercent = (float)($it->tax_percent ?? $inv->tax_percent ?? 0);
-                $taxAmount  = (float)($it->tax_amount ?? 0);
-
-                $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
-
-                if (!$goldAmount && $netWeight && $goldRate) {
-                    $goldAmount = (float)$netWeight * (float)$goldRate;
-                }
-
-                if ($lineTotal <= 0) {
-                    $lineTotal =
-                        (float)($goldAmount ?? 0)
-                        + (float)$diamondAmount
-                        + (float)$stoneAmount
-                        + (float)$gemstonePrice
-                        + (float)$makingCharge
-                        + (float)$taxAmount;
-                }
-
-                $stoneGemTotal = (float)$diamondAmount + (float)$stoneAmount + (float)$gemstonePrice;
-            @endphp --}}
-
-
             @php
                 $name = $it->item->name ?? $it->name ?? $it->item_name ?? 'Jewellery Product';
                 $desc = $it->description ?? '';
-                $hsn  = $it->hsn_code ?? $it->sac_code ?? $it->hsn ?? '-';
 
-                $qty  = (float)($it->quantity ?? $it->qty ?? 1);
+                $hsn = $it->hsn_code ?? $it->sac_code ?? $it->hsn ?? null;
+
+                $qty = (float)($it->quantity ?? $it->qty ?? 1);
                 $unit = $it->unit ?? '';
 
-                $goldWeight   = (float)($it->gold_wt ?? $it->net_weight ?? $it->net_wt ?? 0);
+                $goldWeight = (float)($it->gold_wt ?? $it->net_weight ?? $it->net_wt ?? 0);
                 $silverWeight = (float)($it->silver_wt ?? 0);
 
                 $grossWeight = $it->gross_weight ?? $it->gross_wt ?? $goldWeight;
-                $netWeight   = $it->net_weight ?? $it->net_wt ?? $goldWeight;
-                $lessWeight  = $it->less_weight ?? $it->less_wt ?? null;
+                $netWeight = (float)($it->net_weight ?? $it->net_wt ?? $goldWeight);
+                $lessWeight = (float)($it->less_weight ?? $it->less_wt ?? 0);
 
                 $purity = $it->purity ?? $it->karat ?? null;
-                $huid   = $it->huid ?? $it->hallmark_uid ?? null;
+                $huid = $it->huid ?? $it->hallmark_uid ?? null;
 
-                $goldRate   = (float)($it->gold_rate ?? 0);
+                $goldRate = (float)($it->gold_rate ?? 0);
                 $silverRate = (float)($it->silver_rate ?? 0);
 
-                $goldAmount   = (float)($it->gold_amount ?? 0);
+                $goldAmount = (float)($it->gold_amount ?? 0);
                 $silverAmount = (float)($it->silver_amount ?? 0);
 
                 if ($goldAmount <= 0 && $goldWeight > 0 && $goldRate > 0) {
@@ -414,12 +570,6 @@
                 if ($silverAmount <= 0 && $silverWeight > 0 && $silverRate > 0) {
                     $silverAmount = $silverWeight * $silverRate;
                 }
-
-                // $diamondAmount = (float)($it->diamond_amount ?? 0);
-                // $stoneAmount   = (float)($it->stone_amount ?? 0);
-                // $gemstonePrice = (float)($it->gemstone_price ?? $it->gemstone_amount ?? 0);
-
-
 
                 $extraPrice = $itemExtraPrices[(int)($it->item_id ?? 0)] ?? [];
 
@@ -440,26 +590,26 @@
                 );
 
                 $stoneAmount = 0;
+                $stoneGemTotal = $diamondAmount + $stoneAmount + $gemstonePrice;
 
-                $stoneGemTotal = $diamondAmount + $gemstonePrice;
-
-
-
-                // making_charge database me percentage save hai
+                /*
+                |--------------------------------------------------------------------------
+                | Making Charge
+                |--------------------------------------------------------------------------
+                | Aapke current logic ke hisab se making_charge DB me percentage save hai.
+                | Isliye metal amount ka percentage nikal rahe hain.
+                */
                 $makingPercent = (float)($it->making_charge ?? $it->making_rate ?? $it->making_amount ?? 0);
 
                 $metalAmount = $goldAmount + $silverAmount;
 
-                // actual making amount
                 $makingCharge = $metalAmount * ($makingPercent / 100);
 
                 $makingPerGram = $it->making_per_gram ?? null;
-                $wastage = $it->wastage ?? $it->wastage_percent ?? null;
+                $wastage = (float)($it->wastage ?? $it->wastage_percent ?? 0);
 
                 $taxPercent = (float)($it->tax_percent ?? $inv->tax_percent ?? 0);
-                $taxAmount  = (float)($it->tax_amount ?? 0);
-
-                $stoneGemTotal = $diamondAmount + $stoneAmount + $gemstonePrice;
+                $taxAmount = (float)($it->tax_amount ?? 0);
 
                 $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
 
@@ -478,91 +628,85 @@
                 <td>
                     <div class="product-name">{{ $name }}</div>
 
-                    @if($desc)
+                    @if(!empty($desc))
                         <div class="small-text">{{ $desc }}</div>
                     @endif
 
                     <div class="jewel-details">
-                        @if($huid)
+                        @if(!empty($huid))
                             <strong>HUID:</strong> {{ $huid }}<br>
                         @endif
 
-                        @if($qty)
+                        @if($qty > 0)
                             <strong>Qty:</strong> {{ $qty }} {{ $unit }}<br>
                         @endif
 
-                        @if($lessWeight)
+                        @if($lessWeight > 0)
                             <strong>Less Wt:</strong> {{ $fmt3($lessWeight) }} gm<br>
                         @endif
 
-                        @if($wastage)
+                        @if($wastage > 0)
                             <strong>Wastage:</strong> {{ $wastage }}%
                         @endif
                     </div>
                 </td>
 
-                <td class="text-center">{{ $hsn }}</td>
+                @if($showHsn)
+                    <td class="text-center">
+                        {{ !empty($hsn) && $hsn !== '-' ? $hsn : '-' }}
+                    </td>
+                @endif
 
-                <td class="text-center">
-                    {{ $purity ?: '-' }}
-                </td>
+                @if($showPurity)
+                    <td class="text-center">
+                        {{ !empty($purity) && $purity !== '-' ? $purity : '-' }}
+                    </td>
+                @endif
 
-                {{-- <td class="text-right">
-                    {{ $grossWeight ? $fmt3($grossWeight) . ' gm' : '-' }}
-                </td> --}}
+                @if($showNetWt)
+                    <td class="text-right">
+                        {{ $netWeight > 0 ? $fmt3($netWeight) . ' gm' : '-' }}
+                    </td>
+                @endif
 
-                <td class="text-right">
-                    {{ $netWeight ? $fmt3($netWeight) . ' gm' : '-' }}
-                </td>
+                @if($showGoldRate)
+                    <td class="text-right">
+                        {{ $goldRate > 0 ? '₹ ' . $fmt2($goldRate) : '-' }}
+                    </td>
+                @endif
 
-                <td class="text-right">
-                    ₹ {{ $fmt2($goldRate) }}
-                </td>
+                @if($showGoldValue)
+                    <td class="text-right">
+                        {{ $goldAmount > 0 ? '₹ ' . $fmt2($goldAmount) : '-' }}
+                    </td>
+                @endif
 
-                <td class="text-right">
-                    ₹ {{ $fmt2($goldAmount ?? 0) }}
-                </td>
+                @if($showMaking)
+                    <td class="text-right">
+                        @if($makingCharge > 0)
+                            ₹ {{ $fmt2($makingCharge) }}
 
-                <td class="text-right">
-                    ₹ {{ $fmt2($makingCharge) }}
+                            @if($makingPerGram)
+                                <br>
+                                <span class="small-text">₹{{ $fmt2($makingPerGram) }}/gm</span>
+                            @endif
+                        @else
+                            -
+                        @endif
+                    </td>
+                @endif
 
-                    @if($makingPerGram)
-                        <br>
-                        <span class="small-text">₹{{ $fmt2($makingPerGram) }}/gm</span>
-                    @endif
-                </td>
+                @if($showGemstone)
+                    <td class="text-right">
+                        {{ $gemstonePrice > 0 ? '₹ ' . $fmt2($gemstonePrice) : '-' }}
+                    </td>
+                @endif
 
-                {{-- <td class="text-right">
-                    ₹ {{ $fmt2($stoneGemTotal) }}
-
-                    @if($diamondAmount)
-                        <br><span class="small-text">Diamond: ₹{{ $fmt2($diamondAmount) }}</span>
-                    @endif
-
-                    @if($stoneAmount)
-                        <br><span class="small-text">Stone: ₹{{ $fmt2($stoneAmount) }}</span>
-                    @endif
-
-                    @if($gemstonePrice)
-                        <br><span class="small-text">Gem: ₹{{ $fmt2($gemstonePrice) }}</span>
-                    @endif
-                </td> --}}
-
-                <td class="text-right">
-                    @if($gemstonePrice > 0)
-                        ₹ {{ $fmt2($gemstonePrice) }}
-                    @else
-                        -
-                    @endif
-                </td>
-
-                <td class="text-right">
-                    @if($diamondAmount > 0)
-                        ₹ {{ $fmt2($diamondAmount) }}
-                    @else
-                        -
-                    @endif
-                </td>
+                @if($showDiamond)
+                    <td class="text-right">
+                        {{ $diamondAmount > 0 ? '₹ ' . $fmt2($diamondAmount) : '-' }}
+                    </td>
+                @endif
 
                 <td class="text-right">
                     ₹ {{ $fmt2($lineTotal) }}
@@ -575,17 +719,19 @@
             </tr>
         @empty
             <tr>
-                <td colspan="11" class="text-center">No jewellery item found</td>
+                <td colspan="{{ $itemColspan }}" class="text-center">No jewellery item found</td>
             </tr>
         @endforelse
         </tbody>
     </table>
 
     <table class="summary-table">
-        <tr>
-            <td>Taxable Amount</td>
-            <td class="text-right">₹ {{ $fmt2($taxable) }}</td>
-        </tr>
+        @if($taxable > 0)
+            <tr>
+                <td>Taxable Amount</td>
+                <td class="text-right">₹ {{ $fmt2($taxable) }}</td>
+            </tr>
+        @endif
 
         @if($discount > 0)
             <tr>
@@ -594,20 +740,25 @@
             </tr>
         @endif
 
-        @if($isIGST)
+        @if($igstAmount > 0)
             <tr>
                 <td>IGST</td>
                 <td class="text-right">₹ {{ $fmt2($igstAmount) }}</td>
             </tr>
         @else
-            <tr>
-                <td>CGST</td>
-                <td class="text-right">₹ {{ $fmt2($cgstAmount) }}</td>
-            </tr>
-            <tr>
-                <td>SGST</td>
-                <td class="text-right">₹ {{ $fmt2($sgstAmount) }}</td>
-            </tr>
+            @if($cgstAmount > 0)
+                <tr>
+                    <td>CGST</td>
+                    <td class="text-right">₹ {{ $fmt2($cgstAmount) }}</td>
+                </tr>
+            @endif
+
+            @if($sgstAmount > 0)
+                <tr>
+                    <td>SGST</td>
+                    <td class="text-right">₹ {{ $fmt2($sgstAmount) }}</td>
+                </tr>
+            @endif
         @endif
 
         @if($roundOff != 0)
@@ -617,15 +768,19 @@
             </tr>
         @endif
 
-        <tr>
-            <td>Received Amount</td>
-            <td class="text-right">₹ {{ $fmt2($received) }}</td>
-        </tr>
+        @if($received > 0)
+            <tr>
+                <td>Received Amount</td>
+                <td class="text-right">₹ {{ $fmt2($received) }}</td>
+            </tr>
+        @endif
 
-        <tr>
-            <td>Balance</td>
-            <td class="text-right">₹ {{ $fmt2($balance) }}</td>
-        </tr>
+        @if($balance > 0)
+            <tr>
+                <td>Balance</td>
+                <td class="text-right">₹ {{ $fmt2($balance) }}</td>
+            </tr>
+        @endif
 
         <tr class="grand">
             <td>Total Amount</td>
@@ -633,10 +788,12 @@
         </tr>
     </table>
 
-    <div class="amount-words">
-        <strong>Amount in Words:</strong>
-        {{ $inv->amount_in_words ?: inr_words_jewellery($grandTotal) }}
-    </div>
+    @if($grandTotal > 0)
+        <div class="amount-words">
+            <strong>Amount in Words:</strong>
+            {{ $inv->amount_in_words ?: inr_words_jewellery($grandTotal) }}
+        </div>
+    @endif
 
     @if(!empty($inv->notes))
         <div class="terms-box">
