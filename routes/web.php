@@ -118,8 +118,14 @@ Volt::route('/super-admin/otp-verify', 'auth.super-admin-otp-verify')
 
 
 Route::get('/register', [RegisterController::class, 'show'])->name('register');
-Route::post('/register/send-otp', [RegisterController::class, 'sendEmailOtp'])->name('register.sendOtp');
-Route::post('/register/verify-otp', [RegisterController::class, 'verifyEmailOtp'])->name('register.verifyOtp');
+// Route::post('/register/send-otp', [RegisterController::class, 'sendEmailOtp'])->name('register.sendOtp');
+// Route::post('/register/verify-otp', [RegisterController::class, 'verifyEmailOtp'])->name('register.verifyOtp');
+
+Route::post('/register/send-otp', [RegisterController::class, 'sendPhoneOtp'])
+    ->name('register.sendOtp');
+
+Route::post('/register/verify-otp', [RegisterController::class, 'verifyPhoneOtp'])
+    ->name('register.verifyOtp');
 Route::post('/register/store', [RegisterController::class, 'store'])->name('register.store1');
 
 

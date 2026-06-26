@@ -23,6 +23,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\Plan;
 use App\Models\UserPlan;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 use Spatie\Permission\PermissionRegistrar;
 
 class RegisterController extends Controller
@@ -85,6 +86,98 @@ class RegisterController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Email successfully verify ho gaya.',
+        ]);
+    }
+
+
+
+    public function sendPhoneOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'digits:10', 'unique:users,phone'],
+        ]);
+
+        $phone = trim($request->phone);
+
+        $otp = (string) random_int(100000, 999999);
+
+        Cache::put('register_phone_otp_' . $phone, $otp, now()->addMinutes(10));
+        Cache::put('register_phone_otp_verified_' . $phone, false, now()->addMinutes(10));
+
+        session()->forget([
+            'register_phone_verified',
+        ]);
+
+        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+        try {
+            $response = Http::timeout(15)->get(env('KUTILITY_URL'), [
+                'key' => env('KUTILITY_KEY'),
+                'campaign' => '12754',
+                'routeid' => '7',
+                'type' => 'text',
+                'contacts' => $phone,
+                'senderid' => 'RVGRPS',
+                'msg' => $msg,
+                'template_id' => '1707178057481157648',
+                'pe_id' => '1701164032595209992',
+            ]);
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'SMS gateway se OTP send nahi hua. Please try again.',
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP phone number par bhej diya gaya hai.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP bhejne me problem aayi. Please try again.',
+            ], 500);
+        }
+    }
+
+    public function verifyPhoneOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'digits:10'],
+            'otp'   => ['required', 'digits:6'],
+        ]);
+
+        $phone = trim($request->phone);
+
+        $savedOtp = Cache::get('register_phone_otp_' . $phone);
+
+        if (! $savedOtp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OTP expire ho gaya hai. Dobara send kijiye.',
+            ], 422);
+        }
+
+        if ((string) $savedOtp !== (string) $request->otp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid OTP.',
+            ], 422);
+        }
+
+        Cache::put('register_phone_otp_verified_' . $phone, true, now()->addMinutes(30));
+
+        session([
+            'register_phone_verified' => $phone,
+        ]);
+
+        Cache::forget('register_phone_otp_' . $phone);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Phone number successfully verify ho gaya.',
         ]);
     }
 

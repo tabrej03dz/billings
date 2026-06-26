@@ -99,8 +99,8 @@ new #[Layout('components.layouts.auth')] class extends Component
 
         $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
 
-        Http::get('https://kutility.org/app/smsapi/index.php', [
-            'key' => '5620360CF8C9B4',
+        Http::get(env('KUTILITY_URL'), [
+            'key' => env('KUTILITY_KEY'),
             'campaign' => '12754',
             'routeid' => '7',
             'type' => 'text',
