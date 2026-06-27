@@ -135,20 +135,36 @@
                             </div>
                         @endif
 
-                        <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6">
+                        @php
+                            $step1Fields = ['name', 'phone', 'password', 'password_confirmation'];
+                            $step2Fields = ['business_name', 'mobile', 'gstin', 'business_type_id', 'address', 'state', 'state_code'];
+                            $step3Fields = ['gst_enabled', 'invoice_base_prefix', 'rounding_mode', 'rounding_step', 'terms'];
+
+                            $initialStep = old('current_step', 1);
+
+                            if ($errors->hasAny($step1Fields)) {
+                                $initialStep = 1;
+                            } elseif ($errors->hasAny($step2Fields)) {
+                                $initialStep = 2;
+                            } elseif ($errors->hasAny($step3Fields)) {
+                                $initialStep = 3;
+                            }
+                        @endphp
+
+                        <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6" novalidate>
                             @csrf
 
                             <input type="hidden" name="payment_done" value="{{ request('payment_done', 0) }}">
                             <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
                             <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
-                            <input type="hidden" name="current_step" id="current_step" value="{{ old('current_step', 1) }}">
+                            <input type="hidden" name="current_step" id="current_step" value="{{ $initialStep }}">
 
                             {{-- STEP 1 --}}
                             <div class="form-step space-y-5" data-step="1">
                                 <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Owner account details</div>
                                     <div class="mt-1 text-xs text-slate-500">
-                                        Enter login credentials to create the primary account.
+                                        Owner name, phone OTP aur password se account create karein.
                                     </div>
                                 </div>
 
@@ -162,20 +178,11 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
-                                    <input type="email" name="email" id="email"
-                                           value="{{ old('email', session('paid_email')) }}"
-                                           required
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                           placeholder="Enter your email address">
-                                </div>
-
-                                <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Owner Phone Number</label>
 
                                     <div class="flex flex-col sm:flex-row gap-3">
                                         <input type="text" name="phone" id="owner_phone"
-                                               value="{{ old('phone') }}"
+                                               value="{{ old('phone', session('register_phone_verified')) }}"
                                                required
                                                maxlength="10"
                                                inputmode="numeric"
@@ -215,7 +222,7 @@
 
                                     <input type="hidden"
                                            id="phoneVerified"
-                                           value="{{ session('register_phone_verified') && session('register_phone_verified') == old('phone') ? 1 : 0 }}">
+                                           value="{{ session('register_phone_verified') && session('register_phone_verified') == old('phone', session('register_phone_verified')) ? 1 : 0 }}">
 
                                     <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-500"></p>
                                 </div>
@@ -223,14 +230,14 @@
                                 <div class="grid sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
-                                        <input type="password" name="password" required
+                                        <input type="password" name="password"
                                                class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
                                                placeholder="Create a password">
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Confirm Password</label>
-                                        <input type="password" name="password_confirmation" required
+                                        <input type="password" name="password_confirmation"
                                                class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
                                                placeholder="Confirm your password">
                                     </div>
@@ -246,7 +253,7 @@
                                 <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Business information</div>
                                     <div class="mt-1 text-xs text-slate-500">
-                                        Add showroom and contact details for your billing profile.
+                                        Business mobile verified owner phone se auto fill hoga.
                                     </div>
                                 </div>
 
@@ -257,25 +264,20 @@
                                            placeholder="Enter showroom name">
                                 </div>
 
-                                <div class="grid sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Business Email</label>
-                                        <input type="email" name="business_email" id="business_email"
-                                               value="{{ old('business_email', old('email', session('paid_email'))) }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Business email">
-                                    </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Business Mobile Number</label>
+                                    <input type="text" name="mobile" id="business_mobile"
+                                           value="{{ old('mobile', old('phone', session('register_phone_verified'))) }}"
+                                           required
+                                           maxlength="10"
+                                           inputmode="numeric"
+                                           readonly
+                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500 cursor-not-allowed"
+                                           placeholder="Verified phone number auto fill hoga">
 
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Mobile Number</label>
-                                        <input type="text" name="mobile" id="business_mobile"
-                                               value="{{ old('mobile', old('phone')) }}"
-                                               required
-                                               maxlength="10"
-                                               inputmode="numeric"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Business mobile number">
-                                    </div>
+                                    <p class="mt-2 text-xs text-slate-500">
+                                        Ye number owner OTP verify hone ke baad automatic fill hoga.
+                                    </p>
                                 </div>
 
                                 <div class="grid sm:grid-cols-2 gap-4">
@@ -435,6 +437,7 @@
 
                                 <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                     <input id="terms" type="checkbox" name="terms" value="1" required
+                                           {{ old('terms') ? 'checked' : '' }}
                                            class="mt-1 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500">
 
                                     <label for="terms" class="text-xs sm:text-sm text-slate-600 leading-6">
@@ -505,9 +508,6 @@
     const sendOtpBtn = document.getElementById('sendOtpBtn');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
 
-    const emailInput = document.getElementById('email');
-    const businessEmailInput = document.getElementById('business_email');
-
     const ownerPhoneInput = document.getElementById('owner_phone');
     const businessMobileInput = document.getElementById('business_mobile');
 
@@ -528,6 +528,7 @@
     const pills = [pillStep1, pillStep2, pillStep3];
 
     let currentStep = 0;
+    let isSubmitting = false;
 
     const gstStateMap = {
         '01': 'Jammu and Kashmir',
@@ -603,15 +604,14 @@
         stateSelect.value = code + ',' + stateName;
     }
 
-    if (stateSelect) {
-        stateSelect.addEventListener('change', updateStateFields);
-        updateStateFields();
-    }
+    function syncBusinessMobileFromOwner() {
+        if (!ownerPhoneInput || !businessMobileInput) return;
 
-    if (gstinInput) {
-        gstinInput.addEventListener('input', updateStateFromGstin);
-        gstinInput.addEventListener('blur', updateStateFromGstin);
-        updateStateFromGstin();
+        const phone = ownerPhoneInput.value.trim();
+
+        if (phoneVerifiedInput && phoneVerifiedInput.value === '1' && phone.length === 10) {
+            businessMobileInput.value = phone;
+        }
     }
 
     function getInitialStep() {
@@ -639,13 +639,13 @@
     }
 
     function updateStepMeta(index) {
-        currentStepText.textContent = index + 1;
-        currentStepLabel.textContent = labels[index];
-        progressBar.style.width = (((index + 1) / steps.length) * 100) + '%';
+        if (currentStepText) currentStepText.textContent = index + 1;
+        if (currentStepLabel) currentStepLabel.textContent = labels[index];
+        if (progressBar) progressBar.style.width = (((index + 1) / steps.length) * 100) + '%';
 
-        prevBtn.classList.toggle('hidden', index === 0);
-        nextBtn.classList.toggle('hidden', index === steps.length - 1);
-        submitBtn.classList.toggle('hidden', index !== steps.length - 1);
+        if (prevBtn) prevBtn.classList.toggle('hidden', index === 0);
+        if (nextBtn) nextBtn.classList.toggle('hidden', index === steps.length - 1);
+        if (submitBtn) submitBtn.classList.toggle('hidden', index !== steps.length - 1);
 
         if (currentStepInput) {
             currentStepInput.value = index + 1;
@@ -661,6 +661,7 @@
             step.classList.toggle('hidden', i !== index);
         });
 
+        syncBusinessMobileFromOwner();
         updateStepMeta(index);
 
         if (shouldScroll) {
@@ -689,11 +690,38 @@
     }
 
     function clearStepErrors(index) {
+        if (!steps[index]) return;
+
         const currentInputs = steps[index].querySelectorAll('input, select, textarea');
 
         currentInputs.forEach(input => {
             setFieldErrorState(input, false);
+            input.setCustomValidity('');
         });
+    }
+
+    function showError(input, message) {
+        if (!input) return false;
+
+        input.setCustomValidity(message);
+        setFieldErrorState(input, true);
+
+        const stepBox = input.closest('.form-step');
+
+        if (stepBox) {
+            const stepIndex = Array.from(steps).indexOf(stepBox);
+
+            if (stepIndex !== -1 && stepIndex !== currentStep) {
+                showStep(stepIndex);
+            }
+        }
+
+        setTimeout(() => {
+            input.reportValidity();
+            input.focus();
+        }, 150);
+
+        return false;
     }
 
     function validateStep(index) {
@@ -701,6 +729,7 @@
 
         updateStateFromGstin();
         updateStateFields();
+        syncBusinessMobileFromOwner();
 
         const currentInputs = steps[index].querySelectorAll('input, select, textarea');
 
@@ -716,11 +745,22 @@
 
             input.setCustomValidity('');
 
+            if (input.name === 'password' || input.name === 'password_confirmation') {
+                continue;
+            }
+
+            if (input.required) {
+                if (input.type === 'checkbox' && !input.checked) {
+                    return showError(input, 'Ye field required hai.');
+                }
+
+                if (input.type !== 'checkbox' && !input.value.trim()) {
+                    return showError(input, 'Ye field required hai.');
+                }
+            }
+
             if (!input.checkValidity()) {
-                setFieldErrorState(input, true);
-                input.reportValidity();
-                input.focus();
-                return false;
+                return showError(input, 'Valid value daliyega.');
             }
         }
 
@@ -728,25 +768,66 @@
         const confirmPassword = document.querySelector('input[name="password_confirmation"]');
 
         if (index === 0 && password && confirmPassword) {
+            password.setCustomValidity('');
             confirmPassword.setCustomValidity('');
 
-            if (password.value !== confirmPassword.value) {
-                confirmPassword.setCustomValidity('Passwords do not match');
-                setFieldErrorState(confirmPassword, true);
-                confirmPassword.reportValidity();
-                confirmPassword.focus();
-                return false;
+            if (!password.value.trim()) {
+                return showError(password, 'Password required hai.');
             }
 
-            confirmPassword.setCustomValidity('');
+            if (!confirmPassword.value.trim()) {
+                return showError(confirmPassword, 'Confirm password required hai.');
+            }
+
+            if (password.value.length < 6) {
+                return showError(password, 'Password minimum 6 characters hona chahiye.');
+            }
+
+            if (password.value !== confirmPassword.value) {
+                return showError(confirmPassword, 'Passwords match nahi ho rahe.');
+            }
         }
 
         if (index === 0 && phoneVerifiedInput && phoneVerifiedInput.value !== '1') {
             verifyOtpStatus.textContent = 'Pehle phone OTP verify kijiye.';
             verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+
             setFieldErrorState(phoneOtpInput, true);
             phoneOtpInput.focus();
+
             return false;
+        }
+
+        if (index === 1) {
+            const ownerPhone = ownerPhoneInput.value.trim();
+            const businessPhone = businessMobileInput.value.trim();
+
+            if (phoneVerifiedInput.value !== '1') {
+                showStep(0);
+                verifyOtpStatus.textContent = 'Pehle phone OTP verify kijiye.';
+                verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+                phoneOtpInput.focus();
+                return false;
+            }
+
+            if (businessPhone !== ownerPhone) {
+                businessMobileInput.value = ownerPhone;
+            }
+
+            if (businessMobileInput.value.length !== 10) {
+                return showError(businessMobileInput, 'Business mobile required hai.');
+            }
+        }
+
+        return true;
+    }
+
+    function validateAllStepsBeforeSubmit() {
+        for (let i = 0; i < steps.length; i++) {
+            if (!validateStep(i)) {
+                showStep(i);
+                return false;
+            }
         }
 
         return true;
@@ -770,14 +851,12 @@
         document.querySelectorAll('input, select, textarea').forEach(input => {
             input.addEventListener('input', function () {
                 setFieldErrorState(this, false);
-
-                if (this.name === 'password_confirmation') {
-                    this.setCustomValidity('');
-                }
+                this.setCustomValidity('');
             });
 
             input.addEventListener('change', function () {
                 setFieldErrorState(this, false);
+                this.setCustomValidity('');
             });
         });
     }
@@ -820,6 +899,10 @@
 
             if (phoneVerifiedInput) {
                 phoneVerifiedInput.value = '0';
+            }
+
+            if (businessMobileInput) {
+                businessMobileInput.value = '';
             }
 
             verifyOtpStatus.textContent = '';
@@ -888,14 +971,23 @@
                 phoneVerifiedInput.value = '1';
             }
 
-            verifyOtpStatus.textContent = data.message || 'Phone OTP verify ho gaya.';
+            if (businessMobileInput) {
+                businessMobileInput.value = phone;
+            }
+
+            verifyOtpStatus.textContent = data.message || 'Phone OTP verify ho gaya. Business mobile auto fill kar diya gaya.';
             verifyOtpStatus.className = 'mt-2 text-xs text-green-600';
 
             setFieldErrorState(phoneOtpInput, false);
             setFieldErrorState(ownerPhoneInput, false);
+            setFieldErrorState(businessMobileInput, false);
         } catch (error) {
             if (phoneVerifiedInput) {
                 phoneVerifiedInput.value = '0';
+            }
+
+            if (businessMobileInput) {
+                businessMobileInput.value = '';
             }
 
             verifyOtpStatus.textContent = error?.message || 'OTP verify nahi hua.';
@@ -908,6 +1000,17 @@
                 verifyOtpBtn.textContent = 'Verify OTP';
             }
         }
+    }
+
+    if (stateSelect) {
+        stateSelect.addEventListener('change', updateStateFields);
+        updateStateFields();
+    }
+
+    if (gstinInput) {
+        gstinInput.addEventListener('input', updateStateFromGstin);
+        gstinInput.addEventListener('blur', updateStateFromGstin);
+        updateStateFromGstin();
     }
 
     if (sendOtpBtn) {
@@ -924,6 +1027,7 @@
 
             verifyOtpStatus.textContent = '';
             setFieldErrorState(phoneOtpInput, false);
+            phoneOtpInput.setCustomValidity('');
         });
     }
 
@@ -935,47 +1039,26 @@
                 phoneVerifiedInput.value = '0';
             }
 
+            if (businessMobileInput) {
+                businessMobileInput.value = '';
+            }
+
             otpStatus.textContent = '';
             verifyOtpStatus.textContent = '';
 
             setFieldErrorState(ownerPhoneInput, false);
             setFieldErrorState(phoneOtpInput, false);
+            setFieldErrorState(businessMobileInput, false);
 
-            if (businessMobileInput && !businessMobileInput.dataset.userEdited) {
-                businessMobileInput.value = this.value;
-            }
+            ownerPhoneInput.setCustomValidity('');
+            phoneOtpInput.setCustomValidity('');
         });
     }
 
     if (businessMobileInput) {
         businessMobileInput.addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').slice(0, 10);
-            this.dataset.userEdited = '1';
         });
-
-        if (ownerPhoneInput && !businessMobileInput.value) {
-            businessMobileInput.value = ownerPhoneInput.value;
-        }
-    }
-
-    if (emailInput) {
-        emailInput.addEventListener('input', function () {
-            if (businessEmailInput && !businessEmailInput.dataset.userEdited) {
-                businessEmailInput.value = this.value;
-            }
-
-            setFieldErrorState(emailInput, false);
-        });
-    }
-
-    if (businessEmailInput) {
-        businessEmailInput.addEventListener('input', function () {
-            this.dataset.userEdited = '1';
-        });
-
-        if (emailInput && !businessEmailInput.value) {
-            businessEmailInput.value = emailInput.value;
-        }
     }
 
     if (nextBtn) {
@@ -998,17 +1081,30 @@
 
     if (form) {
         form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            if (isSubmitting) return;
+
             updateStateFromGstin();
             updateStateFields();
+            syncBusinessMobileFromOwner();
 
-            if (!validateStep(currentStep)) {
-                e.preventDefault();
+            if (!validateAllStepsBeforeSubmit()) {
                 return;
             }
 
             if (currentStepInput) {
                 currentStepInput.value = currentStep + 1;
             }
+
+            isSubmitting = true;
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+            }
+
+            form.submit();
         });
     }
 
