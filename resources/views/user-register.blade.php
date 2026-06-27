@@ -137,7 +137,7 @@
 
                         @php
                             $step1Fields = ['name', 'phone', 'password', 'password_confirmation'];
-                            $step2Fields = ['business_name', 'mobile', 'gstin', 'business_type_id', 'address', 'state', 'state_code'];
+                            $step2Fields = ['business_name', 'business_email', 'mobile', 'gstin', 'business_type_id', 'address', 'state', 'state_code'];
                             $step3Fields = ['gst_enabled', 'invoice_base_prefix', 'rounding_mode', 'rounding_step', 'terms'];
 
                             $initialStep = old('current_step', 1);
@@ -262,6 +262,17 @@
                                     <input type="text" name="business_name" value="{{ old('business_name') }}" required
                                            class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
                                            placeholder="Enter showroom name">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">
+                                        Business Email <span class="text-xs font-normal text-slate-400">(Optional)</span>
+                                    </label>
+
+                                    <input type="email" name="business_email"
+                                        value="{{ old('business_email') }}"
+                                        class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                        placeholder="Enter business email address">
                                 </div>
 
                                 <div>

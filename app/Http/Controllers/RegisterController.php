@@ -729,6 +729,173 @@ class RegisterController extends Controller
 //     }
 // }
 
+// public function store(Request $request)
+// {
+//     $planId = $request->input('plan_id');
+//     $isTrial = (int) $request->input('trial', 0) === 1;
+//     $paymentDone = session('payment_done') === true || (int) $request->input('payment_done', 0) === 1;
+
+//     $request->validate([
+//         'name' => ['required', 'string', 'max:255'],
+//         'password' => ['required', 'confirmed', Password::min(6)],
+
+//         'phone' => ['required', 'digits:10', 'unique:users,phone'],
+
+//         'business_name' => ['required', 'string', 'max:255'],
+//         'mobile' => ['required', 'string', 'max:20', 'unique:businesses,mobile'],
+
+//         'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
+//         'address' => ['nullable', 'string', 'max:255'],
+//         'state' => ['nullable', 'string', 'max:255'],
+//         'state_code' => ['nullable', 'string', 'max:255'],
+//         'business_type_id' => ['required', 'string', 'max:255'],
+
+//         'gst_enabled' => ['nullable', 'in:0,1'],
+//         'invoice_base_prefix' => ['nullable', 'string', 'max:255'],
+//         'rounding_mode' => ['nullable', 'in:none,nearest,up,down'],
+//         'rounding_step' => ['nullable', 'numeric', 'min:0'],
+
+//         'terms' => ['required', 'accepted'],
+//     ]);
+
+//     if (session('register_phone_verified') !== $request->phone) {
+//         return back()
+//             ->withInput()
+//             ->withErrors([
+//                 'phone' => 'Pehle phone OTP verify kijiye.',
+//             ]);
+//     }
+
+//     DB::beginTransaction();
+
+//     try {
+//         $verifiedPhone = trim($request->phone);
+
+//         /*
+//          | Email form se hata diya hai.
+//          | Agar users.email database me nullable nahi hai,
+//          | to ye fake unique email save hoga.
+//          */
+//         $userEmail = $verifiedPhone . '@noemail.local';
+//         $businessEmail = $verifiedPhone . '@business.local';
+
+//         $user = User::create([
+//             'name' => $request->name,
+//             'email' => $userEmail,
+//             'phone' => $verifiedPhone,
+//             'password' => Hash::make($request->password),
+//         ]);
+
+//         $slug = $this->generateUniqueBusinessSlug($request->business_name);
+
+//         $business = Business::create([
+//             'name' => $request->business_name,
+//             'slug' => $slug,
+//             'email' => $businessEmail,
+//             'mobile' => $verifiedPhone,
+//             'gstin' => $request->gstin,
+//             'gst_enabled' => $request->gst_enabled ?? 1,
+//             'address' => $request->address,
+//             'state' => $request->state,
+//             'state_code' => $request->state_code,
+//             'business_type_id' => $request->business_type_id,
+//             'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
+//             'rounding_mode' => $request->rounding_mode ?: 'nearest',
+//             'rounding_step' => $request->rounding_step ?: 1.00,
+//         ]);
+
+//         DB::table('business_user')->insert([
+//             'business_id' => $business->id,
+//             'user_id' => $user->id,
+//             'role' => 'owner',
+//             'created_at' => now(),
+//             'updated_at' => now(),
+//         ]);
+
+//         $user->update([
+//             'current_business_id' => $business->id,
+//         ]);
+
+//         session(['active_business_id' => $business->id]);
+
+//         if ($planId && ($paymentDone || $isTrial)) {
+//             $plan = Plan::with('permissions')->findOrFail($planId);
+
+//             UserPlan::where('business_id', $business->id)
+//                 ->where('status', 1)
+//                 ->update(['status' => 0]);
+
+//             UserPlan::create([
+//                 'business_id' => $business->id,
+//                 'user_id' => $user->id,
+//                 'plan_id' => $plan->id,
+//                 'start_date' => Carbon::today(),
+//                 'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
+//                 'status' => 1,
+//             ]);
+
+//             app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+//             $permissions = $plan->permissions()
+//                 ->where('guard_name', 'web')
+//                 ->pluck('name')
+//                 ->toArray();
+
+//             if (!empty($permissions)) {
+//                 $user->syncPermissions($permissions);
+//             }
+//         }
+
+//         DB::commit();
+
+//         event(new Registered($user));
+//         Auth::login($user);
+
+//         session()->forget([
+//             'register_phone_verified',
+//             'register_phone_otp',
+//             'register_phone_otp_expires_at',
+//         ]);
+
+//         if ($planId && $paymentDone) {
+//             session()->forget([
+//                 'paid_plan_id',
+//                 'paid_razorpay_order_id',
+//                 'paid_razorpay_payment_id',
+//                 'paid_razorpay_signature',
+//                 'payment_done',
+//                 'paid_name',
+//                 'paid_email',
+//             ]);
+
+//             return redirect()->route('bill-templates.choose')
+//                 ->with('success', 'Registration successful. Payment already completed. Please choose your bill template.');
+//         }
+
+//         if ($planId && $isTrial) {
+//             return redirect()->route('bill-templates.choose')
+//                 ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
+//         }
+
+//         if ($planId && !$isTrial) {
+//             return redirect()->route('plan.payment', $planId)
+//                 ->with('success', 'Registration successful. Please complete payment to start your plan.');
+//         }
+
+//         return redirect()->route('plan.choose')
+//             ->with('success', 'Registration successful. Your business has been created.');
+
+//     } catch (\Throwable $e) {
+//         DB::rollBack();
+
+//         return back()
+//             ->withInput()
+//             ->withErrors([
+//                 'register_error' => 'Registration failed: ' . $e->getMessage(),
+//             ]);
+//     }
+// }
+
 public function store(Request $request)
 {
     $planId = $request->input('plan_id');
@@ -742,7 +909,12 @@ public function store(Request $request)
         'phone' => ['required', 'digits:10', 'unique:users,phone'],
 
         'business_name' => ['required', 'string', 'max:255'],
-        'mobile' => ['required', 'string', 'max:20', 'unique:businesses,mobile'],
+
+        // Business email nullable hai
+        'business_email' => ['nullable', 'email', 'max:255'],
+
+        // User phone aur business mobile same ho sakta hai
+        'mobile' => ['required', 'string', 'max:20'],
 
         'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
         'address' => ['nullable', 'string', 'max:255'],
@@ -772,12 +944,19 @@ public function store(Request $request)
         $verifiedPhone = trim($request->phone);
 
         /*
-         | Email form se hata diya hai.
+         | User email form se hata diya hai.
          | Agar users.email database me nullable nahi hai,
          | to ye fake unique email save hoga.
          */
         $userEmail = $verifiedPhone . '@noemail.local';
-        $businessEmail = $verifiedPhone . '@business.local';
+
+        /*
+         | Business email optional hai.
+         | User dalega to save hoga, warna null save hoga.
+         */
+        $businessEmail = $request->filled('business_email')
+            ? strtolower(trim($request->business_email))
+            : null;
 
         $user = User::create([
             'name' => $request->name,
