@@ -232,10 +232,10 @@ class BirthdayRecordController extends Controller
     public function index(Request $request)
     {
 
-        BirthdayRecord::whereNull('wish_time')
-            ->update([
-                'wish_time' => '07:00:00',
-            ]);
+        // BirthdayRecord::whereNull('wish_time')
+        //     ->update([
+        //         'wish_time' => '07:00:00',
+        //     ]);
         $user = $request->user();
 
         $q = BirthdayRecord::query()->with('user:id,name');
