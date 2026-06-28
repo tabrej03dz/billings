@@ -559,6 +559,158 @@ class BirthdayRecordController extends Controller
     // }
 
 
+    // public function import(Request $request)
+    // {
+    //     $request->validate([
+    //         'file' => ['required', 'file', 'mimes:xlsx,xls,csv'],
+    //         'business_id' => ['nullable', 'integer'],
+    //     ]);
+
+    //     $user = $request->user();
+    //     $businessId = $request->get('business_id');
+
+    //     $sheets = Excel::toArray([], $request->file('file'));
+    //     $rows = $sheets[0] ?? [];
+
+    //     if (count($rows) < 2) {
+    //         return back()->withErrors(['file' => 'Excel file is empty or header missing.']);
+    //     }
+
+    //     $rawHeader = $rows[0] ?? [];
+
+    //     $header = array_map(function ($h) {
+    //         $h = strtolower(trim((string) $h));
+    //         $h = preg_replace('/\s+/', '_', $h);
+    //         $h = preg_replace('/[^a-z0-9_]/', '', $h);
+    //         return $h;
+    //     }, $rawHeader);
+
+    //     $phoneKeys = ['phone', 'mobile', 'mobile_no', 'phoneno', 'contact', 'contact_no'];
+    //     $dobKeys   = ['date_of_birth', 'dob', 'birth_date', 'birthdate', 'dateofbirth'];
+    //     $nameKeys  = ['name', 'full_name', 'customer_name'];
+
+    //     // ✅ wish_time accepted headers
+    //     $wishTimeKeys = [
+    //         'wish_time',
+    //         'wishtime',
+    //         'time',
+    //         'send_time',
+    //         'birthday_time',
+    //         'message_time',
+    //     ];
+
+    //     $findIndex = function (array $keys) use ($header) {
+    //         foreach ($keys as $k) {
+    //             $idx = array_search($k, $header, true);
+    //             if ($idx !== false) {
+    //                 return $idx;
+    //             }
+    //         }
+    //         return false;
+    //     };
+
+    //     $idxPhone    = $findIndex($phoneKeys);
+    //     $idxDob      = $findIndex($dobKeys);
+    //     $idxName     = $findIndex($nameKeys);
+    //     $idxWishTime = $findIndex($wishTimeKeys);
+
+    //     if ($idxPhone === false || $idxDob === false) {
+    //         return back()->withErrors([
+    //             'file' => 'Header must include phone and date_of_birth. Accepted DOB headers: date of birth, dob, birth_date.'
+    //         ]);
+    //     }
+
+    //     $inserted = 0;
+    //     $updated = 0;
+    //     $skipped = 0;
+    //     $errors = [];
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         foreach (array_slice($rows, 1) as $i => $row) {
+    //             $rowNumber = $i + 2;
+
+    //             $name  = $idxName !== false ? trim((string) ($row[$idxName] ?? '')) : null;
+    //             $phone = trim((string) ($row[$idxPhone] ?? ''));
+    //             $dobRaw = $row[$idxDob] ?? null;
+
+    //             // ✅ wish_time optional
+    //             $wishTimeRaw = $idxWishTime !== false ? ($row[$idxWishTime] ?? null) : null;
+    //             $wishTime = $this->parseExcelTime($wishTimeRaw);
+
+    //             if ($phone === '' || empty($dobRaw)) {
+    //                 $skipped++;
+    //                 continue;
+    //             }
+
+    //             $dob = $this->parseExcelDate($dobRaw);
+
+    //             if (!$dob) {
+    //                 $errors[] = "Row {$rowNumber}: Invalid date_of_birth";
+    //                 $skipped++;
+    //                 continue;
+    //             }
+
+    //             if (!empty($wishTimeRaw) && !$wishTime) {
+    //                 $errors[] = "Row {$rowNumber}: Invalid wish_time. Use format like 09:00 or 09:00 AM";
+    //                 $skipped++;
+    //                 continue;
+    //             }
+
+    //             $v = Validator::make([
+    //                 'phone' => $phone,
+    //                 'date_of_birth' => $dob->format('Y-m-d'),
+    //                 'wish_time' => $wishTime,
+    //             ], [
+    //                 'phone' => ['required', 'string', 'max:20'],
+    //                 'date_of_birth' => ['required', 'date'],
+    //                 'wish_time' => ['nullable', 'date_format:H:i:s'],
+    //             ]);
+
+    //             if ($v->fails()) {
+    //                 $errors[] = "Row {$rowNumber}: " . implode(', ', $v->errors()->all());
+    //                 $skipped++;
+    //                 continue;
+    //             }
+
+    //             $payload = [
+    //                 'user_id' => $user?->id,
+    //                 'business_id' => $businessId,
+    //                 'name' => $name ?: null,
+    //                 'phone' => $phone,
+    //                 'date_of_birth' => $dob->format('Y-m-d'),
+    //                 'wish_time' => $wishTime, // ✅ added
+    //             ];
+
+    //             $existing = BirthdayRecord::where('business_id', $businessId)
+    //                 ->where('phone', $phone)
+    //                 ->first();
+
+    //             if ($existing) {
+    //                 $existing->update($payload);
+    //                 $updated++;
+    //             } else {
+    //                 BirthdayRecord::create($payload);
+    //                 $inserted++;
+    //             }
+    //         }
+
+    //         DB::commit();
+    //     } catch (\Throwable $e) {
+    //         DB::rollBack();
+
+    //         return back()->withErrors([
+    //             'file' => 'Import failed: ' . $e->getMessage()
+    //         ]);
+    //     }
+
+    //     return redirect()->route('birthday-records.index')
+    //         ->with('success', "Import done. Inserted: {$inserted}, Updated: {$updated}, Skipped: {$skipped}")
+    //         ->with('import_errors', $errors);
+    // }
+
+
     public function import(Request $request)
     {
         $request->validate([
@@ -589,7 +741,6 @@ class BirthdayRecordController extends Controller
         $dobKeys   = ['date_of_birth', 'dob', 'birth_date', 'birthdate', 'dateofbirth'];
         $nameKeys  = ['name', 'full_name', 'customer_name'];
 
-        // ✅ wish_time accepted headers
         $wishTimeKeys = [
             'wish_time',
             'wishtime',
@@ -602,10 +753,12 @@ class BirthdayRecordController extends Controller
         $findIndex = function (array $keys) use ($header) {
             foreach ($keys as $k) {
                 $idx = array_search($k, $header, true);
+
                 if ($idx !== false) {
                     return $idx;
                 }
             }
+
             return false;
         };
 
@@ -631,13 +784,32 @@ class BirthdayRecordController extends Controller
             foreach (array_slice($rows, 1) as $i => $row) {
                 $rowNumber = $i + 2;
 
-                $name  = $idxName !== false ? trim((string) ($row[$idxName] ?? '')) : null;
-                $phone = trim((string) ($row[$idxPhone] ?? ''));
+                $name   = $idxName !== false ? trim((string) ($row[$idxName] ?? '')) : null;
+                $phone  = trim((string) ($row[$idxPhone] ?? ''));
                 $dobRaw = $row[$idxDob] ?? null;
 
-                // ✅ wish_time optional
-                $wishTimeRaw = $idxWishTime !== false ? ($row[$idxWishTime] ?? null) : null;
-                $wishTime = $this->parseExcelTime($wishTimeRaw);
+                /*
+                |--------------------------------------------------------------------------
+                | Wish Time Logic
+                |--------------------------------------------------------------------------
+                | 1. Agar Excel me wish_time column nahi hai => 07:00:00
+                | 2. Agar column hai lekin value blank hai => 07:00:00
+                | 3. Agar value di hui hai => parseExcelTime() se parse hoga
+                */
+                $defaultWishTime = '07:00:00';
+
+                if ($idxWishTime !== false) {
+                    $wishTimeRaw = $row[$idxWishTime] ?? null;
+
+                    if ($wishTimeRaw === null || trim((string) $wishTimeRaw) === '') {
+                        $wishTime = $defaultWishTime;
+                    } else {
+                        $wishTime = $this->parseExcelTime($wishTimeRaw);
+                    }
+                } else {
+                    $wishTimeRaw = null;
+                    $wishTime = $defaultWishTime;
+                }
 
                 if ($phone === '' || empty($dobRaw)) {
                     $skipped++;
@@ -652,7 +824,7 @@ class BirthdayRecordController extends Controller
                     continue;
                 }
 
-                if (!empty($wishTimeRaw) && !$wishTime) {
+                if ($idxWishTime !== false && !empty($wishTimeRaw) && !$wishTime) {
                     $errors[] = "Row {$rowNumber}: Invalid wish_time. Use format like 09:00 or 09:00 AM";
                     $skipped++;
                     continue;
@@ -665,7 +837,7 @@ class BirthdayRecordController extends Controller
                 ], [
                     'phone' => ['required', 'string', 'max:20'],
                     'date_of_birth' => ['required', 'date'],
-                    'wish_time' => ['nullable', 'date_format:H:i:s'],
+                    'wish_time' => ['required', 'date_format:H:i:s'],
                 ]);
 
                 if ($v->fails()) {
@@ -680,7 +852,7 @@ class BirthdayRecordController extends Controller
                     'name' => $name ?: null,
                     'phone' => $phone,
                     'date_of_birth' => $dob->format('Y-m-d'),
-                    'wish_time' => $wishTime, // ✅ added
+                    'wish_time' => $wishTime,
                 ];
 
                 $existing = BirthdayRecord::where('business_id', $businessId)
