@@ -123,6 +123,7 @@
     $showNetWt     = false;
     $showGoldRate  = false;
     $showGoldValue = false;
+    $showSilverValue = false;
     $showMaking    = false;
     $showGemstone  = false;
     $showDiamond   = false;
@@ -147,7 +148,11 @@
             $goldAmountCheck = $goldWeightCheck * $goldRateCheck;
         }
 
-        if ($silverAmountCheck <= 0 && $silverWeightCheck > 0 && $silverRateCheck > 0) {
+        // if ($silverAmountCheck <= 0 && $silverWeightCheck > 0 && $silverRateCheck > 0) {
+        //     $silverAmountCheck = $silverWeightCheck * $silverRateCheck;
+        // }
+
+        if ($silverWeightCheck > 0 && $silverRateCheck > 0) {
             $silverAmountCheck = $silverWeightCheck * $silverRateCheck;
         }
 
@@ -170,10 +175,20 @@
             ?? 0
         );
 
+        // $metalAmountCheck = $goldAmountCheck + $silverAmountCheck;
+
+        // $makingPercentCheck = (float)($itCheck->making_charge ?? $itCheck->making_rate ?? $itCheck->making_amount ?? 0);
+        // $makingChargeCheck = $metalAmountCheck * ($makingPercentCheck / 100);
+
+
         $metalAmountCheck = $goldAmountCheck + $silverAmountCheck;
 
-        $makingPercentCheck = (float)($itCheck->making_charge ?? $itCheck->making_rate ?? $itCheck->making_amount ?? 0);
-        $makingChargeCheck = $metalAmountCheck * ($makingPercentCheck / 100);
+        $makingChargeCheck = (float) (
+            $itCheck->making_rate
+            ?? $itCheck->making_charge
+            ?? $itCheck->making_amount
+            ?? 0
+        );
 
         if (!empty($hsnCheck) && $hsnCheck !== '-') {
             $showHsn = true;
@@ -193,6 +208,10 @@
 
         if ($goldAmountCheck > 0) {
             $showGoldValue = true;
+        }
+
+        if ($silverWeightCheck > 0 && $silverRateCheck > 0 && $silverAmountCheck > 0) {
+            $showSilverValue = true;
         }
 
         if ($makingChargeCheck > 0) {
@@ -227,6 +246,10 @@
     }
 
     if ($showGoldValue) {
+        $itemColspan++;
+    }
+
+    if ($showSilverValue) {
         $itemColspan++;
     }
 
@@ -520,6 +543,10 @@
                 <th style="width:9%;">Gold Value</th>
             @endif
 
+            @if($showSilverValue)
+                <th style="width:9%;">Silver</th>
+            @endif
+
             @if($showMaking)
                 <th style="width:8%;">Making</th>
             @endif
@@ -567,7 +594,11 @@
                     $goldAmount = $goldWeight * $goldRate;
                 }
 
-                if ($silverAmount <= 0 && $silverWeight > 0 && $silverRate > 0) {
+                // if ($silverAmount <= 0 && $silverWeight > 0 && $silverRate > 0) {
+                //     $silverAmount = $silverWeight * $silverRate;
+                // }
+
+                if ($silverWeight > 0 && $silverRate > 0) {
                     $silverAmount = $silverWeight * $silverRate;
                 }
 
@@ -599,11 +630,32 @@
                 | Aapke current logic ke hisab se making_charge DB me percentage save hai.
                 | Isliye metal amount ka percentage nikal rahe hain.
                 */
-                $makingPercent = (float)($it->making_charge ?? $it->making_rate ?? $it->making_amount ?? 0);
+                // $makingPercent = (float)($it->making_charge ?? $it->making_rate ?? $it->making_amount ?? 0);
+
+                // $metalAmount = $goldAmount + $silverAmount;
+
+                // $makingCharge = $metalAmount * ($makingPercent / 100);
+
+                // $makingPerGram = $it->making_per_gram ?? null;
+                // $wastage = (float)($it->wastage ?? $it->wastage_percent ?? 0);
+
+                // $taxPercent = (float)($it->tax_percent ?? $inv->tax_percent ?? 0);
+                // $taxAmount = (float)($it->tax_amount ?? 0);
+
+                // $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
+
+
 
                 $metalAmount = $goldAmount + $silverAmount;
 
-                $makingCharge = $metalAmount * ($makingPercent / 100);
+                // invoice_items table me making_rate already saved amount hai,
+                // isliye yahan koi calculation nahi karni.
+                $makingCharge = (float) (
+                    $it->making_rate
+                    ?? $it->making_charge
+                    ?? $it->making_amount
+                    ?? 0
+                );
 
                 $makingPerGram = $it->making_per_gram ?? null;
                 $wastage = (float)($it->wastage ?? $it->wastage_percent ?? 0);
@@ -611,7 +663,7 @@
                 $taxPercent = (float)($it->tax_percent ?? $inv->tax_percent ?? 0);
                 $taxAmount = (float)($it->tax_amount ?? 0);
 
-                $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
+                $lineTotal = (float)($it->amount ?? $it->line_total ?? $it->total ?? 0);
 
                 if ($lineTotal <= 0) {
                     $lineTotal =
@@ -678,6 +730,18 @@
                 @if($showGoldValue)
                     <td class="text-right">
                         {{ $goldAmount > 0 ? '₹ ' . $fmt2($goldAmount) : '-' }}
+                    </td>
+                @endif
+
+
+                @if($showSilverValue)
+                    <td class="text-right">
+                        @if($silverWeight > 0 && $silverRate > 0)
+                            ₹ {{ $fmt2($silverAmount) }}
+                            
+                        @else
+                            -
+                        @endif
                     </td>
                 @endif
 
