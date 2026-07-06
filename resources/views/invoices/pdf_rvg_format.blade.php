@@ -1,18 +1,26 @@
 {{-- resources/views/invoices/pdf_simple.blade.php --}}
 
 @php
+    $ts = $templateSetting ?? null;
+
     $termsText = $inv->terms ?? null;
 
     // ✅ Template setting defaults
-    $primaryColor   = $templateSetting->primary_color ?? '#d60000';
-    $secondaryColor = $templateSetting->secondary_color ?? '#dbd9d6';
-    $textColor      = $templateSetting->text_color ?? '#111111';
-    $fontFamily     = $templateSetting->font_family ?? 'DejaVu Sans';
+    $primaryColor   = $ts->primary_color ?? '#d60000';
+    $secondaryColor = $ts->secondary_color ?? '#dbd9d6';
+    $textColor      = $ts->text_color ?? '#111111';
 
-    $showLogo      = $templateSetting->show_logo ?? true;
-    $showTagline   = $templateSetting->show_tagline ?? true;
-    $showSignature = $templateSetting->show_signature ?? true;
-    $showTerms     = $templateSetting->show_terms ?? true;
+    // ✅ Hindi PDF ke liye force font
+    $fontFamily = 'NotoSansDevanagari';
+
+    $showLogo      = $ts->show_logo ?? true;
+    $showTagline   = $ts->show_tagline ?? true;
+    $showSignature = $ts->show_signature ?? true;
+    $showTerms     = $ts->show_terms ?? true;
+
+    // ✅ Windows/Linux dono ke liye path safe
+    $fontRegularPath = str_replace('\\', '/', public_path('fonts/NotoSansDevanagari-Regular.ttf'));
+    $fontBoldPath    = str_replace('\\', '/', public_path('fonts/NotoSansDevanagari-Bold.ttf'));
 @endphp
 
 @php
@@ -64,8 +72,14 @@
 
             $twoDigits = function($n) use ($ones, $tens) {
                 $n = (int)$n;
-                if ($n == 0) return '';
-                if ($n < 20) return $ones[$n];
+
+                if ($n == 0) {
+                    return '';
+                }
+
+                if ($n < 20) {
+                    return $ones[$n];
+                }
 
                 return trim($tens[(int)($n / 10)] . ' ' . $ones[$n % 10]);
             };
@@ -101,7 +115,10 @@
             }
 
             $words = trim(implode(' ', array_filter($parts)));
-            if ($words === '') $words = 'Zero';
+
+            if ($words === '') {
+                $words = 'Zero';
+            }
 
             $result = $words . ' Rupees';
 
@@ -131,18 +148,32 @@
 @endphp
 
 <!doctype html>
-<html>
+<html lang="hi">
 <head>
     <meta charset="utf-8">
     <title>{{ ucfirst($type) }} {{ $type != 'quotation' ? 'Invoice' : '' }} {{ $invoiceNo }}</title>
 
     <style>
+        @font-face {
+            font-family: 'NotoSansDevanagari';
+            src: url("{{ $fontRegularPath }}") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'NotoSansDevanagari';
+            src: url("{{ $fontBoldPath }}") format("truetype");
+            font-weight: bold;
+            font-style: normal;
+        }
+
         * {
             box-sizing: border-box;
         }
 
         body {
-            font-family: "{{ $fontFamily }}", "DejaVu Sans", sans-serif;
+            font-family: 'NotoSansDevanagari', DejaVu Sans, sans-serif;
             font-size: 12px;
             color: {{ $textColor }};
             margin: 0;
@@ -163,7 +194,7 @@
         }
 
         .bold {
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .right {
@@ -191,18 +222,17 @@
         .headerRow td {
             vertical-align: top;
             font-size: 12px;
-            margin-bottom: 6px;
         }
 
         .line-red {
             border-top: 6px solid {{ $primaryColor }};
-            margin: 0 0 0 0;
+            margin: 0;
         }
 
         .greybar {
             background: {{ $secondaryColor }};
             padding: 8px 10px;
-            margin: 0 0 0 0;
+            margin: 0;
             font-size: 10.5px;
         }
 
@@ -213,7 +243,7 @@
 
         .billto .name {
             font-size: 10.5px;
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .svc {
@@ -231,7 +261,7 @@
 
         .svc thead th {
             text-align: left;
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .svc thead th.right,
@@ -258,7 +288,7 @@
         .subtotalRow td {
             padding: 6px 6px;
             font-size: 12.5px;
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .bottom {
@@ -288,7 +318,7 @@
         }
 
         .termsTitle {
-            font-weight: 700;
+            font-weight: bold;
             margin-bottom: 6px;
         }
 
@@ -314,14 +344,15 @@
 
         .totalsBox .val {
             text-align: right;
-            font-weight: 700;
+            font-weight: bold;
             width: 120px;
             border-bottom: 1px solid #666;
+            white-space: nowrap;
         }
 
         .totalsBox .strong .lab,
         .totalsBox .strong .val {
-            font-weight: 700;
+            font-weight: bold;
         }
 
         .amountWords {
@@ -347,7 +378,7 @@
         }
 
         .auth {
-            font-weight: 700;
+            font-weight: bold;
             margin-top: 6px;
         }
     </style>
@@ -360,23 +391,27 @@
     <table class="headerRow" style="width:100%; border-collapse:collapse; margin-bottom:8px;">
         <tr>
             <td colspan="3" style="width:100%; vertical-align:top;">
-                <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <span class="bold" style="font-size:11px;">
-                            {{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}
-                        </span>
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr>
+                        <td style="text-align:left; width:60%;">
+                            <span class="bold" style="font-size:11px;">
+                                {{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}
+                            </span>
 
-                        <span class="smalltag" style="font-size:11px;">
-                            ORIGINAL FOR RECIPIENT
-                        </span>
-                    </div>
+                            <span class="smalltag" style="font-size:11px;">
+                                ORIGINAL FOR RECIPIENT
+                            </span>
+                        </td>
 
-                    @if($showTagline && (($b->name ?? '') == 'Real Victory Groups'))
-                        <div class="bold" style="font-size:11px; text-align:right;">
-                            Think Outside The Box
-                        </div>
-                    @endif
-                </div>
+                        <td style="text-align:right; width:40%;">
+                            @if($showTagline && (($b->name ?? '') == 'Real Victory Groups'))
+                                <span class="bold" style="font-size:11px;">
+                                    Think Outside The Box
+                                </span>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
 
@@ -461,89 +496,89 @@
 
     <table class="svc">
         <thead>
-        <tr>
-            <th style="width:52%; font-size:12px;">SERVICES</th>
-            <th style="width:10%; font-size:12px;">SAC</th>
-            <th style="width:10%; font-size:12px;">QTY.</th>
-            <th class="right" style="width:10%; font-size:12px;">RATE</th>
-            <th class="right" style="width:10%; font-size:12px;">TAX</th>
-            <th class="right" style="width:8%; font-size:12px;">AMOUNT</th>
-        </tr>
+            <tr>
+                <th style="width:52%; font-size:12px;">SERVICES</th>
+                <th style="width:10%; font-size:12px;">SAC</th>
+                <th style="width:10%; font-size:12px;">QTY.</th>
+                <th class="right" style="width:10%; font-size:12px;">RATE</th>
+                <th class="right" style="width:10%; font-size:12px;">TAX</th>
+                <th class="right" style="width:8%; font-size:12px;">AMOUNT</th>
+            </tr>
         </thead>
 
         <tbody>
-        @foreach($items as $it)
-            @php
-                $name = $it->item->name ?? '';
-                $desc = $it->description ?? '';
-                $note = trim((string)($it->note ?? $it->extra_line ?? ''));
-                $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
+            @foreach($items as $it)
+                @php
+                    $name = $it->item->name ?? '';
+                    $desc = $it->description ?? '';
+                    $note = trim((string)($it->note ?? $it->extra_line ?? ''));
+                    $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
 
-                $qty = (float)($it->quantity ?? 1);
-                $qty = $qty > 0 ? $qty : 1;
+                    $qty = (float)($it->quantity ?? 1);
+                    $qty = $qty > 0 ? $qty : 1;
 
-                $lineBase = (float)($it->line_base ?? 0);
+                    $lineBase = (float)($it->line_base ?? 0);
 
-                if ($lineBase <= 0) {
-                    $r = (float)($it->rate ?? 0);
-                    $lineBase = $r * $qty;
-                }
+                    if ($lineBase <= 0) {
+                        $r = (float)($it->rate ?? 0);
+                        $lineBase = $r * $qty;
+                    }
 
-                $showRate = $single ? $taxable : $lineBase;
+                    $showRate = $single ? $taxable : $lineBase;
 
-                $lineTax = (float)($it->tax_amount ?? $it->line_tax ?? 0);
+                    $lineTax = (float)($it->tax_amount ?? $it->line_tax ?? 0);
 
-                if ($lineTax <= 0 && isset($it->rate, $it->tax_percent)) {
-                    $lineTax = ((float)$it->rate * (float)$it->tax_percent) / 100;
-                }
+                    if ($lineTax <= 0 && isset($it->rate, $it->tax_percent)) {
+                        $lineTax = ((float)$it->rate * (float)$it->tax_percent) / 100;
+                    }
 
-                $lineTax = round($lineTax, 2);
+                    $lineTax = round($lineTax, 2);
 
-                $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
+                    $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
 
-                if ($lineTotal <= 0) {
-                    $lineTotal = $lineBase + $lineTax;
-                }
+                    if ($lineTotal <= 0) {
+                        $lineTotal = $lineBase + $lineTax;
+                    }
 
-                $lineTotal = round($lineTotal, 2);
+                    $lineTotal = round($lineTotal, 2);
 
-                if ($single && $lineTax <= 0) {
-                    $lineTax = $finalTax;
-                }
+                    if ($single && $lineTax <= 0) {
+                        $lineTax = $finalTax;
+                    }
 
-                if ($single && $lineTotal <= 0) {
-                    $lineTotal = $finalTotal;
-                }
-            @endphp
+                    if ($single && $lineTotal <= 0) {
+                        $lineTotal = $finalTotal;
+                    }
+                @endphp
 
-            <tr>
-                <td>
-                    <div class="bold">{{ $name ?: '-' }}</div>
+                <tr>
+                    <td>
+                        <div class="bold">{{ $name ?: '-' }}</div>
 
-                    @if(!empty($desc))
-                        <div class="descSmall">{{ $desc }}</div>
-                    @endif
+                        @if(!empty($desc))
+                            <div class="descSmall">{{ $desc }}</div>
+                        @endif
 
-                    @if(!empty($note))
-                        <div class="descSmall">{{ $note }}</div>
-                    @endif
-                </td>
+                        @if(!empty($note))
+                            <div class="descSmall">{{ $note }}</div>
+                        @endif
+                    </td>
 
-                <td>{{ $sac }}</td>
-                <td>{{ $qty }} {{ $it->unit ?? '' }}</td>
-                <td class="right">{{ $fmt2($showRate) }}</td>
+                    <td>{{ $sac }}</td>
+                    <td>{{ $qty }} {{ $it->unit ?? '' }}</td>
+                    <td class="right">{{ $fmt2($showRate) }}</td>
 
-                <td class="right">
-                    {{ $fmt2($lineTax) }}
+                    <td class="right">
+                        {{ $fmt2($lineTax) }}
 
-                    <div class="muted" style="font-size:12px;">
-                        ({{ $it->tax_percent ?? 0 }}%)
-                    </div>
-                </td>
+                        <div class="muted" style="font-size:12px;">
+                            ({{ $it->tax_percent ?? 0 }}%)
+                        </div>
+                    </td>
 
-                <td class="right">{{ $fmt2($lineTotal) }}</td>
-            </tr>
-        @endforeach
+                    <td class="right">{{ $fmt2($lineTotal) }}</td>
+                </tr>
+            @endforeach
         </tbody>
     </table>
 
@@ -555,10 +590,10 @@
             <td style="width:8%;"></td>
             <td style="width:10%;"></td>
             <td style="width:10%; white-space:nowrap;" class="right">
-                ₹ {{ $fmt2($finalTax) }}
+                &#8377; {{ $fmt2($finalTax) }}
             </td>
             <td style="width:10%; white-space:nowrap;" class="right">
-                ₹ {{ $fmt2($finalTotal) }}
+                &#8377; {{ $fmt2($finalTotal) }}
             </td>
         </tr>
     </table>
@@ -586,39 +621,39 @@
             <table class="totalsBox">
                 <tr>
                     <td class="lab">Taxable Amount</td>
-                    <td class="val">₹ {{ $fmt2($taxable) }}</td>
+                    <td class="val">&#8377; {{ $fmt2($taxable) }}</td>
                 </tr>
 
                 @if($isIGST)
                     <tr>
                         <td class="lab">IGST</td>
-                        <td class="val">₹ {{ $fmt2($igst_db) }}</td>
+                        <td class="val">&#8377; {{ $fmt2($igst_db) }}</td>
                     </tr>
                 @else
                     <tr>
                         <td class="lab">CGST</td>
-                        <td class="val">₹ {{ $fmt2($cgst_db) }}</td>
+                        <td class="val">&#8377; {{ $fmt2($cgst_db) }}</td>
                     </tr>
 
                     <tr>
                         <td class="lab">SGST</td>
-                        <td class="val">₹ {{ $fmt2($sgst_db) }}</td>
+                        <td class="val">&#8377; {{ $fmt2($sgst_db) }}</td>
                     </tr>
                 @endif
 
                 <tr class="strong">
                     <td class="lab">Total Amount</td>
-                    <td class="val">₹ {{ $fmt2($finalTotal) }}</td>
+                    <td class="val">&#8377; {{ $fmt2($finalTotal) }}</td>
                 </tr>
 
                 <tr>
                     <td class="lab">Received Amount</td>
-                    <td class="val">₹ {{ $fmt2($receivedTot) }}</td>
+                    <td class="val">&#8377; {{ $fmt2($receivedTot) }}</td>
                 </tr>
 
                 <tr class="strong">
                     <td class="lab">Balance</td>
-                    <td class="val">₹ {{ $fmt2($balanceNow) }}</td>
+                    <td class="val">&#8377; {{ $fmt2($balanceNow) }}</td>
                 </tr>
             </table>
 
