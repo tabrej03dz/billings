@@ -556,18 +556,18 @@ Route::middleware(['auth'])->group(function () {
 
 
 
-    Route::get('/font-check', function () {
-    $regular = storage_path('fonts/NotoSansDevanagari-Regular.ttf');
-    $bold    = storage_path('fonts/NotoSansDevanagari-Bold.ttf');
+//     Route::get('/font-check', function () {
+//     $regular = storage_path('fonts/NotoSansDevanagari-Regular.ttf');
+//     $bold    = storage_path('fonts/NotoSansDevanagari-Bold.ttf');
 
-    return response()->json([
-        'storage_path' => storage_path(),
-        'regular_path' => $regular,
-        'regular_exists' => file_exists($regular),
-        'regular_readable' => is_readable($regular),
-        'bold_path' => $bold,
-        'bold_exists' => file_exists($bold),
-        'bold_readable' => is_readable($bold),
-    ]);
-});
+//     return response()->json([
+//         'storage_path' => storage_path(),
+//         'regular_path' => $regular,
+//         'regular_exists' => file_exists($regular),
+//         'regular_readable' => is_readable($regular),
+//         'bold_path' => $bold,
+//         'bold_exists' => file_exists($bold),
+//         'bold_readable' => is_readable($bold),
+//     ]);
+// });
 require __DIR__.'/auth.php';
