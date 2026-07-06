@@ -554,4 +554,23 @@ Route::middleware(['auth'])->group(function () {
     })->middleware('auth')->name('business.switch');
 
 
+
+
+    Route::get('/font-check', function () {
+    $regular = public_path('storage/fonts/NotoSansDevanagari-Regular.ttf');
+    $bold    = public_path('storage/fonts/NotoSansDevanagari-Bold.ttf');
+
+    return response()->json([
+        'public_path' => public_path(),
+        'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? null,
+
+        'regular_path' => $regular,
+        'regular_exists' => file_exists($regular),
+        'regular_readable' => is_readable($regular),
+
+        'bold_path' => $bold,
+        'bold_exists' => file_exists($bold),
+        'bold_readable' => is_readable($bold),
+    ]);
+});
 require __DIR__.'/auth.php';
