@@ -21,8 +21,10 @@
     // ✅ Windows/Linux dono ke liye path safe
     // $fontRegularPath = str_replace('\\', '/', public_path('fonts/NotoSansDevanagari-Regular.ttf'));
     // $fontBoldPath    = str_replace('\\', '/', public_path('fonts/NotoSansDevanagari-Bold.ttf'));
-    $fontRegularPath = str_replace('\\', '/', public_path('storage/fonts/NotoSansDevanagari-Regular.ttf'));
-    $fontBoldPath    = str_replace('\\', '/', public_path('storage/fonts/NotoSansDevanagari-Bold.ttf'));
+    // $fontRegularPath = str_replace('\\', '/', public_path('storage/fonts/NotoSansDevanagari-Regular.ttf'));
+    // $fontBoldPath    = str_replace('\\', '/', public_path('storage/fonts/NotoSansDevanagari-Bold.ttf'));
+    $fontRegularPath = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari-Regular.ttf'));
+$fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari-Bold.ttf'));
 @endphp
 
 @php
