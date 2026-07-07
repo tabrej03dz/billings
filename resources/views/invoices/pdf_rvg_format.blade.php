@@ -3,38 +3,29 @@
 @php
     $ts = $templateSetting ?? null;
 
+    /** @var \App\Models\Invoice $inv */
+    $b = $biz ?? ($inv->business ?? null);
+    $c = $client ?? ($inv->client ?? null);
+    $items = $items ?? collect();
+
+    $docType = strtolower((string)($type ?? 'invoice'));
+    $isQuotation = $docType === 'quotation';
+
+    $docLabel = $isQuotation ? 'QUOTATION' : 'TAX INVOICE';
+
     $termsText = $inv->terms ?? null;
 
-    // ✅ Template setting defaults
     $primaryColor   = $ts->primary_color ?? '#d60000';
     $secondaryColor = $ts->secondary_color ?? '#dbd9d6';
     $textColor      = $ts->text_color ?? '#111111';
 
-    // ✅ Hindi PDF ke liye force font
-    // $fontFamily = 'NotoSansDevanagari';
-
-    // $fontFamily = 'NotoSansDevanagari';
+    // mPDF Hindi compatible font
     $fontFamily = 'freeserif';
 
     $showLogo      = $ts->show_logo ?? true;
     $showTagline   = $ts->show_tagline ?? true;
     $showSignature = $ts->show_signature ?? true;
     $showTerms     = $ts->show_terms ?? true;
-
-    // ✅ Windows/Linux dono ke liye path safe
-    // $fontRegularPath = str_replace('\\', '/', public_path('fonts/NotoSansDevanagari-Regular.ttf'));
-    // $fontBoldPath    = str_replace('\\', '/', public_path('fonts/NotoSansDevanagari-Bold.ttf'));
-    // $fontRegularPath = str_replace('\\', '/', public_path('storage/fonts/NotoSansDevanagari-Regular.ttf'));
-    // $fontBoldPath    = str_replace('\\', '/', public_path('storage/fonts/NotoSansDevanagari-Bold.ttf'));
-    $fontRegularPath = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari-Regular.ttf'));
-$fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari-Bold.ttf'));
-@endphp
-
-@php
-    /** @var \App\Models\Invoice $inv */
-    $b = $biz ?? ($inv->business ?? null);
-    $c = $client ?? ($inv->client ?? null);
-    $items = $items ?? collect();
 
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
@@ -71,16 +62,17 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
             $paise  = (int) round(($amount - $rupees) * 100);
 
             $ones = [
-                '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-                'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
+                '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+                'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen',
+                'Eighteen', 'Nineteen'
             ];
 
-            $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+            $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
-            $twoDigits = function($n) use ($ones, $tens) {
+            $twoDigits = function ($n) use ($ones, $tens) {
                 $n = (int)$n;
 
-                if ($n == 0) {
+                if ($n === 0) {
                     return '';
                 }
 
@@ -152,22 +144,35 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
     $b_mobile = $b->mobile ?? $b->phone ?? '';
     $b_email  = $b->email ?? '';
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
+
+    $logoSrc = $logo ?? null;
+
+    if (!empty($logoSrc)) {
+        $logoSrc = (string)$logoSrc;
+
+        if (!\Illuminate\Support\Str::startsWith($logoSrc, ['http://', 'https://', 'data:', '/'])) {
+            if (file_exists(public_path($logoSrc))) {
+                $logoSrc = public_path($logoSrc);
+            } elseif (file_exists(public_path('storage/' . ltrim($logoSrc, '/')))) {
+                $logoSrc = public_path('storage/' . ltrim($logoSrc, '/'));
+            }
+        }
+    }
 @endphp
 
 <!doctype html>
 <html lang="hi">
 <head>
     <meta charset="utf-8">
-    <title>{{ ucfirst($type) }} {{ $type != 'quotation' ? 'Invoice' : '' }} {{ $invoiceNo }}</title>
+    <title>{{ $docLabel }} {{ $invoiceNo }}</title>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
 
         body {
-            font-family: freeserif, sans-serif;
+            font-family: {{ $fontFamily }}, sans-serif;
             font-size: 12px;
             color: {{ $textColor }};
             margin: 0;
@@ -177,6 +182,11 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
         .wrap {
             margin: 10px;
             padding: 10px 12px 12px 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
         .muted {
@@ -199,9 +209,36 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
             text-align: center;
         }
 
-        table {
+        .topTitleTable {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+
+        .topTitleTable td {
+            vertical-align: top;
+            padding: 0;
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .docTitleCell {
+            width: 86px;
+            text-align: left;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .recipientCell {
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .taglineCell {
+            text-align: right;
+            font-weight: bold;
+            white-space: nowrap;
+            padding-top: 1px;
         }
 
         .smalltag {
@@ -209,18 +246,85 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
             border: 1px solid #999;
             padding: 2px 6px;
             font-size: 10.5px;
-            margin-left: 6px;
             color: #333;
+            line-height: 1.1;
+            white-space: nowrap;
         }
 
-        .headerRow td {
+        .companyHeaderTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            table-layout: fixed;
+        }
+
+        .companyHeaderTable td {
             vertical-align: top;
-            font-size: 12px;
+            padding: 0;
+        }
+
+        .logoCell {
+            width: 112px;
+            text-align: left;
+            vertical-align: top;
+            padding-top: 2px;
+            padding-right: 8px;
+        }
+
+        .logoImg {
+            width: 108px;
+            max-width: 108px;
+            height: auto;
+            display: block;
+            margin: 0;
+        }
+
+        .companyCell {
+            width: auto;
+            text-align: left;
+            vertical-align: top;
+            padding-left: 8px;
+            padding-top: 9px;
+        }
+
+        .companyName {
+            font-size: 24px;
+            line-height: 1.1;
+            font-weight: bold;
+            color: {{ $primaryColor }};
+            letter-spacing: 0.5px;
+            margin: 0 0 5px 0;
+            padding: 0;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .companyAddress {
+            font-size: 14.5px;
+            line-height: 1.25;
+            margin: 0 0 2px 0;
+            padding: 0;
+            text-align: left;
+        }
+
+        .companyContact {
+            font-size: 12.8px;
+            line-height: 1.3;
+            margin: 0;
+            padding: 0;
+            text-align: left;
+        }
+
+        .companyContactLine {
+            white-space: nowrap;
         }
 
         .line-red {
             border-top: 6px solid {{ $primaryColor }};
             margin: 0;
+            padding: 0;
+            height: 0;
+            line-height: 0;
         }
 
         .greybar {
@@ -230,9 +334,16 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
             font-size: 10.5px;
         }
 
+        .greybar table td {
+            padding: 0;
+            vertical-align: middle;
+        }
+
         .billto {
             font-size: 12.5px;
+            margin-top: 4px;
             margin-bottom: 8px;
+            line-height: 1.28;
         }
 
         .billto .name {
@@ -272,6 +383,7 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
             font-size: 10.3px;
             color: #555;
             margin-top: 2px;
+            line-height: 1.25;
         }
 
         .subtotalRow {
@@ -381,63 +493,58 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
 <body>
 <div class="wrap">
 
-    {{-- HEADER --}}
-    <table class="headerRow" style="width:100%; border-collapse:collapse; margin-bottom:8px;">
+    {{-- HEADER TOP --}}
+    <table class="topTitleTable">
         <tr>
-            <td colspan="3" style="width:100%; vertical-align:top;">
-                <table style="width:100%; border-collapse:collapse;">
-                    <tr>
-                        <td style="text-align:left; width:60%;">
-                            <span class="bold" style="font-size:11px;">
-                                {{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}
-                            </span>
+            <td class="docTitleCell">
+                {{ $docLabel }}
+            </td>
 
-                            <span class="smalltag" style="font-size:11px;">
-                                ORIGINAL FOR RECIPIENT
-                            </span>
-                        </td>
+            <td class="recipientCell">
+                <span class="smalltag">ORIGINAL FOR RECIPIENT</span>
+            </td>
 
-                        <td style="text-align:right; width:40%;">
-                            @if($showTagline && (($b->name ?? '') == 'Real Victory Groups'))
-                                <span class="bold" style="font-size:11px;">
-                                    Think Outside The Box
-                                </span>
-                            @endif
-                        </td>
-                    </tr>
-                </table>
+            <td class="taglineCell">
+                @if($showTagline && (($b->name ?? '') == 'Real Victory Groups'))
+                    Think Outside The Box
+                @endif
             </td>
         </tr>
+    </table>
 
+    {{-- COMPANY HEADER --}}
+    <table class="companyHeaderTable">
         <tr>
-            <td style="width:18%; vertical-align:top;">
-                @if($showLogo && !empty($logo))
-                    <img src="{{ $logo }}" alt="Logo" style="height:auto;width:100%;">
+            <td class="logoCell">
+                @if($showLogo && !empty($logoSrc))
+                    <img src="{{ $logoSrc }}" alt="Logo" class="logoImg" width="108">
                 @endif
             </td>
 
-            <td style="width:62%; vertical-align:top;">
-                <div class="red bold" style="font-size:24px; margin-top:6px;">
+            <td class="companyCell">
+                <div class="companyName">
                     {{ $b->name ?? 'Real Victory Groups' }}
                 </div>
 
-                <div class="muted" style="font-size:14.8px; margin-top:2px;">
+                <div class="companyAddress">
                     {{ $b_addr }}
                     @if($b_city), {{ $b_city }}@endif
                     @if($b_state), {{ $b_state }}@endif
-                    @if($b_pin) ({{ $b_pin }})@endif
+                    @if($b_pin) - {{ $b_pin }}@endif
                 </div>
 
-                <div class="muted" style="font-size:12.8px; margin-top:2px;">
-                    <span class="bold">Mobile:</span> {{ $b_mobile ?: '-' }}
-                    &nbsp;&nbsp;&nbsp;
-                    <span class="bold">GSTIN:</span> {{ $b_gstin ?: '-' }}
-                    <br>
-                    <span class="bold">Email:</span> {{ $b_email ?: '-' }}
+                <div class="companyContact">
+                    <div class="companyContactLine">
+                        <span class="bold">Mobile:</span> {{ $b_mobile ?: '-' }}
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <span class="bold">GSTIN:</span> {{ $b_gstin ?: '-' }}
+                    </div>
+
+                    <div>
+                        <span class="bold">Email:</span> {{ $b_email ?: '-' }}
+                    </div>
                 </div>
             </td>
-
-            <td style="width:20%;"></td>
         </tr>
     </table>
 
@@ -448,12 +555,12 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
         <table>
             <tr>
                 <td class="bold" style="font-size:12px;">
-                    {{ $type != 'quotation' ? 'Invoice' : 'Quotation' }} No.:
+                    {{ $isQuotation ? 'Quotation' : 'Invoice' }} No.:
                     <span class="muted" style="font-size:12px;">{{ $invoiceNo }}</span>
                 </td>
 
                 <td class="right bold" style="font-size:12px;">
-                    {{ $type != 'quotation' ? 'Invoice' : 'Quotation' }} Date:
+                    {{ $isQuotation ? 'Quotation' : 'Invoice' }} Date:
                     <span class="muted" style="font-size:12px;">{{ $dmy($invoiceDate) }}</span>
                 </td>
             </tr>
