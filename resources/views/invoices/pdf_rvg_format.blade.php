@@ -11,7 +11,10 @@
     $textColor      = $ts->text_color ?? '#111111';
 
     // ✅ Hindi PDF ke liye force font
-    $fontFamily = 'NotoSansDevanagari';
+    // $fontFamily = 'NotoSansDevanagari';
+
+    // $fontFamily = 'NotoSansDevanagari';
+    $fontFamily = 'freeserif';
 
     $showLogo      = $ts->show_logo ?? true;
     $showTagline   = $ts->show_tagline ?? true;
@@ -158,26 +161,13 @@ $fontBoldPath    = str_replace('\\', '/', storage_path('fonts/NotoSansDevanagari
     <title>{{ ucfirst($type) }} {{ $type != 'quotation' ? 'Invoice' : '' }} {{ $invoiceNo }}</title>
 
     <style>
-        @font-face {
-            font-family: 'NotoSansDevanagari';
-            src: url("{{ $fontRegularPath }}") format("truetype");
-            font-weight: normal;
-            font-style: normal;
-        }
-
-        @font-face {
-            font-family: 'NotoSansDevanagari';
-            src: url("{{ $fontBoldPath }}") format("truetype");
-            font-weight: bold;
-            font-style: normal;
-        }
 
         * {
             box-sizing: border-box;
         }
 
         body {
-            font-family: 'NotoSansDevanagari', DejaVu Sans, sans-serif;
+            font-family: freeserif, sans-serif;
             font-size: 12px;
             color: {{ $textColor }};
             margin: 0;

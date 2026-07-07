@@ -20,6 +20,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Mpdf\Mpdf;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
+use Illuminate\Http\Response;
 
 
 class InvoiceController extends Controller
@@ -676,16 +680,25 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
 
 
+    // public function download(Invoice $invoice)
+    // {
+
+    //     // 2) Otherwise — generate fresh PDF (fallback)
+    //     $pdf = $this->simplePdfBuild($invoice);
+
+    //     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+    //     return $pdf->download('Invoice-'.$safeNumber.'.pdf');
+    // }
+
+
     public function download(Invoice $invoice)
-    {
+{
+    $pdfContent = $this->simplePdfBuild($invoice);
 
-        // 2) Otherwise — generate fresh PDF (fallback)
-        $pdf = $this->simplePdfBuild($invoice);
+    $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
 
-        $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-        return $pdf->download('Invoice-'.$safeNumber.'.pdf');
-    }
-
+    return $this->pdfResponse($pdfContent, 'Invoice-' . $safeNumber . '.pdf', 'attachment');
+}
 
     private function imageDataUri(?string $path): ?string
     {
@@ -819,14 +832,11 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         // fresh relations
         $invoice = $invoice->fresh(['client', 'items', 'business']);
 
-        // pdf build
-        $pdf = $this->simplePdfBuild($invoice);
+        $pdfContent = $this->simplePdfBuild($invoice);
 
-        // file name
         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
-        // save in storage/app/public/invoices
-        Storage::disk('public')->put($fileName, $pdf->output());
+        Storage::disk('public')->put($fileName, $pdfContent);
 
         // db me relative path save
         $invoice->update([
@@ -857,10 +867,10 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
         if (empty($invoice->pdf_url)) {
             $invoice = $invoice->fresh(['client', 'items', 'business']);
-            $pdf = $this->simplePdfBuild($invoice);
+            $pdfContent = $this->simplePdfBuild($invoice);
             $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
-            Storage::disk('public')->put($fileName, $pdf->output());
+            Storage::disk('public')->put($fileName, $pdfContent);
             $invoice->update(['pdf_url' => $fileName]);
         }
 
@@ -1467,14 +1477,14 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 }
             });
 
-            $pdf = $this->simplePdfBuild($invoice);
+            $pdfContent = $this->simplePdfBuild($invoice);
 
             $dir = "invoices/{$bid}/" . now()->format('Y-m');
             $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string) $invoice->invoice_number);
             $filename = $safeName . ".pdf";
             $path = $dir . "/" . $filename;
 
-            Storage::disk('public')->put($path, $pdf->output());
+            Storage::disk('public')->put($path, $pdfContent);
 
             $invoice->update([
                 'pdf_url' => $path,
@@ -2028,14 +2038,14 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
                 }
             });
 
-            $pdf = $this->simplePdfBuild($invoice->fresh(['client', 'items', 'business']));
+            $pdfContent = $this->simplePdfBuild($invoice->fresh(['client', 'items', 'business']));
 
             $dir = "invoices/{$bid}/" . now()->format('Y-m');
             $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
             $filename = $safeName . ".pdf";
             $path = $dir . "/" . $filename;
 
-            Storage::disk('public')->put($path, $pdf->output());
+            Storage::disk('public')->put($path, $pdfContent);
 
             $invoice->update([
                 'pdf_url' => $path,
@@ -2126,12 +2136,12 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             // fresh relations ke sath PDF build karo
             $invoice = $invoice->fresh(['client','items','business']);
 
-            $pdf = $this->buildInvoicePdf($invoice);
+            $pdfContent = $this->buildInvoicePdf($invoice);
 
             $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
             $path       = 'invoices/Invoice-'.$safeNumber.'.pdf';
 
-            Storage::disk('public')->put($path, $pdf->output());
+            Storage::disk('public')->put($path, $pdfContent);
 
             $invoice->update([
                 'pdf_url' => $path, // relative path store
@@ -2175,7 +2185,7 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         return back()->with('success', 'Invoice WhatsApp par send kar diya gaya hai.');
     }
 
-    protected function buildInvoicePdf(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    protected function buildInvoicePdf(Invoice $invoice): string
     {
         $invoice->load(['client','items','business']);
 
@@ -2281,7 +2291,10 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         $vm['sign']        = $signDataUri;
         $vm['letter_head'] = $letterHeadDataUri;
 
-        return Pdf::loadView('invoices.pdf_kapoor', $vm)->setPaper('a4');
+        // return Pdf::loadView('invoices.pdf_kapoor', $vm)->setPaper('a4');
+        $fileName = 'invoice-' . ($inv->invoice_number ?? $inv->invoice_no ?? $inv->id) . '.pdf';
+
+        return $this->renderMpdfOutput('invoices.pdf_kapoor', $vm);
     }
 
 
@@ -2392,7 +2405,8 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
     // }
 
 
-    protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    // protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    protected function simplePdfBuild(Invoice $invoice): string
     {
         $invoice->load(['client', 'items.item', 'business.billTemplate']);
 
@@ -2492,8 +2506,13 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
         $view = 'invoices.' . ($billTemplate->page_name ?? 'pdf_simple');
 
-        return Pdf::loadView($view, $vm)
-            ->setPaper('a4');
+        // return Pdf::loadView($view, $vm)
+        //     ->setPaper('a4');
+        $filePrefix = $type === 'quotation' ? 'quotation-' : 'invoice-';
+
+        $fileName = $filePrefix . ($inv->invoice_number ?? $inv->invoice_no ?? $inv->id) . '.pdf';
+
+        return $this->renderMpdfOutput($view, $vm);
     }
 
 
@@ -2947,5 +2966,115 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
             'invoice-report-' . $type . '-' . now()->format('Y-m-d_H-i-s') . '.xlsx'
         );
     }
+
+
+
+
+
+
+
+    // protected function renderMpdfResponse(string $view, array $vm, string $fileName, string $disposition = 'inline'): Response
+    // {
+    //     $fontDir = storage_path('fonts');
+
+    //     $regularFont = $fontDir . DIRECTORY_SEPARATOR . 'NotoSansDevanagari-Regular.ttf';
+    //     $boldFont    = $fontDir . DIRECTORY_SEPARATOR . 'NotoSansDevanagari-Bold.ttf';
+
+    //     if (!is_readable($regularFont) || !is_readable($boldFont)) {
+    //         throw new \Exception('NotoSansDevanagari font files not found or not readable in storage/fonts.');
+    //     }
+
+    //     $tempDir = storage_path('app/mpdf-temp');
+
+    //     if (!is_dir($tempDir)) {
+    //         mkdir($tempDir, 0775, true);
+    //     }
+
+    //     $defaultConfig = (new ConfigVariables())->getDefaults();
+    //     $fontDirs = $defaultConfig['fontDir'];
+
+    //     $defaultFontConfig = (new FontVariables())->getDefaults();
+    //     $fontData = $defaultFontConfig['fontdata'];
+
+    //     $mpdf = new Mpdf([
+    //         'mode' => 'utf-8',
+    //         'format' => 'A4',
+
+    //         'margin_left' => 8,
+    //         'margin_right' => 8,
+    //         'margin_top' => 8,
+    //         'margin_bottom' => 8,
+
+    //         'tempDir' => $tempDir,
+
+    //         'fontDir' => array_merge($fontDirs, [
+    //             $fontDir,
+    //         ]),
+
+    //         'fontdata' => $fontData + [
+    //             'notosansdevanagari' => [
+    //                 'R' => 'NotoSansDevanagari-Regular.ttf',
+    //                 'B' => 'NotoSansDevanagari-Bold.ttf',
+    //                 'useOTL' => 0xFF,
+    //             ],
+    //         ],
+
+    //         'default_font' => 'notosansdevanagari',
+    //         'autoScriptToLang' => true,
+    //         'autoLangToFont' => true,
+    //     ]);
+
+    //     $html = view($view, $vm)->render();
+
+    //     $mpdf->WriteHTML($html);
+
+    //     $safeFileName = preg_replace('/[^A-Za-z0-9_\-\.]/', '-', $fileName);
+
+    //     return response($mpdf->Output($safeFileName, 'S'), 200)
+    //         ->header('Content-Type', 'application/pdf')
+    //         ->header('Content-Disposition', $disposition . '; filename="' . $safeFileName . '"');
+    // }
+
+
+protected function renderMpdfOutput(string $view, array $vm): string
+{
+    $tempDir = storage_path('app/mpdf-temp');
+
+    if (!is_dir($tempDir)) {
+        mkdir($tempDir, 0775, true);
+    }
+
+    $mpdf = new \Mpdf\Mpdf([
+        'mode' => 'utf-8',
+        'format' => 'A4',
+
+        'margin_left' => 8,
+        'margin_right' => 8,
+        'margin_top' => 8,
+        'margin_bottom' => 8,
+
+        'tempDir' => $tempDir,
+
+        'default_font' => 'freeserif',
+
+        'autoScriptToLang' => true,
+        'autoLangToFont' => true,
+    ]);
+
+    $html = view($view, $vm)->render();
+
+    $mpdf->WriteHTML($html);
+
+    return $mpdf->Output('', 'S');
+}
+
+protected function pdfResponse(string $pdfContent, string $fileName, string $disposition = 'inline'): Response
+{
+    $safeFileName = preg_replace('/[^A-Za-z0-9_\-\.]/', '-', $fileName);
+
+    return response($pdfContent, 200)
+        ->header('Content-Type', 'application/pdf')
+        ->header('Content-Disposition', $disposition . '; filename="' . $safeFileName . '"');
+}
 
 }
