@@ -435,24 +435,18 @@ class BillRequestController extends Controller
         */
         $firstItem = Item::withoutGlobalScopes()
             ->where('id', $firstItemId)
-            ->where('type', 'service')
             ->first();
 
         if (!$firstItem) {
-            $debugItem = Item::withoutGlobalScopes()
-                ->where('id', $firstItemId)
-                ->first();
-
-            if ($debugItem) {
-                throw new \Exception(
-                    'Selected item service type ka nahi hai. Item ID: ' . $firstItemId .
-                    ', Type: ' . ($debugItem->type ?? 'NULL') .
-                    ', Business ID: ' . ($debugItem->business_id ?? 'NULL') .
-                    ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
-                );
-            }
-
             throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
+        }
+
+        if ((int) ($firstItem->is_active ?? 1) !== 1) {
+            throw new \Exception(
+                'Selected item inactive hai. Item ID: ' . $firstItemId .
+                ', Business ID: ' . ($firstItem->business_id ?? 'NULL') .
+                ', Active: ' . (($firstItem->is_active ?? null) ? '1' : '0')
+            );
         }
 
         /*
@@ -581,7 +575,6 @@ class BillRequestController extends Controller
 
             $matchedItem = Item::withoutGlobalScopes()
                 ->where('business_id', $bid)
-                ->where('type', 'service')
                 ->where('id', $itemId)
                 ->first();
 
@@ -592,15 +585,22 @@ class BillRequestController extends Controller
 
                 if ($debugItem) {
                     throw new \Exception(
-                        'Selected service item business/type match nahi hua. Item ID: ' . $itemId .
+                        'Selected item business match nahi hua. Item ID: ' . $itemId .
                         ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
                         ', Expected Business ID: ' . $bid .
-                        ', Type: ' . ($debugItem->type ?? 'NULL') .
                         ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
                     );
                 }
 
-                throw new \Exception('Selected service item database me nahi mila. Item ID: ' . $itemId);
+                throw new \Exception('Selected item database me nahi mila. Item ID: ' . $itemId);
+            }
+
+            if ((int) ($matchedItem->is_active ?? 1) !== 1) {
+                throw new \Exception(
+                    'Selected item inactive hai. Item ID: ' . $itemId .
+                    ', Business ID: ' . ($matchedItem->business_id ?? 'NULL') .
+                    ', Active: ' . (($matchedItem->is_active ?? null) ? '1' : '0')
+                );
             }
 
             $qty = max(1, (float) ($row['qty'] ?? 1));
