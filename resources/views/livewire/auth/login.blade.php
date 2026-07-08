@@ -27,43 +27,6 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     // otp skip login
 
-    public function sendOtp(): void
-    {
-        $this->validate([
-            'phone' => ['required', 'digits:10'],
-        ]);
-
-        $this->ensureIsNotRateLimited();
-
-        $user = \App\Models\User::where('phone', $this->phone)->first();
-
-        if (! $user) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'phone' => 'This phone number is not registered.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | TEMPORARY OTP DISABLED
-        |--------------------------------------------------------------------------
-        | Phone number valid hai to direct login kara rahe hain.
-        | Baad me OTP enable karna ho to ye block hata dena aur old OTP code wapas rakhna.
-        */
-
-        Auth::login($user, $this->remember);
-
-        Session::regenerate();
-
-        RateLimiter::clear($this->throttleKey());
-
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
-    }
-
-
-
     // public function sendOtp(): void
     // {
     //     $this->validate([
@@ -82,35 +45,72 @@ new #[Layout('components.layouts.auth')] class extends Component
     //         ]);
     //     }
 
-    //     $otp = rand(100000, 999999);
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | TEMPORARY OTP DISABLED
+    //     |--------------------------------------------------------------------------
+    //     | Phone number valid hai to direct login kara rahe hain.
+    //     | Baad me OTP enable karna ho to ye block hata dena aur old OTP code wapas rakhna.
+    //     */
 
-    //     session([
-    //         'login_otp_user_id' => $user->id,
-    //         'login_otp_remember' => $this->remember,
-    //         'login_otp' => $otp,
-    //         'login_otp_expires_at' => now()->addMinutes(5)->timestamp,
-    //     ]);
+    //     Auth::login($user, $this->remember);
 
-    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
-
-    //     Http::get(env('KUTILITY_URL'), [
-    //         'key' => env('KUTILITY_KEY'),
-    //         'campaign' => '12754',
-    //         'routeid' => '7',
-    //         'type' => 'text',
-    //         'contacts' => $this->phone,
-    //         'senderid' => 'RVGRPS',
-    //         'msg' => $msg,
-    //         'template_id' => '1707178057481157648',
-    //         'pe_id' => '1701164032595209992',
-    //     ]);
+    //     Session::regenerate();
 
     //     RateLimiter::clear($this->throttleKey());
 
-    //     $this->otpSent = true;
-
-    //     session()->flash('status', 'OTP sent successfully.');
+    //     $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     // }
+
+
+
+    public function sendOtp(): void
+    {
+        $this->validate([
+            'phone' => ['required', 'digits:10'],
+        ]);
+
+        $this->ensureIsNotRateLimited();
+
+        $user = \App\Models\User::where('phone', $this->phone)->first();
+
+        if (! $user) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'phone' => 'This phone number is not registered.',
+            ]);
+        }
+
+        $otp = rand(100000, 999999);
+
+        session([
+            'login_otp_user_id' => $user->id,
+            'login_otp_remember' => $this->remember,
+            'login_otp' => $otp,
+            'login_otp_expires_at' => now()->addMinutes(5)->timestamp,
+        ]);
+
+        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+        Http::get(env('KUTILITY_URL'), [
+            'key' => env('KUTILITY_KEY'),
+            'campaign' => '12754',
+            'routeid' => '7',
+            'type' => 'text',
+            'contacts' => $this->phone,
+            'senderid' => 'RVGRPS',
+            'msg' => $msg,
+            'template_id' => '1707178057481157648',
+            'pe_id' => '1701164032595209992',
+        ]);
+
+        RateLimiter::clear($this->throttleKey());
+
+        $this->otpSent = true;
+
+        session()->flash('status', 'OTP sent successfully.');
+    }
 
     public function verifyOtp(): void
     {
