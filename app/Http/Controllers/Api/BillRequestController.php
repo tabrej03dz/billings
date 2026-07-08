@@ -520,7 +520,6 @@ class BillRequestController extends Controller
             }
 
             $matchedItem = Item::where('business_id', $bid)
-                ->where('is_active', 1)
                 ->where('type', 'service')
                 ->where('id', $itemId)
                 ->first();
