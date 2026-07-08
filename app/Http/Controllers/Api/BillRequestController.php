@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
 use App\Models\BillRequest;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Storage;
 
 class BillRequestController extends Controller
 {
-
     public function store(Request $request)
     {
         try {
@@ -63,7 +61,7 @@ class BillRequestController extends Controller
                 'city'                   => $request->input('city'),
                 'pin'                    => $request->input('pin'),
                 'address'                => $request->input('address'),
-                'customer_gst_number'    => $request->input('customer_gst_number'),
+                'customer_gst_number'    => $request->input('customer_gst_number') ?? $request->input('gst_number'),
 
                 'package_id'             => $request->input('package_id'),
                 'package_name'           => $request->input('package_name'),
@@ -151,6 +149,17 @@ class BillRequestController extends Controller
 
             $validated = $validator->validated();
 
+            $sourceRequestId = trim((string) $request->header('X-Request-Id'));
+            $sourceSoftware  = $validated['source_software'] ?? 'postimage';
+
+            $idempotencyKey = null;
+
+            if (!empty($validated['source_user_package_id'])) {
+                $idempotencyKey = $sourceSoftware . ':user_package:' . $validated['source_user_package_id'];
+            } elseif ($sourceRequestId !== '') {
+                $idempotencyKey = $sourceSoftware . ':request:' . $sourceRequestId;
+            }
+
             $items = collect($validated['items'] ?? [])
                 ->filter(fn ($row) => !empty($row['item_id']))
                 ->map(function ($row) {
@@ -180,6 +189,51 @@ class BillRequestController extends Controller
                 ], 422);
             }
 
+            $existingBillRequest = null;
+
+            if ($idempotencyKey) {
+                $existingBillRequest = BillRequest::where('idempotency_key', $idempotencyKey)->first();
+            }
+
+            if (!$existingBillRequest && !empty($validated['source_user_package_id'])) {
+                $existingBillRequest = BillRequest::where('source_software', $sourceSoftware)
+                    ->where('source_user_package_id', $validated['source_user_package_id'])
+                    ->first();
+            }
+
+            if (!$existingBillRequest && $sourceRequestId !== '') {
+                $existingBillRequest = BillRequest::where('source_request_id', $sourceRequestId)->first();
+            }
+
+            if ($existingBillRequest) {
+                $existingInvoice = Invoice::withoutGlobalScopes()
+                    ->where('bil_request_id', $existingBillRequest->id)
+                    ->where('invoice_type', 'quotation')
+                    ->first();
+
+                if (!$existingInvoice && $validated['request_for_bill']) {
+                    $existingInvoice = $this->createQuotationInvoiceFromBillRequest($existingBillRequest->fresh());
+
+                    if ($existingInvoice) {
+                        $this->pushSaveInvoiceApi($existingBillRequest->fresh(), $existingInvoice->fresh());
+                    }
+                }
+
+                return response()->json([
+                    'success'            => true,
+                    'message'            => 'Duplicate request ignored. Existing billing request returned.',
+                    'billing_request_id' => $existingBillRequest->id,
+                    'invoice_id'         => $existingInvoice?->id,
+                    'invoice_number'     => $existingInvoice?->invoice_number,
+                    'invoice_type'       => $existingInvoice?->invoice_type,
+                    'status'             => $existingBillRequest->fresh()->status,
+                    'data'               => [
+                        'bill_request' => $existingBillRequest->fresh(),
+                        'invoice'      => $existingInvoice ? $existingInvoice->fresh() : null,
+                    ],
+                ], 200);
+            }
+
             $itemsTotal = collect($items)->sum('line_total');
 
             $gstNumber = !empty($validated['customer_gst_number'])
@@ -188,7 +242,7 @@ class BillRequestController extends Controller
 
             $fullPayload = [
                 'request_for_bill'       => $validated['request_for_bill'],
-                'source_software'        => $validated['source_software'] ?? null,
+                'source_software'        => $sourceSoftware,
                 'source_customer_id'     => $validated['source_customer_id'] ?? null,
                 'source_package_id'      => $validated['source_package_id'] ?? null,
                 'source_user_package_id' => $validated['source_user_package_id'] ?? null,
@@ -230,10 +284,21 @@ class BillRequestController extends Controller
             $billRequest = null;
             $invoice = null;
 
-            DB::transaction(function () use (&$billRequest, &$invoice, $validated, $request, $gstNumber, $fullPayload, $itemsTotal) {
+            DB::transaction(function () use (
+                &$billRequest,
+                &$invoice,
+                $validated,
+                $gstNumber,
+                $fullPayload,
+                $itemsTotal,
+                $sourceRequestId,
+                $sourceSoftware,
+                $idempotencyKey
+            ) {
                 $billRequest = BillRequest::create([
-                    'source_software'        => $validated['source_software'] ?? 'postimage',
-                    'source_request_id'      => $request->header('X-Request-Id'),
+                    'source_software'        => $sourceSoftware,
+                    'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : null,
+                    'idempotency_key'        => $idempotencyKey,
 
                     'source_customer_id'     => $validated['source_customer_id'] ?? null,
                     'source_package_id'      => $validated['source_package_id'] ?? null,
@@ -270,13 +335,14 @@ class BillRequestController extends Controller
                     'remarks'                => null,
                     'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
                     'api_response'           => json_encode([
-                        'received_from' => $validated['source_software'] ?? 'postimage',
+                        'received_from' => $sourceSoftware,
                         'received_at'   => now()->toDateTimeString(),
                     ], JSON_UNESCAPED_UNICODE),
                     'requested_at'           => $validated['request_date'] ?? now(),
                 ]);
 
                 if ($validated['request_for_bill']) {
+                    $billRequest = $billRequest->fresh();
                     $invoice = $this->createQuotationInvoiceFromBillRequest($billRequest);
                 }
             });
@@ -319,27 +385,104 @@ class BillRequestController extends Controller
 
     private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
     {
-        $bid = 1;
+        $existingInvoice = Invoice::withoutGlobalScopes()
+            ->where('bil_request_id', $billRequest->id)
+            ->where('invoice_type', 'quotation')
+            ->first();
+
+        if ($existingInvoice) {
+            return $existingInvoice;
+        }
+
+        $payload = [];
+
+        if (!empty($billRequest->full_payload)) {
+            $decoded = json_decode($billRequest->full_payload, true);
+
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+
+        $requestItems = $payload['items'] ?? [];
+
+        if (empty($requestItems)) {
+            $requestItems = [[
+                'item_id'     => (int) ($billRequest->package_name ?? 0),
+                'qty'         => 1,
+                'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
+                'description' => (string) ($billRequest->package_description ?? ''),
+            ]];
+        }
+
+        $firstItemId = (int) ($requestItems[0]['item_id'] ?? 0);
+
+        if ($firstItemId <= 0) {
+            Log::error('Bill request first item invalid', [
+                'bill_request_id' => $billRequest->id,
+                'request_items'   => $requestItems,
+                'full_payload'    => $billRequest->full_payload,
+                'package_name'    => $billRequest->package_name,
+            ]);
+
+            throw new \Exception('Selected service item id invalid hai.');
+        }
+
+        /*
+        * Important:
+        * Yahan withoutGlobalScopes() use kiya hai,
+        * taki BelongsToBusiness global scope item ko hide na kare.
+        */
+        $firstItem = Item::withoutGlobalScopes()
+            ->where('id', $firstItemId)
+            ->where('type', 'service')
+            ->first();
+
+        if (!$firstItem) {
+            $debugItem = Item::withoutGlobalScopes()
+                ->where('id', $firstItemId)
+                ->first();
+
+            if ($debugItem) {
+                throw new \Exception(
+                    'Selected item service type ka nahi hai. Item ID: ' . $firstItemId .
+                    ', Type: ' . ($debugItem->type ?? 'NULL') .
+                    ', Business ID: ' . ($debugItem->business_id ?? 'NULL') .
+                    ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
+                );
+            }
+
+            throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
+        }
+
+        /*
+        * Pehle code me $bid = 1 hardcoded tha.
+        * Ab item jis business ka hai, wahi business use hoga.
+        */
+        $bid = (int) ($firstItem->business_id ?: 1);
         $userId = 1;
 
-        $business = Business::findOrFail($bid);
+        $business = Business::withoutGlobalScopes()->findOrFail($bid);
 
         $client = null;
 
         if (!empty($billRequest->gst_number)) {
-            $client = Client::where('business_id', $bid)
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('gstin', trim($billRequest->gst_number))
                 ->first();
         }
 
         if (!$client && !empty($billRequest->customer_phone)) {
-            $client = Client::where('business_id', $bid)
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('mobile', trim($billRequest->customer_phone))
                 ->first();
         }
 
         if (!$client && !empty($billRequest->customer_email)) {
-            $client = Client::where('business_id', $bid)
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('email', trim($billRequest->customer_email))
                 ->first();
         }
@@ -386,10 +529,7 @@ class BillRequestController extends Controller
         $stateCode = null;
 
         foreach ($states as $st) {
-            if (
-                strtolower(trim($st['name'])) ==
-                strtolower(trim($billRequest->state))
-            ) {
+            if (strtolower(trim($st['name'])) === strtolower(trim((string) $billRequest->state))) {
                 $stateCode = $st['code'];
                 break;
             }
@@ -409,26 +549,6 @@ class BillRequestController extends Controller
                 'email'       => $billRequest->customer_email,
                 'is_save'     => 1,
             ]);
-        }
-
-        $payload = [];
-
-        if (!empty($billRequest->full_payload)) {
-            $decoded = json_decode($billRequest->full_payload, true);
-            if (is_array($decoded)) {
-                $payload = $decoded;
-            }
-        }
-
-        $requestItems = $payload['items'] ?? [];
-
-        if (empty($requestItems)) {
-            $requestItems = [[
-                'item_id'     => (int) ($billRequest->package_name ?? 0),
-                'qty'         => 1,
-                'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
-                'description' => (string) ($billRequest->package_description ?? ''),
-            ]];
         }
 
         $invoiceDate = now(config('app.timezone'))->toDateString();
@@ -459,14 +579,28 @@ class BillRequestController extends Controller
                 throw new \Exception('Selected service item id invalid hai.');
             }
 
-            $matchedItem = Item::where('business_id', $bid)
-                ->where('is_active', 1)
+            $matchedItem = Item::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('type', 'service')
                 ->where('id', $itemId)
                 ->first();
 
             if (!$matchedItem) {
-                throw new \Exception('Selected service item nahi mila. Item ID: ' . $itemId);
+                $debugItem = Item::withoutGlobalScopes()
+                    ->where('id', $itemId)
+                    ->first();
+
+                if ($debugItem) {
+                    throw new \Exception(
+                        'Selected service item business/type match nahi hua. Item ID: ' . $itemId .
+                        ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
+                        ', Expected Business ID: ' . $bid .
+                        ', Type: ' . ($debugItem->type ?? 'NULL') .
+                        ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
+                    );
+                }
+
+                throw new \Exception('Selected service item database me nahi mila. Item ID: ' . $itemId);
             }
 
             $qty = max(1, (float) ($row['qty'] ?? 1));
@@ -719,42 +853,39 @@ class BillRequestController extends Controller
     private function pushSaveInvoiceApi(BillRequest $billRequest, Invoice $invoice): void
     {
         try {
-            // $endpoint = config('services.billing.save_invoice_url'); // .env/config se lo
-
-            $endpoint = 'https://post.realvictorygroups.com/api/invoice-url-save'; // .env/config se lo
+            $endpoint = 'https://post.realvictorygroups.com/api/invoice-url-save';
 
             if (!$endpoint) {
                 Log::warning('save-invoice api url missing in config/services');
                 return;
             }
 
-            // pdf url resolve
             $pdfUrl = null;
 
             if (!empty($invoice->pdf_url)) {
                 $pdfUrl = Storage::disk('public')->url($invoice->pdf_url);
             } else {
-                // fallback: invoice show route
                 $pdfUrl = route('invoices.show', $invoice->id);
             }
 
             $payload = [
                 'source_request_id'      => $billRequest->source_request_id,
                 'source_user_package_id' => $billRequest->source_user_package_id,
-                // 'source_user_package_id' => '3911',
                 'invoice_id'             => $invoice->id,
                 'invoice_number'         => $invoice->invoice_number,
                 'pdf_url'                => $pdfUrl,
             ];
 
             $response = Http::timeout(30)
-            ->withoutVerifying()
-            ->acceptJson()
-            ->post($endpoint, $payload);
+                ->withoutVerifying()
+                ->acceptJson()
+                ->post($endpoint, $payload);
 
             $oldApi = [];
+
             if (!empty($billRequest->api_response)) {
                 $decoded = json_decode($billRequest->api_response, true);
+
                 if (is_array($decoded)) {
                     $oldApi = $decoded;
                 }
@@ -770,18 +901,21 @@ class BillRequestController extends Controller
             ];
 
             $billRequest->update([
-                'api_response' => json_encode($oldApi),
+                'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
             ]);
+
         } catch (\Throwable $e) {
             Log::error('save-invoice api call failed', [
                 'bil_request_id' => $billRequest->id,
-                'invoice_id'      => $invoice->id,
-                'error'           => $e->getMessage(),
+                'invoice_id'     => $invoice->id,
+                'error'          => $e->getMessage(),
             ]);
 
             $oldApi = [];
+
             if (!empty($billRequest->api_response)) {
                 $decoded = json_decode($billRequest->api_response, true);
+
                 if (is_array($decoded)) {
                     $oldApi = $decoded;
                 }
@@ -794,7 +928,7 @@ class BillRequestController extends Controller
             ];
 
             $billRequest->update([
-                'api_response' => json_encode($oldApi),
+                'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
             ]);
         }
     }
@@ -811,11 +945,6 @@ class BillRequestController extends Controller
 
         return str_pad($code, 2, '0', STR_PAD_LEFT);
     }
-
-
-
-
-
 
     public function index(Request $request)
     {
@@ -868,7 +997,7 @@ class BillRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Bill requests fetched successfully.',
-            'data' => $billRequests,
+            'data'    => $billRequests,
         ]);
     }
 
@@ -884,7 +1013,7 @@ class BillRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Bill request details fetched successfully.',
-            'data' => [
+            'data'    => [
                 'bill_request' => $billRequest,
                 'api_response' => $apiResponse,
             ],
@@ -893,7 +1022,7 @@ class BillRequestController extends Controller
 
     public function showInvoice(BillRequest $billRequest)
     {
-        $invoice = Invoice::withoutGlobalScope('business_id')
+        $invoice = Invoice::withoutGlobalScopes()
             ->where('bil_request_id', $billRequest->id)
             ->first();
 
@@ -907,10 +1036,10 @@ class BillRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Invoice fetched successfully.',
-            'data' => [
-                'invoice' => $invoice,
+            'data'    => [
+                'invoice'     => $invoice,
                 'preview_url' => route('invoices.preview', $invoice->id),
-                'show_url' => route('invoices.show', $invoice->id),
+                'show_url'    => route('invoices.show', $invoice->id),
             ],
         ]);
     }
@@ -928,49 +1057,45 @@ class BillRequestController extends Controller
         } catch (\Throwable $e) {
             Log::error('Bill request delete failed', [
                 'bill_request_id' => $billRequest->id,
-                'error' => $e->getMessage(),
+                'error'           => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Bill request delete failed.',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
 
     public function createInvoice(Request $request, BillRequest $billRequest)
     {
-        // $request->validate([
-        //     'business_id' => 'required|exists:businesses,id',
-        //     'user_id' => 'nullable|integer',
-        // ]);
-
         $bid = $request->business_id;
         $userId = $request->user_id;
-        // $bid = 2;
-        // $userId = 5;
 
         try {
             $invoice = DB::transaction(function () use ($billRequest, $bid, $userId) {
-                $business = Business::findOrFail($bid);
+                $business = Business::withoutGlobalScopes()->findOrFail($bid);
 
                 $client = null;
 
                 if (!empty($billRequest->gst_number)) {
-                    $client = Client::where('business_id', $bid)
+                    $client = Client::withoutGlobalScopes()
+                        ->where('business_id', $bid)
                         ->where('gstin', trim($billRequest->gst_number))
                         ->first();
                 }
 
                 if (!$client && !empty($billRequest->customer_phone)) {
-                    $client = Client::where('business_id', $bid)
+                    $client = Client::withoutGlobalScopes()
+                        ->where('business_id', $bid)
                         ->where('mobile', trim($billRequest->customer_phone))
                         ->first();
                 }
 
                 if (!$client && !empty($billRequest->customer_email)) {
-                    $client = Client::where('business_id', $bid)
+                    $client = Client::withoutGlobalScopes()
+                        ->where('business_id', $bid)
                         ->where('email', trim($billRequest->customer_email))
                         ->first();
                 }
@@ -991,27 +1116,16 @@ class BillRequestController extends Controller
                     ]);
                 }
 
-                $itemId = trim((string) ($billRequest->package_name ?? ''));
+                $itemId = (int) ($billRequest->package_name ?? 0);
 
-                $matchedItem = Item::where('business_id', $bid)
-                    ->where('is_active', 1)
+                $matchedItem = Item::withoutGlobalScopes()
+                    ->where('business_id', $bid)
                     ->where('type', 'service')
-                    ->where('id', (int) $itemId)
+                    ->where('id', $itemId)
                     ->first();
 
                 if (!$matchedItem) {
-                    $matchedItem = Item::where('business_id', $bid)
-                        ->where('is_active', 1)
-                        ->where('type', 'service')
-                        ->where(function ($q) {
-                            $q->where('name', 'like', '%Yearly Social Media Creative%')
-                              ->where('name', 'like', '%Basic Package%');
-                        })
-                        ->first();
-                }
-
-                if (!$matchedItem) {
-                    throw new \Exception('Selected service item nahi mila.');
+                    throw new \Exception('Selected service item nahi mila. Item ID: ' . $itemId);
                 }
 
                 $grossAmount = (float) (
@@ -1067,8 +1181,10 @@ class BillRequestController extends Controller
                     $igstAmount = round($taxAmount, 2);
                 }
 
-                $existingInvoice = Invoice::where('business_id', $bid)
+                $existingInvoice = Invoice::withoutGlobalScopes()
+                    ->where('business_id', $bid)
                     ->where('bil_request_id', $billRequest->id)
+                    ->where('invoice_type', 'tax')
                     ->first();
 
                 $taxBase = 'INV';
@@ -1096,68 +1212,68 @@ class BillRequestController extends Controller
 
                 $itemsJson = [
                     [
-                        'item_id' => $matchedItem->id,
-                        'item_type' => 'service',
-                        'description' => $itemDescription,
-                        'hsn' => $matchedItem->sac ?? '',
-                        'qty' => 1,
-                        'tax_percent' => round($taxPercent, 2),
-                        'service_rate' => round($subtotal, 2),
-                        'rate' => round($subtotal, 2),
-                        'tax_amount' => round($taxAmount, 2),
-                        'amount' => round($grandTotal, 2),
+                        'item_id'       => $matchedItem->id,
+                        'item_type'     => 'service',
+                        'description'   => $itemDescription,
+                        'hsn'           => $matchedItem->sac ?? '',
+                        'qty'           => 1,
+                        'tax_percent'   => round($taxPercent, 2),
+                        'service_rate'  => round($subtotal, 2),
+                        'rate'          => round($subtotal, 2),
+                        'tax_amount'    => round($taxAmount, 2),
+                        'amount'        => round($grandTotal, 2),
                         'making_charge' => round($subtotal, 2),
                     ],
                 ];
 
                 $invoiceData = [
-                    'business_id' => $bid,
-                    'bil_request_id' => $billRequest->id,
-                    'invoice_type' => 'tax',
-                    'invoice_prefix' => $prefix,
-                    'invoice_number' => $invoiceNumber,
-                    'client_id' => $client->id,
-                    'invoice_date' => $invoiceDate,
-                    'payment_terms' => 0,
+                    'business_id'     => $bid,
+                    'bil_request_id'  => $billRequest->id,
+                    'invoice_type'    => 'tax',
+                    'invoice_prefix'  => $prefix,
+                    'invoice_number'  => $invoiceNumber,
+                    'client_id'       => $client->id,
+                    'invoice_date'    => $invoiceDate,
+                    'payment_terms'   => 0,
 
-                    'subtotal' => round($subtotal, 2),
-                    'tax_amount' => round($taxAmount, 2),
+                    'subtotal'        => round($subtotal, 2),
+                    'tax_amount'      => round($taxAmount, 2),
 
-                    'cgst_percent' => $cgstPercent,
-                    'cgst_amount' => $cgstAmount,
-                    'sgst_percent' => $sgstPercent,
-                    'sgst_amount' => $sgstAmount,
-                    'igst_percent' => $igstPercent,
-                    'igst_amount' => $igstAmount,
+                    'cgst_percent'    => $cgstPercent,
+                    'cgst_amount'     => $cgstAmount,
+                    'sgst_percent'    => $sgstPercent,
+                    'sgst_amount'     => $sgstAmount,
+                    'igst_percent'    => $igstPercent,
+                    'igst_amount'     => $igstAmount,
 
-                    'discount_total' => 0,
-                    'charge_total' => 0,
-                    'tcs_percent' => 0,
-                    'tcs_amount' => 0,
-                    'round_off' => 0,
-                    'less_amount' => 0,
+                    'discount_total'  => 0,
+                    'charge_total'    => 0,
+                    'tcs_percent'     => 0,
+                    'tcs_amount'      => 0,
+                    'round_off'       => 0,
+                    'less_amount'     => 0,
 
-                    'total' => $grandTotal,
+                    'total'           => $grandTotal,
                     'received_amount' => $receivedAmount,
-                    'balance' => $balance,
+                    'balance'         => $balance,
 
-                    'payment_method' => $billRequest->payment_method,
-                    'reverse_charge' => 0,
+                    'payment_method'  => $billRequest->payment_method,
+                    'reverse_charge'  => 0,
 
                     'place_of_supply_state' => $client->state,
-                    'place_of_supply_code' => $client->state_code,
+                    'place_of_supply_code'  => $client->state_code,
 
-                    'notes' => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+                    'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
 
-                    'charges_json' => json_encode([]),
-                    'items_json' => json_encode($itemsJson),
+                    'charges_json'    => json_encode([]),
+                    'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
 
                     'amount_in_words' => '',
-                    'pdf_url' => null,
-                    'signature' => null,
-                    'user_id' => $userId,
-                    'updated_by' => $userId,
-                    'kots_json' => json_encode([]),
+                    'pdf_url'         => null,
+                    'signature'       => null,
+                    'user_id'         => $userId,
+                    'updated_by'      => $userId,
+                    'kots_json'       => json_encode([]),
                 ];
 
                 if ($existingInvoice) {
@@ -1170,16 +1286,16 @@ class BillRequestController extends Controller
                 }
 
                 InvoiceItem::create([
-                    'invoice_id' => $invoice->id,
-                    'item_id' => $matchedItem->id,
-                    'description' => $itemDescription,
-                    'sac_code' => $matchedItem->sac ?? null,
-                    'quantity' => 1,
-                    'making_charge' => round($subtotal, 2),
-                    'discount' => 0,
-                    'tax_percent' => round($taxPercent, 2),
-                    'rate' => round($subtotal, 2),
-                    'amount' => round($grandTotal, 2),
+                    'invoice_id'     => $invoice->id,
+                    'item_id'        => $matchedItem->id,
+                    'description'    => $itemDescription,
+                    'sac_code'       => $matchedItem->sac ?? null,
+                    'quantity'       => 1,
+                    'making_charge'  => round($subtotal, 2),
+                    'discount'       => 0,
+                    'tax_percent'    => round($taxPercent, 2),
+                    'rate'           => round($subtotal, 2),
+                    'amount'         => round($grandTotal, 2),
                 ]);
 
                 if ($receivedAmount > 0) {
@@ -1188,23 +1304,23 @@ class BillRequestController extends Controller
                     InvoicePayment::where('invoice_id', $invoice->id)->delete();
 
                     InvoicePayment::create([
-                        'business_id' => $bid,
-                        'invoice_id' => $invoice->id,
-                        'client_id' => $client->id,
-                        'total_value' => $grandTotal,
+                        'business_id'    => $bid,
+                        'invoice_id'     => $invoice->id,
+                        'client_id'      => $client->id,
+                        'total_value'    => $grandTotal,
 
-                        'cash_amount' => $method === 'cash' ? $receivedAmount : 0,
-                        'online_amount' => in_array($method, ['upi', 'online', 'bank'], true) ? $receivedAmount : 0,
-                        'card_amount' => $method === 'card' ? $receivedAmount : 0,
-                        'cheque_amount' => $method === 'cheque' ? $receivedAmount : 0,
+                        'cash_amount'    => $method === 'cash' ? $receivedAmount : 0,
+                        'online_amount'  => in_array($method, ['upi', 'online', 'bank'], true) ? $receivedAmount : 0,
+                        'card_amount'    => $method === 'card' ? $receivedAmount : 0,
+                        'cheque_amount'  => $method === 'cheque' ? $receivedAmount : 0,
 
-                        'online_mode' => $method === 'upi' ? 'upi' : null,
-                        'online_ref' => $billRequest->transaction_id,
-                        'bank_name' => $billRequest->bank,
+                        'online_mode'    => $method === 'upi' ? 'upi' : null,
+                        'online_ref'     => $billRequest->transaction_id,
+                        'bank_name'      => $billRequest->bank,
 
                         'received_total' => $receivedAmount,
-                        'notes' => 'Created from bill request',
-                        'paid_at' => now(config('app.timezone')),
+                        'notes'          => 'Created from bill request',
+                        'paid_at'        => now(config('app.timezone')),
                     ]);
                 }
 
@@ -1212,6 +1328,7 @@ class BillRequestController extends Controller
 
                 if (!empty($billRequest->api_response)) {
                     $decoded = json_decode($billRequest->api_response, true);
+
                     if (is_array($decoded)) {
                         $oldApi = $decoded;
                     }
@@ -1224,8 +1341,8 @@ class BillRequestController extends Controller
                 $oldApi['processed_at'] = now(config('app.timezone'))->toDateTimeString();
 
                 $billRequest->update([
-                    'status' => 'processed',
-                    'remarks' => 'Tax invoice created successfully. Invoice No: ' . $invoice->invoice_number,
+                    'status'       => 'processed',
+                    'remarks'      => 'Tax invoice created successfully. Invoice No: ' . $invoice->invoice_number,
                     'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
                 ]);
 
@@ -1237,35 +1354,32 @@ class BillRequestController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Invoice created successfully from bill request.',
-                'data' => [
+                'data'    => [
                     'bill_request' => $billRequest->fresh(),
-                    'invoice' => $invoice->fresh(),
-                    'preview_url' => route('invoices.preview', $invoice->id),
-                    'show_url' => route('invoices.show', $invoice->id),
+                    'invoice'      => $invoice->fresh(),
+                    'preview_url'  => route('invoices.preview', $invoice->id),
+                    'show_url'     => route('invoices.show', $invoice->id),
                 ],
             ]);
 
         } catch (\Throwable $e) {
             Log::error('Bill request to invoice API failed', [
                 'bill_request_id' => $billRequest->id,
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
+                'error'           => $e->getMessage(),
+                'line'            => $e->getLine(),
+                'file'            => $e->getFile(),
             ]);
 
             $billRequest->update([
-                'status' => 'failed',
+                'status'  => 'failed',
                 'remarks' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Invoice create/update failed.',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ], 500);
         }
     }
-
-
-
 }
