@@ -371,7 +371,7 @@ class BillRequestController extends Controller
 
     private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
     {
-        $existingInvoice = Invoice::withoutGlobalScope('business_id')
+        $existingInvoice = Invoice::withoutGlobalScopes()
             ->where('bil_request_id', $billRequest->id)
             ->where('invoice_type', 'quotation')
             ->first();
@@ -379,29 +379,53 @@ class BillRequestController extends Controller
         if ($existingInvoice) {
             return $existingInvoice;
         }
-        $bid = 1;
+
+        $payload = [];
+
+        $firstItemId = (int) ($requestItems[0]['item_id'] ?? 0);
+
+        if ($firstItemId <= 0) {
+            throw new \Exception('Selected service item id invalid hai.');
+        }
+
+        $firstItem = Item::withoutGlobalScopes()
+            ->where('id', $firstItemId)
+            ->first();
+
+        if (!$firstItem) {
+            throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
+        }
+
+        if (($firstItem->type ?? null) !== 'service') {
+            throw new \Exception('Selected item service type ka nahi hai. Item ID: ' . $firstItemId . ', Type: ' . ($firstItem->type ?? 'NULL'));
+        }
+
+        $bid = (int) ($firstItem->business_id ?: 1);
         $userId = 1;
 
-        $business = Business::findOrFail($bid);
+        $business = Business::withoutGlobalScopes()->findOrFail($bid);
 
         $client = null;
 
         if (!empty($billRequest->gst_number)) {
-            $client = Client::where('business_id', $bid)
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('gstin', trim($billRequest->gst_number))
                 ->first();
         }
 
         if (!$client && !empty($billRequest->customer_phone)) {
-            $client = Client::where('business_id', $bid)
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('mobile', trim($billRequest->customer_phone))
                 ->first();
         }
 
         if (!$client && !empty($billRequest->customer_email)) {
-            $client = Client::where('business_id', $bid)
-                ->where('email', trim($billRequest->customer_email))
-                ->first();
+           $client = Client::withoutGlobalScopes()
+            ->where('business_id', $bid)
+            ->where('email', trim($billRequest->customer_email))
+            ->first();
         }
 
         $states = [
@@ -519,13 +543,28 @@ class BillRequestController extends Controller
                 throw new \Exception('Selected service item id invalid hai.');
             }
 
-            $matchedItem = Item::where('business_id', $bid)
+            $matchedItem = Item::withoutGlobalScopes()
+                ->where('business_id', $bid)
                 ->where('type', 'service')
                 ->where('id', $itemId)
                 ->first();
 
             if (!$matchedItem) {
-                throw new \Exception('Selected service item nahi mila. Item ID: ' . $itemId);
+                $debugItem = Item::withoutGlobalScopes()
+                    ->where('id', $itemId)
+                    ->first();
+
+                if ($debugItem) {
+                    throw new \Exception(
+                        'Selected service item business/type match nahi hua. Item ID: ' . $itemId .
+                        ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
+                        ', Expected Business ID: ' . $bid .
+                        ', Type: ' . ($debugItem->type ?? 'NULL') .
+                        ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
+                    );
+                }
+
+                throw new \Exception('Selected service item database me nahi mila. Item ID: ' . $itemId);
             }
 
             $qty = max(1, (float) ($row['qty'] ?? 1));
