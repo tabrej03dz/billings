@@ -151,6 +151,54 @@ class BillRequestController extends Controller
 
             $validated = $validator->validated();
 
+            $sourceRequestId = trim((string) $request->header('X-Request-Id'));
+            $sourceSoftware  = $validated['source_software'] ?? 'postimage';
+
+            $idempotencyKey = null;
+
+            if (!empty($validated['source_user_package_id'])) {
+                $idempotencyKey = $sourceSoftware . ':user_package:' . $validated['source_user_package_id'];
+            } elseif ($sourceRequestId !== '') {
+                $idempotencyKey = $sourceSoftware . ':request:' . $sourceRequestId;
+            }
+
+            $existingBillRequest = null;
+
+            if ($idempotencyKey) {
+                $existingBillRequest = BillRequest::where('idempotency_key', $idempotencyKey)->first();
+            }
+
+            if (!$existingBillRequest && !empty($validated['source_user_package_id'])) {
+                $existingBillRequest = BillRequest::where('source_software', $sourceSoftware)
+                    ->where('source_user_package_id', $validated['source_user_package_id'])
+                    ->first();
+            }
+
+            if (!$existingBillRequest && $sourceRequestId !== '') {
+                $existingBillRequest = BillRequest::where('source_request_id', $sourceRequestId)->first();
+            }
+
+            if ($existingBillRequest) {
+                $existingInvoice = Invoice::withoutGlobalScope('business_id')
+                    ->where('bil_request_id', $existingBillRequest->id)
+                    ->where('invoice_type', 'quotation')
+                    ->first();
+
+                return response()->json([
+                    'success'            => true,
+                    'message'            => 'Duplicate request ignored. Existing billing request returned.',
+                    'billing_request_id' => $existingBillRequest->id,
+                    'invoice_id'         => $existingInvoice?->id,
+                    'invoice_number'     => $existingInvoice?->invoice_number,
+                    'invoice_type'       => $existingInvoice?->invoice_type,
+                    'status'             => $existingBillRequest->status,
+                    'data'               => [
+                        'bill_request' => $existingBillRequest,
+                        'invoice'      => $existingInvoice,
+                    ],
+                ], 200);
+            }
+
             $items = collect($validated['items'] ?? [])
                 ->filter(fn ($row) => !empty($row['item_id']))
                 ->map(function ($row) {
@@ -188,7 +236,8 @@ class BillRequestController extends Controller
 
             $fullPayload = [
                 'request_for_bill'       => $validated['request_for_bill'],
-                'source_software'        => $validated['source_software'] ?? null,
+                // 'source_software'        => $validated['source_software'] ?? null,
+                'source_software' => $sourceSoftware,
                 'source_customer_id'     => $validated['source_customer_id'] ?? null,
                 'source_package_id'      => $validated['source_package_id'] ?? null,
                 'source_user_package_id' => $validated['source_user_package_id'] ?? null,
@@ -230,11 +279,13 @@ class BillRequestController extends Controller
             $billRequest = null;
             $invoice = null;
 
-            DB::transaction(function () use (&$billRequest, &$invoice, $validated, $request, $gstNumber, $fullPayload, $itemsTotal) {
+            DB::transaction(function () use (&$billRequest, &$invoice, $validated, $request, $gstNumber, $fullPayload, $itemsTotal, $sourceRequestId, $sourceSoftware, $idempotencyKey) {
                 $billRequest = BillRequest::create([
-                    'source_software'        => $validated['source_software'] ?? 'postimage',
-                    'source_request_id'      => $request->header('X-Request-Id'),
-
+                    // 'source_software'        => $validated['source_software'] ?? 'postimage',
+                    // 'source_request_id'      => $request->header('X-Request-Id'),
+                    'source_software'        => $sourceSoftware,
+                    'source_request_id'      => $sourceRequestId,
+                    'idempotency_key'        => $idempotencyKey,
                     'source_customer_id'     => $validated['source_customer_id'] ?? null,
                     'source_package_id'      => $validated['source_package_id'] ?? null,
                     'source_user_package_id' => $validated['source_user_package_id'] ?? null,
@@ -270,7 +321,8 @@ class BillRequestController extends Controller
                     'remarks'                => null,
                     'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
                     'api_response'           => json_encode([
-                        'received_from' => $validated['source_software'] ?? 'postimage',
+                        // 'received_from' => $validated['source_software'] ?? 'postimage',
+                        'received_from' => $sourceSoftware,
                         'received_at'   => now()->toDateTimeString(),
                     ], JSON_UNESCAPED_UNICODE),
                     'requested_at'           => $validated['request_date'] ?? now(),
@@ -319,6 +371,14 @@ class BillRequestController extends Controller
 
     private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
     {
+        $existingInvoice = Invoice::withoutGlobalScope('business_id')
+            ->where('bil_request_id', $billRequest->id)
+            ->where('invoice_type', 'quotation')
+            ->first();
+
+        if ($existingInvoice) {
+            return $existingInvoice;
+        }
         $bid = 1;
         $userId = 1;
 
