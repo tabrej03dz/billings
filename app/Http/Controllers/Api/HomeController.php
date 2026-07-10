@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Http;
 class HomeController extends Controller
 {
 
-
+    // SKIP OTP LOGIN FOR TESTING PURPOSES
     // public function login(Request $request)
     // {
     //     $data = $request->validate([
@@ -1004,7 +1004,10 @@ class HomeController extends Controller
             'otp' => ['required', 'digits:6'],
         ]);
 
-        if (empty($user->otp) || (string) $user->otp !== (string) $data['otp']) {
+        if (
+            empty($user->otp) ||
+            (string) $user->otp !== (string) $data['otp']
+        ) {
             throw ValidationException::withMessages([
                 'otp' => ['Invalid account deletion OTP.'],
             ]);
@@ -1024,13 +1027,9 @@ class HomeController extends Controller
             ]);
         }
 
-        $avatarPath = $user->avatar;
-
         DB::transaction(function () use ($user) {
-            /*
-            * OTP को पहले invalidate कर रहे हैं ताकि यह दोबारा
-            * इस्तेमाल न किया जा सके.
-            */
+
+            // OTP invalidate करें
             $user->update([
                 'otp' => null,
                 'otp_expires_at' => null,
@@ -1039,208 +1038,22 @@ class HomeController extends Controller
             // सभी login tokens revoke करें
             $user->tokens()->delete();
 
-            // Business pivot records हटाएँ
-            if (method_exists($user, 'businesses')) {
-                $user->businesses()->detach();
-            }
-
             /*
-            * SoftDeletes लगा है तो soft delete होगा,
-            * अन्यथा permanent database deletion होगा.
+            * Important:
+            * Business relation detach नहीं करना है।
+            * Avatar भी delete नहीं करना है।
+            * इससे restore के बाद पूरा account वापस आएगा।
             */
-            $user->delete();
-        });
 
-        // Transaction successful होने के बाद avatar delete करें
-        if (
-            !empty($avatarPath) &&
-            Storage::disk('public')->exists($avatarPath)
-        ) {
-            Storage::disk('public')->delete($avatarPath);
-        }
+            $user->delete(); // Soft delete
+        });
 
         return response()->json([
             'status' => true,
-            'message' => 'Your account has been deleted successfully.',
+            'message' => 'Your account has been moved to recycle bin.',
         ], 200);
     }
 
-    // public function register(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name'        => ['required','string','max:120'],
-    //         'email'       => ['required','email','max:190', 'unique:users,email'],
-    //         'password'    => ['required','string','min:6','confirmed'],
-    //         // confirmed => password_confirmation required
-
-    //         'phone'       => ['nullable','string','max:20'],
-    //         'avatar'      => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
-
-    //         // optional: business attach
-    //         'business_id' => ['nullable','integer','exists:businesses,id'],
-
-    //         'device_name' => ['nullable','string','max:100'],
-    //     ]);
-
-    //     return DB::transaction(function () use ($request, $data) {
-
-    //         // ✅ avatar upload (optional)
-    //         $avatarPath = null;
-    //         if ($request->hasFile('avatar')) {
-    //             $avatarPath = $request->file('avatar')->store('avatars', 'public');
-    //         }
-
-    //         // ✅ create user
-    //         $user = User::create([
-    //             'name'     => $data['name'],
-    //             'email'    => $data['email'],
-    //             'password' => Hash::make($data['password']),
-    //             'phone'    => $data['phone'] ?? null,
-    //             'avatar'   => $avatarPath,
-    //         ]);
-
-    //         // ✅ business attach (optional)
-    //         if (!empty($data['business_id'])) {
-    //             // pivot attach (assumes many-to-many relation exists)
-    //             $user->businesses()->attach($data['business_id']);
-
-    //             // optional: set current business id if your users table has this column
-    //             if (Schema::hasColumn('users', 'current_business_id')) {
-    //                 $user->current_business_id = $data['business_id'];
-    //                 $user->save();
-    //             }
-    //         }
-
-    //         // ✅ create token
-    //         $tokenName = $d42200ata['device_name'] ?? 'authToken';
-    //         $token = $user->createToken($tokenName)->plainTextToken;
-
-    //         // fresh businesses load
-    //         $user->load('businesses');
-
-    //         return response()->json([
-    //             'status'     => true,
-    //             'message'    => 'Register successful',
-    //             'token_type' => 'Bearer',
-    //             'token'      => $token,
-    //             'user'       => [
-    //                 'id'       => $user->id,
-    //                 'name'     => $user->name,
-    //                 'email'    => $user->email,
-    //                 'phone'    => $user->phone,
-    //                 'avatar'   => $user->avatar,
-    //                 'business' => $user->businesses,
-    //             ],
-    //         ], 201);
-    //     });
-    // }
-
-
-    // public function register(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name'        => ['required','string','max:120'],
-    //         'email'       => ['required','email','max:190','unique:users,email'],
-    //         'password'    => ['required','string','min:6','confirmed'],
-    //         'phone'       => ['nullable','string','max:20'],
-    //         'business_id' => ['nullable','integer','exists:businesses,id'],
-    //         'device_name' => ['nullable','string','max:100'],
-    //     ]);
-
-    //     $otp = rand(100000, 999999);
-
-    //     RegisterOtp::where('email', $data['email'])->delete();
-
-    //     RegisterOtp::create([
-    //         'email'      => $data['email'],
-    //         'otp'        => $otp,
-    //         'payload'    => $data,
-    //         'expires_at' => now()->addMinutes(10),
-    //     ]);
-
-    //     Mail::raw("Your registration OTP is: {$otp}", function ($message) use ($data) {
-    //         $message->to($data['email'])
-    //             ->subject('Verify Your Email');
-    //     });
-
-    //     return response()->json([
-    //         'status'  => true,
-    //         'message' => 'OTP sent successfully on your email.',
-    //         'email'   => $data['email'],
-    //     ]);
-    // }
-
-
-
-    // public function verifyRegisterOtp(Request $request)
-    // {
-    //     $request->validate([
-    //         'email' => ['required','email'],
-    //         'otp'   => ['required','digits:6'],
-    //     ]);
-
-    //     $otpRecord = RegisterOtp::where('email', $request->email)
-    //         ->where('otp', $request->otp)
-    //         ->first();
-
-    //     if (!$otpRecord) {
-    //         return response()->json([
-    //             'status'  => false,
-    //             'message' => 'Invalid OTP.',
-    //         ], 422);
-    //     }
-
-    //     if ($otpRecord->expires_at->isPast()) {
-    //         $otpRecord->delete();
-
-    //         return response()->json([
-    //             'status'  => false,
-    //             'message' => 'OTP expired. Please register again.',
-    //         ], 422);
-    //     }
-
-    //     $data = $otpRecord->payload;
-
-    //     return DB::transaction(function () use ($data, $otpRecord) {
-
-    //         $user = User::create([
-    //             'name'     => $data['name'],
-    //             'email'    => $data['email'],
-    //             'password' => Hash::make($data['password']),
-    //             'phone'    => $data['phone'] ?? null,
-    //         ]);
-
-    //         if (!empty($data['business_id'])) {
-    //             $user->businesses()->attach($data['business_id']);
-
-    //             if (Schema::hasColumn('users', 'current_business_id')) {
-    //                 $user->current_business_id = $data['business_id'];
-    //                 $user->save();
-    //             }
-    //         }
-
-    //         $tokenName = $data['device_name'] ?? 'authToken';
-    //         $token = $user->createToken($tokenName)->plainTextToken;
-
-    //         $user->load('businesses');
-
-    //         $otpRecord->delete();
-
-    //         return response()->json([
-    //             'status'     => true,
-    //             'message'    => 'Email verified and registration successful.',
-    //             'token_type' => 'Bearer',
-    //             'token'      => $token,
-    //             'user'       => [
-    //                 'id'       => $user->id,
-    //                 'name'     => $user->name,
-    //                 'email'    => $user->email,
-    //                 'phone'    => $user->phone,
-    //                 'business' => $user->businesses,
-    //             ],
-    //         ], 201);
-    //     });
-    // }
 
 
     public function register(Request $request)
