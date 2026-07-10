@@ -1,6 +1,5 @@
 <x-layouts.app :title="__('Dashboard')">
     <div x-data="{ showRatesForm: false }" class="flex flex-col gap-4">
-
         {{-- FLASH MESSAGE --}}
         @if(session('success'))
             <div class="p-3 rounded-lg bg-green-50 text-green-700 border border-green-200 text-sm">
@@ -135,6 +134,26 @@
                 </p>
                 <p class="mt-1 text-[11px] text-[#F5F5F5] dark:text-gray-500">
                     {{ $todaySalesCount ?? 0 }} invoice(s)
+                </p>
+            </div>
+
+            {{-- Today Gross Profit --}}
+            <div class="bg-[#7C3AED] dark:bg-[#4C3B68] rounded-lg border border-purple-200 dark:border-purple-800 p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-white uppercase tracking-wider">
+                    Today Gross Profit
+                </p>
+
+                <p class="mt-1 text-lg font-bold text-white leading-none">
+                    ₹ {{ number_format($todayProfitAmount ?? 0, 2) }}
+                </p>
+
+                <p class="mt-1 text-[11px] text-purple-100">
+                    Sale: ₹ {{ number_format($todayItemSaleAmount ?? 0, 2) }}
+                </p>
+
+                <p class="mt-1 text-[11px] text-purple-100">
+                    Cost: ₹ {{ number_format($todayItemCostAmount ?? 0, 2) }}
+                    • Margin: {{ number_format($todayProfitPercent ?? 0, 2) }}%
                 </p>
             </div>
 

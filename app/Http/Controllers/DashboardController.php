@@ -90,6 +90,80 @@ class DashboardController extends Controller
         $todaySalesAmount = (clone $salesQ)->whereDate('invoice_date', $todayDate)->sum('total');
         $todaySalesCount  = (clone $salesQ)->whereDate('invoice_date', $todayDate)->count();
 
+
+
+        // ✅ TODAY ITEM-WISE GROSS PROFIT
+        // Profit = Selling amount - Cost amount
+        $todayProfitData = \DB::table('invoice_items as ii')
+            ->join('invoices as inv', 'inv.id', '=', 'ii.invoice_id')
+            ->leftJoin('items as i', function ($join) use ($bid) {
+                $join->on('i.id', '=', 'ii.item_id');
+
+                // Same business ka item hi join ho
+                if ($bid) {
+                    $join->where('i.business_id', '=', $bid);
+                }
+            })
+            ->whereDate('inv.invoice_date', $todayDate)
+            ->when($bid, function ($query) use ($bid) {
+                $query->where('inv.business_id', $bid);
+            })
+            ->where(function ($query) {
+                $query->where('inv.invoice_type', 'tax')
+                    ->orWhereNull('inv.invoice_type');
+            })
+            ->selectRaw('
+                COALESCE(
+                    SUM(COALESCE(ii.amount, 0)),
+                    0
+                ) as sale_amount,
+
+                COALESCE(
+                    SUM(
+                        COALESCE(ii.quantity, 0)
+                        * COALESCE(i.cost_price, 0)
+                    ),
+                    0
+                ) as cost_amount,
+
+                COALESCE(
+                    SUM(
+                        COALESCE(ii.amount, 0)
+                        -
+                        (
+                            COALESCE(ii.quantity, 0)
+                            * COALESCE(i.cost_price, 0)
+                        )
+                    ),
+                    0
+                ) as profit_amount
+            ')
+            ->first();
+
+        $todayItemSaleAmount = round(
+            (float) ($todayProfitData->sale_amount ?? 0),
+            2
+        );
+
+        $todayItemCostAmount = round(
+            (float) ($todayProfitData->cost_amount ?? 0),
+            2
+        );
+
+        $todayProfitAmount = round(
+            (float) ($todayProfitData->profit_amount ?? 0),
+            2
+        );
+
+        $todayProfitPercent = $todayItemSaleAmount > 0
+            ? round(
+                ($todayProfitAmount / $todayItemSaleAmount) * 100,
+                2
+            )
+            : 0;
+
+
+
         // ✅ Range sales (monthSalesAmount ko ab rangeSalesAmount bana do, ya same variable use karo)
         $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$from, $to])->sum('total');
         $totalSalesAmount = (clone $salesQ)->sum('total');
@@ -145,7 +219,10 @@ class DashboardController extends Controller
         $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$from, $to])->sum('balance');
         $totalPendingAmount = (clone $salesQ)->sum('balance');
 
-        return view('dashboard', compact(
+        return view('dashboard', compact('todayProfitAmount',
+            'todayItemSaleAmount',
+            'todayItemCostAmount',
+            'todayProfitPercent',
             'today', 'business',
             'from', 'to', 'preset', // ✅ send to blade
             'todaySalesAmount', 'todaySalesCount',
