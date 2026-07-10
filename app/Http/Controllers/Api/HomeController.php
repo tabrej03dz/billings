@@ -901,8 +901,9 @@ class HomeController extends Controller
             'otp_expires_at' => now()->addMinutes(10),
         ]);
 
-        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+        //https://kutility.org/app/smsapi/index.php?key=5620360CF8C9B4&campaign=12754&routeid=7&type=text&contacts=7753800444&senderid=RVGRPS&msg=Dear Customer, 2406 is your OTP to confirm deletion of your account on Real Victory Groups (MyVictory). This OTP is valid for 10 minutes. Please do not share it with anyone. Best Regards, Real Victory Groups https://myvictory.in/&template_id=1707178368256960218&pe_id=1701164032595209992
 
+        $msg = "Dear Customer, {$otp} is your OTP to confirm deletion of your account on Real Victory Groups (MyVictory). This OTP is valid for 10 minutes. Please do not share it with anyone. Best Regards, Real Victory Groups https://myvictory.in";
         try {
             $response = Http::timeout(20)
                 ->get('https://kutility.org/app/smsapi/index.php', [
@@ -913,7 +914,7 @@ class HomeController extends Controller
                     'contacts'    => $user->phone,
                     'senderid'    => 'RVGRPS',
                     'msg'         => $msg,
-                    'template_id' => '1707178057481157648',
+                    'template_id' => '1707178368256960218',
                     'pe_id'       => '1701164032595209992',
                 ]);
 
