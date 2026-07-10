@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Services\StockService;
 use Illuminate\Support\Facades\Log;
+use Mpdf\Mpdf;
+use Mpdf\Config\ConfigVariables;
+use Mpdf\Config\FontVariables;
+use Illuminate\Http\Response;
 
 class InvoiceController extends Controller
 {
@@ -1576,8 +1580,10 @@ class InvoiceController extends Controller
                 $invoice->pdf_url = null;
             }
 
-            $pdf = $this->simplePdfBuild($invoice);
-            $output = $pdf->output();
+            // $pdf = $this->simplePdfBuild($invoice);
+            // $output = $pdf->output();
+
+            $output = $this->simplePdfBuild($invoice);
 
             $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
@@ -1817,8 +1823,9 @@ public function show(Request $request, $invoice)
             $invoice->pdf_url = null;
         }
 
-        $pdf = $this->simplePdfBuild($invoice);
-        $output = $pdf->output();
+        // $pdf = $this->simplePdfBuild($invoice);
+        // $output = $pdf->output();
+        $output = $this->simplePdfBuild($invoice);
 
         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
@@ -2031,7 +2038,7 @@ protected function imageDataUri(?string $pathOrUrl): ?string
     // }
 
 
-    protected function simplePdfBuild(Invoice $invoice): \Barryvdh\DomPDF\PDF
+    protected function simplePdfBuild(Invoice $invoice): string
     {
         /*
         |--------------------------------------------------------------------------
@@ -2217,8 +2224,13 @@ protected function imageDataUri(?string $pathOrUrl): ?string
         | Generate PDF
         |--------------------------------------------------------------------------
         */
-        return Pdf::loadView($view, $vm)
-            ->setPaper('a4');
+        // return Pdf::loadView($view, $vm)
+        //     ->setPaper('a4');
+
+        return $this->renderMpdfOutput(
+            $view,
+            $vm
+        );
     }
 
 
@@ -2301,5 +2313,78 @@ protected function findInvoiceForUser(Request $request, $invoiceId): Invoice
 
     return $invoice;
 }
+
+
+
+
+
+
+
+
+
+
+    protected function renderMpdfOutput(string $view, array $vm): string
+    {
+        $fontDir = storage_path('fonts');
+
+        $regularFont = $fontDir . DIRECTORY_SEPARATOR
+            . 'NotoSansDevanagari-Regular.ttf';
+
+        $boldFont = $fontDir . DIRECTORY_SEPARATOR
+            . 'NotoSansDevanagari-Bold.ttf';
+
+        if (!is_readable($regularFont) || !is_readable($boldFont)) {
+            throw new \RuntimeException(
+                'NotoSansDevanagari font files storage/fonts में नहीं मिलीं या readable नहीं हैं.'
+            );
+        }
+
+        $tempDir = storage_path('app/mpdf-temp');
+
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0775, true);
+        }
+
+        $defaultConfig = (new ConfigVariables())->getDefaults();
+        $fontDirs = $defaultConfig['fontDir'];
+
+        $defaultFontConfig = (new FontVariables())->getDefaults();
+        $fontData = $defaultFontConfig['fontdata'];
+
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+
+            'margin_left' => 8,
+            'margin_right' => 8,
+            'margin_top' => 8,
+            'margin_bottom' => 8,
+
+            'tempDir' => $tempDir,
+
+            'fontDir' => array_merge($fontDirs, [
+                $fontDir,
+            ]),
+
+            'fontdata' => $fontData + [
+                'notosansdevanagari' => [
+                    'R' => 'NotoSansDevanagari-Regular.ttf',
+                    'B' => 'NotoSansDevanagari-Bold.ttf',
+                    'useOTL' => 0xFF,
+                ],
+            ],
+
+            'default_font' => 'notosansdevanagari',
+
+            'autoScriptToLang' => true,
+            'autoLangToFont' => true,
+        ]);
+
+        $html = view($view, $vm)->render();
+
+        $mpdf->WriteHTML($html);
+
+        return $mpdf->Output('', 'S');
+    }
 
 }
