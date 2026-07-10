@@ -44,8 +44,17 @@ Route::post('request-for-bill', [ApiBillRequestController::class, 'store']);
 Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     Route::post('/logout', [HomeController::class, 'logout']);
-    Route::post('/delete-account', [HomeController::class, 'deleteAccount']);
+    // Route::post('/delete-account', [HomeController::class, 'deleteAccount']);
 
+    Route::post('/delete-account/send-otp', [
+        HomeController::class,
+        'sendDeleteAccountOtp'
+    ])->middleware('throttle:3,10');
+
+    Route::post('/delete-account', [
+        HomeController::class,
+        'deleteAccount'
+    ])->middleware('throttle:5,10');
 
     Route::prefix('businesses')->group(function(){
         Route::get('index', [BusinessController::class, 'index']); // list

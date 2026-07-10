@@ -24,32 +24,36 @@ use Illuminate\Support\Facades\Http;
 
 class HomeController extends Controller
 {
+
+
     // public function login(Request $request)
     // {
     //     $data = $request->validate([
-    //         'email'    => ['required','email'],
-    //         'password' => ['required','string','min:4'],
-    //         'device_name' => ['nullable','string','max:100'], // optional
+    //         'phone'       => ['required', 'digits:10'],
+    //         'device_name' => ['nullable', 'string', 'max:100'],
     //     ]);
 
+    //     $user = User::where('phone', $data['phone'])->first();
 
-    //     $user = User::where('email', $data['email'])->first();
-
-
-    //     if (!$user || !Hash::check($data['password'], $user->password)) {
+    //     if (!$user) {
     //         throw ValidationException::withMessages([
-    //             'email' => ['Invalid email or password.'],
+    //             'phone' => ['Mobile number not registered.'],
     //         ]);
     //     }
 
-
-
-    //     // (Optional) old tokens delete (single device login chahiye to)
+    //     // Single-device login chahiye to is line ko uncomment karein
     //     // $user->tokens()->delete();
 
+    //     $deviceName = $data['device_name'] ?? 'authToken';
 
+    //     // OTP ke bina direct login token
+    //     $token = $user->createToken($deviceName)->plainTextToken;
 
-    //     $token = $user->createToken('authToken')->plainTextToken;
+    //     // Purana OTP pada ho to clear kar denge
+    //     $user->update([
+    //         'otp' => null,
+    //         'otp_expires_at' => null,
+    //     ]);
 
     //     return response()->json([
     //         'status' => true,
@@ -60,48 +64,11 @@ class HomeController extends Controller
     //             'id' => $user->id,
     //             'name' => $user->name,
     //             'email' => $user->email,
-    //             'business' => $user->businesses
+    //             'phone' => $user->phone,
+    //             'business' => $user->businesses,
     //         ],
-
     //     ], 200);
     // }
-
-    // public function login(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'email'       => ['required', 'email'],
-    //         'password'    => ['required', 'string', 'min:4'],
-    //         'device_name' => ['nullable', 'string', 'max:100'],
-    //     ]);
-
-    //     $user = User::where('email', $data['email'])->first();
-
-    //     if (!$user || !Hash::check($data['password'], $user->password)) {
-    //         throw ValidationException::withMessages([
-    //             'email' => ['Invalid email or password.'],
-    //         ]);
-    //     }
-
-    //     $otp = $user->email == 'shorabh.ftp.72@gmail.com' ? 111111 : rand(100000, 999999);
-
-    //     $user->update([
-    //         'otp' => $otp,
-    //         'otp_expires_at' => now()->addMinutes(10),
-    //     ]);
-
-    //     Mail::raw("Your login OTP is: {$otp}. This OTP is valid for 10 minutes.", function ($message) use ($user) {
-    //         $message->to($user->email)
-    //                 ->subject('Your Login OTP');
-    //     });
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'OTP sent successfully on your email.',
-    //         'email' => $user->email,
-    //     ], 200);
-    // }
-
-
 
     public function login(Request $request)
     {
@@ -903,40 +870,198 @@ class HomeController extends Controller
     }
 
 
+    public function sendDeleteAccountOtp(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if (empty($user->phone)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Mobile number is not registered with this account.',
+            ], 422);
+        }
+
+        /*
+        * Testing numbers के लिए fixed OTP.
+        * Production में चाहें तो fixed OTP पूरी तरह हटा दें.
+        */
+        $otp = in_array($user->phone, ['7753800444', '8948467535'])
+            ? 111111
+            : random_int(100000, 999999);
+
+        $user->update([
+            'otp' => $otp,
+            'otp_expires_at' => now()->addMinutes(10),
+        ]);
+
+        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+        try {
+            $response = Http::timeout(20)
+                ->get('https://kutility.org/app/smsapi/index.php', [
+                    'key'         => '5620360CF8C9B4',
+                    'campaign'    => '12754',
+                    'routeid'     => '7',
+                    'type'        => 'text',
+                    'contacts'    => $user->phone,
+                    'senderid'    => 'RVGRPS',
+                    'msg'         => $msg,
+                    'template_id' => '1707178057481157648',
+                    'pe_id'       => '1701164032595209992',
+                ]);
+
+            if (!$response->successful()) {
+                $user->update([
+                    'otp' => null,
+                    'otp_expires_at' => null,
+                ]);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => 'OTP could not be sent. Please try again.',
+                ], 502);
+            }
+        } catch (\Throwable $exception) {
+            $user->update([
+                'otp' => null,
+                'otp_expires_at' => null,
+            ]);
+
+            report($exception);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'OTP service is currently unavailable. Please try again.',
+            ], 502);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Account deletion OTP sent successfully.',
+            'phone' => $this->maskPhoneNumber($user->phone),
+            'expires_in' => 600,
+        ], 200);
+    }
+
+
+    // public function deleteAccount(Request $request)
+    // {
+    //     $user = $request->user();
+
+    //     $data = $request->validate([
+    //         'password' => ['required','string'],
+    //     ]);
+
+    //     // ❌ wrong password
+    //     if (!Hash::check($data['password'], $user->password)) {
+    //         throw ValidationException::withMessages([
+    //             'password' => ['Incorrect password.'],
+    //         ]);
+    //     }
+
+    //     // 🔒 revoke all tokens
+    //     $user->tokens()->delete();
+
+    //     // 🗑️ delete avatar file
+    //     if (!empty($user->avatar) && Storage::disk('public')->exists($user->avatar)) {
+    //         Storage::disk('public')->delete($user->avatar);
+    //     }
+
+    //     // 🔗 detach from businesses (pivot)
+    //     if (method_exists($user, 'businesses')) {
+    //         $user->businesses()->detach();
+    //     }
+
+    //     // 🔥 finally delete user
+    //     $user->delete(); // agar softDeletes use ho rahe hain to soft delete hoga
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Your account has been permanently deleted.',
+    //     ], 200);
+    // }
+
+
     public function deleteAccount(Request $request)
     {
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
         $data = $request->validate([
-            'password' => ['required','string'],
+            'otp' => ['required', 'digits:6'],
         ]);
 
-        // ❌ wrong password
-        if (!Hash::check($data['password'], $user->password)) {
+        if (empty($user->otp) || (string) $user->otp !== (string) $data['otp']) {
             throw ValidationException::withMessages([
-                'password' => ['Incorrect password.'],
+                'otp' => ['Invalid account deletion OTP.'],
             ]);
         }
 
-        // 🔒 revoke all tokens
-        $user->tokens()->delete();
+        if (
+            empty($user->otp_expires_at) ||
+            now()->greaterThan(Carbon::parse($user->otp_expires_at))
+        ) {
+            $user->update([
+                'otp' => null,
+                'otp_expires_at' => null,
+            ]);
 
-        // 🗑️ delete avatar file
-        if (!empty($user->avatar) && Storage::disk('public')->exists($user->avatar)) {
-            Storage::disk('public')->delete($user->avatar);
+            throw ValidationException::withMessages([
+                'otp' => ['OTP has expired. Please request a new OTP.'],
+            ]);
         }
 
-        // 🔗 detach from businesses (pivot)
-        if (method_exists($user, 'businesses')) {
-            $user->businesses()->detach();
-        }
+        $avatarPath = $user->avatar;
 
-        // 🔥 finally delete user
-        $user->delete(); // agar softDeletes use ho rahe hain to soft delete hoga
+        DB::transaction(function () use ($user) {
+            /*
+            * OTP को पहले invalidate कर रहे हैं ताकि यह दोबारा
+            * इस्तेमाल न किया जा सके.
+            */
+            $user->update([
+                'otp' => null,
+                'otp_expires_at' => null,
+            ]);
+
+            // सभी login tokens revoke करें
+            $user->tokens()->delete();
+
+            // Business pivot records हटाएँ
+            if (method_exists($user, 'businesses')) {
+                $user->businesses()->detach();
+            }
+
+            /*
+            * SoftDeletes लगा है तो soft delete होगा,
+            * अन्यथा permanent database deletion होगा.
+            */
+            $user->delete();
+        });
+
+        // Transaction successful होने के बाद avatar delete करें
+        if (
+            !empty($avatarPath) &&
+            Storage::disk('public')->exists($avatarPath)
+        ) {
+            Storage::disk('public')->delete($avatarPath);
+        }
 
         return response()->json([
             'status' => true,
-            'message' => 'Your account has been permanently deleted.',
+            'message' => 'Your account has been deleted successfully.',
         ], 200);
     }
 
@@ -1232,6 +1357,17 @@ class HomeController extends Controller
                 ],
             ], 201);
         });
+    }
+
+
+    private function maskPhoneNumber(?string $phone): ?string
+    {
+        if (empty($phone) || strlen($phone) < 4) {
+            return $phone;
+        }
+
+        return str_repeat('*', strlen($phone) - 4)
+            . substr($phone, -4);
     }
 
 }
