@@ -34,7 +34,7 @@ class InvoiceReportController extends Controller
             'activeType' => $type,
             'filters' => [
                 'search'      => (string) $request->get('search', ''),
-                'date_range'  => (string) $request->get('date_range', 'quarter'),
+                'date_range'  => (string) $request->get('date_range', 'last_month'),
                 'from_date'   => $request->get('from_date', ''),
                 'to_date'     => $request->get('to_date', ''),
                 'status'      => $request->get('status', ''),
@@ -159,6 +159,11 @@ class InvoiceReportController extends Controller
         $today = now()->endOfDay();
 
         switch ($dateRange) {
+            case 'last_month':
+                $fromDate = now()->subMonthNoOverflow()->startOfDay()->toDateString();
+                $toDate   = $today->toDateString();
+                break;
+
             case 'last_year':
                 $fromDate = now()->subYear()->startOfDay()->toDateString();
                 $toDate   = $today->toDateString();
@@ -179,16 +184,23 @@ class InvoiceReportController extends Controller
                 $toDate   = $request->get('to_date');
 
                 if (empty($fromDate) && !empty($toDate)) {
-                    $fromDate = Carbon::parse($toDate)->startOfMonth()->toDateString();
+                    $fromDate = Carbon::parse($toDate)
+                        ->startOfMonth()
+                        ->toDateString();
                 }
 
                 if (!empty($fromDate) && empty($toDate)) {
                     $toDate = now()->toDateString();
                 }
 
-                if (!empty($fromDate) && !empty($toDate) && $fromDate > $toDate) {
+                if (
+                    !empty($fromDate) &&
+                    !empty($toDate) &&
+                    $fromDate > $toDate
+                ) {
                     [$fromDate, $toDate] = [$toDate, $fromDate];
                 }
+
                 break;
 
             default:
