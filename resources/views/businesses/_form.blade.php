@@ -51,6 +51,27 @@
 @endphp
 
 <div class="space-y-6">
+
+    @if ($errors->any())
+        <div
+            class="rounded-xl border border-red-300 bg-red-50 p-4 text-left
+                   dark:border-red-700 dark:bg-red-950/40"
+        >
+            <p class="mb-2 font-semibold text-red-700 dark:text-red-300">
+                Please fix the following errors:
+            </p>
+
+            <ul class="list-disc space-y-1 pl-5 text-sm text-red-600 dark:text-red-300">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <div class="grid md:grid-cols-2 gap-4">
+
+<div class="space-y-6">
     <div class="grid md:grid-cols-2 gap-4">
         <div>
             <label class="block text-sm font-medium mb-1">Name <span class="text-red-600">*</span></label>
