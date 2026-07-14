@@ -144,87 +144,87 @@ class BusinessController extends Controller
     // }
 
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'name'  => ['required', 'string', 'max:255'],
-        'slug'  => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
-        'email' => ['required', 'email', 'max:255', 'unique:businesses,email'],
+    {
+        $data = $request->validate([
+            'name'  => ['required', 'string', 'max:255'],
+            'slug'  => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
+            'email' => ['required', 'email', 'max:255', 'unique:businesses,email'],
 
-        'mobile' => [
-            'nullable',
-            'string',
-            'max:20',
-            Rule::unique('businesses', 'mobile'),
-        ],
+            'mobile' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('businesses', 'mobile'),
+            ],
 
-        // ✅ Dynamic Business Type
-        'business_type_id' => [
-            'required',
-            'integer',
-            Rule::exists('business_types', 'id'),
-        ],
+            // ✅ Dynamic Business Type
+            'business_type_id' => [
+                'required',
+                'integer',
+                Rule::exists('business_types', 'id'),
+            ],
 
-        'gstin'   => ['nullable', 'string', 'max:50'],
-        'address' => ['nullable', 'string', 'max:1000'],
-        'terms'   => ['nullable', 'string', 'max:1000'],
+            'gstin'   => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string', 'max:1000'],
+            'terms'   => ['nullable', 'string', 'max:1000'],
 
-        'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-        'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
-        'state' => ['required', 'string', 'max:100'],
+            'state' => ['required', 'string', 'max:100'],
 
-        'pdf_template_id'     => ['required', 'integer', Rule::exists('bill_templates', 'id')],
-        'invoice_base_prefix' => ['nullable', 'string', 'max:100'],
-    ]);
+            'pdf_template_id'     => ['required', 'integer', Rule::exists('bill_templates', 'id')],
+            'invoice_base_prefix' => ['nullable', 'string', 'max:100'],
+        ]);
 
-    // ✅ Split state_code & state_name
-    if (!empty($data['state']) && str_contains($data['state'], ',')) {
-        [$stateCode, $stateName] = explode(',', $data['state'], 2);
+        // ✅ Split state_code & state_name
+        if (!empty($data['state']) && str_contains($data['state'], ',')) {
+            [$stateCode, $stateName] = explode(',', $data['state'], 2);
 
-        $data['state_code'] = trim($stateCode);
-        $data['state'] = trim($stateName);
+            $data['state_code'] = trim($stateCode);
+            $data['state'] = trim($stateName);
+        }
+
+        // ✅ Auto-generate slug if empty
+        $data['slug'] = !empty($data['slug'])
+            ? Str::slug($data['slug'])
+            : Str::slug($data['name']);
+
+        // ✅ Ensure slug uniqueness
+        $originalSlug = $data['slug'];
+        $counter = 1;
+
+        while (Business::where('slug', $data['slug'])->exists()) {
+            $data['slug'] = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
+        // ✅ Upload files
+        if ($request->hasFile('logo')) {
+            $data['logo'] = $request->file('logo')->store('business_logos', 'public');
+        }
+
+        if ($request->hasFile('signature')) {
+            $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
+        }
+
+        if ($request->hasFile('letter_head')) {
+            $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
+        }
+
+        // ✅ Create business
+        $business = Business::create($data);
+
+        // ✅ Attach current user as owner
+        $request->user()->businesses()->syncWithoutDetaching([
+            $business->id => ['role' => 'owner'],
+        ]);
+
+        return redirect()
+            ->route('businesses.index')
+            ->with('success', 'Business created successfully.');
     }
-
-    // ✅ Auto-generate slug if empty
-    $data['slug'] = !empty($data['slug'])
-        ? Str::slug($data['slug'])
-        : Str::slug($data['name']);
-
-    // ✅ Ensure slug uniqueness
-    $originalSlug = $data['slug'];
-    $counter = 1;
-
-    while (Business::where('slug', $data['slug'])->exists()) {
-        $data['slug'] = $originalSlug . '-' . $counter;
-        $counter++;
-    }
-
-    // ✅ Upload files
-    if ($request->hasFile('logo')) {
-        $data['logo'] = $request->file('logo')->store('business_logos', 'public');
-    }
-
-    if ($request->hasFile('signature')) {
-        $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
-    }
-
-    if ($request->hasFile('letter_head')) {
-        $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
-    }
-
-    // ✅ Create business
-    $business = Business::create($data);
-
-    // ✅ Attach current user as owner
-    $request->user()->businesses()->syncWithoutDetaching([
-        $business->id => ['role' => 'owner'],
-    ]);
-
-    return redirect()
-        ->route('businesses.index')
-        ->with('success', 'Business created successfully.');
-}
 
     // public function edit(Business $business)
     // {
