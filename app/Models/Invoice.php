@@ -115,4 +115,9 @@ class Invoice extends Model
     public function updatedBy(){
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    public function billRequest()
+    {
+        return $this->belongsTo(BillRequest::class, 'bil_request_id');
+    }
 }

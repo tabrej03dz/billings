@@ -19,6 +19,251 @@ use Illuminate\Support\Facades\Storage;
 
 class BillRequestController extends Controller
 {
+
+
+    public function index1(Request $request)
+    {
+        $statuses = [
+            'pending',
+            'processed',
+            'failed',
+        ];
+
+        $allowedPerPages = [
+            10,
+            20,
+            50,
+            100,
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Bill Request Query
+        |--------------------------------------------------------------------------
+        |
+        | invoice relation ko eager load kiya gaya hai, jisse jis bill request
+        | ka invoice ban chuka hai uska complete invoice data response me aayega.
+        |
+        */
+
+        $query = BillRequest::query()
+            ->with([
+                'invoice' => function ($invoiceQuery) {
+                    $invoiceQuery->select([
+                        'id',
+                        'bil_request_id',
+                        'business_id',
+                        'invoice_type',
+                        'invoice_prefix',
+                        'invoice_number',
+                        'client_id',
+                        'invoice_date',
+                        'due_date',
+                        'subtotal',
+                        'tax_amount',
+                        'cgst_percent',
+                        'cgst_amount',
+                        'sgst_percent',
+                        'sgst_amount',
+                        'igst_percent',
+                        'igst_amount',
+                        'discount_total',
+                        'charge_total',
+                        'tcs_percent',
+                        'tcs_amount',
+                        'round_off',
+                        'less_amount',
+                        'total',
+                        'received_amount',
+                        'balance',
+                        'payment_method',
+                        'transport_mode',
+                        'reverse_charge',
+                        'place_of_supply_state',
+                        'place_of_supply_code',
+                        'notes',
+                        'terms',
+                        'charges_json',
+                        'items_json',
+                        'amount_in_words',
+                        'pdf_url',
+                        'signature',
+                        'user_id',
+                        'created_at',
+                        'updated_at',
+                    ]);
+                },
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_email', 'like', "%{$search}%")
+                    ->orWhere('customer_phone', 'like', "%{$search}%")
+                    ->orWhere('customer_phone1', 'like', "%{$search}%")
+                    ->orWhere('business_name', 'like', "%{$search}%")
+                    ->orWhere('gst_number', 'like', "%{$search}%")
+                    ->orWhere('package_name', 'like', "%{$search}%")
+                    ->orWhere('payment_method', 'like', "%{$search}%")
+                    ->orWhere('transaction_id', 'like', "%{$search}%")
+                    ->orWhere('source_software', 'like', "%{$search}%")
+                    ->orWhere('source_request_id', 'like', "%{$search}%")
+
+                    /*
+                    * Invoice number se bhi bill request search kar sakte hain.
+                    */
+                    ->orWhereHas('invoice', function ($invoiceQuery) use ($search) {
+                        $invoiceQuery
+                            ->where('invoice_number', 'like', "%{$search}%")
+                            ->orWhereRaw(
+                                "CONCAT(COALESCE(invoice_prefix, ''), invoice_number) LIKE ?",
+                                ["%{$search}%"]
+                            );
+                    });
+            });
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $request->filled('status')
+            && in_array($request->status, $statuses, true)
+        ) {
+            $query->where('status', $request->status);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date Filters
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('requested_at', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('requested_at', '<=', $request->to_date);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Method Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('payment_method')) {
+            $query->where(
+                'payment_method',
+                trim($request->payment_method)
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Customer Type Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('customer_type')) {
+            $query->where(
+                'customer_type',
+                trim($request->customer_type)
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice Status Filter
+        |--------------------------------------------------------------------------
+        |
+        | invoice_status=generated  => sirf generated invoices
+        | invoice_status=pending    => jinka invoice nahi bana
+        |
+        */
+
+        if ($request->invoice_status === 'generated') {
+            $query->whereHas('invoice');
+        }
+
+        if ($request->invoice_status === 'pending') {
+            $query->whereDoesntHave('invoice');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $perPage = (int) $request->get('per_page', 20);
+
+        if (!in_array($perPage, $allowedPerPages, true)) {
+            $perPage = 20;
+        }
+
+        $billRequests = $query
+            ->latest('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Additional Invoice Information
+        |--------------------------------------------------------------------------
+        */
+
+        $billRequests->getCollection()->transform(function ($billRequest) {
+            $billRequest->invoice_generated = $billRequest->invoice !== null;
+
+            $billRequest->invoice_status = $billRequest->invoice
+                ? 'generated'
+                : 'not_generated';
+
+            $billRequest->invoice_display_number = $billRequest->invoice
+                ? trim(
+                    ($billRequest->invoice->invoice_prefix ?? '')
+                    . ($billRequest->invoice->invoice_number ?? '')
+                )
+                : null;
+
+            return $billRequest;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bill requests with invoices fetched successfully.',
+
+            'summary' => [
+                'current_page_records' => $billRequests->count(),
+
+                'invoice_generated' => $billRequests
+                    ->getCollection()
+                    ->where('invoice_generated', true)
+                    ->count(),
+
+                'invoice_not_generated' => $billRequests
+                    ->getCollection()
+                    ->where('invoice_generated', false)
+                    ->count(),
+            ],
+
+            'data' => $billRequests,
+        ]);
+    }
+
     // public function store(Request $request)
     // {
     //     try {
@@ -842,7 +1087,7 @@ public function store(Request $request)
 
     //     if ($firstItemId <= 0) {
     //         Log::error('Bill request first item invalid', [
-    //             'bill_request_id' => $billRequest->id,
+    //             'bil_request_id' => $billRequest->id,
     //             'request_items'   => $requestItems,
     //             'full_payload'    => $billRequest->full_payload,
     //             'package_name'    => $billRequest->package_name,
@@ -1309,7 +1554,7 @@ public function store(Request $request)
 
     if ($firstItemId <= 0) {
         Log::error('Bill request first item invalid', [
-            'bill_request_id' => $billRequest->id,
+            'bil_request_id' => $billRequest->id,
             'request_items'   => $requestItems,
             'full_payload'    => $billRequest->full_payload,
             'package_name'    => $billRequest->package_name,
@@ -1958,7 +2203,7 @@ public function store(Request $request)
 
         } catch (\Throwable $e) {
             Log::error('Bill request delete failed', [
-                'bill_request_id' => $billRequest->id,
+                'bil_request_id' => $billRequest->id,
                 'error'           => $e->getMessage(),
             ]);
 
@@ -2266,7 +2511,7 @@ public function store(Request $request)
 
         } catch (\Throwable $e) {
             Log::error('Bill request to invoice API failed', [
-                'bill_request_id' => $billRequest->id,
+                'bil_request_id' => $billRequest->id,
                 'error'           => $e->getMessage(),
                 'line'            => $e->getLine(),
                 'file'            => $e->getFile(),

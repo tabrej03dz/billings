@@ -24,4 +24,13 @@ class BillRequest extends Model
     {
         return $this->belongsTo(Item::class, 'package_name', 'id');
     }
+
+    public function invoice()
+    {
+        return $this->hasOne(
+            Invoice::class,
+            'bil_request_id',
+            'id'
+        );
+    }
 }

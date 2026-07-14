@@ -32,6 +32,8 @@ Route::get('/drive-scan-pdf/run', [\App\Http\Controllers\InstallmentReminderCont
 Route::get('/send-uploaded-invoice/run', [\App\Http\Controllers\InstallmentReminderController::class, 'sendUploadedInvoice']);
 
 
+    Route::get('bill-requests/index/api', [ApiBillRequestController::class, 'index1']);
+
 
 Route::post('/login',  [HomeController::class, 'login']);
 Route::post('/login/verify-otp', [HomeController::class, 'verifyLoginOtp']);
