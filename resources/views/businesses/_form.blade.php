@@ -70,6 +70,7 @@
     @endif
 
     <div class="grid md:grid-cols-2 gap-4">
+    </div>
 
 <div class="space-y-6">
     <div class="grid md:grid-cols-2 gap-4">
