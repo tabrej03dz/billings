@@ -1,115 +1,406 @@
 <?php
-//
-//namespace App\Models\Concerns;
-//
-//use Illuminate\Database\Eloquent\Builder;
-//
-//trait BelongsToBusiness
-//{
-//    public static function bootBelongsToBusiness(): void
-//    {
-//        // create ke waqt business_id auto set
-//        static::creating(function ($model) {
-//            if (blank($model->business_id) && auth()->check()) {
-//                $bid = auth()->user()->current_business_id ?? session('active_business_id');
-//                if ($bid) {
-//                    $model->business_id = $bid;
-//                }
-//            }
-//        });
-//
-//        // har query ko active business tak restrict
-//        static::addGlobalScope('business', function (Builder $builder) {
-//            if (auth()->check()) {
-//                $bid = auth()->user()->current_business_id ?? session('active_business_id');
-//                if ($bid) {
-//                    $builder->where($builder->getModel()->getTable().'.business_id', $bid);
-//                }
-//            }
-//        });
-//    }
-//
-//    public function business()
-//    {
-//        return $this->belongsTo(\App\Models\Business::class);
-//    }
-//}
-
 
 namespace App\Models\Concerns;
 
+use App\Models\Business;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 trait BelongsToBusiness
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve active business ID
+    |--------------------------------------------------------------------------
+    |
+    | Priority:
+    | 1. API middleware/container active_business_id
+    | 2. Session active_business_id
+    | 3. User current_business_id
+    | 4. business_user pivot ka first valid business
+    |
+    | Har ID ko businesses table aur business_user pivot se verify kiya jayega.
+    |
+    */
+
     protected static function resolveActiveBusinessId(): ?int
     {
-        // API middleware se (X-Business-Id)
+        if (!auth()->check()) {
+            return null;
+        }
+
+        $user = auth()->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin ke liye optional active business
+        |--------------------------------------------------------------------------
+        |
+        | Super Admin agar particular business select kare to session/container
+        | business use hoga. Otherwise null rahega aur global scope skip hoga.
+        |
+        */
+
+        $isSuperAdmin = method_exists($user, 'hasRole')
+            && (
+                $user->hasRole('super admin')
+                || $user->hasRole('superadmin')
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | User ke connected valid business IDs
+        |--------------------------------------------------------------------------
+        */
+
+        $connectedBusinessIds = DB::table('business_user')
+            ->join(
+                'businesses',
+                'businesses.id',
+                '=',
+                'business_user.business_id'
+            )
+            ->where(
+                'business_user.user_id',
+                $user->id
+            )
+            ->pluck('businesses.id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | API/container business
+        |--------------------------------------------------------------------------
+        */
+
+        $containerBusinessId = null;
+
         if (app()->bound('active_business_id')) {
-            return (int) app('active_business_id');
+            $containerBusinessId = app('active_business_id');
+
+            if (
+                $containerBusinessId
+                && is_numeric($containerBusinessId)
+            ) {
+                $containerBusinessId = (int) $containerBusinessId;
+
+                if (
+                    $isSuperAdmin
+                    && Business::query()
+                        ->withoutGlobalScopes()
+                        ->whereKey($containerBusinessId)
+                        ->exists()
+                ) {
+                    return $containerBusinessId;
+                }
+
+                if (
+                    $connectedBusinessIds
+                        ->contains($containerBusinessId)
+                ) {
+                    static::storeResolvedBusiness(
+                        $user,
+                        $containerBusinessId
+                    );
+
+                    return $containerBusinessId;
+                }
+            }
         }
 
-        // Web session
-        if ($bid = session('active_business_id')) {
-            return (int) $bid;
+        /*
+        |--------------------------------------------------------------------------
+        | Session business
+        |--------------------------------------------------------------------------
+        */
+
+        $sessionBusinessId = session('active_business_id');
+
+        if (
+            $sessionBusinessId
+            && is_numeric($sessionBusinessId)
+        ) {
+            $sessionBusinessId = (int) $sessionBusinessId;
+
+            if (
+                $isSuperAdmin
+                && Business::query()
+                    ->withoutGlobalScopes()
+                    ->whereKey($sessionBusinessId)
+                    ->exists()
+            ) {
+                return $sessionBusinessId;
+            }
+
+            if (
+                $connectedBusinessIds
+                    ->contains($sessionBusinessId)
+            ) {
+                static::storeResolvedBusiness(
+                    $user,
+                    $sessionBusinessId
+                );
+
+                return $sessionBusinessId;
+            }
+
+            /*
+            | Invalid/deleted session business hata dein.
+            */
+
+            session()->forget('active_business_id');
         }
 
-        // User default business
-        if (auth()->check()) {
-            return (int) auth()->user()->current_business_id;
+        /*
+        |--------------------------------------------------------------------------
+        | User current_business_id
+        |--------------------------------------------------------------------------
+        */
+
+        $currentBusinessId = $user->current_business_id ?? null;
+
+        if (
+            $currentBusinessId
+            && is_numeric($currentBusinessId)
+        ) {
+            $currentBusinessId = (int) $currentBusinessId;
+
+            if (
+                $isSuperAdmin
+                && Business::query()
+                    ->withoutGlobalScopes()
+                    ->whereKey($currentBusinessId)
+                    ->exists()
+            ) {
+                session([
+                    'active_business_id' =>
+                        $currentBusinessId,
+                ]);
+
+                return $currentBusinessId;
+            }
+
+            if (
+                $connectedBusinessIds
+                    ->contains($currentBusinessId)
+            ) {
+                session([
+                    'active_business_id' =>
+                        $currentBusinessId,
+                ]);
+
+                return $currentBusinessId;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pivot se first valid business fallback
+        |--------------------------------------------------------------------------
+        */
+
+        $fallbackBusinessId =
+            $connectedBusinessIds->first();
+
+        if ($fallbackBusinessId) {
+            static::storeResolvedBusiness(
+                $user,
+                (int) $fallbackBusinessId
+            );
+
+            return (int) $fallbackBusinessId;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Super Admin without selected business
+        |--------------------------------------------------------------------------
+        */
+
+        if ($isSuperAdmin) {
+            return null;
         }
 
         return null;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Session and user default sync
+    |--------------------------------------------------------------------------
+    */
+
+    protected static function storeResolvedBusiness(
+        $user,
+        int $businessId
+    ): void {
+        session([
+            'active_business_id' => $businessId,
+        ]);
+
+        /*
+        | current_business_id column available ho to update karein.
+        */
+
+        if (
+            isset($user->current_business_id)
+            && (int) $user->current_business_id
+                !== $businessId
+        ) {
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update([
+                    'current_business_id' =>
+                        $businessId,
+
+                    'updated_at' => now(),
+                ]);
+
+            $user->current_business_id =
+                $businessId;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trait boot
+    |--------------------------------------------------------------------------
+    */
 
     public static function bootBelongsToBusiness(): void
     {
-        // create ke waqt business_id auto set
+        /*
+        |--------------------------------------------------------------------------
+        | Creating: business_id automatically set
+        |--------------------------------------------------------------------------
+        */
+
         static::creating(function ($model) {
             if (blank($model->business_id)) {
-//                $bid = session('active_business_id');
-//                if (!$bid && auth()->check()) {
-//                    $bid = auth()->user()->current_business_id;
-//                }
-                $bid = static::resolveActiveBusinessId();
-                if ($bid) {
-                    $model->business_id = $bid;
+                $businessId =
+                    static::resolveActiveBusinessId();
+
+                if ($businessId) {
+                    $model->business_id =
+                        $businessId;
                 }
             }
         });
 
-        // har query ko active business tak restrict
-        static::addGlobalScope('business', function (Builder $builder) {
-            // superadmin ko sab dikhana ho to yahan skip kara sakte ho:
-            if (auth()->check() && method_exists(auth()->user(), 'hasRole') && auth()->user()->hasRole('superadmin')) {
-                return; // no restriction for superadmin
+        /*
+        |--------------------------------------------------------------------------
+        | Global business scope
+        |--------------------------------------------------------------------------
+        */
+
+        static::addGlobalScope(
+            'business',
+            function (Builder $builder) {
+                $user = auth()->user();
+
+                /*
+                | Guest requests par scope nahi.
+                */
+
+                if (!$user) {
+                    return;
+                }
+
+                /*
+                | Dono possible role names support kiye gaye hain.
+                */
+
+                $isSuperAdmin =
+                    method_exists($user, 'hasRole')
+                    && (
+                        $user->hasRole('super_admin')
+                        || $user->hasRole('superadmin')
+                    );
+
+                /*
+                | Super Admin ko sab businesses ka data dikhana hai.
+                */
+
+                if ($isSuperAdmin) {
+                    return;
+                }
+
+                $businessId =
+                    static::resolveActiveBusinessId();
+
+                if (!$businessId) {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Business na mile to data leak rokna
+                    |--------------------------------------------------------------------------
+                    |
+                    | Scope na lagane par user ko sab businesses ka data dikh sakta
+                    | tha. Isliye impossible condition lagayi gayi hai.
+                    |
+                    */
+
+                    $builder->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $table = $builder
+                    ->getModel()
+                    ->getTable();
+
+                $builder->where(
+                    $table . '.business_id',
+                    $businessId
+                );
             }
-
-            $table = $builder->getModel()->getTable();
-            $bid = session('active_business_id');
-
-//            if (!$bid && auth()->check()) {
-//                $bid = auth()->user()->current_business_id;
-//            }
-
-            $bid = static::resolveActiveBusinessId();
-
-            if ($bid) {
-                $builder->where("$table.business_id", $bid);
-            }
-        });
+        );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Business relation
+    |--------------------------------------------------------------------------
+    */
 
     public function business()
     {
-        return $this->belongsTo(\App\Models\Business::class);
+        return $this->belongsTo(
+            Business::class
+        );
     }
 
-    // optional: manual scope (kabhi direct use karna ho)
-    public function scopeForBusiness(Builder $q, $bid): Builder
-    {
-        $table = $q->getModel()->getTable();
-        return $q->where("$table.business_id", $bid);
+    /*
+    |--------------------------------------------------------------------------
+    | Manual business scope
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeForBusiness(
+        Builder $query,
+        int $businessId
+    ): Builder {
+        $table = $query
+            ->getModel()
+            ->getTable();
+
+        return $query->where(
+            $table . '.business_id',
+            $businessId
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Query without active business scope
+    |--------------------------------------------------------------------------
+    */
+
+    public function scopeWithoutBusinessScope(
+        Builder $query
+    ): Builder {
+        return $query->withoutGlobalScope(
+            'business'
+        );
     }
 }

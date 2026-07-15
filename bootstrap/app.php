@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'active.business' => ActiveBusinessFromHeader::class,
         ]);
+
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\TrackUserActivity::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

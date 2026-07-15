@@ -9,122 +9,336 @@ use App\Models\MetalRate;
 use App\Models\Purchase;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-
     public function index(Request $request)
     {
-        
         $user = $request->user();
-        if (!$user) abort(401);
 
-        if (!$user->businesses()->exists()) {
+        if (!$user) {
+            abort(401);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Resolve user's valid active business
+        |--------------------------------------------------------------------------
+        |
+        | business_user pivot ko direct query kar rahe hain, taaki Business model
+        | ka koi global scope is resolution ko disturb na kare.
+        |
+        */
+
+        $userBusinessIds = DB::table('business_user')
+            ->join(
+                'businesses',
+                'businesses.id',
+                '=',
+                'business_user.business_id'
+            )
+            ->where('business_user.user_id', $user->id)
+            ->orderByRaw("
+                CASE
+                    WHEN business_user.role = 'owner' THEN 1
+                    WHEN business_user.role = 'staff' THEN 2
+                    ELSE 3
+                END
+            ")
+            ->orderBy('business_user.id')
+            ->pluck('businesses.id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | User ke saath koi business connected nahi hai
+        |--------------------------------------------------------------------------
+        */
+
+        if ($userBusinessIds->isEmpty()) {
+            session()->forget('active_business_id');
+
             return redirect()
                 ->route('no-business.whatsapp')
-                ->with('info', 'Please configure WhatsApp API and send PDFs directly.');
+                ->with(
+                    'info',
+                    'Please configure WhatsApp API and send PDFs directly.'
+                );
         }
+
+        $sessionBusinessId = session('active_business_id');
+        $currentBusinessId = $user->current_business_id ?? null;
+
+        $bid = null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | First priority: session active business
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $sessionBusinessId
+            && is_numeric($sessionBusinessId)
+            && $userBusinessIds->contains((int) $sessionBusinessId)
+        ) {
+            $bid = (int) $sessionBusinessId;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Second priority: users.current_business_id
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !$bid
+            && $currentBusinessId
+            && is_numeric($currentBusinessId)
+            && $userBusinessIds->contains((int) $currentBusinessId)
+        ) {
+            $bid = (int) $currentBusinessId;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Final fallback: pivot ka first valid business
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$bid) {
+            $bid = (int) $userBusinessIds->first();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active business sync
+        |--------------------------------------------------------------------------
+        */
+
+        session([
+            'active_business_id' => $bid,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | current_business_id sync
+        |--------------------------------------------------------------------------
+        |
+        | Model save use nahi kar rahe, kyunki User model events/scopes se
+        | unnecessary side effects aa sakte hain.
+        |
+        */
+
+        if ((int) ($user->current_business_id ?? 0) !== $bid) {
+            DB::table('users')
+                ->where('id', $user->id)
+                ->update([
+                    'current_business_id' => $bid,
+                    'updated_at' => now(),
+                ]);
+
+            $user->current_business_id = $bid;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Load business without global scopes
+        |--------------------------------------------------------------------------
+        */
+
+        $business = Business::query()
+            ->withoutGlobalScopes()
+            ->whereKey($bid)
+            ->first();
+
+        if (!$business) {
+            session()->forget('active_business_id');
+
+            return redirect()
+                ->route('no-business.whatsapp')
+                ->with(
+                    'error',
+                    'Selected business database mein available nahi hai.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Timezone and date filters
+        |--------------------------------------------------------------------------
+        */
 
         $tz = config('app.timezone', 'Asia/Kolkata');
 
-        // ✅ Date Filters (GET)
-        // Default: month start -> today
-        $today      = \Carbon\Carbon::now($tz)->startOfDay();
-        $defaultFrom = \Carbon\Carbon::now($tz)->startOfMonth()->startOfDay();
-        $defaultTo   = \Carbon\Carbon::now($tz)->endOfDay();
+        $today = Carbon::now($tz)->startOfDay();
 
-        $from = $request->filled('from')
-            ? \Carbon\Carbon::parse($request->query('from'), $tz)->startOfDay()
-            : $defaultFrom;
+        $defaultFrom = Carbon::now($tz)
+            ->startOfMonth()
+            ->startOfDay();
 
-        $to = $request->filled('to')
-            ? \Carbon\Carbon::parse($request->query('to'), $tz)->endOfDay()
-            : $defaultTo;
+        $defaultTo = Carbon::now($tz)
+            ->endOfDay();
 
-        // ✅ safety: from > to swap
+        try {
+            $from = $request->filled('from')
+                ? Carbon::parse(
+                    $request->query('from'),
+                    $tz
+                )->startOfDay()
+                : $defaultFrom;
+
+            $to = $request->filled('to')
+                ? Carbon::parse(
+                    $request->query('to'),
+                    $tz
+                )->endOfDay()
+                : $defaultTo;
+        } catch (\Throwable $exception) {
+            $from = $defaultFrom;
+            $to = $defaultTo;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Safety: from date greater than to date
+        |--------------------------------------------------------------------------
+        */
+
         if ($from->gt($to)) {
-            [$from, $to] = [$to->copy()->startOfDay(), $from->copy()->endOfDay()];
+            $oldFrom = $from->copy();
+
+            $from = $to->copy()->startOfDay();
+            $to = $oldFrom->copy()->endOfDay();
         }
 
-        // optional preset support (month/7d/today)
-        $preset = strtolower(trim((string)$request->query('preset', '')));
+        /*
+        |--------------------------------------------------------------------------
+        | Preset filters
+        |--------------------------------------------------------------------------
+        */
+
+        $preset = strtolower(
+            trim((string) $request->query('preset', ''))
+        );
+
         if ($preset === 'today') {
-            $from = \Carbon\Carbon::now($tz)->startOfDay();
-            $to   = \Carbon\Carbon::now($tz)->endOfDay();
+            $from = Carbon::now($tz)->startOfDay();
+            $to = Carbon::now($tz)->endOfDay();
         } elseif ($preset === '7d') {
-            $from = \Carbon\Carbon::now($tz)->subDays(6)->startOfDay();
-            $to   = \Carbon\Carbon::now($tz)->endOfDay();
+            $from = Carbon::now($tz)
+                ->subDays(6)
+                ->startOfDay();
+
+            $to = Carbon::now($tz)->endOfDay();
         } elseif ($preset === 'month') {
-            $from = \Carbon\Carbon::now($tz)->startOfMonth()->startOfDay();
-            $to   = \Carbon\Carbon::now($tz)->endOfDay();
+            $from = Carbon::now($tz)
+                ->startOfMonth()
+                ->startOfDay();
+
+            $to = Carbon::now($tz)->endOfDay();
         }
 
-        $bid = auth()->user()->current_business_id ?? session('active_business_id');
-        $business = \App\Models\Business::find($bid);
+        /*
+        |--------------------------------------------------------------------------
+        | Base business queries
+        |--------------------------------------------------------------------------
+        |
+        | withoutGlobalScope('business') ke baad manually correct business ID
+        | lagayi gayi hai. Isse duplicate ya invalid global scope issue nahi hoga.
+        |
+        */
 
-        $invoiceQ  = \App\Models\Invoice::query();
-        $purchaseQ = \App\Models\Purchase::query();
-        $itemQ     = \App\Models\Item::query();
-        $rateQ     = \App\Models\MetalRate::query();
+        $invoiceQ = Invoice::query()
+            ->withoutGlobalScope('business')
+            ->where('invoices.business_id', $bid);
 
-        if ($bid) {
-            $invoiceQ->where('business_id', $bid);
-            $purchaseQ->where('business_id', $bid);
-            $itemQ->where('business_id', $bid);
-            $rateQ->where('business_id', $bid);
-        }
+        $purchaseQ = Purchase::query()
+            ->withoutGlobalScope('business')
+            ->where('purchases.business_id', $bid);
 
-        // ✅ SALES only TAX
-        $salesQ = (clone $invoiceQ)->where(function ($q) {
-            $q->where('invoice_type', 'tax')
-                ->orWhereNull('invoice_type'); // optional
-        });
+        $itemQ = Item::query()
+            ->withoutGlobalScope('business')
+            ->where('items.business_id', $bid);
 
-        // -----------------------------------
-        // ✅ SUMMARY (Range based)
-        // -----------------------------------
-        // "Today" cards ke liye today date
-        $todayDate = \Carbon\Carbon::now($tz)->toDateString();
+        $rateQ = MetalRate::query()
+            ->withoutGlobalScope('business')
+            ->where('metal_rates.business_id', $bid);
 
-        $todaySalesAmount = (clone $salesQ)->whereDate('invoice_date', $todayDate)->sum('total');
-        $todaySalesCount  = (clone $salesQ)->whereDate('invoice_date', $todayDate)->count();
+        /*
+        |--------------------------------------------------------------------------
+        | Sales: tax invoices and old null invoice types
+        |--------------------------------------------------------------------------
+        */
 
-
-
-        // ✅ TODAY ITEM-WISE GROSS PROFIT
-        // Profit = Selling amount - Cost amount
-        $todayProfitData = \DB::table('invoice_items as ii')
-            ->join('invoices as inv', 'inv.id', '=', 'ii.invoice_id')
-            ->leftJoin('items as i', function ($join) use ($bid) {
-                $join->on('i.id', '=', 'ii.item_id');
-
-                // Same business ka item hi join ho
-                if ($bid) {
-                    $join->where('i.business_id', '=', $bid);
-                }
-            })
-            ->whereDate('inv.invoice_date', $todayDate)
-            ->when($bid, function ($query) use ($bid) {
-                $query->where('inv.business_id', $bid);
-            })
+        $salesQ = (clone $invoiceQ)
             ->where(function ($query) {
-                $query->where('inv.invoice_type', 'tax')
+                $query
+                    ->where('invoice_type', 'tax')
+                    ->orWhereNull('invoice_type');
+            });
+
+        $todayDate = Carbon::now($tz)->toDateString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Today's sales
+        |--------------------------------------------------------------------------
+        */
+
+        $todaySalesAmount = (clone $salesQ)
+            ->whereDate('invoice_date', $todayDate)
+            ->sum('total');
+
+        $todaySalesCount = (clone $salesQ)
+            ->whereDate('invoice_date', $todayDate)
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Today's item-wise gross profit
+        |--------------------------------------------------------------------------
+        |
+        | Profit = Sale amount - Cost amount
+        |
+        */
+
+        $todayProfitData = DB::table('invoice_items as ii')
+            ->join(
+                'invoices as inv',
+                'inv.id',
+                '=',
+                'ii.invoice_id'
+            )
+            ->leftJoin('items as i', function ($join) use ($bid) {
+                $join
+                    ->on('i.id', '=', 'ii.item_id')
+                    ->where('i.business_id', '=', $bid);
+            })
+            ->where('inv.business_id', $bid)
+            ->whereDate('inv.invoice_date', $todayDate)
+            ->where(function ($query) {
+                $query
+                    ->where('inv.invoice_type', 'tax')
                     ->orWhereNull('inv.invoice_type');
             })
             ->selectRaw('
                 COALESCE(
                     SUM(COALESCE(ii.amount, 0)),
                     0
-                ) as sale_amount,
+                ) AS sale_amount,
 
                 COALESCE(
                     SUM(
                         COALESCE(ii.quantity, 0)
-                        * COALESCE(i.cost_price, 0)
+                        *
+                        COALESCE(i.cost_price, 0)
                     ),
                     0
-                ) as cost_amount,
+                ) AS cost_amount,
 
                 COALESCE(
                     SUM(
@@ -132,11 +346,12 @@ class DashboardController extends Controller
                         -
                         (
                             COALESCE(ii.quantity, 0)
-                            * COALESCE(i.cost_price, 0)
+                            *
+                            COALESCE(i.cost_price, 0)
                         )
                     ),
                     0
-                ) as profit_amount
+                ) AS profit_amount
             ')
             ->first();
 
@@ -162,78 +377,227 @@ class DashboardController extends Controller
             )
             : 0;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Sales totals
+        |--------------------------------------------------------------------------
+        */
 
+        $monthSalesAmount = (clone $salesQ)
+            ->whereBetween('invoice_date', [
+                $from,
+                $to,
+            ])
+            ->sum('total');
 
-        // ✅ Range sales (monthSalesAmount ko ab rangeSalesAmount bana do, ya same variable use karo)
-        $monthSalesAmount = (clone $salesQ)->whereBetween('invoice_date', [$from, $to])->sum('total');
-        $totalSalesAmount = (clone $salesQ)->sum('total');
+        $totalSalesAmount = (clone $salesQ)
+            ->sum('total');
 
-        $todayPurchasesAmount = (clone $purchaseQ)->whereDate('invoice_date', $todayDate)->sum('total_amount');
-        $monthPurchasesAmount = (clone $purchaseQ)->whereBetween('invoice_date', [$from, $to])->sum('total_amount');
-        $totalPurchasesAmount = (clone $purchaseQ)->sum('total_amount');
+        /*
+        |--------------------------------------------------------------------------
+        | Purchase totals
+        |--------------------------------------------------------------------------
+        */
 
-        $totalItems    = (clone $itemQ)->count();
-        $totalStockQty = (clone $itemQ)->sum('stock_qty');
-        $lowStockCount = (clone $itemQ)->where('stock_qty', '<=', 2)->count();
+        $todayPurchasesAmount = (clone $purchaseQ)
+            ->whereDate('invoice_date', $todayDate)
+            ->sum('total_amount');
 
-        // today metal rates same
+        $monthPurchasesAmount = (clone $purchaseQ)
+            ->whereBetween('invoice_date', [
+                $from,
+                $to,
+            ])
+            ->sum('total_amount');
+
+        $totalPurchasesAmount = (clone $purchaseQ)
+            ->sum('total_amount');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Item and stock totals
+        |--------------------------------------------------------------------------
+        */
+
+        $totalItems = (clone $itemQ)->count();
+
+        $totalStockQty = (clone $itemQ)
+            ->sum('stock_qty');
+
+        $lowStockCount = (clone $itemQ)
+            ->where('stock_qty', '<=', 2)
+            ->count();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Today's metal rates
+        |--------------------------------------------------------------------------
+        */
+
         $todayMetalRates = (clone $rateQ)
             ->whereDate('rate_date', $todayDate)
             ->where('is_active', true)
             ->get();
 
-        $baseGoldPurities   = ['24K', '22K', '20K', '18K'];
-        $baseSilverPurities = ['999', '995', '925'];
+        $baseGoldPurities = [
+            '24K',
+            '22K',
+            '20K',
+            '18K',
+        ];
+
+        $baseSilverPurities = [
+            '999',
+            '995',
+            '925',
+        ];
 
         $goldPurities = collect($baseGoldPurities)
-            ->merge($todayMetalRates->where('metal_type', 'gold')->pluck('purity')->filter())
-            ->unique()->values()->all();
+            ->merge(
+                $todayMetalRates
+                    ->where('metal_type', 'gold')
+                    ->pluck('purity')
+                    ->filter()
+            )
+            ->unique()
+            ->values()
+            ->all();
 
         $silverPurities = collect($baseSilverPurities)
-            ->merge($todayMetalRates->where('metal_type', 'silver')->pluck('purity')->filter())
-            ->unique()->values()->all();
+            ->merge(
+                $todayMetalRates
+                    ->where('metal_type', 'silver')
+                    ->pluck('purity')
+                    ->filter()
+            )
+            ->unique()
+            ->values()
+            ->all();
 
         $rateMap = $todayMetalRates
-            ->keyBy(fn ($r) => strtolower($r->metal_type) . '|' . (string)($r->purity ?? ''))
-            ->map->rate_per_gram
+            ->keyBy(
+                fn ($rate) =>
+                    strtolower($rate->metal_type)
+                    . '|'
+                    . (string) ($rate->purity ?? '')
+            )
+            ->map(
+                fn ($rate) => $rate->rate_per_gram
+            )
             ->toArray();
 
-        // ✅ Recent lists (Range filter)
+        /*
+        |--------------------------------------------------------------------------
+        | Recent invoices
+        |--------------------------------------------------------------------------
+        */
+
         $recentInvoices = (clone $salesQ)
-            ->whereBetween('invoice_date', [$from, $to])
+            ->whereBetween('invoice_date', [
+                $from,
+                $to,
+            ])
             ->with('client')
-            ->latest('invoice_date')->latest('id')
-            ->limit(5)->get();
+            ->latest('invoice_date')
+            ->latest('id')
+            ->limit(5)
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Recent purchases
+        |--------------------------------------------------------------------------
+        */
 
         $recentPurchases = (clone $purchaseQ)
-            ->whereBetween('invoice_date', [$from, $to])
+            ->whereBetween('invoice_date', [
+                $from,
+                $to,
+            ])
             ->with('supplier')
-            ->latest('invoice_date')->latest('id')
-            ->limit(5)->get();
+            ->latest('invoice_date')
+            ->latest('id')
+            ->limit(5)
+            ->get();
 
-        $lowStockItems = (clone $itemQ)->with('category')
-            ->where('stock_qty', '<=', 5)->orderBy('stock_qty')->limit(5)->get();
+        /*
+        |--------------------------------------------------------------------------
+        | Low stock items
+        |--------------------------------------------------------------------------
+        */
 
-        // Pending / due (range + today)
-        $todayPendingAmount = (clone $salesQ)->whereDate('invoice_date', $todayDate)->sum('balance');
-        $monthPendingAmount = (clone $salesQ)->whereBetween('invoice_date', [$from, $to])->sum('balance');
-        $totalPendingAmount = (clone $salesQ)->sum('balance');
+        $lowStockItems = (clone $itemQ)
+            ->with('category')
+            ->where('stock_qty', '<=', 5)
+            ->orderBy('stock_qty')
+            ->limit(5)
+            ->get();
 
-        return view('dashboard', compact('todayProfitAmount',
+        /*
+        |--------------------------------------------------------------------------
+        | Pending amounts
+        |--------------------------------------------------------------------------
+        */
+
+        $todayPendingAmount = (clone $salesQ)
+            ->whereDate('invoice_date', $todayDate)
+            ->sum('balance');
+
+        $monthPendingAmount = (clone $salesQ)
+            ->whereBetween('invoice_date', [
+                $from,
+                $to,
+            ])
+            ->sum('balance');
+
+        $totalPendingAmount = (clone $salesQ)
+            ->sum('balance');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Return dashboard
+        |--------------------------------------------------------------------------
+        */
+
+        return view('dashboard', compact(
+            'todayProfitAmount',
             'todayItemSaleAmount',
             'todayItemCostAmount',
             'todayProfitPercent',
-            'today', 'business',
-            'from', 'to', 'preset', // ✅ send to blade
-            'todaySalesAmount', 'todaySalesCount',
-            'monthSalesAmount', 'totalSalesAmount',
-            'todayPurchasesAmount', 'monthPurchasesAmount', 'totalPurchasesAmount',
-            'totalItems', 'totalStockQty', 'lowStockCount',
-            'todayMetalRates', 'goldPurities', 'silverPurities', 'rateMap',
-            'recentInvoices', 'recentPurchases', 'lowStockItems',
-            'todayPendingAmount', 'monthPendingAmount', 'totalPendingAmount'
+
+            'today',
+            'business',
+            'bid',
+
+            'from',
+            'to',
+            'preset',
+
+            'todaySalesAmount',
+            'todaySalesCount',
+            'monthSalesAmount',
+            'totalSalesAmount',
+
+            'todayPurchasesAmount',
+            'monthPurchasesAmount',
+            'totalPurchasesAmount',
+
+            'totalItems',
+            'totalStockQty',
+            'lowStockCount',
+
+            'todayMetalRates',
+            'goldPurities',
+            'silverPurities',
+            'rateMap',
+
+            'recentInvoices',
+            'recentPurchases',
+            'lowStockItems',
+
+            'todayPendingAmount',
+            'monthPendingAmount',
+            'totalPendingAmount'
         ));
     }
-
-
 }

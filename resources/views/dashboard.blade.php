@@ -123,6 +123,7 @@
 
         {{-- TOP SUMMARY CARDS: SMALL COMPACT BOXES --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            
 
             {{-- Today Sales --}}
             <div class="bg-[#33D39A] dark:bg-[#E6F7F1] rounded-lg border border-grey-900 dark:border p-3 shadow-sm">

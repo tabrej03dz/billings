@@ -88,4 +88,9 @@ class User extends Authenticatable
             ->whereDate('expiry_date', '>=', now())
             ->latestOfMany();
     }
+
+    public function activities()
+    {
+        return $this->hasMany(UserActivity::class);
+    }
 }

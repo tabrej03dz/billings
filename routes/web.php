@@ -33,6 +33,7 @@ use App\Models\UserPlan;
 use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserActivityController;
 
 // frontend web routes:::::
 
@@ -152,6 +153,42 @@ Route::post('/metal-rates/today', [\App\Http\Controllers\MetalRateController::cl
 
 
 Route::middleware(['auth'])->group(function () {
+
+
+
+
+    // ACTIVITY LOG ROUTES
+
+    Route::post(
+        '/activity/heartbeat',
+        [UserActivityController::class, 'heartbeat']
+    )->name('activity.heartbeat');
+
+    Route::post(
+        '/activity/end',
+        [UserActivityController::class, 'end']
+    )->name('activity.end');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin User Activity Reports
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('super-admin/user-activity')
+        ->name('super-admin.user-activity.')
+        ->group(function () {
+
+            Route::get(
+                '/',
+                [UserActivityController::class, 'index']
+            )->name('index');
+
+            Route::get(
+                '/users/{user}',
+                [UserActivityController::class, 'show']
+            )->name('show');
+        });
 
 
 
