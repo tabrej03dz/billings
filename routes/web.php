@@ -159,7 +159,7 @@ Route::middleware(['auth'])->group(function () {
 
     // ACTIVITY LOG ROUTES
 
-    Route::post(
+ Route::post(
         '/activity/heartbeat',
         [UserActivityController::class, 'heartbeat']
     )->name('activity.heartbeat');

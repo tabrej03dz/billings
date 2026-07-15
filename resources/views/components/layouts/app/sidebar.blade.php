@@ -1015,6 +1015,7 @@
     {{ $slot }}
 
     @fluxScripts
+    <x-user-activity-tracker />
 </body>
 
 </html>

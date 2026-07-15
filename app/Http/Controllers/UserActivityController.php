@@ -44,39 +44,45 @@ class UserActivityController extends Controller
         ]);
 
         $activity = UserActivity::query()
-            ->whereKey($validated['activity_id'])
+            ->withoutGlobalScopes()
+            ->where('id', $validated['activity_id'])
             ->where('user_id', $request->user()->id)
-            ->firstOrFail();
+            ->first();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Duplicate ya unrealistic heartbeat protection
-        |--------------------------------------------------------------------------
-        */
+        if (!$activity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Activity record not found.',
+            ], 404);
+        }
 
         $seconds = min(
-            (int) $validated['seconds'],
+            max((int) $validated['seconds'], 1),
             60
         );
 
-        $activity->increment(
-            'duration_seconds',
-            $seconds
-        );
+        $activity->duration_seconds =
+            (int) $activity->duration_seconds + $seconds;
 
-        $activity->increment('heartbeat_count');
+        $activity->heartbeat_count =
+            (int) $activity->heartbeat_count + 1;
 
-        $activity->forceFill([
-            'last_seen_at' => now(),
+        $activity->last_seen_at = now();
 
-            'page_title' => !empty($validated['page_title'])
-                ? $validated['page_title']
-                : $activity->page_title,
-        ])->save();
+        if (!empty($validated['page_title'])) {
+            $activity->page_title =
+                $validated['page_title'];
+        }
+
+        $activity->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Activity updated.',
+            'duration_seconds' =>
+                $activity->duration_seconds,
+
+            'heartbeat_count' =>
+                $activity->heartbeat_count,
         ]);
     }
 
@@ -89,60 +95,67 @@ class UserActivityController extends Controller
     |
     */
 
-    public function end(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'activity_id' => [
-                'required',
-                'integer',
-            ],
+public function end(Request $request): JsonResponse
+{
+    $validated = $request->validate([
+        'activity_id' => [
+            'required',
+            'integer',
+        ],
 
-            'seconds' => [
-                'nullable',
-                'integer',
-                'min:0',
-                'max:60',
-            ],
+        'seconds' => [
+            'nullable',
+            'integer',
+            'min:0',
+            'max:60',
+        ],
 
-            'page_title' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-        ]);
+        'page_title' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+    ]);
 
-        $activity = UserActivity::query()
-            ->whereKey($validated['activity_id'])
-            ->where('user_id', $request->user()->id)
-            ->first();
+    $activity = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->where('id', $validated['activity_id'])
+        ->where('user_id', $request->user()->id)
+        ->first();
 
-        if ($activity) {
-            $extraSeconds = min(
-                (int) ($validated['seconds'] ?? 0),
-                60
-            );
-
-            if ($extraSeconds > 0) {
-                $activity->increment(
-                    'duration_seconds',
-                    $extraSeconds
-                );
-            }
-
-            $activity->forceFill([
-                'last_seen_at' => now(),
-                'ended_at' => now(),
-
-                'page_title' => !empty($validated['page_title'])
-                    ? $validated['page_title']
-                    : $activity->page_title,
-            ])->save();
-        }
-
+    if (!$activity) {
         return response()->json([
-            'success' => true,
-        ]);
+            'success' => false,
+            'message' => 'Activity record not found.',
+        ], 404);
     }
+
+    $seconds = min(
+        max((int) ($validated['seconds'] ?? 0), 0),
+        60
+    );
+
+    if ($seconds > 0) {
+        $activity->duration_seconds =
+            (int) $activity->duration_seconds + $seconds;
+    }
+
+    $activity->last_seen_at = now();
+    $activity->ended_at = now();
+
+    if (!empty($validated['page_title'])) {
+        $activity->page_title =
+            $validated['page_title'];
+    }
+
+    $activity->save();
+
+    return response()->json([
+        'success' => true,
+        'duration_seconds' =>
+            $activity->duration_seconds,
+    ]);
+}
 
     /*
     |--------------------------------------------------------------------------
