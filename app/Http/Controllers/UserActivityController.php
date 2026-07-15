@@ -163,253 +163,492 @@ public function end(Request $request): JsonResponse
     |--------------------------------------------------------------------------
     */
 
-    public function index(Request $request): View
-    {
-        $this->ensureSuperAdmin($request);
+public function index(Request $request): View
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin Access Check
+    |--------------------------------------------------------------------------
+    */
 
-        [$from, $to] = $this->dateRange($request);
+    $this->ensureSuperAdmin($request);
 
-        $baseQuery = UserActivity::query()
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ]);
+    /*
+    |--------------------------------------------------------------------------
+    | Date Range
+    |--------------------------------------------------------------------------
+    */
 
-        if ($request->filled('user_id')) {
-            $baseQuery->where(
-                'user_id',
-                $request->integer('user_id')
-            );
-        }
+    [$from, $to] = $this->dateRange($request);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Overall summary
-        |--------------------------------------------------------------------------
-        */
+    $selectedUserId = $request->filled('user_id')
+        ? $request->integer('user_id')
+        : null;
 
-        $summary = [
-            'total_seconds' => (clone $baseQuery)
-                ->sum('duration_seconds'),
+    /*
+    |--------------------------------------------------------------------------
+    | Base Analytics Query
+    |--------------------------------------------------------------------------
+    |
+    | UserActivity model par koi business global scope ho to report incomplete
+    | na ho, isliye withoutGlobalScopes() use kiya gaya hai.
+    |
+    */
 
-            'page_views' => (clone $baseQuery)
-                ->count(),
+    $baseQuery = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ]);
 
-            'active_users' => (clone $baseQuery)
-                ->distinct()
-                ->count('user_id'),
-
-            'average_seconds' => (int) round(
-                (clone $baseQuery)->avg('duration_seconds') ?: 0
-            ),
-        ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | User filter list
-        |--------------------------------------------------------------------------
-        */
-
-        $users = User::query()
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'super_admin');
-            })
-            ->orderBy('name')
-            ->get([
-                'id',
-                'name',
-                'email',
-            ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | User-wise software usage
-        |--------------------------------------------------------------------------
-        */
-
-        $userUsage = UserActivity::query()
-            ->select('user_id')
-
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
-
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
-
-            ->selectRaw(
-                'COUNT(DISTINCT DATE(started_at)) as active_days'
-            )
-
-            ->selectRaw(
-                'MAX(last_seen_at) as last_seen_at'
-            )
-
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
-
-            ->when(
-                $request->filled('user_id'),
-                function ($query) use ($request) {
-                    $query->where(
-                        'user_id',
-                        $request->integer('user_id')
-                    );
-                }
-            )
-
-            ->with([
-                'user:id,name,email',
-            ])
-
-            ->groupBy('user_id')
-            ->orderByDesc('total_seconds')
-            ->paginate(20)
-            ->withQueryString();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Most used pages
-        |--------------------------------------------------------------------------
-        */
-
-        $topPages = UserActivity::query()
-            ->select([
-                'route_name',
-                'path',
-            ])
-
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
-
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
-
-            ->selectRaw(
-                'COUNT(DISTINCT user_id) as unique_users'
-            )
-
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
-
-            ->when(
-                $request->filled('user_id'),
-                function ($query) use ($request) {
-                    $query->where(
-                        'user_id',
-                        $request->integer('user_id')
-                    );
-                }
-            )
-
-            ->groupBy([
-                'route_name',
-                'path',
-            ])
-
-            ->orderByDesc('total_seconds')
-            ->limit(15)
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Daily usage chart
-        |--------------------------------------------------------------------------
-        */
-
-        $dailyUsage = UserActivity::query()
-            ->selectRaw(
-                'DATE(started_at) as activity_date'
-            )
-
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
-
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
-
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
-
-            ->when(
-                $request->filled('user_id'),
-                function ($query) use ($request) {
-                    $query->where(
-                        'user_id',
-                        $request->integer('user_id')
-                    );
-                }
-            )
-
-            ->groupBy(
-                DB::raw('DATE(started_at)')
-            )
-
-            ->orderBy('activity_date')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Device summary
-        |--------------------------------------------------------------------------
-        */
-
-        $deviceUsage = UserActivity::query()
-            ->select('device_type')
-
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
-
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
-
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
-
-            ->when(
-                $request->filled('user_id'),
-                function ($query) use ($request) {
-                    $query->where(
-                        'user_id',
-                        $request->integer('user_id')
-                    );
-                }
-            )
-
-            ->groupBy('device_type')
-            ->orderByDesc('total_seconds')
-            ->get();
-
-        return view(
-            'super_admin.user_activity.index',
-            compact(
-                'summary',
-                'users',
-                'userUsage',
-                'topPages',
-                'dailyUsage',
-                'deviceUsage',
-                'from',
-                'to'
-            )
+    if ($selectedUserId) {
+        $baseQuery->where(
+            'user_id',
+            $selectedUserId
         );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin IDs
+    |--------------------------------------------------------------------------
+    |
+    | Super Admin ko user usage list aur analytics totals se exclude kiya gaya
+    | hai. Dono possible role names support kiye hain.
+    |
+    */
+
+    $superAdminIds = User::query()
+        ->whereHas('roles', function ($query) {
+            $query->whereIn('name', [
+                'super_admin',
+                'superadmin',
+            ]);
+        })
+        ->pluck('users.id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selected user Super Admin nahi hai to exclude karein
+    |--------------------------------------------------------------------------
+    */
+
+    if ($superAdminIds->isNotEmpty()) {
+        $baseQuery->whereNotIn(
+            'user_id',
+            $superAdminIds
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Overall Summary
+    |--------------------------------------------------------------------------
+    */
+
+    $summary = [
+        'total_seconds' => (int) (
+            (clone $baseQuery)
+                ->sum('duration_seconds')
+        ),
+
+        'page_views' => (int) (
+            (clone $baseQuery)
+                ->count()
+        ),
+
+        'active_users' => (int) (
+            (clone $baseQuery)
+                ->distinct()
+                ->count('user_id')
+        ),
+
+        'average_seconds' => (int) round(
+            (float) (
+                (clone $baseQuery)
+                    ->avg('duration_seconds')
+                ?: 0
+            )
+        ),
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Filter List
+    |--------------------------------------------------------------------------
+    */
+
+    $users = User::query()
+        ->whereDoesntHave('roles', function ($query) {
+            $query->whereIn('name', [
+                'super_admin',
+                'superadmin',
+            ]);
+        })
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+            'email',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | User-wise Software Usage
+    |--------------------------------------------------------------------------
+    |
+    | Ordering:
+    | 1. Highest total usage first
+    | 2. Same usage ho to latest active user first
+    | 3. Same last seen ho to highest views first
+    |
+    */
+
+    $userUsage = UserActivity::query()
+        ->withoutGlobalScopes()
+
+        ->select('user_id')
+
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+
+        ->selectRaw(
+            'COUNT(DISTINCT DATE(started_at)) AS active_days'
+        )
+
+        ->selectRaw(
+            'MAX(last_seen_at) AS last_seen_at'
+        )
+
+        ->selectRaw(
+            'MIN(started_at) AS first_activity_at'
+        )
+
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+
+        ->when(
+            $selectedUserId,
+            function ($query) use ($selectedUserId) {
+                $query->where(
+                    'user_id',
+                    $selectedUserId
+                );
+            }
+        )
+
+        ->when(
+            $superAdminIds->isNotEmpty(),
+            function ($query) use ($superAdminIds) {
+                $query->whereNotIn(
+                    'user_id',
+                    $superAdminIds
+                );
+            }
+        )
+
+        ->whereHas('user')
+
+        ->with([
+            'user:id,name,email',
+        ])
+
+        ->groupBy('user_id')
+
+        /*
+        | Highest active usage first.
+        */
+
+        ->orderByRaw(
+            'COALESCE(SUM(duration_seconds), 0) DESC'
+        )
+
+        /*
+        | Same usage mein recently active user first.
+        */
+
+        ->orderByRaw(
+            'MAX(last_seen_at) DESC'
+        )
+
+        /*
+        | Same duration aur last seen mein more views first.
+        */
+
+        ->orderByRaw(
+            'COUNT(*) DESC'
+        )
+
+        ->paginate(20)
+        ->withQueryString();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Most Used Pages
+    |--------------------------------------------------------------------------
+    */
+
+    $topPages = UserActivity::query()
+        ->withoutGlobalScopes()
+
+        ->select([
+            'route_name',
+            'path',
+        ])
+
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+
+        ->selectRaw(
+            'COUNT(DISTINCT user_id) AS unique_users'
+        )
+
+        ->selectRaw(
+            'MAX(last_seen_at) AS last_seen_at'
+        )
+
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+
+        ->when(
+            $selectedUserId,
+            function ($query) use ($selectedUserId) {
+                $query->where(
+                    'user_id',
+                    $selectedUserId
+                );
+            }
+        )
+
+        ->when(
+            $superAdminIds->isNotEmpty(),
+            function ($query) use ($superAdminIds) {
+                $query->whereNotIn(
+                    'user_id',
+                    $superAdminIds
+                );
+            }
+        )
+
+        ->groupBy([
+            'route_name',
+            'path',
+        ])
+
+        ->orderByRaw(
+            'COALESCE(SUM(duration_seconds), 0) DESC'
+        )
+
+        ->orderByRaw(
+            'COUNT(*) DESC'
+        )
+
+        ->limit(15)
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Daily Usage Chart
+    |--------------------------------------------------------------------------
+    */
+
+    $dailyUsage = UserActivity::query()
+        ->withoutGlobalScopes()
+
+        ->selectRaw(
+            'DATE(started_at) AS activity_date'
+        )
+
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+
+        ->selectRaw(
+            'COUNT(DISTINCT user_id) AS active_users'
+        )
+
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+
+        ->when(
+            $selectedUserId,
+            function ($query) use ($selectedUserId) {
+                $query->where(
+                    'user_id',
+                    $selectedUserId
+                );
+            }
+        )
+
+        ->when(
+            $superAdminIds->isNotEmpty(),
+            function ($query) use ($superAdminIds) {
+                $query->whereNotIn(
+                    'user_id',
+                    $superAdminIds
+                );
+            }
+        )
+
+        ->groupBy(
+            DB::raw('DATE(started_at)')
+        )
+
+        ->orderBy('activity_date')
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Device Usage Summary
+    |--------------------------------------------------------------------------
+    */
+
+    $deviceUsage = UserActivity::query()
+        ->withoutGlobalScopes()
+
+        ->select('device_type')
+
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+
+        ->selectRaw(
+            'COUNT(DISTINCT user_id) AS unique_users'
+        )
+
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+
+        ->when(
+            $selectedUserId,
+            function ($query) use ($selectedUserId) {
+                $query->where(
+                    'user_id',
+                    $selectedUserId
+                );
+            }
+        )
+
+        ->when(
+            $superAdminIds->isNotEmpty(),
+            function ($query) use ($superAdminIds) {
+                $query->whereNotIn(
+                    'user_id',
+                    $superAdminIds
+                );
+            }
+        )
+
+        ->groupBy('device_type')
+
+        ->orderByRaw(
+            'COALESCE(SUM(duration_seconds), 0) DESC'
+        )
+
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Browser Usage Summary
+    |--------------------------------------------------------------------------
+    */
+
+    $browserUsage = UserActivity::query()
+        ->withoutGlobalScopes()
+
+        ->select('browser')
+
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+
+        ->when(
+            $selectedUserId,
+            function ($query) use ($selectedUserId) {
+                $query->where(
+                    'user_id',
+                    $selectedUserId
+                );
+            }
+        )
+
+        ->when(
+            $superAdminIds->isNotEmpty(),
+            function ($query) use ($superAdminIds) {
+                $query->whereNotIn(
+                    'user_id',
+                    $superAdminIds
+                );
+            }
+        )
+
+        ->groupBy('browser')
+
+        ->orderByRaw(
+            'COALESCE(SUM(duration_seconds), 0) DESC'
+        )
+
+        ->limit(10)
+        ->get();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Return View
+    |--------------------------------------------------------------------------
+    */
+
+    return view(
+        'super_admin.user_activity.index',
+        compact(
+            'summary',
+            'users',
+            'userUsage',
+            'topPages',
+            'dailyUsage',
+            'deviceUsage',
+            'browserUsage',
+            'from',
+            'to',
+            'selectedUserId'
+        )
+    );
+}
     /*
     |--------------------------------------------------------------------------
     | Particular user detail page
