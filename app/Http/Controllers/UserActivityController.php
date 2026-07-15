@@ -328,6 +328,8 @@ public function index(Request $request): View
 
         ->selectRaw(
             'MIN(started_at) AS first_activity_at'
+        )->selectRaw(
+            'COALESCE(SUM(error_count), 0) AS total_errors'
         )
 
         ->whereBetween('started_at', [
@@ -878,5 +880,189 @@ public function index(Request $request): View
             403,
             'Only Super Admin can access user activity analytics.'
         );
+    }
+
+
+
+
+
+
+
+    public function storeError(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'activity_id' => [
+                'required',
+                'integer',
+            ],
+
+            'error_type' => [
+                'required',
+                'string',
+                'max:50',
+            ],
+
+            'message' => [
+                'required',
+                'string',
+                'max:5000',
+            ],
+
+            'source_file' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+
+            'source_line' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'source_column' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'stack_trace' => [
+                'nullable',
+                'string',
+                'max:20000',
+            ],
+
+            'request_url' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+
+            'request_method' => [
+                'nullable',
+                'string',
+                'max:10',
+            ],
+
+            'http_status' => [
+                'nullable',
+                'integer',
+                'min:100',
+                'max:599',
+            ],
+        ]);
+
+        $activity = UserActivity::query()
+            ->withoutGlobalScopes()
+            ->whereKey($validated['activity_id'])
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (!$activity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Activity not found.',
+            ], 404);
+        }
+
+        $errors = $activity->errors ?? [];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Same error 30 seconds ke andar duplicate save na ho
+        |--------------------------------------------------------------------------
+        */
+
+        $fingerprint = hash('sha256', implode('|', [
+            $validated['error_type'],
+            $validated['message'],
+            $validated['source_file'] ?? '',
+            $validated['source_line'] ?? '',
+            $validated['http_status'] ?? '',
+            $validated['request_url'] ?? '',
+        ]));
+
+        $lastSameErrorIndex = null;
+
+        foreach ($errors as $index => $error) {
+            if (
+                ($error['fingerprint'] ?? null) === $fingerprint
+                && !empty($error['last_seen_at'])
+                && \Carbon\Carbon::parse($error['last_seen_at'])
+                    ->greaterThanOrEqualTo(now()->subSeconds(30))
+            ) {
+                $lastSameErrorIndex = $index;
+                break;
+            }
+        }
+
+        if ($lastSameErrorIndex !== null) {
+            $errors[$lastSameErrorIndex]['count'] =
+                (int) ($errors[$lastSameErrorIndex]['count'] ?? 1) + 1;
+
+            $errors[$lastSameErrorIndex]['last_seen_at'] =
+                now()->toDateTimeString();
+        } else {
+            $errors[] = [
+                'fingerprint' => $fingerprint,
+
+                'error_type' =>
+                    $validated['error_type'],
+
+                'message' =>
+                    $validated['message'],
+
+                'source_file' =>
+                    $validated['source_file'] ?? null,
+
+                'source_line' =>
+                    $validated['source_line'] ?? null,
+
+                'source_column' =>
+                    $validated['source_column'] ?? null,
+
+                'stack_trace' =>
+                    $validated['stack_trace'] ?? null,
+
+                'request_url' =>
+                    $validated['request_url'] ?? null,
+
+                'request_method' =>
+                    $validated['request_method'] ?? null,
+
+                'http_status' =>
+                    $validated['http_status'] ?? null,
+
+                'count' => 1,
+
+                'first_seen_at' =>
+                    now()->toDateTimeString(),
+
+                'last_seen_at' =>
+                    now()->toDateTimeString(),
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Array ko bahut bada hone se bachao
+        |--------------------------------------------------------------------------
+        */
+
+        if (count($errors) > 50) {
+            $errors = array_slice($errors, -50);
+        }
+
+        $activity->forceFill([
+            'errors' => $errors,
+            'error_count' => collect($errors)
+                ->sum(fn ($error) => (int) ($error['count'] ?? 1)),
+            'last_error_at' => now(),
+        ])->save();
+
+        return response()->json([
+            'success' => true,
+            'error_count' => $activity->error_count,
+        ]);
     }
 }

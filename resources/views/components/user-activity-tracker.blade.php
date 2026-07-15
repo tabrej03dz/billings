@@ -3,7 +3,7 @@
         (() => {
             /*
             |--------------------------------------------------------------------------
-            | Current activity configuration
+            | Current Activity Configuration
             |--------------------------------------------------------------------------
             */
 
@@ -17,6 +17,10 @@
                 route('activity.end')
             );
 
+            const errorUrl = @json(
+                route('activity.error')
+            );
+
             const csrfToken = document
                 .querySelector('meta[name="csrf-token"]')
                 ?.getAttribute('content');
@@ -27,12 +31,8 @@
 
             /*
             |--------------------------------------------------------------------------
-            | Tracking settings
+            | Tracking Settings
             |--------------------------------------------------------------------------
-            |
-            | 15 seconds ka active usage hone ke baad server par save hoga.
-            | User 60 seconds tak kuchh nahi karega to idle maana jayega.
-            |
             */
 
             const SEND_EVERY_SECONDS = 15;
@@ -45,7 +45,15 @@
 
             /*
             |--------------------------------------------------------------------------
-            | User interaction record karna
+            | Error Tracking Variables
+            |--------------------------------------------------------------------------
+            */
+
+            const recentErrors = new Map();
+
+            /*
+            |--------------------------------------------------------------------------
+            | User Interaction Record
             |--------------------------------------------------------------------------
             */
 
@@ -74,7 +82,7 @@
 
             /*
             |--------------------------------------------------------------------------
-            | Check user actual page use kar raha hai ya nahi
+            | Check User Is Actually Active
             |--------------------------------------------------------------------------
             */
 
@@ -93,7 +101,232 @@
 
             /*
             |--------------------------------------------------------------------------
-            | Active seconds server par send karna
+            | Save Activity Error
+            |--------------------------------------------------------------------------
+            */
+
+            const saveActivityError = async (payload) => {
+                if (!payload || !payload.message) {
+                    return;
+                }
+
+                const fingerprint = [
+                    payload.error_type || '',
+                    payload.message || '',
+                    payload.source_file || '',
+                    payload.source_line || '',
+                    payload.http_status || '',
+                    payload.request_url || '',
+                ].join('|');
+
+                const lastSentAt =
+                    recentErrors.get(fingerprint);
+
+                const now = Date.now();
+
+                /*
+                | Same error ko 30 seconds ke andar repeat save nahi karna.
+                */
+
+                if (
+                    lastSentAt &&
+                    now - lastSentAt < 30000
+                ) {
+                    return;
+                }
+
+                recentErrors.set(
+                    fingerprint,
+                    now
+                );
+
+                /*
+                | Map bahut bada na ho.
+                */
+
+                if (recentErrors.size > 100) {
+                    const firstKey =
+                        recentErrors.keys().next().value;
+
+                    recentErrors.delete(firstKey);
+                }
+
+                try {
+                    await fetch(errorUrl, {
+                        method: 'POST',
+
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+
+                            'Accept':
+                                'application/json',
+
+                            'X-CSRF-TOKEN':
+                                csrfToken,
+
+                            'X-Requested-With':
+                                'XMLHttpRequest',
+                        },
+
+                        credentials: 'same-origin',
+
+                        keepalive: true,
+
+                        body: JSON.stringify({
+                            activity_id:
+                                activityId,
+
+                            error_type:
+                                payload.error_type
+                                || 'javascript',
+
+                            message:
+                                String(payload.message)
+                                    .slice(0, 5000),
+
+                            source_file:
+                                payload.source_file
+                                || null,
+
+                            source_line:
+                                payload.source_line
+                                || null,
+
+                            source_column:
+                                payload.source_column
+                                || null,
+
+                            stack_trace:
+                                payload.stack_trace
+                                    ? String(
+                                        payload.stack_trace
+                                    ).slice(0, 20000)
+                                    : null,
+
+                            request_url:
+                                payload.request_url
+                                || null,
+
+                            request_method:
+                                payload.request_method
+                                || null,
+
+                            http_status:
+                                payload.http_status
+                                || null,
+                        }),
+                    });
+                } catch (error) {
+                    /*
+                    | Error logger khud fail ho to ignore karenge.
+                    */
+                }
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | JavaScript Error Capture
+            |--------------------------------------------------------------------------
+            */
+
+            window.addEventListener(
+                'error',
+                (event) => {
+                    /*
+                    | Image, CSS, script ya resource load error.
+                    */
+
+                    if (
+                        event.target &&
+                        event.target !== window
+                    ) {
+                        const element = event.target;
+
+                        saveActivityError({
+                            error_type:
+                                'resource_error',
+
+                            message:
+                                'Resource failed to load: '
+                                + (
+                                    element.src
+                                    || element.href
+                                    || element.tagName
+                                    || 'Unknown resource'
+                                ),
+
+                            source_file:
+                                element.src
+                                || element.href
+                                || null,
+                        });
+
+                        return;
+                    }
+
+                    /*
+                    | Normal JavaScript error.
+                    */
+
+                    saveActivityError({
+                        error_type:
+                            'javascript',
+
+                        message:
+                            event.message
+                            || 'Unknown JavaScript error',
+
+                        source_file:
+                            event.filename
+                            || null,
+
+                        source_line:
+                            event.lineno
+                            || null,
+
+                        source_column:
+                            event.colno
+                            || null,
+
+                        stack_trace:
+                            event.error?.stack
+                            || null,
+                    });
+                },
+                true
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Unhandled Promise Error Capture
+            |--------------------------------------------------------------------------
+            */
+
+            window.addEventListener(
+                'unhandledrejection',
+                (event) => {
+                    const reason = event.reason;
+
+                    saveActivityError({
+                        error_type:
+                            'unhandled_promise',
+
+                        message:
+                            reason?.message
+                            || String(reason)
+                            || 'Unhandled promise rejection',
+
+                        stack_trace:
+                            reason?.stack
+                            || null,
+                    });
+                }
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Active Seconds Server Par Send
             |--------------------------------------------------------------------------
             */
 
@@ -109,9 +342,13 @@
                 heartbeatSending = true;
 
                 const secondsToSend =
-                    Math.min(unsavedActiveSeconds, 60);
+                    Math.min(
+                        unsavedActiveSeconds,
+                        60
+                    );
 
-                unsavedActiveSeconds -= secondsToSend;
+                unsavedActiveSeconds -=
+                    secondsToSend;
 
                 try {
                     const response = await fetch(
@@ -120,34 +357,84 @@
                             method: 'POST',
 
                             headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
+                                'Content-Type':
+                                    'application/json',
+
+                                'Accept':
+                                    'application/json',
+
+                                'X-CSRF-TOKEN':
+                                    csrfToken,
+
+                                'X-Requested-With':
+                                    'XMLHttpRequest',
                             },
 
-                            credentials: 'same-origin',
+                            credentials:
+                                'same-origin',
 
                             keepalive: true,
 
                             body: JSON.stringify({
-                                activity_id: activityId,
-                                seconds: secondsToSend,
-                                page_title: document.title,
+                                activity_id:
+                                    activityId,
+
+                                seconds:
+                                    secondsToSend,
+
+                                page_title:
+                                    document.title,
                             }),
                         }
                     );
 
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Request fail ho to seconds wapas pending mein add
-                    |--------------------------------------------------------------------------
-                    */
-
                     if (!response.ok) {
-                        unsavedActiveSeconds += secondsToSend;
+                        unsavedActiveSeconds +=
+                            secondsToSend;
+
+                        /*
+                        | Heartbeat error bhi activity mein save karo.
+                        */
+
+                        saveActivityError({
+                            error_type:
+                                'http_error',
+
+                            message:
+                                `Heartbeat failed with status ${response.status}`,
+
+                            request_url:
+                                heartbeatUrl,
+
+                            request_method:
+                                'POST',
+
+                            http_status:
+                                response.status,
+                        });
                     }
                 } catch (error) {
-                    unsavedActiveSeconds += secondsToSend;
+                    unsavedActiveSeconds +=
+                        secondsToSend;
+
+                    saveActivityError({
+                        error_type:
+                            'network_error',
+
+                        message:
+                            error?.message
+                            || 'Heartbeat network request failed',
+
+                        request_url:
+                            heartbeatUrl,
+
+                        request_method:
+                            'POST',
+
+                        stack_trace:
+                            error?.stack
+                            || null,
+                    });
                 } finally {
                     heartbeatSending = false;
                 }
@@ -155,29 +442,30 @@
 
             /*
             |--------------------------------------------------------------------------
-            | Har second check karna
+            | Har Second Active Time Count
             |--------------------------------------------------------------------------
             */
 
-            const activityTimer = window.setInterval(
-                () => {
-                    if (userIsActive()) {
-                        unsavedActiveSeconds += 1;
-                    }
+            const activityTimer =
+                window.setInterval(
+                    () => {
+                        if (userIsActive()) {
+                            unsavedActiveSeconds += 1;
+                        }
 
-                    if (
-                        unsavedActiveSeconds >=
-                        SEND_EVERY_SECONDS
-                    ) {
-                        sendHeartbeat();
-                    }
-                },
-                1000
-            );
+                        if (
+                            unsavedActiveSeconds >=
+                            SEND_EVERY_SECONDS
+                        ) {
+                            sendHeartbeat();
+                        }
+                    },
+                    1000
+                );
 
             /*
             |--------------------------------------------------------------------------
-            | Page hide hone par pending time save
+            | Page Close Ya Change Hone Par Time Save
             |--------------------------------------------------------------------------
             */
 
@@ -188,19 +476,19 @@
 
                 activityEnded = true;
 
-                window.clearInterval(activityTimer);
+                window.clearInterval(
+                    activityTimer
+                );
 
                 const remainingSeconds =
-                    Math.min(unsavedActiveSeconds, 60);
-
-                /*
-                |--------------------------------------------------------------------------
-                | sendBeacon page close ke time reliable hota hai
-                |--------------------------------------------------------------------------
-                */
+                    Math.min(
+                        unsavedActiveSeconds,
+                        60
+                    );
 
                 if (navigator.sendBeacon) {
-                    const formData = new FormData();
+                    const formData =
+                        new FormData();
 
                     formData.append(
                         '_token',
@@ -230,38 +518,63 @@
                     return;
                 }
 
-                /*
-                |--------------------------------------------------------------------------
-                | Browser sendBeacon support na kare to fetch fallback
-                |--------------------------------------------------------------------------
-                */
-
                 fetch(endUrl, {
                     method: 'POST',
 
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
+                        'Content-Type':
+                            'application/json',
+
+                        'Accept':
+                            'application/json',
+
+                        'X-CSRF-TOKEN':
+                            csrfToken,
+
+                        'X-Requested-With':
+                            'XMLHttpRequest',
                     },
 
-                    credentials: 'same-origin',
+                    credentials:
+                        'same-origin',
 
                     keepalive: true,
 
                     body: JSON.stringify({
-                        activity_id: activityId,
-                        seconds: remainingSeconds,
-                        page_title: document.title,
+                        activity_id:
+                            activityId,
+
+                        seconds:
+                            remainingSeconds,
+
+                        page_title:
+                            document.title,
                     }),
-                }).catch(() => {
-                    // Page closing ke waqt error ignore karenge.
+                }).catch((error) => {
+                    saveActivityError({
+                        error_type:
+                            'network_error',
+
+                        message:
+                            error?.message
+                            || 'Activity end request failed',
+
+                        request_url:
+                            endUrl,
+
+                        request_method:
+                            'POST',
+
+                        stack_trace:
+                            error?.stack
+                            || null,
+                    });
                 });
             };
 
             /*
             |--------------------------------------------------------------------------
-            | Page switch, close, reload
+            | Page Switch, Close, Reload
             |--------------------------------------------------------------------------
             */
 

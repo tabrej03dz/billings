@@ -10,25 +10,8 @@ class UserActivity extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'user_id',
-        'business_id',
-        'session_key',
-        'route_name',
-        'page_title',
-        'url',
-        'path',
-        'method',
-        'duration_seconds',
-        'heartbeat_count',
-        'started_at',
-        'last_seen_at',
-        'ended_at',
-        'ip_address',
-        'user_agent',
-        'device_type',
-        'browser',
-        'platform',
+    protected $guarded = [
+        'id',
     ];
 
     protected $casts = [

@@ -169,6 +169,11 @@ Route::middleware(['auth'])->group(function () {
         [UserActivityController::class, 'end']
     )->name('activity.end');
 
+    Route::post(
+    '/activity/error',
+    [UserActivityController::class, 'storeError']
+)->name('activity.error');
+
     /*
     |--------------------------------------------------------------------------
     | Super Admin User Activity Reports

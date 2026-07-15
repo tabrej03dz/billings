@@ -301,6 +301,10 @@
                                 </th>
 
                                 <th class="whitespace-nowrap p-4">
+                                    Errors
+                                </th>
+
+                                <th class="whitespace-nowrap p-4">
                                     Last Seen
                                 </th>
                             </tr>
@@ -314,7 +318,15 @@
                                     $rank = $firstItemNumber + $index;
                                 @endphp
 
-                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <tr
+                                        class="
+                                            transition
+                                            {{ (int) $row->total_errors > 0
+                                                ? 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100 dark:bg-red-950/30 dark:border-red-500 dark:hover:bg-red-950/50'
+                                                : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                            }}
+                                        "
+                                    >
 
                                     <td class="whitespace-nowrap p-4">
 
@@ -351,6 +363,12 @@
                                             {{ $row->user?->name ?? 'Deleted User' }}
                                         </a>
 
+
+                                        @if((int) $row->total_errors > 0)
+                                            <div class="mt-2 inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-bold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                                ⚠ Error detected
+                                            </div>
+                                        @endif
                                         <div class="mt-1 text-xs text-slate-500">
                                             {{ $row->user?->email ?: 'No email' }}
                                         </div>
@@ -379,6 +397,21 @@
                                         {{ number_format($row->active_days) }}
                                     </td>
 
+                                    <td class="whitespace-nowrap p-4">
+
+                                        @if((int) $row->total_errors > 0)
+                                            <span class="inline-flex items-center rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white shadow-sm">
+                                                {{ number_format($row->total_errors) }}
+                                                {{ (int) $row->total_errors === 1 ? 'Error' : 'Errors' }}
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                                No Error
+                                            </span>
+                                        @endif
+
+                                    </td>
+
                                     <td class="whitespace-nowrap p-4 text-xs">
 
                                         @if($row->last_seen_at)
@@ -399,7 +432,7 @@
 
                                 <tr>
                                     <td
-                                        colspan="6"
+                                        colspan="7"
                                         class="p-10 text-center text-slate-500"
                                     >
                                         Is selected period mein koi user activity nahi mili.
