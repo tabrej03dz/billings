@@ -1,78 +1,119 @@
+```blade
 <section
     id="template-selection"
     class="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm
            dark:border-zinc-800 dark:bg-zinc-900"
 >
+    {{-- Header --}}
     <div
         class="border-b border-zinc-200 bg-zinc-50 px-6 py-5
                dark:border-zinc-800 dark:bg-zinc-900"
     >
-        <div class="flex items-start gap-4">
-            <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center
-                       rounded-2xl bg-cyan-100 text-cyan-600
-                       dark:bg-cyan-950/60 dark:text-cyan-300"
-            >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-4">
+                <div
+                    class="flex h-12 w-12 shrink-0 items-center justify-center
+                           rounded-2xl bg-cyan-100 text-cyan-600
+                           dark:bg-cyan-950/60 dark:text-cyan-300"
                 >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 12h6m-6 4h6M9 8h2m-5 13h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                </svg>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12h6m-6 4h6M9 8h2m-5 13h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                    </svg>
+                </div>
+
+                <div>
+                    <h2 class="text-xl font-black text-zinc-900 dark:text-white">
+                        Choose Invoice Template
+                    </h2>
+
+                    <p class="mt-1 max-w-2xl text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                        Select the invoice design that will be used for your
+                        invoices and PDF documents. You can preview each template
+                        before selecting it.
+                    </p>
+                </div>
             </div>
 
-            <div>
-                <h2 class="text-xl font-black text-zinc-900 dark:text-white">
-                    Choose Invoice Template
-                </h2>
+            @if($billTemplates->isNotEmpty())
+                <div
+                    class="inline-flex shrink-0 items-center gap-2 rounded-xl
+                           border border-zinc-200 bg-white px-4 py-2
+                           text-sm font-semibold text-zinc-600 shadow-sm
+                           dark:border-zinc-700 dark:bg-zinc-950
+                           dark:text-zinc-300"
+                >
+                    <svg
+                        class="h-4 w-4 text-indigo-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                    </svg>
 
-                <p class="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                    Select the design that will be used for your business invoices
-                    and PDF documents.
-                </p>
-            </div>
+                    {{ $billTemplates->count() }}
+                    {{ $billTemplates->count() === 1 ? 'Template' : 'Templates' }}
+                </div>
+            @endif
         </div>
     </div>
 
-    <div class="p-6">
+    <div class="p-5 sm:p-6">
         @if($billTemplates->isEmpty())
+            {{-- Empty State --}}
             <div
-                class="rounded-2xl border border-dashed border-zinc-300
-                       bg-zinc-50 px-6 py-12 text-center
+                class="rounded-3xl border border-dashed border-zinc-300
+                       bg-zinc-50 px-6 py-14 text-center
                        dark:border-zinc-700 dark:bg-zinc-950"
             >
-                <svg
-                    class="mx-auto h-12 w-12 text-zinc-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div
+                    class="mx-auto flex h-16 w-16 items-center justify-center
+                           rounded-2xl bg-zinc-200 text-zinc-500
+                           dark:bg-zinc-800 dark:text-zinc-400"
                 >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="1.5"
-                        d="M9 12h6m-6 4h6M9 8h2m-5 13h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                </svg>
+                    <svg
+                        class="h-8 w-8"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M9 12h6m-6 4h6M9 8h2m-5 13h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                    </svg>
+                </div>
 
-                <h3 class="mt-4 font-black text-zinc-800 dark:text-white">
+                <h3 class="mt-5 text-lg font-black text-zinc-800 dark:text-white">
                     No invoice templates available
                 </h3>
 
-                <p class="mt-2 text-sm text-zinc-500">
-                    Please add at least one bill template from the admin panel.
+                <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                    Please add at least one bill template from the admin panel
+                    before completing your business profile.
                 </p>
             </div>
         @else
-            <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {{-- Template Grid --}}
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                 @foreach($billTemplates as $template)
                     @php
                         $isSelected =
@@ -80,20 +121,39 @@
                                 'pdf_template_id',
                                 $business->pdf_template_id
                             ) === (string) $template->id;
+
+                        $preview = $template->preview;
+
+                        $previewExtension = $preview
+                            ? strtolower(pathinfo($preview, PATHINFO_EXTENSION))
+                            : null;
+
+                        $isImage = in_array(
+                            $previewExtension,
+                            ['jpg', 'jpeg', 'png', 'webp', 'gif']
+                        );
+
+                        $isPdf = $previewExtension === 'pdf';
+
+                        $previewUrl = $preview
+                            ? Storage::url($preview)
+                            : null;
                     @endphp
 
-                    <label
-                        class="invoice-template-card group relative cursor-pointer
-                               overflow-hidden rounded-2xl border-2 bg-white
-                               transition duration-200
+                    <article
+                        class="invoice-template-card group relative flex h-full
+                               flex-col overflow-hidden rounded-3xl border-2
+                               bg-white transition duration-300
                                dark:bg-zinc-950
                                {{ $isSelected
-                                    ? 'border-indigo-600 ring-4 ring-indigo-100 dark:ring-indigo-950'
-                                    : 'border-zinc-200 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-lg dark:border-zinc-700'
+                                    ? 'border-indigo-600 shadow-lg ring-4 ring-indigo-100 dark:ring-indigo-950'
+                                    : 'border-zinc-200 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-xl dark:border-zinc-700'
                                }}"
                         data-template-card
                     >
+                        {{-- Actual Radio --}}
                         <input
+                            id="invoice-template-{{ $template->id }}"
                             type="radio"
                             name="pdf_template_id"
                             value="{{ $template->id }}"
@@ -102,15 +162,16 @@
                             required
                         >
 
+                        {{-- Selected Badge --}}
                         <div
-                            class="absolute right-3 top-3 z-10
+                            class="absolute right-3 top-3 z-20
                                    {{ $isSelected ? '' : 'hidden' }}"
                             data-selected-badge
                         >
                             <span
-                                class="inline-flex items-center gap-1 rounded-full
-                                       bg-indigo-600 px-3 py-1 text-xs
-                                       font-bold text-white shadow-lg"
+                                class="inline-flex items-center gap-1.5
+                                       rounded-full bg-indigo-600 px-3 py-1.5
+                                       text-xs font-bold text-white shadow-lg"
                             >
                                 <svg
                                     class="h-3.5 w-3.5"
@@ -128,76 +189,241 @@
                             </span>
                         </div>
 
-                        <div
-                            class="aspect-[4/5] overflow-hidden bg-zinc-100
-                                   dark:bg-zinc-900"
-                        >
-                            @if($template->preview)
-                                <img
-                                    src="{{ Storage::url($template->preview) }}"
-                                    alt="{{ $template->name }}"
-                                    loading="lazy"
-                                    class="h-full w-full object-cover object-top
-                                           transition duration-300 group-hover:scale-[1.03]"
+                        {{-- File Type Badge --}}
+                        @if($preview && ($isImage || $isPdf))
+                            <div class="absolute left-3 top-3 z-20">
+                                <span
+                                    class="inline-flex items-center gap-1
+                                           rounded-full bg-zinc-950/80
+                                           px-2.5 py-1 text-[11px]
+                                           font-bold uppercase tracking-wide
+                                           text-white backdrop-blur"
                                 >
-                            @else
-                                <div
-                                    class="flex h-full flex-col items-center
-                                           justify-center px-5 text-center"
-                                >
-                                    <svg
-                                        class="h-12 w-12 text-zinc-400"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="1.5"
-                                            d="M9 12h6m-6 4h6M9 8h2m-5 13h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                        />
-                                    </svg>
+                                    @if($isPdf)
+                                        <svg
+                                            class="h-3.5 w-3.5"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M7 21h10a2 2 0 002-2V9.5L13.5 4H7a2 2 0 00-2 2v13a2 2 0 002 2z"
+                                            />
+                                        </svg>
 
-                                    <p class="mt-3 text-sm font-semibold text-zinc-500">
-                                        Template preview unavailable
-                                    </p>
+                                        PDF
+                                    @else
+                                        <svg
+                                            class="h-3.5 w-3.5"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M4 16l4-4a2 2 0 012.828 0L14 15.172l2-2a2 2 0 012.828 0L20 14.344M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
+                                        </svg>
+
+                                        Image
+                                    @endif
+                                </span>
+                            </div>
+                        @endif
+
+                        {{-- Preview Area --}}
+                        <div
+                            class="relative overflow-hidden border-b
+                                   border-zinc-200 bg-zinc-100
+                                   dark:border-zinc-800 dark:bg-zinc-900"
+                        >
+                            <div
+                                class="mx-auto flex h-[360px] max-w-[290px]
+                                       items-center justify-center p-4"
+                            >
+                                <div
+                                    class="relative h-full w-full overflow-hidden
+                                           rounded-xl border border-zinc-200
+                                           bg-white shadow-md
+                                           dark:border-zinc-700"
+                                >
+                                    @if($preview && $isImage)
+                                        <img
+                                            src="{{ $previewUrl }}"
+                                            alt="{{ $template->name }}"
+                                            loading="lazy"
+                                            class="h-full w-full object-cover object-top
+                                                   transition duration-500
+                                                   group-hover:scale-[1.03]"
+                                        >
+
+                                    @elseif($preview && $isPdf)
+                                        <iframe
+                                            src="{{ $previewUrl }}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+                                            title="{{ $template->name }} preview"
+                                            class="pointer-events-none h-full w-full"
+                                            style="border: 0;"
+                                            loading="lazy"
+                                        ></iframe>
+
+                                    @else
+                                        <div
+                                            class="flex h-full flex-col items-center
+                                                   justify-center px-6 text-center"
+                                        >
+                                            <div
+                                                class="flex h-14 w-14 items-center
+                                                       justify-center rounded-2xl
+                                                       bg-zinc-100 text-zinc-400
+                                                       dark:bg-zinc-800"
+                                            >
+                                                <svg
+                                                    class="h-7 w-7"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="1.5"
+                                                        d="M9 12h6m-6 4h6M9 8h2m-5 13h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                                    />
+                                                </svg>
+                                            </div>
+
+                                            <p
+                                                class="mt-4 text-sm font-bold
+                                                       text-zinc-500"
+                                            >
+                                                Preview unavailable
+                                            </p>
+
+                                            <p
+                                                class="mt-1 text-xs leading-5
+                                                       text-zinc-400"
+                                            >
+                                                No image or PDF preview has
+                                                been uploaded for this template.
+                                            </p>
+                                        </div>
+                                    @endif
+
+                                    {{-- Preview Overlay --}}
+                                    @if($preview && ($isImage || $isPdf))
+                                        <div
+                                            class="absolute inset-0 flex items-center
+                                                   justify-center bg-zinc-950/0
+                                                   opacity-0 transition duration-300
+                                                   group-hover:bg-zinc-950/40
+                                                   group-hover:opacity-100"
+                                        >
+                                            <button
+                                                type="button"
+                                                class="inline-flex items-center gap-2
+                                                       rounded-xl bg-white px-4 py-2.5
+                                                       text-sm font-bold
+                                                       text-zinc-800 shadow-xl
+                                                       transition hover:scale-105
+                                                       hover:bg-zinc-100"
+                                                data-preview-button
+                                                data-preview-url="{{ $previewUrl }}"
+                                                data-preview-type="{{ $isPdf ? 'pdf' : 'image' }}"
+                                                data-preview-title="{{ $template->name }}"
+                                            >
+                                                <svg
+                                                    class="h-4 w-4"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                                    />
+
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                                    />
+                                                </svg>
+
+                                                Full Preview
+                                            </button>
+                                        </div>
+                                    @endif
                                 </div>
-                            @endif
+                            </div>
                         </div>
 
-                        <div class="p-5">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
+                        {{-- Card Content --}}
+                        <div class="flex flex-1 flex-col p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0 flex-1">
                                     <h3
-                                        class="truncate text-base font-black
+                                        class="truncate text-lg font-black
                                                text-zinc-900 dark:text-white"
+                                        title="{{ $template->name }}"
                                     >
                                         {{ $template->name }}
                                     </h3>
 
                                     @if($template->page_name)
-                                        <p
-                                            class="mt-1 truncate text-xs
-                                                   font-medium text-indigo-600
+                                        <div
+                                            class="mt-2 inline-flex max-w-full
+                                                   items-center gap-1.5 rounded-lg
+                                                   bg-indigo-50 px-2.5 py-1
+                                                   text-xs font-semibold
+                                                   text-indigo-700
+                                                   dark:bg-indigo-950/50
                                                    dark:text-indigo-300"
                                         >
-                                            {{ $template->page_name }}
-                                        </p>
+                                            <svg
+                                                class="h-3.5 w-3.5 shrink-0"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M4 6h16M4 12h16M4 18h7"
+                                                />
+                                            </svg>
+
+                                            <span class="truncate">
+                                                {{ $template->page_name }}
+                                            </span>
+                                        </div>
                                     @endif
                                 </div>
 
-                                <span
-                                    class="flex h-6 w-6 shrink-0 items-center
-                                           justify-center rounded-full border-2
+                                {{-- Radio Indicator --}}
+                                <label
+                                    for="invoice-template-{{ $template->id }}"
+                                    class="flex h-8 w-8 shrink-0 cursor-pointer
+                                           items-center justify-center rounded-full
+                                           border-2 transition
                                            {{ $isSelected
                                                 ? 'border-indigo-600 bg-indigo-600'
-                                                : 'border-zinc-300 dark:border-zinc-600'
+                                                : 'border-zinc-300 bg-white hover:border-indigo-400 dark:border-zinc-600 dark:bg-zinc-900'
                                            }}"
                                     data-radio-indicator
+                                    title="Select this template"
                                 >
                                     <svg
-                                        class="{{ $isSelected ? '' : 'hidden' }} h-4 w-4 text-white"
+                                        class="{{ $isSelected ? '' : 'hidden' }}
+                                               h-5 w-5 text-white"
                                         data-check-icon
                                         viewBox="0 0 20 20"
                                         fill="currentColor"
@@ -208,131 +434,660 @@
                                             clip-rule="evenodd"
                                         />
                                     </svg>
-                                </span>
+                                </label>
                             </div>
 
-                            @if($template->description)
-                                <p
-                                    class="mt-3 line-clamp-3 text-sm
-                                           leading-6 text-zinc-500"
+                            <p
+                                class="mt-4 line-clamp-3 min-h-[72px]
+                                       text-sm leading-6 text-zinc-500
+                                       dark:text-zinc-400"
+                            >
+                                {{ $template->description
+                                    ? \Illuminate\Support\Str::limit(
+                                        $template->description,
+                                        150
+                                    )
+                                    : 'No description is available for this invoice template.'
+                                }}
+                            </p>
+
+                            {{-- Card Actions --}}
+                            <div
+                                class="mt-auto grid grid-cols-1 gap-2
+                                       border-t border-zinc-100 pt-5
+                                       sm:grid-cols-2 dark:border-zinc-800"
+                            >
+                                @if($preview && ($isImage || $isPdf))
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center justify-center
+                                               gap-2 rounded-xl border
+                                               border-zinc-300 bg-white px-4 py-2.5
+                                               text-sm font-bold text-zinc-700
+                                               transition hover:border-indigo-300
+                                               hover:bg-indigo-50
+                                               hover:text-indigo-700
+                                               dark:border-zinc-700
+                                               dark:bg-zinc-900
+                                               dark:text-zinc-200
+                                               dark:hover:bg-zinc-800"
+                                        data-preview-button
+                                        data-preview-url="{{ $previewUrl }}"
+                                        data-preview-type="{{ $isPdf ? 'pdf' : 'image' }}"
+                                        data-preview-title="{{ $template->name }}"
+                                    >
+                                        <svg
+                                            class="h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                            />
+
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                            />
+                                        </svg>
+
+                                        Preview
+                                    </button>
+                                @else
+                                    <button
+                                        type="button"
+                                        disabled
+                                        class="inline-flex cursor-not-allowed
+                                               items-center justify-center gap-2
+                                               rounded-xl border border-zinc-200
+                                               bg-zinc-100 px-4 py-2.5
+                                               text-sm font-bold text-zinc-400
+                                               dark:border-zinc-800
+                                               dark:bg-zinc-900"
+                                    >
+                                        No Preview
+                                    </button>
+                                @endif
+
+                                <label
+                                    for="invoice-template-{{ $template->id }}"
+                                    class="inline-flex cursor-pointer items-center
+                                           justify-center gap-2 rounded-xl px-4
+                                           py-2.5 text-sm font-bold text-white
+                                           transition
+                                           {{ $isSelected
+                                                ? 'bg-emerald-600 hover:bg-emerald-700'
+                                                : 'bg-indigo-600 hover:bg-indigo-700'
+                                           }}"
+                                    data-select-button
                                 >
-                                    {{ $template->description }}
-                                </p>
-                            @endif
+                                    <svg
+                                        class="h-4 w-4"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path
+                                            fill-rule="evenodd"
+                                            d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3.25-3.25a1 1 0 011.414-1.414l2.543 2.543 6.543-6.543a1 1 0 011.414 0z"
+                                            clip-rule="evenodd"
+                                        />
+                                    </svg>
+
+                                    <span data-select-button-text>
+                                        {{ $isSelected
+                                            ? 'Selected'
+                                            : 'Select Template'
+                                        }}
+                                    </span>
+                                </label>
+                            </div>
                         </div>
-                    </label>
+                    </article>
                 @endforeach
             </div>
         @endif
 
         @error('pdf_template_id')
-            <p class="mt-4 text-sm font-medium text-red-600">
+            <div
+                class="mt-5 rounded-xl border border-red-200
+                       bg-red-50 px-4 py-3 text-sm font-semibold
+                       text-red-600 dark:border-red-900
+                       dark:bg-red-950/30 dark:text-red-300"
+            >
                 {{ $message }}
-            </p>
+            </div>
         @enderror
     </div>
 </section>
 
+{{-- Full Preview Modal --}}
+<div
+    id="invoiceTemplatePreviewModal"
+    class="fixed inset-0 z-[100] hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="invoiceTemplatePreviewTitle"
+>
+    {{-- Backdrop --}}
+    <div
+        class="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm"
+        data-preview-close
+    ></div>
+
+    {{-- Modal Panel --}}
+    <div
+        class="relative flex min-h-full items-center justify-center
+               p-3 sm:p-6"
+    >
+        <div
+            class="relative flex h-[92vh] w-full max-w-6xl
+                   flex-col overflow-hidden rounded-3xl
+                   border border-white/10 bg-white shadow-2xl
+                   dark:bg-zinc-950"
+        >
+            {{-- Modal Header --}}
+            <div
+                class="flex shrink-0 items-center justify-between gap-4
+                       border-b border-zinc-200 px-5 py-4
+                       dark:border-zinc-800"
+            >
+                <div class="min-w-0">
+                    <p
+                        class="text-xs font-bold uppercase tracking-[0.16em]
+                               text-indigo-600 dark:text-indigo-300"
+                    >
+                        Invoice Template Preview
+                    </p>
+
+                    <h3
+                        id="invoiceTemplatePreviewTitle"
+                        class="mt-1 truncate text-lg font-black
+                               text-zinc-900 dark:text-white"
+                    >
+                        Template Preview
+                    </h3>
+                </div>
+
+                <div class="flex shrink-0 items-center gap-2">
+                    <a
+                        id="invoiceTemplateOpenNewTab"
+                        href="#"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="inline-flex items-center gap-2 rounded-xl
+                               border border-zinc-300 bg-white px-3 py-2
+                               text-sm font-bold text-zinc-700 transition
+                               hover:bg-zinc-100 dark:border-zinc-700
+                               dark:bg-zinc-900 dark:text-zinc-200
+                               dark:hover:bg-zinc-800"
+                    >
+                        <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M14 3h7v7m0-7L10 14M5 5h5M5 5v14h14v-5"
+                            />
+                        </svg>
+
+                        <span class="hidden sm:inline">
+                            Open
+                        </span>
+                    </a>
+
+                    <button
+                        type="button"
+                        class="inline-flex h-10 w-10 items-center
+                               justify-center rounded-xl bg-zinc-100
+                               text-zinc-600 transition hover:bg-red-50
+                               hover:text-red-600 dark:bg-zinc-900
+                               dark:text-zinc-300 dark:hover:bg-red-950/40"
+                        data-preview-close
+                        aria-label="Close preview"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Modal Body --}}
+            <div
+                id="invoiceTemplatePreviewBody"
+                class="min-h-0 flex-1 overflow-auto bg-zinc-100 p-3
+                       sm:p-5 dark:bg-zinc-900"
+            >
+                {{-- Image Preview --}}
+                <div
+                    id="invoiceTemplateImageWrapper"
+                    class="hidden h-full min-h-[500px] items-start
+                           justify-center overflow-auto"
+                >
+                    <img
+                        id="invoiceTemplatePreviewImage"
+                        src=""
+                        alt="Invoice template preview"
+                        class="max-w-full rounded-xl bg-white shadow-xl"
+                    >
+                </div>
+
+                {{-- PDF Preview --}}
+                <div
+                    id="invoiceTemplatePdfWrapper"
+                    class="hidden h-full min-h-[500px] overflow-hidden
+                           rounded-xl bg-white shadow-xl"
+                >
+                    <iframe
+                        id="invoiceTemplatePreviewPdf"
+                        src=""
+                        title="Invoice template PDF preview"
+                        class="h-full min-h-[500px] w-full"
+                        style="border: 0;"
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
     <script>
         (() => {
-            const cards = document.querySelectorAll(
-                '[data-template-card]'
-            );
+            const initialiseInvoiceTemplateSelection = () => {
+                const section = document.getElementById(
+                    'template-selection'
+                );
 
-            if (!cards.length) {
-                return;
-            }
+                if (!section) {
+                    return;
+                }
 
-            const updateTemplateCards = () => {
+                const cards = section.querySelectorAll(
+                    '[data-template-card]'
+                );
+
+                const modal = document.getElementById(
+                    'invoiceTemplatePreviewModal'
+                );
+
+                const modalTitle = document.getElementById(
+                    'invoiceTemplatePreviewTitle'
+                );
+
+                const openNewTabLink = document.getElementById(
+                    'invoiceTemplateOpenNewTab'
+                );
+
+                const imageWrapper = document.getElementById(
+                    'invoiceTemplateImageWrapper'
+                );
+
+                const previewImage = document.getElementById(
+                    'invoiceTemplatePreviewImage'
+                );
+
+                const pdfWrapper = document.getElementById(
+                    'invoiceTemplatePdfWrapper'
+                );
+
+                const previewPdf = document.getElementById(
+                    'invoiceTemplatePreviewPdf'
+                );
+
+                /*
+                 * Template card selected state update.
+                 */
+                const updateTemplateCards = () => {
+                    cards.forEach(card => {
+                        const radio = card.querySelector(
+                            '.template-radio'
+                        );
+
+                        const badge = card.querySelector(
+                            '[data-selected-badge]'
+                        );
+
+                        const indicator = card.querySelector(
+                            '[data-radio-indicator]'
+                        );
+
+                        const checkIcon = card.querySelector(
+                            '[data-check-icon]'
+                        );
+
+                        const selectButton = card.querySelector(
+                            '[data-select-button]'
+                        );
+
+                        const selectButtonText = card.querySelector(
+                            '[data-select-button-text]'
+                        );
+
+                        const selected = radio?.checked === true;
+
+                        card.classList.toggle(
+                            'border-indigo-600',
+                            selected
+                        );
+
+                        card.classList.toggle(
+                            'shadow-lg',
+                            selected
+                        );
+
+                        card.classList.toggle(
+                            'ring-4',
+                            selected
+                        );
+
+                        card.classList.toggle(
+                            'ring-indigo-100',
+                            selected
+                        );
+
+                        card.classList.toggle(
+                            'dark:ring-indigo-950',
+                            selected
+                        );
+
+                        card.classList.toggle(
+                            'border-zinc-200',
+                            !selected
+                        );
+
+                        card.classList.toggle(
+                            'dark:border-zinc-700',
+                            !selected
+                        );
+
+                        badge?.classList.toggle(
+                            'hidden',
+                            !selected
+                        );
+
+                        indicator?.classList.toggle(
+                            'border-indigo-600',
+                            selected
+                        );
+
+                        indicator?.classList.toggle(
+                            'bg-indigo-600',
+                            selected
+                        );
+
+                        indicator?.classList.toggle(
+                            'border-zinc-300',
+                            !selected
+                        );
+
+                        indicator?.classList.toggle(
+                            'dark:border-zinc-600',
+                            !selected
+                        );
+
+                        checkIcon?.classList.toggle(
+                            'hidden',
+                            !selected
+                        );
+
+                        selectButton?.classList.toggle(
+                            'bg-emerald-600',
+                            selected
+                        );
+
+                        selectButton?.classList.toggle(
+                            'hover:bg-emerald-700',
+                            selected
+                        );
+
+                        selectButton?.classList.toggle(
+                            'bg-indigo-600',
+                            !selected
+                        );
+
+                        selectButton?.classList.toggle(
+                            'hover:bg-indigo-700',
+                            !selected
+                        );
+
+                        if (selectButtonText) {
+                            selectButtonText.textContent =
+                                selected
+                                    ? 'Selected'
+                                    : 'Select Template';
+                        }
+                    });
+                };
+
+                /*
+                 * Radio change listener.
+                 */
                 cards.forEach(card => {
                     const radio = card.querySelector(
                         '.template-radio'
                     );
 
-                    const badge = card.querySelector(
-                        '[data-selected-badge]'
-                    );
+                    if (
+                        radio &&
+                        radio.dataset.listenerInitialised !== 'true'
+                    ) {
+                        radio.dataset.listenerInitialised = 'true';
 
-                    const indicator = card.querySelector(
-                        '[data-radio-indicator]'
-                    );
-
-                    const checkIcon = card.querySelector(
-                        '[data-check-icon]'
-                    );
-
-                    const selected = radio?.checked === true;
-
-                    card.classList.toggle(
-                        'border-indigo-600',
-                        selected
-                    );
-
-                    card.classList.toggle(
-                        'ring-4',
-                        selected
-                    );
-
-                    card.classList.toggle(
-                        'ring-indigo-100',
-                        selected
-                    );
-
-                    card.classList.toggle(
-                        'dark:ring-indigo-950',
-                        selected
-                    );
-
-                    card.classList.toggle(
-                        'border-zinc-200',
-                        !selected
-                    );
-
-                    card.classList.toggle(
-                        'dark:border-zinc-700',
-                        !selected
-                    );
-
-                    badge?.classList.toggle(
-                        'hidden',
-                        !selected
-                    );
-
-                    indicator?.classList.toggle(
-                        'border-indigo-600',
-                        selected
-                    );
-
-                    indicator?.classList.toggle(
-                        'bg-indigo-600',
-                        selected
-                    );
-
-                    indicator?.classList.toggle(
-                        'border-zinc-300',
-                        !selected
-                    );
-
-                    checkIcon?.classList.toggle(
-                        'hidden',
-                        !selected
-                    );
+                        radio.addEventListener(
+                            'change',
+                            updateTemplateCards
+                        );
+                    }
                 });
+
+                /*
+                 * Open preview modal.
+                 */
+                const openPreviewModal = ({
+                    url,
+                    type,
+                    title
+                }) => {
+                    if (
+                        !modal ||
+                        !url ||
+                        !type
+                    ) {
+                        return;
+                    }
+
+                    if (modalTitle) {
+                        modalTitle.textContent =
+                            title || 'Template Preview';
+                    }
+
+                    if (openNewTabLink) {
+                        openNewTabLink.href = url;
+                    }
+
+                    imageWrapper?.classList.add('hidden');
+                    imageWrapper?.classList.remove('flex');
+
+                    pdfWrapper?.classList.add('hidden');
+
+                    if (previewImage) {
+                        previewImage.src = '';
+                    }
+
+                    if (previewPdf) {
+                        previewPdf.src = '';
+                    }
+
+                    if (type === 'pdf') {
+                        if (previewPdf) {
+                            previewPdf.src =
+                                `${url}#toolbar=1&navpanes=0&view=FitH`;
+                        }
+
+                        pdfWrapper?.classList.remove('hidden');
+                    } else {
+                        if (previewImage) {
+                            previewImage.src = url;
+                            previewImage.alt =
+                                title || 'Invoice template preview';
+                        }
+
+                        imageWrapper?.classList.remove('hidden');
+                        imageWrapper?.classList.add('flex');
+                    }
+
+                    modal.classList.remove('hidden');
+
+                    document.documentElement.classList.add(
+                        'overflow-hidden'
+                    );
+
+                    document.body.classList.add(
+                        'overflow-hidden'
+                    );
+                };
+
+                /*
+                 * Close preview modal.
+                 */
+                const closePreviewModal = () => {
+                    if (!modal) {
+                        return;
+                    }
+
+                    modal.classList.add('hidden');
+
+                    if (previewImage) {
+                        previewImage.src = '';
+                    }
+
+                    if (previewPdf) {
+                        previewPdf.src = '';
+                    }
+
+                    document.documentElement.classList.remove(
+                        'overflow-hidden'
+                    );
+
+                    document.body.classList.remove(
+                        'overflow-hidden'
+                    );
+                };
+
+                /*
+                 * Preview buttons.
+                 */
+                section
+                    .querySelectorAll('[data-preview-button]')
+                    .forEach(button => {
+                        if (
+                            button.dataset.listenerInitialised ===
+                            'true'
+                        ) {
+                            return;
+                        }
+
+                        button.dataset.listenerInitialised = 'true';
+
+                        button.addEventListener(
+                            'click',
+                            event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+
+                                openPreviewModal({
+                                    url:
+                                        button.dataset.previewUrl,
+                                    type:
+                                        button.dataset.previewType,
+                                    title:
+                                        button.dataset.previewTitle
+                                });
+                            }
+                        );
+                    });
+
+                /*
+                 * Modal close buttons.
+                 */
+                modal
+                    ?.querySelectorAll('[data-preview-close]')
+                    .forEach(button => {
+                        if (
+                            button.dataset.listenerInitialised ===
+                            'true'
+                        ) {
+                            return;
+                        }
+
+                        button.dataset.listenerInitialised = 'true';
+
+                        button.addEventListener(
+                            'click',
+                            closePreviewModal
+                        );
+                    });
+
+                /*
+                 * Escape key se modal close.
+                 */
+                if (
+                    document.documentElement.dataset
+                        .templatePreviewEscapeInitialised !== 'true'
+                ) {
+                    document.documentElement.dataset
+                        .templatePreviewEscapeInitialised = 'true';
+
+                    document.addEventListener(
+                        'keydown',
+                        event => {
+                            if (
+                                event.key === 'Escape' &&
+                                modal &&
+                                !modal.classList.contains('hidden')
+                            ) {
+                                closePreviewModal();
+                            }
+                        }
+                    );
+                }
+
+                updateTemplateCards();
             };
 
-            cards.forEach(card => {
-                const radio = card.querySelector(
-                    '.template-radio'
-                );
+            document.addEventListener(
+                'DOMContentLoaded',
+                initialiseInvoiceTemplateSelection
+            );
 
-                radio?.addEventListener(
-                    'change',
-                    updateTemplateCards
-                );
-            });
+            document.addEventListener(
+                'livewire:navigated',
+                initialiseInvoiceTemplateSelection
+            );
 
-            updateTemplateCards();
+            initialiseInvoiceTemplateSelection();
         })();
     </script>
 @endpush
