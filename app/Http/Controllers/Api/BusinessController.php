@@ -103,69 +103,396 @@ class BusinessController extends Controller
     // }
 
 
+    // public function store(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'name'    => ['required', 'string', 'max:255'],
+    //         'slug'    => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
+    //         'email'   => ['required', 'email', 'max:255', 'unique:businesses,email'],
+    //         'mobile'  => ['nullable', 'string', 'max:20', 'unique:businesses,mobile'],
+    //         'gstin'   => ['nullable', 'string', 'max:50'],
+    //         'address' => ['nullable', 'string', 'max:1000'],
+    //         'terms'   => ['nullable', 'string', 'max:1000'],
+
+    //         'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    //         'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    //         'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+
+    //         'pdf_template_id' => ['nullable', 'string', 'max:100'],
+    //         'type'       => ['nullable', 'string', 'max:100'],
+    //         'state'      => ['nullable', 'string', 'max:100'],
+    //         'state_code' => ['nullable', 'string', 'max:100'],
+    //         'user_id'    => ['nullable', 'exists:users,id'],
+    //     ]);
+
+    //     $data['slug'] = Str::slug($data['name']);
+
+    //     if (Business::where('slug', $data['slug'])->exists()) {
+    //         $data['slug'] .= '-' . Str::lower(Str::random(6));
+    //     }
+
+    //     if ($request->hasFile('logo')) {
+    //         $data['logo'] = $request->file('logo')->store('business_logos', 'public');
+    //     }
+
+    //     if ($request->hasFile('signature')) {
+    //         $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
+    //     }
+
+    //     if ($request->hasFile('letter_head')) {
+    //         $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
+    //     }
+
+    //     $business = Business::create($data);
+
+    //     $assignUserId = $request->filled('user_id')
+    //         ? $request->user_id
+    //         : auth()->id();
+
+    //     DB::table('business_user')->updateOrInsert(
+    //         [
+    //             'business_id' => $business->id,
+    //             'user_id'     => $assignUserId,
+    //         ],
+    //         [
+    //             'role'       => 'owner',
+    //             'created_at' => now(),
+    //             'updated_at' => now(),
+    //         ]
+    //     );
+
+    //     return response()->json([
+    //         'status'  => true,
+    //         'message' => 'Business created successfully.',
+    //         'data'    => $business,
+    //     ], 201);
+    // }
+
+
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'slug'    => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
-            'email'   => ['required', 'email', 'max:255', 'unique:businesses,email'],
-            'mobile'  => ['nullable', 'string', 'max:20', 'unique:businesses,mobile'],
-            'gstin'   => ['nullable', 'string', 'max:50'],
-            'address' => ['nullable', 'string', 'max:1000'],
-            'terms'   => ['nullable', 'string', 'max:1000'],
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize mobile-app values
+        |--------------------------------------------------------------------------
+        |
+        | Mobile app kabhi bool ko true/false, 1/0 ya string ke roop me bhej
+        | sakti hai. merge() se GST value proper boolean ban jayegi.
+        |
+        */
 
-            'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
-
-            'pdf_template_id' => ['nullable', 'string', 'max:100'],
-            'type'       => ['nullable', 'string', 'max:100'],
-            'state'      => ['nullable', 'string', 'max:100'],
-            'state_code' => ['nullable', 'string', 'max:100'],
-            'user_id'    => ['nullable', 'exists:users,id'],
+        $request->merge([
+            'gst_enabled' => $request->boolean('gst_enabled'),
         ]);
 
-        $data['slug'] = Str::slug($data['name']);
+        $data = $request->validate([
+            /*
+            |--------------------------------------------------------------------------
+            | Basic business details
+            |--------------------------------------------------------------------------
+            */
 
-        if (Business::where('slug', $data['slug'])->exists()) {
-            $data['slug'] .= '-' . Str::lower(Str::random(6));
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'slug' => [
+                'nullable',
+                'string',
+                'alpha_dash',
+                'max:255',
+                'unique:businesses,slug',
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                'unique:businesses,email',
+            ],
+
+            'mobile' => [
+                'nullable',
+                'string',
+                'max:20',
+                'unique:businesses,mobile',
+            ],
+
+            'gstin' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'address' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Billing setup fields
+            |--------------------------------------------------------------------------
+            */
+
+            'gst_enabled' => [
+                'required',
+                'boolean',
+            ],
+
+            'invoice_base_prefix' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'rounding_mode' => [
+                'required',
+                Rule::in([
+                    'none',
+                    'nearest',
+                    'up',
+                    'down',
+                ]),
+            ],
+
+            'rounding_step' => [
+                'required_unless:rounding_mode,none',
+                'nullable',
+                'numeric',
+                'min:0.01',
+                'max:999999.99',
+            ],
+
+            'terms' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Other business fields
+            |--------------------------------------------------------------------------
+            */
+
+            'pdf_template_id' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'type' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'business_type_id' => [
+                'nullable',
+                'integer',
+                'exists:business_types,id',
+            ],
+
+            'state' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'state_code' => [
+                'nullable',
+                'string',
+                'max:10',
+            ],
+
+            'user_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Files
+            |--------------------------------------------------------------------------
+            */
+
+            'logo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'signature' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'letter_head' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:4096',
+            ],
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Generate unique slug
+        |--------------------------------------------------------------------------
+        */
+
+        $baseSlug = Str::slug(
+            $request->filled('slug')
+                ? $request->input('slug')
+                : $data['name']
+        );
+
+        if ($baseSlug === '') {
+            $baseSlug = 'business';
         }
 
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (Business::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+
+        $data['slug'] = $slug;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Billing defaults
+        |--------------------------------------------------------------------------
+        */
+
+        $data['invoice_base_prefix'] = filled(
+            $data['invoice_base_prefix'] ?? null
+        )
+            ? strtoupper(trim($data['invoice_base_prefix']))
+            : 'INV';
+
+        $data['rounding_mode'] = $data['rounding_mode'] ?? 'none';
+
+        if ($data['rounding_mode'] === 'none') {
+            $data['rounding_step'] = 1.00;
+        } else {
+            $data['rounding_step'] = $data['rounding_step'] ?? 1.00;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Conditional GST values
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$data['gst_enabled']) {
+            $data['gstin'] = null;
+
+            // GST disabled ho to state/state code ko optional rakha gaya hai.
+            $data['state'] = $data['state'] ?? null;
+            $data['state_code'] = $data['state_code'] ?? null;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Store uploaded files
+        |--------------------------------------------------------------------------
+        */
+
         if ($request->hasFile('logo')) {
-            $data['logo'] = $request->file('logo')->store('business_logos', 'public');
+            $data['logo'] = $request
+                ->file('logo')
+                ->store('business_logos', 'public');
         }
 
         if ($request->hasFile('signature')) {
-            $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
+            $data['signature'] = $request
+                ->file('signature')
+                ->store('business_signatures', 'public');
         }
 
         if ($request->hasFile('letter_head')) {
-            $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
+            $data['letter_head'] = $request
+                ->file('letter_head')
+                ->store('business_letter_heads', 'public');
         }
 
-        $business = Business::create($data);
+        /*
+        |--------------------------------------------------------------------------
+        | user_id business table me save nahi karna
+        |--------------------------------------------------------------------------
+        |
+        | user_id pivot table business_user ke liye hai. Agar businesses table
+        | me user_id column nahi hai to create() se pehle ise remove karna zaroori
+        | hai.
+        |
+        */
 
-        $assignUserId = $request->filled('user_id')
-            ? $request->user_id
-            : auth()->id();
+        $assignUserId = !empty($data['user_id'])
+            ? (int) $data['user_id']
+            : (int) $request->user()->id;
 
-        DB::table('business_user')->updateOrInsert(
-            [
-                'business_id' => $business->id,
-                'user_id'     => $assignUserId,
-            ],
-            [
-                'role'       => 'owner',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
-        );
+        unset($data['user_id']);
 
-        return response()->json([
-            'status'  => true,
-            'message' => 'Business created successfully.',
-            'data'    => $business,
-        ], 201);
+        DB::beginTransaction();
+
+        try {
+            $business = Business::create($data);
+
+            DB::table('business_user')->updateOrInsert(
+                [
+                    'business_id' => $business->id,
+                    'user_id' => $assignUserId,
+                ],
+                [
+                    'role' => 'owner',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Business and billing setup saved successfully.',
+                'data' => $business->fresh(),
+            ], 201);
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Uploaded files rollback
+            |--------------------------------------------------------------------------
+            */
+
+            foreach (['logo', 'signature', 'letter_head'] as $field) {
+                if (!empty($data[$field])) {
+                    Storage::disk('public')->delete($data[$field]);
+                }
+            }
+
+            report($exception);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Business save nahi ho saka.',
+                'error' => config('app.debug')
+                    ? $exception->getMessage()
+                    : 'Internal server error.',
+            ], 500);
+        }
     }
 
     public function update(Request $request, Business $business)
