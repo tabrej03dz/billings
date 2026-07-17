@@ -12,25 +12,84 @@ class ClientController extends Controller
     /**
      * Display a listing of clients.
      */
-    public function index(Request $request)
-    {
-        $q = trim($request->get('q', ''));
-        $clients = Client::query()
-            ->when($q !== '', function ($w) use ($q) {
-                $w->where(function ($s) use ($q) {
-                    $s->where('name', 'like', "%{$q}%")
-                        ->orWhere('mobile', 'like', "%{$q}%")
-                        ->orWhere('gstin', 'like', "%{$q}%")
-                        ->orWhere('pan', 'like', "%{$q}%")
-                        ->orWhere('address', 'like', "%{$q}%");
-                });
-            })->where('is_save', true)
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+    // public function index(Request $request)
+    // {
+    //     $q = trim($request->get('q', ''));
+    //     $clients = Client::query()
+    //         ->when($q !== '', function ($w) use ($q) {
+    //             $w->where(function ($s) use ($q) {
+    //                 $s->where('name', 'like', "%{$q}%")
+    //                     ->orWhere('mobile', 'like', "%{$q}%")
+    //                     ->orWhere('gstin', 'like', "%{$q}%")
+    //                     ->orWhere('pan', 'like', "%{$q}%")
+    //                     ->orWhere('address', 'like', "%{$q}%");
+    //             });
+    //         })->where('is_save', true)
+    //         ->latest()
+    //         ->paginate(15)
+    //         ->withQueryString();
 
-        return view('clients.index', compact('clients', 'q'));
-    }
+    //     return view('clients.index', compact('clients', 'q'));
+    // }
+
+public function index(Request $request)
+{
+    $q = trim((string) $request->get('q', ''));
+
+    /*
+    |--------------------------------------------------------------------------
+    | Base client query
+    |--------------------------------------------------------------------------
+    | Client model me active business ka Global Scope laga hai, isliye
+    | yahan dobara business_id filter nahi lagaya gaya.
+    */
+    $baseQuery = Client::query()
+        ->where('is_save', true);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Total saved clients
+    |--------------------------------------------------------------------------
+    | Search ke bina actual client count.
+    */
+    $totalClients = (clone $baseQuery)->count();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Client listing
+    |--------------------------------------------------------------------------
+    */
+    $clients = $baseQuery
+        ->when($q !== '', function ($query) use ($q) {
+            $query->where(function ($subQuery) use ($q) {
+                $subQuery
+                    ->where('name', 'like', "%{$q}%")
+                    ->orWhere('mobile', 'like', "%{$q}%")
+                    ->orWhere('gstin', 'like', "%{$q}%")
+                    ->orWhere('pan', 'like', "%{$q}%")
+                    ->orWhere('state', 'like', "%{$q}%")
+                    ->orWhere('address', 'like', "%{$q}%");
+            });
+        })
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
+    /*
+    |--------------------------------------------------------------------------
+    | New user guide
+    |--------------------------------------------------------------------------
+    | 5 saved clients se kam hone tak user ko new user maana jayega.
+    */
+    $showClientSuggestion = $totalClients < 5;
+
+    return view('clients.index', compact(
+        'clients',
+        'q',
+        'totalClients',
+        'showClientSuggestion'
+    ));
+}
 
     public function create()
     {
