@@ -102,6 +102,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::post('ai/scan', [\App\Http\Controllers\Api\ItemAiController::class, 'photoEntry']);
 
 
+    Route::get('business-types', [\App\Http\Controllers\Api\BusinessTypeController::class, 'index']);
 
 
 
@@ -134,6 +135,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         // convert quotation/proforma -> tax
         Route::post('/{invoice}/convert-to-tax', [InvoiceController::class, 'convertToTax']);
     });
+
 
 
     Route::prefix('invoice-send')->controller(\App\Http\Controllers\Api\InvoiceSendReportController::class)->group(function(){

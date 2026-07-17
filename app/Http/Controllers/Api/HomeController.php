@@ -180,7 +180,11 @@ class HomeController extends Controller
             'device_name' => ['nullable', 'string', 'max:100'],
         ]);
 
+      
+
         $user = User::where('phone', $data['phone'])->first();
+
+
 
         if (!$user) {
             throw ValidationException::withMessages([
