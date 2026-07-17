@@ -1,7 +1,93 @@
 <x-layouts.app :title="__('Invoices')">
-    @php
+    {{-- @php
         $activeType = request('type', $type ?? 'tax'); // tax/proforma/quotation
         $activeType = in_array($activeType, ['tax','proforma','quotation'], true) ? $activeType : 'tax';
+    @endphp --}}
+
+    @php
+        $activeType = request('type', $type ?? 'tax');
+
+        $activeType = in_array(
+            $activeType,
+            ['tax', 'proforma', 'quotation'],
+            true
+        ) ? $activeType : 'tax';
+
+        $invoiceGuideStorageKey =
+            'invoice-guide-v1-user-'
+            . auth()->id()
+            . '-business-'
+            . ($activeBusinessId ?? 'default')
+            . '-type-'
+            . $activeType;
+
+        $guideConfiguration = match($activeType) {
+            'proforma' => [
+                'title'       => 'How to create a Proforma Invoice',
+                'description' => 'Create a preliminary bill for your customer before issuing the final tax invoice.',
+                'button'      => 'Create Proforma',
+                'route'       => route('invoices.create', 'proforma'),
+                'color'       => 'indigo',
+                'steps'       => [
+                    [
+                        'title' => 'Select customer',
+                        'text'  => 'Choose an existing client or add a new customer.',
+                    ],
+                    [
+                        'title' => 'Add items',
+                        'text'  => 'Enter products, quantity, rates, discounts and taxes.',
+                    ],
+                    [
+                        'title' => 'Convert later',
+                        'text'  => 'After approval, convert the proforma into a Tax Invoice.',
+                    ],
+                ],
+            ],
+
+            'quotation' => [
+                'title'       => 'How to create a Quotation',
+                'description' => 'Prepare and share a price quotation with the customer before confirming the sale.',
+                'button'      => 'Create Quotation',
+                'route'       => route('invoices.create', 'quotation'),
+                'color'       => 'cyan',
+                'steps'       => [
+                    [
+                        'title' => 'Select customer',
+                        'text'  => 'Choose the customer who requested the quotation.',
+                    ],
+                    [
+                        'title' => 'Enter quotation',
+                        'text'  => 'Add items, prices, taxes, terms and validity details.',
+                    ],
+                    [
+                        'title' => 'Convert after approval',
+                        'text'  => 'Convert an accepted quotation directly into a Tax Invoice.',
+                    ],
+                ],
+            ],
+
+            default => [
+                'title'       => 'How to create a Tax Invoice',
+                'description' => 'Create a final customer bill, record payment and download or send the invoice.',
+                'button'      => 'Create Tax Invoice',
+                'route'       => route('invoices.create', 'tax'),
+                'color'       => 'emerald',
+                'steps'       => [
+                    [
+                        'title' => 'Select customer',
+                        'text'  => 'Choose an existing client or quickly add a new client.',
+                    ],
+                    [
+                        'title' => 'Add invoice items',
+                        'text'  => 'Enter products, quantity, price, GST and discounts.',
+                    ],
+                    [
+                        'title' => 'Save and collect payment',
+                        'text'  => 'Save the bill, use Payment In and download or share it.',
+                    ],
+                ],
+            ],
+        };
     @endphp
 
 
@@ -37,6 +123,287 @@
             @endcan
         </div>
     </div>
+
+
+
+    @if($showInvoiceSuggestion)
+    <div
+        id="invoiceSuggestionGuide"
+        data-storage-key="{{ $invoiceGuideStorageKey }}"
+        class="relative mb-4 overflow-hidden rounded-2xl
+               border border-indigo-200
+               bg-gradient-to-br from-indigo-50
+               via-white to-cyan-50 p-5 shadow-sm
+               dark:border-indigo-900/70
+               dark:from-indigo-950/60
+               dark:via-neutral-900
+               dark:to-cyan-950/40
+               sm:p-6"
+    >
+        {{-- Background Decoration --}}
+        <div
+            class="pointer-events-none absolute -right-16 -top-16
+                   h-40 w-40 rounded-full
+                   bg-indigo-200/40 blur-3xl
+                   dark:bg-indigo-700/20"
+        ></div>
+
+        <div
+            class="pointer-events-none absolute -bottom-16 left-1/3
+                   h-36 w-36 rounded-full
+                   bg-cyan-200/40 blur-3xl
+                   dark:bg-cyan-700/20"
+        ></div>
+
+        {{-- Cross Button --}}
+        <button
+            type="button"
+            onclick="dismissInvoiceGuide()"
+            aria-label="Close invoice guide"
+            title="Hide this guide"
+            class="absolute right-3 top-3 z-20
+                   inline-flex h-9 w-9 items-center
+                   justify-center rounded-full
+                   border border-gray-200 bg-white/90
+                   text-gray-500 shadow-sm transition
+                   hover:bg-white hover:text-red-600
+                   dark:border-neutral-700
+                   dark:bg-neutral-800
+                   dark:text-neutral-300
+                   dark:hover:text-red-400"
+        >
+            <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18 18 6M6 6l12 12"
+                />
+            </svg>
+        </button>
+
+        <div class="relative z-10 pr-8">
+            <div
+                class="flex flex-col gap-5
+                       lg:flex-row lg:items-start"
+            >
+                {{-- Icon --}}
+                <div
+                    class="flex h-14 w-14 shrink-0 items-center
+                           justify-center rounded-2xl
+                           bg-indigo-600 text-white shadow-lg
+                           shadow-indigo-600/20"
+                >
+                    <svg
+                        class="h-7 w-7"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7
+                               a2 2 0 0 1-2-2V5
+                               a2 2 0 0 1 2-2h5.586
+                               a1 1 0 0 1 .707.293
+                               l3.414 3.414
+                               A1 1 0 0 1 17 7.414V19
+                               a2 2 0 0 1-2 2Z"
+                        />
+                    </svg>
+                </div>
+
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2
+                            class="text-lg font-bold text-gray-900
+                                   dark:text-white sm:text-xl"
+                        >
+                            {{ $guideConfiguration['title'] }}
+                        </h2>
+
+                        <span
+                            class="rounded-full bg-indigo-100
+                                   px-2.5 py-1 text-[11px]
+                                   font-bold uppercase tracking-wide
+                                   text-indigo-700
+                                   dark:bg-indigo-900/60
+                                   dark:text-indigo-300"
+                        >
+                            Quick Guide
+                        </span>
+                    </div>
+
+                    <p
+                        class="mt-2 max-w-3xl text-sm leading-6
+                               text-gray-600 dark:text-neutral-300"
+                    >
+                        {{ $guideConfiguration['description'] }}
+                    </p>
+
+                    {{-- Steps --}}
+                    <div class="mt-5 grid gap-3 md:grid-cols-3">
+                        @foreach($guideConfiguration['steps'] as $stepIndex => $step)
+                            <div
+                                class="rounded-xl border border-indigo-100
+                                       bg-white/80 p-4 shadow-sm
+                                       dark:border-indigo-900/50
+                                       dark:bg-neutral-800/70"
+                            >
+                                <div class="flex items-start gap-3">
+                                    <span
+                                        class="flex h-8 w-8 shrink-0
+                                               items-center justify-center
+                                               rounded-full bg-indigo-100
+                                               text-sm font-bold
+                                               text-indigo-700
+                                               dark:bg-indigo-900/70
+                                               dark:text-indigo-300"
+                                    >
+                                        {{ $stepIndex + 1 }}
+                                    </span>
+
+                                    <div>
+                                        <h3
+                                            class="text-sm font-bold
+                                                   text-gray-900
+                                                   dark:text-white"
+                                        >
+                                            {{ $step['title'] }}
+                                        </h3>
+
+                                        <p
+                                            class="mt-1 text-xs leading-5
+                                                   text-gray-500
+                                                   dark:text-neutral-400"
+                                        >
+                                            {{ $step['text'] }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Extra Help --}}
+                    <div
+                        class="mt-4 rounded-xl border
+                               border-amber-200 bg-amber-50
+                               p-3 text-sm text-amber-800
+                               dark:border-amber-900/60
+                               dark:bg-amber-950/30
+                               dark:text-amber-300"
+                    >
+                        <strong>Helpful tip:</strong>
+
+                        @if($activeType === 'tax')
+                            Invoice save hone ke baad action menu se
+                            View, Edit, Download, WhatsApp aur Payment In
+                            use kar sakte hain.
+                        @elseif($activeType === 'proforma')
+                            Customer confirmation ke baad action menu se
+                            Proforma ko Tax Invoice me convert karein.
+                        @else
+                            Customer quotation approve kar de to action menu se
+                            ise Tax Invoice me convert karein.
+                        @endif
+                    </div>
+
+                    <div
+                        class="mt-5 flex flex-col gap-3
+                               sm:flex-row sm:items-center"
+                    >
+                        <a
+                            href="{{ $guideConfiguration['route'] }}"
+                            class="inline-flex items-center justify-center
+                                   gap-2 rounded-xl bg-indigo-600
+                                   px-4 py-2.5 text-sm font-semibold
+                                   text-white shadow-sm transition
+                                   hover:bg-indigo-700"
+                        >
+                            <svg
+                                class="h-4 w-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 4v16m8-8H4"
+                                />
+                            </svg>
+
+                            {{ $guideConfiguration['button'] }}
+                        </a>
+
+                        <button
+                            type="button"
+                            onclick="dismissInvoiceGuide()"
+                            class="inline-flex items-center justify-center
+                                   rounded-xl border border-gray-300
+                                   bg-white px-4 py-2.5
+                                   text-sm font-semibold text-gray-700
+                                   transition hover:bg-gray-50
+                                   dark:border-neutral-600
+                                   dark:bg-neutral-800
+                                   dark:text-neutral-200
+                                   dark:hover:bg-neutral-700"
+                        >
+                            Got it, hide this guide
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Reopen Button --}}
+    <div
+        id="invoiceSuggestionReopen"
+        class="mb-4 hidden justify-end"
+    >
+        <button
+            type="button"
+            onclick="showInvoiceGuide()"
+            class="inline-flex items-center gap-2
+                   rounded-xl border border-indigo-200
+                   bg-indigo-50 px-3 py-2
+                   text-xs font-semibold text-indigo-700
+                   transition hover:bg-indigo-100
+                   dark:border-indigo-900
+                   dark:bg-indigo-950/40
+                   dark:text-indigo-300"
+        >
+            <svg
+                class="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8.228 9a3.001 3.001 0 1 1
+                       5.824 1c0 2-3 2-3 4m.01 4h.01
+                       M21 12a9 9 0 1 1-18 0
+                       9 9 0 0 1 18 0Z"
+                />
+            </svg>
+
+            Show Invoice Guide
+        </button>
+    </div>
+@endif
 
     {{-- ✅ Tabs --}}
     {{-- ✅ Tabs --}}
@@ -551,5 +918,141 @@
         </script>
 
     </div>
+
+
+
+    @if($showInvoiceSuggestion)
+    <script>
+        (function () {
+            const guideId = 'invoiceSuggestionGuide';
+            const reopenId = 'invoiceSuggestionReopen';
+
+            function getInvoiceGuideElements() {
+                return {
+                    guide: document.getElementById(guideId),
+                    reopen: document.getElementById(reopenId)
+                };
+            }
+
+            function getInvoiceGuideStorageKey() {
+                const guide = document.getElementById(guideId);
+
+                return guide
+                    ? guide.getAttribute('data-storage-key')
+                    : null;
+            }
+
+            window.dismissInvoiceGuide = function () {
+                const elements = getInvoiceGuideElements();
+                const storageKey =
+                    getInvoiceGuideStorageKey();
+
+                if (elements.guide) {
+                    elements.guide.style.display = 'none';
+                }
+
+                if (elements.reopen) {
+                    elements.reopen.classList.remove('hidden');
+                    elements.reopen.style.display = 'flex';
+                }
+
+                if (storageKey) {
+                    try {
+                        localStorage.setItem(
+                            storageKey,
+                            '1'
+                        );
+                    } catch (error) {
+                        console.warn(
+                            'Invoice guide preference could not be saved.'
+                        );
+                    }
+                }
+            };
+
+            window.showInvoiceGuide = function () {
+                const elements = getInvoiceGuideElements();
+                const storageKey =
+                    getInvoiceGuideStorageKey();
+
+                if (elements.guide) {
+                    elements.guide.style.display = 'block';
+                }
+
+                if (elements.reopen) {
+                    elements.reopen.style.display = 'none';
+                }
+
+                if (storageKey) {
+                    try {
+                        localStorage.removeItem(storageKey);
+                    } catch (error) {
+                        console.warn(
+                            'Invoice guide preference could not be removed.'
+                        );
+                    }
+                }
+
+                if (elements.guide) {
+                    elements.guide.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            };
+
+            function initializeInvoiceGuide() {
+                const elements = getInvoiceGuideElements();
+                const storageKey =
+                    getInvoiceGuideStorageKey();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                let dismissed = false;
+
+                if (storageKey) {
+                    try {
+                        dismissed =
+                            localStorage.getItem(storageKey) === '1';
+                    } catch (error) {
+                        dismissed = false;
+                    }
+                }
+
+                if (dismissed) {
+                    elements.guide.style.display = 'none';
+
+                    if (elements.reopen) {
+                        elements.reopen.classList.remove('hidden');
+                        elements.reopen.style.display = 'flex';
+                    }
+                } else {
+                    elements.guide.style.display = 'block';
+
+                    if (elements.reopen) {
+                        elements.reopen.style.display = 'none';
+                    }
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener(
+                    'DOMContentLoaded',
+                    initializeInvoiceGuide,
+                    { once: true }
+                );
+            } else {
+                initializeInvoiceGuide();
+            }
+
+            document.addEventListener(
+                'livewire:navigated',
+                initializeInvoiceGuide
+            );
+        })();
+    </script>
+@endif
 
 </x-layouts.app>

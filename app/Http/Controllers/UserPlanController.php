@@ -64,8 +64,8 @@ class UserPlanController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'business_id' => ['required', 'exists:businesses,id'],
-            'user_id'     => ['required', 'exists:users,id'],
+            'business_id' => ['nullable', 'exists:businesses,id'],
+            'user_id'     => ['nullable', 'exists:users,id'],
             'plan_id'     => ['required', 'exists:plans,id'],
             'start_date'  => ['nullable', 'date'],
             'expiry_date' => ['nullable', 'date', 'after_or_equal:start_date'],

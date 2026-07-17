@@ -37,115 +37,372 @@ class InvoiceController extends Controller
     }
 
 
+    // public function index(Request $request)
+    // {
+    //     $me  = $request->user();
+
+    //     // ✅ Active business resolve
+    //     $bid = $me->current_business_id ?? session('active_business_id');
+    //     if (!$bid) {
+    //         $bid = $me->businesses()->pluck('businesses.id')->first();
+    //     }
+    //     if (!$bid) {
+    //         return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
+    //     }
+
+    //     // ✅ Tab type (tax / proforma / quotation)
+    //     $type = strtolower(trim((string) $request->get('type', 'tax')));
+    //     if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
+    //         $type = 'tax';
+    //     }
+
+    //     // ✅ Permission mapping by type
+    //     $permByType = [
+    //         'tax'       => 'show invoices',
+    //         'proforma'  => 'show proformas',
+    //         'quotation' => 'show quotations',
+    //     ];
+
+    //     $requiredPerm = $permByType[$type] ?? 'show invoices';
+
+    //     // ✅ Permission check
+    //     if (!$me->can($requiredPerm)) {
+    //         abort(403, "You don't have permission: {$requiredPerm}");
+    //         // or: return back()->with('error', "Permission denied: {$requiredPerm}");
+    //     }
+
+    //     // ✅ Filters
+    //     $search   = trim((string)$request->get('search', ''));
+    //     $fromDate = $request->get('from_date');
+    //     $toDate   = $request->get('to_date');
+    //     $status   = $request->get('status');
+
+    //     $q = \App\Models\Invoice::query()
+    //         ->with(['client:id,name','createdBy','updatedBy'])
+    //         ->where('business_id', $bid)
+    //         ->where('invoice_type', $type);
+
+    //     // ✅ Search (invoice_number OR client name)
+
+    //     if ($search !== '') {
+    //         $q->where(function ($w) use ($search) {
+
+    //             // invoice number search
+    //             $w->where('invoice_number', 'like', "%{$search}%")
+    //             // ✅ amount search
+    //             ->orWhere('total', 'like', "%{$search}%")
+    //             ->orWhere('balance', 'like', "%{$search}%")
+    //             ->orWhere('received_amount', 'like', "%{$search}%")
+    //             // client details search
+    //             ->orWhereHas('client', function ($c) use ($search) {
+    //                 $c->where('name', 'like', "%{$search}%")
+    //                 ->orWhere('mobile', 'like', "%{$search}%")
+    //                 ->orWhere('gstin', 'like', "%{$search}%")
+    //                 ->orWhere('pan', 'like', "%{$search}%")
+    //                 ->orWhere('address', 'like', "%{$search}%");
+    //             });
+
+    //         });
+    //     }
+
+    //     // ✅ Date filter
+    //     if (!empty($fromDate)) $q->whereDate('invoice_date', '>=', $fromDate);
+    //     if (!empty($toDate))   $q->whereDate('invoice_date', '<=', $toDate);
+
+    //     // ✅ Status filter
+    //     if (!empty($status)) {
+    //         if ($status === 'paid') {
+    //             $q->where('balance', '<=', 0);
+    //         } elseif ($status === 'unpaid') {
+    //             $q->where('received_amount', '<=', 0);
+    //         } elseif ($status === 'partial') {
+    //             $q->where('received_amount', '>', 0)->where('balance', '>', 0);
+    //         }
+    //     }
+
+    //     $invoices = $q->orderByDesc('invoice_date')
+    //         ->orderByDesc('id')
+    //         ->paginate(20)
+    //         ->withQueryString();
+
+    //     // ✅ Counts (optional) - but ONLY if user has permission for that tab
+    //     $taxCount = $me->can('show invoices')
+    //         ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count()
+    //         : null;
+
+    //     $proCount = $me->can('show proformas')
+    //         ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count()
+    //         : null;
+
+    //     $quoCount = $me->can('show quotations')
+    //         ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count()
+    //         : null;
+
+    //     return view('invoices.index', [
+    //         'invoices'   => $invoices,
+    //         'type'       => $type,
+    //         'taxCount'   => $taxCount,
+    //         'proCount'   => $proCount,
+    //         'quoCount'   => $quoCount,
+    //     ]);
+    // }
+
+
     public function index(Request $request)
-    {
-        $me  = $request->user();
+{
+    $me = $request->user();
 
-        // ✅ Active business resolve
-        $bid = $me->current_business_id ?? session('active_business_id');
-        if (!$bid) {
-            $bid = $me->businesses()->pluck('businesses.id')->first();
-        }
-        if (!$bid) {
-            return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Active business
+    |--------------------------------------------------------------------------
+    */
+    $bid = $me->current_business_id
+        ?? session('active_business_id');
 
-        // ✅ Tab type (tax / proforma / quotation)
-        $type = strtolower(trim((string) $request->get('type', 'tax')));
-        if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
-            $type = 'tax';
-        }
+    if (!$bid) {
+        $bid = $me->businesses()
+            ->pluck('businesses.id')
+            ->first();
+    }
 
-        // ✅ Permission mapping by type
-        $permByType = [
-            'tax'       => 'show invoices',
-            'proforma'  => 'show proformas',
-            'quotation' => 'show quotations',
-        ];
-
-        $requiredPerm = $permByType[$type] ?? 'show invoices';
-
-        // ✅ Permission check
-        if (!$me->can($requiredPerm)) {
-            abort(403, "You don't have permission: {$requiredPerm}");
-            // or: return back()->with('error', "Permission denied: {$requiredPerm}");
-        }
-
-        // ✅ Filters
-        $search   = trim((string)$request->get('search', ''));
-        $fromDate = $request->get('from_date');
-        $toDate   = $request->get('to_date');
-        $status   = $request->get('status');
-
-        $q = \App\Models\Invoice::query()
-            ->with(['client:id,name','createdBy','updatedBy'])
-            ->where('business_id', $bid)
-            ->where('invoice_type', $type);
-
-        // ✅ Search (invoice_number OR client name)
-
-        if ($search !== '') {
-            $q->where(function ($w) use ($search) {
-
-                // invoice number search
-                $w->where('invoice_number', 'like', "%{$search}%")
-                // ✅ amount search
-                ->orWhere('total', 'like', "%{$search}%")
-                ->orWhere('balance', 'like', "%{$search}%")
-                ->orWhere('received_amount', 'like', "%{$search}%")
-                // client details search
-                ->orWhereHas('client', function ($c) use ($search) {
-                    $c->where('name', 'like', "%{$search}%")
-                    ->orWhere('mobile', 'like', "%{$search}%")
-                    ->orWhere('gstin', 'like', "%{$search}%")
-                    ->orWhere('pan', 'like', "%{$search}%")
-                    ->orWhere('address', 'like', "%{$search}%");
-                });
-
-            });
-        }
-
-        // ✅ Date filter
-        if (!empty($fromDate)) $q->whereDate('invoice_date', '>=', $fromDate);
-        if (!empty($toDate))   $q->whereDate('invoice_date', '<=', $toDate);
-
-        // ✅ Status filter
-        if (!empty($status)) {
-            if ($status === 'paid') {
-                $q->where('balance', '<=', 0);
-            } elseif ($status === 'unpaid') {
-                $q->where('received_amount', '<=', 0);
-            } elseif ($status === 'partial') {
-                $q->where('received_amount', '>', 0)->where('balance', '>', 0);
-            }
-        }
-
-        $invoices = $q->orderByDesc('invoice_date')
-            ->orderByDesc('id')
-            ->paginate(20)
-            ->withQueryString();
-
-        // ✅ Counts (optional) - but ONLY if user has permission for that tab
-        $taxCount = $me->can('show invoices')
-            ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count()
-            : null;
-
-        $proCount = $me->can('show proformas')
-            ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count()
-            : null;
-
-        $quoCount = $me->can('show quotations')
-            ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count()
-            : null;
-
-        return view('invoices.index', [
-            'invoices'   => $invoices,
-            'type'       => $type,
-            'taxCount'   => $taxCount,
-            'proCount'   => $proCount,
-            'quoCount'   => $quoCount,
+    if (!$bid) {
+        return back()->withErrors([
+            'business' => 'Active business select/attach नहीं है.',
         ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Active document type
+    |--------------------------------------------------------------------------
+    */
+    $type = strtolower(
+        trim((string) $request->get('type', 'tax'))
+    );
+
+    if (!in_array($type, [
+        'tax',
+        'proforma',
+        'quotation',
+    ], true)) {
+        $type = 'tax';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permission mapping
+    |--------------------------------------------------------------------------
+    */
+    $permByType = [
+        'tax'       => 'show invoices',
+        'proforma'  => 'show proformas',
+        'quotation' => 'show quotations',
+    ];
+
+    $requiredPerm = $permByType[$type]
+        ?? 'show invoices';
+
+    if (!$me->can($requiredPerm)) {
+        abort(
+            403,
+            "You don't have permission: {$requiredPerm}"
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filters
+    |--------------------------------------------------------------------------
+    */
+    $search = trim(
+        (string) $request->get('search', '')
+    );
+
+    $fromDate = $request->get('from_date');
+    $toDate   = $request->get('to_date');
+    $status   = $request->get('status');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Base invoice query
+    |--------------------------------------------------------------------------
+    */
+    $query = \App\Models\Invoice::query()
+        ->with([
+            'client:id,name',
+            'createdBy',
+            'updatedBy',
+        ])
+        ->where('business_id', $bid)
+        ->where('invoice_type', $type);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Search
+    |--------------------------------------------------------------------------
+    */
+    if ($search !== '') {
+        $query->where(function ($invoiceQuery) use ($search) {
+            $invoiceQuery
+                ->where(
+                    'invoice_number',
+                    'like',
+                    "%{$search}%"
+                )
+                ->orWhere(
+                    'total',
+                    'like',
+                    "%{$search}%"
+                )
+                ->orWhere(
+                    'balance',
+                    'like',
+                    "%{$search}%"
+                )
+                ->orWhere(
+                    'received_amount',
+                    'like',
+                    "%{$search}%"
+                )
+                ->orWhereHas(
+                    'client',
+                    function ($clientQuery) use ($search) {
+                        $clientQuery
+                            ->where(
+                                'name',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'mobile',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'gstin',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'pan',
+                                'like',
+                                "%{$search}%"
+                            )
+                            ->orWhere(
+                                'address',
+                                'like',
+                                "%{$search}%"
+                            );
+                    }
+                );
+        });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Date filters
+    |--------------------------------------------------------------------------
+    */
+    if (!empty($fromDate)) {
+        $query->whereDate(
+            'invoice_date',
+            '>=',
+            $fromDate
+        );
+    }
+
+    if (!empty($toDate)) {
+        $query->whereDate(
+            'invoice_date',
+            '<=',
+            $toDate
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment status filter
+    |--------------------------------------------------------------------------
+    */
+    if (!empty($status)) {
+        if ($status === 'paid') {
+            $query->where('balance', '<=', 0);
+        } elseif ($status === 'unpaid') {
+            $query->where(
+                'received_amount',
+                '<=',
+                0
+            );
+        } elseif ($status === 'partial') {
+            $query
+                ->where('received_amount', '>', 0)
+                ->where('balance', '>', 0);
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    */
+    $invoices = $query
+        ->orderByDesc('invoice_date')
+        ->orderByDesc('id')
+        ->paginate(20)
+        ->withQueryString();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Counts
+    |--------------------------------------------------------------------------
+    */
+    $taxCount = $me->can('show invoices')
+        ? \App\Models\Invoice::query()
+            ->where('business_id', $bid)
+            ->where('invoice_type', 'tax')
+            ->count()
+        : null;
+
+    $proCount = $me->can('show proformas')
+        ? \App\Models\Invoice::query()
+            ->where('business_id', $bid)
+            ->where('invoice_type', 'proforma')
+            ->count()
+        : null;
+
+    $quoCount = $me->can('show quotations')
+        ? \App\Models\Invoice::query()
+            ->where('business_id', $bid)
+            ->where('invoice_type', 'quotation')
+            ->count()
+        : null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Guide visibility
+    |--------------------------------------------------------------------------
+    | Current tab me 5 se kam records hone tak user ko new maana jayega.
+    */
+    $currentTypeCount = match ($type) {
+        'proforma'  => (int) ($proCount ?? 0),
+        'quotation' => (int) ($quoCount ?? 0),
+        default     => (int) ($taxCount ?? 0),
+    };
+
+    $showInvoiceSuggestion = $currentTypeCount < 5;
+
+    return view('invoices.index', [
+        'invoices'              => $invoices,
+        'type'                  => $type,
+        'taxCount'              => $taxCount,
+        'proCount'              => $proCount,
+        'quoCount'              => $quoCount,
+        'currentTypeCount'      => $currentTypeCount,
+        'showInvoiceSuggestion' => $showInvoiceSuggestion,
+        'activeBusinessId'      => $bid,
+    ]);
+}
 
 
     public function create(Request $request, $type = 'proforma')
@@ -678,19 +935,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
     }
 
 
-
-
-    // public function download(Invoice $invoice)
-    // {
-
-    //     // 2) Otherwise — generate fresh PDF (fallback)
-    //     $pdf = $this->simplePdfBuild($invoice);
-
-    //     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-    //     return $pdf->download('Invoice-'.$safeNumber.'.pdf');
-    // }
-
-
     public function download(Invoice $invoice)
 {
     $pdfContent = $this->simplePdfBuild($invoice);
@@ -749,61 +993,6 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         ]);
     }
 
-
-    // public function show(Invoice $invoice)
-    // {
-    //     // invoice number safe for filename
-    //     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-
-    //     // -------------------------------
-    //     // 1️⃣ If PDF already saved in DB
-    //     // -------------------------------
-    //     //        if (!empty($invoice->pdf_url)) {
-    //     //
-    //     //            $path = $this->normalizePdfPath($invoice->pdf_url);
-    //     //
-    //     //            if ($path && Storage::disk('public')->exists($path)) {
-    //     //                return response()->file(
-    //     //                    Storage::disk('public')->path($path),
-    //     //                    [
-    //     //                        'Content-Type'        => 'application/pdf',
-    //     //                        'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
-    //     //                    ]
-    //     //                );
-    //     //            }
-    //     //        }
-
-    //     // --------------------------------------------------
-    //     // 2️⃣ PDF missing (DB empty OR file deleted)
-    //     //    → Generate + Save + Show
-    //     // --------------------------------------------------
-
-    //     // Always use fresh relations for PDF
-    //     $invoice = $invoice->fresh(['client', 'items', 'business']);
-
-    //     // Build PDF
-    //     $pdf = $this->simplePdfBuild($invoice);
-    //     // OR: $pdf = $this->buildInvoicePdf($invoice);
-
-    //     $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
-
-    //     // Save PDF to storage
-    //     Storage::disk('public')->put($fileName, $pdf->output());
-
-    //     // Save path in DB (only relative path)
-    //     $invoice->update([
-    //         'pdf_url' => $fileName,
-    //     ]);
-
-    //     // Show PDF
-    //     return response()->file(
-    //         Storage::disk('public')->path($fileName),
-    //         [
-    //             'Content-Type'        => 'application/pdf',
-    //             'Content-Disposition' => 'inline; filename="Invoice-'.$safeNumber.'.pdf"',
-    //         ]
-    //     );
-    // }
 
 
     public function show(Invoice $invoice)
