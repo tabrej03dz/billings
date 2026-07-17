@@ -369,9 +369,14 @@
                                 @endphp
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">State (GST Code)</label>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">
+                                        State (GST Code)
+                                        <span id="stateOptionalText" class="text-xs font-normal text-slate-400">
+                                            (Optional when GSTIN is not provided)
+                                        </span>
+                                    </label>
 
-                                    <select id="state_select" required
+                                    <select id="state_select"
                                             class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500">
                                         <option value="">-- Select State --</option>
 
@@ -400,11 +405,23 @@
                                 <div class="grid sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">GST Enabled</label>
-                                        <select name="gst_enabled"
+                                        @php
+                                            $defaultGstEnabled = old('gst_enabled');
+
+                                            if ($defaultGstEnabled === null) {
+                                                $defaultGstEnabled = old('gstin') ? '1' : '0';
+                                            }
+                                        @endphp
+
+                                        <select name="gst_enabled" id="gst_enabled"
                                                 class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500">
-                                            <option value="1" {{ old('gst_enabled', '1') == '1' ? 'selected' : '' }}>Yes</option>
-                                            <option value="0" {{ old('gst_enabled') == '0' ? 'selected' : '' }}>No</option>
+                                            <option value="1" {{ (string) $defaultGstEnabled === '1' ? 'selected' : '' }}>Yes</option>
+                                            <option value="0" {{ (string) $defaultGstEnabled === '0' ? 'selected' : '' }}>No</option>
                                         </select>
+
+                                        <p id="gstEnabledHelp" class="mt-2 text-xs text-slate-500">
+                                            GSTIN blank hone par GST Enabled automatically No rahega.
+                                        </p>
                                     </div>
 
                                     <div>
@@ -534,6 +551,9 @@
     const stateSelect = document.getElementById('state_select');
     const stateInput = document.getElementById('state');
     const stateCodeInput = document.getElementById('state_code');
+    const gstEnabledSelect = document.getElementById('gst_enabled');
+    const gstEnabledHelp = document.getElementById('gstEnabledHelp');
+    const stateOptionalText = document.getElementById('stateOptionalText');
 
     const labels = ['User Details', 'Business Details', 'Billing Setup'];
     const pills = [pillStep1, pillStep2, pillStep3];
@@ -597,22 +617,72 @@
         stateInput.value = parts.slice(1).join(',') || '';
     }
 
-    function updateStateFromGstin() {
-        if (!gstinInput || !stateSelect || !stateInput || !stateCodeInput) return;
+    function syncGstFields() {
+        if (!gstinInput) return;
 
         const gstin = gstinInput.value.trim().toUpperCase();
+        const hasGstin = gstin.length > 0;
+
         gstinInput.value = gstin;
 
-        if (gstin.length < 2) return;
+        /*
+        |--------------------------------------------------------------------------
+        | GSTIN blank:
+        | - State optional
+        | - GST Enabled defaults to No
+        |--------------------------------------------------------------------------
+        */
+        if (stateSelect) {
+            stateSelect.required = hasGstin;
+        }
+
+        if (stateOptionalText) {
+            stateOptionalText.textContent = hasGstin
+                ? ''
+                : '';
+
+            stateOptionalText.className = hasGstin
+                ? 'text-xs font-normal text-red-500'
+                : 'text-xs font-normal text-slate-400';
+        }
+
+        if (gstEnabledSelect) {
+            gstEnabledSelect.value = hasGstin ? '1' : '0';
+        }
+
+        if (gstEnabledHelp) {
+            gstEnabledHelp.textContent = hasGstin
+                ? ''
+                : '';
+
+            gstEnabledHelp.className = hasGstin
+                ? 'mt-2 text-xs text-green-600'
+                : 'mt-2 text-xs text-slate-500';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GSTIN ke first 2 digits se State auto select
+        |--------------------------------------------------------------------------
+        */
+        if (gstin.length < 2) {
+            return;
+        }
 
         const code = gstin.substring(0, 2);
         const stateName = gstStateMap[code];
 
-        if (!stateName) return;
+        if (!stateName) {
+            return;
+        }
 
-        stateCodeInput.value = code;
-        stateInput.value = stateName;
-        stateSelect.value = code + ',' + stateName;
+        if (stateCodeInput) stateCodeInput.value = code;
+        if (stateInput) stateInput.value = stateName;
+        if (stateSelect) stateSelect.value = code + ',' + stateName;
+    }
+
+    function updateStateFromGstin() {
+        syncGstFields();
     }
 
     function syncBusinessMobileFromOwner() {
@@ -1019,9 +1089,10 @@
     }
 
     if (gstinInput) {
-        gstinInput.addEventListener('input', updateStateFromGstin);
-        gstinInput.addEventListener('blur', updateStateFromGstin);
-        updateStateFromGstin();
+        gstinInput.addEventListener('input', syncGstFields);
+        gstinInput.addEventListener('change', syncGstFields);
+        gstinInput.addEventListener('blur', syncGstFields);
+        syncGstFields();
     }
 
     if (sendOtpBtn) {

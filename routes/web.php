@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\Route;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserActivityController;
+use App\Http\Controllers\BusinessProfileController;
 
 // frontend web routes:::::
 
@@ -157,6 +158,10 @@ Route::middleware(['auth'])->group(function () {
 
 
 
+
+
+
+
     // ACTIVITY LOG ROUTES
 
  Route::post(
@@ -194,6 +199,28 @@ Route::middleware(['auth'])->group(function () {
                 [UserActivityController::class, 'show']
             )->name('show');
         });
+
+
+
+
+        Route::prefix('business-profile')
+    ->name('business-profile.')
+    ->controller(BusinessProfileController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+
+        Route::post('/', 'update')->name('update');
+
+        Route::post(
+            '/template/{billTemplate}',
+            'selectTemplate'
+        )->name('template.select');
+
+        Route::post(
+            '/dismiss-suggestion',
+            'dismissSuggestion'
+        )->name('suggestion.dismiss');
+    });
 
 
 

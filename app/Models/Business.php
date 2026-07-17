@@ -36,4 +36,97 @@ class Business extends Model
     {
         return $this->belongsTo(\App\Models\BusinessType::class, 'type');
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    public function getProfileRequiredFields(): array
+{
+    return [
+        'name',
+        'email',
+        'mobile',
+        'type',
+        'address',
+        'state',
+        'logo',
+        'pdf_template_id',
+    ];
+}
+
+public function calculateProfileCompletion(): int
+{
+    $fields = $this->getProfileRequiredFields();
+
+    $completedFields = collect($fields)
+        ->filter(function ($field) {
+            return filled($this->{$field});
+        })
+        ->count();
+
+    if (count($fields) === 0) {
+        return 0;
+    }
+
+    return (int) round(
+        ($completedFields / count($fields)) * 100
+    );
+}
+
+public function refreshProfileCompletion(): int
+{
+    $percentage = $this->calculateProfileCompletion();
+    $isCompleted = $percentage >= 100;
+
+    $updateData = [
+        'profile_completion' => $percentage,
+        'profile_setup_completed' => $isCompleted,
+    ];
+
+    if ($isCompleted && !$this->profile_setup_completed_at) {
+        $updateData['profile_setup_completed_at'] = now();
+    }
+
+    if (!$isCompleted) {
+        $updateData['profile_setup_completed_at'] = null;
+    }
+
+    $this->forceFill($updateData)->saveQuietly();
+
+    return $percentage;
+}
+
+public function isProfileIncomplete(): bool
+{
+    return !$this->profile_setup_completed
+        || $this->profile_completion < 100;
+}
+
+public function missingProfileFields(): array
+{
+    $labels = [
+        'name' => 'Business name',
+        'email' => 'Email address',
+        'mobile' => 'Mobile number',
+        'type' => 'Business type',
+        'address' => 'Business address',
+        'state' => 'State',
+        'logo' => 'Business logo',
+        'pdf_template_id' => 'Invoice template',
+    ];
+
+    return collect($this->getProfileRequiredFields())
+        ->filter(fn ($field) => blank($this->{$field}))
+        ->map(fn ($field) => $labels[$field] ?? ucfirst($field))
+        ->values()
+        ->all();
+}
 }

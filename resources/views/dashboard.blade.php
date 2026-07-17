@@ -1,3 +1,118 @@
+{{-- @php
+    $dashboardUser = auth()->user();
+
+    $dashboardBusinessId =
+        session('active_business_id')
+        ?? $dashboardUser->current_business_id
+        ?? $dashboardUser->businesses->first()?->id;
+
+    $dashboardBusiness = $dashboardBusinessId
+        ? App\Models\Business::find($dashboardBusinessId)
+        : null;
+@endphp
+
+@if(
+    $dashboardBusiness
+    && $dashboardBusiness->isProfileIncomplete()
+    && !$dashboardBusiness->profile_suggestion_dismissed_at
+)
+    <div
+        id="businessProfileSuggestion"
+        class="mb-6 overflow-hidden rounded-3xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 p-5 shadow-sm dark:border-indigo-900 dark:from-indigo-950/40 dark:to-violet-950/40"
+    >
+        <div class="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div
+                class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg"
+            >
+                <svg
+                    class="h-7 w-7"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 21h18M5 21V7l7-4 7 4v14"
+                    />
+                </svg>
+            </div>
+
+            <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2
+                            class="text-lg font-black text-zinc-900 dark:text-white"
+                        >
+                            Complete your business profile
+                        </h2>
+
+                        <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                            Your profile is
+                            <strong>
+                                {{ $dashboardBusiness->profile_completion }}%
+                            </strong>
+                            complete. Add the remaining details to create
+                            professional invoices.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onclick="dismissBusinessSuggestion()"
+                        class="text-zinc-400 hover:text-zinc-700"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <a
+                        href="{{ route('business-profile.index') }}"
+                        class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-indigo-700"
+                    >
+                        Complete Setup
+                    </a>
+
+                    <div class="min-w-[180px] flex-1">
+                        <div
+                            class="h-2 overflow-hidden rounded-full bg-white dark:bg-zinc-800"
+                        >
+                            <div
+                                class="h-full rounded-full bg-indigo-600"
+                                style="width: {{ $dashboardBusiness->profile_completion }}%"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function dismissBusinessSuggestion() {
+            const response = await fetch(
+                @json(route('business-profile.suggestion.dismiss')),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': @json(csrf_token())
+                    }
+                }
+            );
+
+            if (response.ok) {
+                document
+                    .getElementById('businessProfileSuggestion')
+                    ?.remove();
+            }
+        }
+    </script>
+@endif --}}
+
 <x-layouts.app :title="__('Dashboard')">
     <div x-data="{ showRatesForm: false }" class="flex flex-col gap-4">
         {{-- FLASH MESSAGE --}}
