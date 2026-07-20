@@ -2,32 +2,115 @@
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl  px-3 sm:px-6 py-4"
         style="margin: -35px">
 
-        <form
-    class="flex flex-wrap items-center gap-2"
-    @submit.prevent="scanBarcode()"
->
-    <input
-        x-ref="barcodeInput"
-        x-model.trim="barcodeInput"
-        type="text"
-        autocomplete="off"
-        placeholder="Scan barcode and press Enter"
-        class="w-72 rounded border border-gray-400 bg-white px-3 py-2 text-sm text-gray-900"
-    >
+        {{-- ================= BARCODE SCANNER ================= --}}
+        <div
+            class="rounded-xl border border-blue-200 bg-blue-50 p-4
+                dark:border-blue-900 dark:bg-[#1A1D23]"
+        >
+            <div class="mb-2 flex items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900 dark:text-white">
+                        Barcode Scanner
+                    </h2>
 
-    <button
-        type="submit"
-        class="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
-    >
-        Add by Barcode
-    </button>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                        USB scanner se scan karein ya barcode manually enter karein.
+                    </p>
+                </div>
 
-    <span
-        class="text-xs"
-        :class="barcodeError ? 'text-red-700' : 'text-green-700'"
-        x-text="barcodeMessage"
-    ></span>
-</form>
+                <span
+                    x-show="barcodeScanning"
+                    class="text-xs font-semibold text-blue-600"
+                >
+                    Searching...
+                </span>
+            </div>
+
+            <form
+                class="flex flex-wrap items-center gap-2"
+                @submit.prevent="scanBarcode()"
+            >
+                <div class="relative min-w-[260px] flex-1">
+                    <span
+                        class="pointer-events-none absolute inset-y-0 left-0
+                            flex items-center pl-3 text-gray-500"
+                    >
+                        ▦
+                    </span>
+
+                    <input
+                        x-ref="barcodeInput"
+                        x-model.trim="barcodeInput"
+                        type="text"
+                        inputmode="text"
+                        autocomplete="off"
+                        placeholder="Scan barcode and press Enter"
+                        @keydown.enter.prevent="scanBarcode()"
+                        class="w-full rounded-lg border border-gray-300 bg-white
+                            py-2 pl-9 pr-3 text-sm text-gray-900 outline-none
+                            focus:border-blue-500 focus:ring-2 focus:ring-blue-200
+                            dark:border-neutral-700 dark:bg-[#242833]
+                            dark:text-white"
+                    >
+                </div>
+
+                <button
+                    type="submit"
+                    :disabled="barcodeScanning"
+                    class="inline-flex items-center gap-2 rounded-lg bg-blue-600
+                        px-4 py-2 text-sm font-semibold text-white
+                        hover:bg-blue-700 disabled:cursor-not-allowed
+                        disabled:opacity-50"
+                >
+                    <svg
+                        x-show="barcodeScanning"
+                        class="h-4 w-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        ></circle>
+
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                    </svg>
+
+                    <span x-text="barcodeScanning ? 'Searching...' : 'Add Item'"></span>
+                </button>
+
+                <button
+                    type="button"
+                    @click="clearBarcodeScanner()"
+                    class="rounded-lg border border-gray-300 bg-white px-4 py-2
+                        text-sm font-semibold text-gray-700 hover:bg-gray-100
+                        dark:border-neutral-700 dark:bg-[#242833]
+                        dark:text-white"
+                >
+                    Clear
+                </button>
+            </form>
+
+            <div
+                x-show="barcodeMessage"
+                x-transition
+                class="mt-2 rounded-lg px-3 py-2 text-sm"
+                :class="barcodeError
+                    ? 'border border-red-200 bg-red-50 text-red-700'
+                    : 'border border-green-200 bg-green-50 text-green-700'"
+                x-text="barcodeMessage"
+            ></div>
+        </div>
+
+
         <style>
             .invoice-table th,
             .invoice-table td {
@@ -1664,6 +1747,15 @@
                     enabled: false
                 },
 
+                barcodeInput: '',
+                barcodeMessage: '',
+                barcodeError: false,
+                barcodeScanning: false,
+                lastScannedBarcode: '',
+                lastScannedAt: 0,
+
+
+
                 items: [],
                 barcodeInput: '',
                 barcodeMessage: '',
@@ -1877,28 +1969,100 @@
                     r.service_rate = 0;
                 },
 
+                // init() {
+                //     this.clientDD = createClientDD(this);
+
+                //     this.$watch('clientId', () => this.syncParty());
+
+                //     if (!this.items.length) this.items.push(rowTemplate());
+                //     if (!this.charges.length) this.charges.push(chargeTemplate());
+
+                //     this.syncParty();
+                //     this.onReceivedInput();
+                //     this.calc();
+
+                //     const reposition = () => {
+                //         for (let idx = 0; idx < this.items.length; idx++) {
+                //             if (this.items[idx]?.ddOpen) this.setItemDDPos(idx);
+                //         }
+                //     };
+
+                //     window.addEventListener('scroll', reposition, true);
+                //     window.addEventListener('resize', reposition);
+                // },
+
+
                 init() {
                     this.clientDD = createClientDD(this);
 
                     this.$watch('clientId', () => this.syncParty());
 
-                    if (!this.items.length) this.items.push(rowTemplate());
-                    if (!this.charges.length) this.charges.push(chargeTemplate());
+                    if (!this.items.length) {
+                        this.items.push(rowTemplate());
+                    }
+
+                    if (!this.charges.length) {
+                        this.charges.push(chargeTemplate());
+                    }
 
                     this.syncParty();
                     this.onReceivedInput();
                     this.calc();
 
                     const reposition = () => {
-                        for (let idx = 0; idx < this.items.length; idx++) {
-                            if (this.items[idx]?.ddOpen) this.setItemDDPos(idx);
+                        for (
+                            let index = 0;
+                            index < this.items.length;
+                            index++
+                        ) {
+                            if (this.items[index]?.ddOpen) {
+                                this.setItemDDPos(index);
+                            }
                         }
                     };
 
-                    window.addEventListener('scroll', reposition, true);
-                    window.addEventListener('resize', reposition);
+                    window.addEventListener(
+                        'scroll',
+                        reposition,
+                        true
+                    );
+
+                    window.addEventListener(
+                        'resize',
+                        reposition
+                    );
+
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            this.$refs.barcodeInput?.focus();
+                        }, 300);
+                    });
                 },
 
+
+                filteredItems(query) {
+                    const search = lower(query).trim();
+
+                    if (!search) {
+                        return this.itemsData || [];
+                    }
+
+                    return (this.itemsData || []).filter((item) => {
+                        const name = lower(item.name);
+                        const sku = lower(item.sku);
+                        const barcode = lower(item.barcode);
+                        const description = lower(
+                            item.description
+                            || item.desc
+                            || item.long_description
+                        );
+
+                        return name.includes(search)
+                            || sku.includes(search)
+                            || barcode.includes(search)
+                            || description.includes(search);
+                    });
+                },
                 // ---------- PARTY ----------
                 async syncParty() {
                     const c = (this.clients || []).find(x => String(x.id) === String(this.clientId));
@@ -2219,102 +2383,15 @@
                 },
 
                 async scanBarcode() {
+                    if (this.barcodeScanning) {
+                        return;
+                    }
+
                     const code = String(this.barcodeInput || '').trim();
 
                     if (!code) {
                         this.barcodeError = true;
                         this.barcodeMessage = 'Please scan or enter a barcode.';
-                        return;
-                    }
-
-                    this.barcodeError = false;
-                    this.barcodeMessage = 'Searching item...';
-
-                    let item = (this.itemsData || []).find((record) => {
-                        const recordBarcode = String(
-                            record.barcode || ''
-                        ).trim().toLowerCase();
-
-                        const recordSku = String(
-                            record.sku || ''
-                        ).trim().toLowerCase();
-
-                        return recordBarcode === code.toLowerCase()
-                            || recordSku === code.toLowerCase();
-                    });
-
-                    if (!item) {
-                        try {
-                            const url = new URL(
-                                `{{ route('items.barcode.lookup') }}`,
-                                window.location.origin
-                            );
-
-                            url.searchParams.set('barcode', code);
-
-                            const response = await fetch(url.toString(), {
-                                method: 'GET',
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            });
-
-                            const data = await response.json();
-
-                            if (!response.ok || !data.ok) {
-                                throw new Error(
-                                    data.message || 'Item not found.'
-                                );
-                            }
-
-                            item = data.item;
-
-                            const alreadyAvailable = this.itemsData.some(
-                                record => Number(record.id) === Number(item.id)
-                            );
-
-                            if (!alreadyAvailable) {
-                                this.itemsData.unshift(item);
-                            }
-
-                        } catch (error) {
-                            this.barcodeError = true;
-                            this.barcodeMessage =
-                                error.message || 'Item not found for this barcode.';
-
-                            this.barcodeInput = '';
-
-                            this.$nextTick(() => {
-                                this.$refs.barcodeInput?.focus();
-                            });
-
-                            return;
-                        }
-                    }
-
-                    /*
-                    * Same item invoice me already hai to uski quantity increase hogi.
-                    */
-                    const existingRowIndex = this.items.findIndex((row) => {
-                        return Number(row.item_id) === Number(item.id);
-                    });
-
-                    if (existingRowIndex >= 0) {
-                        const currentQuantity = Number(
-                            this.items[existingRowIndex].quantity || 0
-                        );
-
-                        this.items[existingRowIndex].quantity =
-                            currentQuantity + 1;
-
-                        this.calc();
-
-                        this.barcodeError = false;
-                        this.barcodeMessage =
-                            `${item.name} quantity increased`;
-
-                        this.barcodeInput = '';
 
                         this.$nextTick(() => {
                             this.$refs.barcodeInput?.focus();
@@ -2324,38 +2401,224 @@
                     }
 
                     /*
-                    * Empty invoice row find karega.
+                    * Scanner kabhi-kabhi same Enter event do baar bhej deta hai.
+                    * 800 milliseconds ke andar duplicate scan ko block karenge.
                     */
-                    let rowIndex = this.items.findIndex(
-                        row => !row.item_id
-                    );
+                    const now = Date.now();
 
-                    /*
-                    * Empty row nahi hai to nayi row add karega.
-                    */
-                    if (rowIndex < 0) {
-                        this.add();
-                        rowIndex = this.items.length - 1;
+                    if (
+                        this.lastScannedBarcode === code
+                        && now - this.lastScannedAt < 800
+                    ) {
+                        return;
                     }
 
-                    /*
-                    * Existing pickItem method se item select karega.
-                    */
-                    this.pickItem(rowIndex, item.id);
+                    this.lastScannedBarcode = code;
+                    this.lastScannedAt = now;
 
-                    this.items[rowIndex].quantity = 1;
-
-                    this.calc();
-
+                    this.barcodeScanning = true;
                     this.barcodeError = false;
-                    this.barcodeMessage = `${item.name} added successfully`;
+                    this.barcodeMessage = 'Searching item...';
 
+                    try {
+                        /*
+                        * Pehle already loaded items JSON me item search karenge.
+                        */
+                        let item = (this.itemsData || []).find((record) => {
+                            const recordBarcode = String(
+                                record?.barcode || ''
+                            ).trim().toLowerCase();
+
+                            const recordSku = String(
+                                record?.sku || ''
+                            ).trim().toLowerCase();
+
+                            const scanCode = code.toLowerCase();
+
+                            return recordBarcode === scanCode
+                                || recordSku === scanCode;
+                        });
+
+                        /*
+                        * Local JSON me nahi mila to backend lookup route call hoga.
+                        */
+                        if (!item) {
+                            const lookupUrl = new URL(
+                                @js(route('items.barcode.lookup')),
+                                window.location.origin
+                            );
+
+                            lookupUrl.searchParams.set('barcode', code);
+
+                            const response = await fetch(lookupUrl.toString(), {
+                                method: 'GET',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            let responseData = {};
+
+                            try {
+                                responseData = await response.json();
+                            } catch (jsonError) {
+                                throw new Error(
+                                    'Invalid server response received.'
+                                );
+                            }
+
+                            if (!response.ok || responseData.ok === false) {
+                                throw new Error(
+                                    responseData.message
+                                    || responseData.msg
+                                    || 'Item not found for this barcode.'
+                                );
+                            }
+
+                            item = responseData.item
+                                || responseData.data?.item
+                                || responseData.data;
+
+                            if (!item || !item.id) {
+                                throw new Error(
+                                    'Valid item information was not received.'
+                                );
+                            }
+
+                            /*
+                            * Fetched item ko current items list me add karenge,
+                            * jisse existing pickItem() method use kar sake.
+                            */
+                            const itemAlreadyAvailable = (
+                                this.itemsData || []
+                            ).some((existingItem) => {
+                                return String(existingItem.id)
+                                    === String(item.id);
+                            });
+
+                            if (!itemAlreadyAvailable) {
+                                this.itemsData.unshift(item);
+                            }
+                        }
+
+                        /*
+                        * Same item invoice me already added hai to quantity +1.
+                        */
+                        const existingRowIndex = this.items.findIndex((row) => {
+                            return String(row.item_id || '')
+                                === String(item.id);
+                        });
+
+                        if (existingRowIndex >= 0) {
+                            const existingRow = this.items[existingRowIndex];
+
+                            existingRow.quantity = Math.max(
+                                1,
+                                Number(existingRow.quantity || 0) + 1
+                            );
+
+                            /*
+                            * Manual amount ko dobara auto calculation par lana hai.
+                            */
+                            existingRow.amount_mode = 'auto';
+                            existingRow.manual_amount = this.lineAmount(existingRow);
+
+                            this.onAutoChange(existingRow);
+                            this.calc();
+
+                            this.barcodeError = false;
+                            this.barcodeMessage =
+                                `${item.name} quantity increased to ${existingRow.quantity}.`;
+
+                            this.resetBarcodeInput();
+
+                            return;
+                        }
+
+                        /*
+                        * Empty invoice row search karein.
+                        */
+                        let rowIndex = this.items.findIndex((row) => {
+                            return !row.item_id;
+                        });
+
+                        /*
+                        * Empty row nahi hai to new row create karein.
+                        */
+                        if (rowIndex < 0) {
+                            this.add();
+                            rowIndex = this.items.length - 1;
+                        }
+
+                        /*
+                        * Existing pickItem method item ki complete detail fill karega.
+                        */
+                        this.pickItem(rowIndex, item.id);
+
+                        const selectedRow = this.items[rowIndex];
+
+                        if (!selectedRow || !selectedRow.item_id) {
+                            throw new Error(
+                                'Item could not be added to invoice.'
+                            );
+                        }
+
+                        selectedRow.quantity = 1;
+                        selectedRow.amount_mode = 'auto';
+                        selectedRow.manual_amount = this.lineAmount(selectedRow);
+
+                        this.onAutoChange(selectedRow);
+                        this.calc();
+
+                        this.barcodeError = false;
+                        this.barcodeMessage =
+                            `${item.name} added successfully.`;
+
+                        this.resetBarcodeInput();
+
+                    } catch (error) {
+                        console.error('Barcode scanner error:', error);
+
+                        this.barcodeError = true;
+                        this.barcodeMessage =
+                            error?.message
+                            || 'Unable to find item for this barcode.';
+
+                        this.resetBarcodeInput(false);
+
+                    } finally {
+                        this.barcodeScanning = false;
+                    }
+                },
+
+                resetBarcodeInput(clearMessage = false) {
                     this.barcodeInput = '';
+
+                    if (clearMessage) {
+                        this.barcodeMessage = '';
+                        this.barcodeError = false;
+                    }
 
                     this.$nextTick(() => {
                         this.$refs.barcodeInput?.focus();
                     });
                 },
+
+                clearBarcodeScanner() {
+                    this.barcodeInput = '';
+                    this.barcodeMessage = '';
+                    this.barcodeError = false;
+                    this.barcodeScanning = false;
+                    this.lastScannedBarcode = '';
+                    this.lastScannedAt = 0;
+
+                    this.$nextTick(() => {
+                        this.$refs.barcodeInput?.focus();
+                    });
+                },
+
 
                 // ---------- ROW ACTIONS ----------
                 add() {
