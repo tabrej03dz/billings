@@ -1,12 +1,5 @@
 <x-layouts.app :title="__('Items')">
     <div class="flex flex-col gap-4">
-
-        @if(session('success'))
-            <div class="p-3 rounded-lg bg-green-50 text-green-700 border border-green-200">
-                {{ session('success') }}
-            </div>
-        @endif
-
         @if(session('success'))
             <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-green-700">
                 {{ session('success') }}

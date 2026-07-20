@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Print Barcode Labels</title>
+    <title>Print Barcodes</title>
 
     <style>
         @page {
@@ -45,7 +45,7 @@
         .toolbar button {
             padding: 10px 16px;
             border: 0;
-            border-radius: 7px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 700;
@@ -70,87 +70,124 @@
         |--------------------------------------------------------------------------
         | Label sheet
         |--------------------------------------------------------------------------
+        |
+        | Fixed 70mm/80mm width remove kar di gayi hai.
+        | Har label barcode ki natural width ke according expand hoga.
+        |
         */
 
         .sheet {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, 70mm);
-            align-items: start;
-            justify-content: start;
-            gap: 3mm;
-            padding: 3mm;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 4mm;
+            padding: 4mm;
         }
 
         .label {
-            width: 70mm;
-            min-height: 38mm;
-            padding: 3mm 4mm;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+
+            width: max-content;
+            min-width: max-content;
+            min-height: 40mm;
+
+            padding: 4mm 8mm;
+
             overflow: visible;
             text-align: center;
+            white-space: nowrap;
+
             background: #ffffff;
             border: 1px dashed #9ca3af;
-            break-inside: avoid;
+
             page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         .item-name {
             width: 100%;
             margin-bottom: 2mm;
+
             overflow: hidden;
             color: #000000;
+
             font-size: 12px;
             font-weight: 700;
             line-height: 1.2;
+
+            text-align: center;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         /*
          * Quiet zone:
-         * Barcode ke left aur right me white space hona zaruri hai.
+         * Left aur right me clear white space rakha gaya hai.
          */
-        .barcode-quiet-zone {
-            display: flex;
-            width: 100%;
-            min-height: 20mm;
-            align-items: center;
-            justify-content: center;
-            padding: 0 5mm;
+        .barcode-wrapper {
+            display: inline-block;
+            width: max-content;
+            min-width: max-content;
+
+            padding: 0 6mm;
+
             overflow: visible;
             background: #ffffff;
         }
 
+        .barcode {
+            display: inline-block;
+            width: max-content;
+            min-width: max-content;
+
+            overflow: visible;
+            line-height: 0;
+
+            background: #ffffff;
+        }
+
         /*
-         * Barcode PNG ko CSS se stretch/compress nahi karenge.
-         * Native generated dimensions preserve rahengi.
+         * Important:
+         * SVG ki width ko CSS se set nahi kiya gaya.
+         * Generated SVG apni original width me render hoga.
          */
-        .barcode-image {
+        .barcode svg {
             display: block;
-            width: auto;
-            max-width: 58mm;
-            height: 19mm;
-            object-fit: contain;
-            image-rendering: crisp-edges;
-            image-rendering: pixelated;
+
+            width: auto !important;
+            max-width: none !important;
+            min-width: 0 !important;
+
+            height: 24mm !important;
+
+            overflow: visible !important;
+            shape-rendering: crispEdges;
         }
 
         .barcode-number {
-            margin-top: 1.5mm;
+            margin-top: 2mm;
+
             color: #000000;
             font-family: "Courier New", Courier, monospace;
             font-size: 10px;
             font-weight: 700;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             line-height: 1.2;
         }
 
         .item-meta {
             display: flex;
+            width: 100%;
             justify-content: space-between;
-            gap: 5px;
-            margin-top: 1.5mm;
+            gap: 10mm;
+
+            margin-top: 2mm;
+
             color: #000000;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 600;
             line-height: 1.2;
         }
@@ -158,6 +195,8 @@
         @media print {
             html,
             body {
+                margin: 0;
+                padding: 0;
                 background: #ffffff !important;
             }
 
@@ -166,18 +205,34 @@
             }
 
             .sheet {
-                gap: 2mm;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 3mm;
                 padding: 0;
             }
 
             .label {
+                width: max-content !important;
+                min-width: max-content !important;
+
+                padding: 3mm 7mm;
+
+                overflow: visible !important;
                 border: 0;
             }
 
-            .barcode-image {
+            .barcode-wrapper,
+            .barcode {
+                width: max-content !important;
+                min-width: max-content !important;
+                overflow: visible !important;
+            }
+
+            .barcode svg {
                 width: auto !important;
-                max-width: 58mm !important;
-                height: 19mm !important;
+                max-width: none !important;
+                height: 24mm !important;
+                overflow: visible !important;
             }
         }
     </style>
@@ -203,7 +258,7 @@
     </button>
 
     <div class="print-note">
-        Print scale 100%, margins none aur fit-to-page off rakhein.
+        Print scale 100%, fit-to-page off aur margins minimum rakhein.
     </div>
 </div>
 
@@ -219,33 +274,8 @@
                 (int) ($entry['quantity'] ?? 1)
             );
 
-            $barcodeValue = preg_replace(
-                '/\D/',
-                '',
-                trim((string) $item->barcode)
-            );
-
-            /*
-             * C128C ko even number of digits chahiye.
-             */
-            if (strlen($barcodeValue) % 2 !== 0) {
-                $barcodeValue = '0' . $barcodeValue;
-            }
-
-            /*
-             * PNG barcode:
-             * Width factor = 3
-             * Height       = 90 pixels
-             *
-             * PNG raster output browser SVG scaling issue se bachta hai.
-             */
-            $barcodePng = DNS1D::getBarcodePNG(
-                $barcodeValue,
-                'C128C',
-                3,
-                90,
-                [0, 0, 0],
-                true
+            $barcodeValue = trim(
+                (string) $item->barcode
             );
         @endphp
 
@@ -257,12 +287,17 @@
                     {{ $item->name }}
                 </div>
 
-                <div class="barcode-quiet-zone">
-                    <img
-                        src="data:image/png;base64,{{ $barcodePng }}"
-                        alt="Barcode {{ $barcodeValue }}"
-                        class="barcode-image"
-                    >
+                <div class="barcode-wrapper">
+                    <div class="barcode">
+                        {!! DNS1D::getBarcodeSVG(
+                            $barcodeValue,
+                            'C128B',
+                            3,
+                            90,
+                            '000000',
+                            false
+                        ) !!}
+                    </div>
                 </div>
 
                 <div class="barcode-number">
