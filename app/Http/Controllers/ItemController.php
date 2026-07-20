@@ -23,9 +23,13 @@ class ItemController extends Controller
             ->with('category:id,name') // eager-load for table
             ->when($q !== '', function ($w) use ($q) {
                 $w->where(function ($s) use ($q) {
+                    // $s->where('name', 'like', "%{$q}%")
+                    //     ->orWhere('sku', 'like', "%{$q}%")
+                    //     ->orWhere('description', 'like', "%{$q}%");
                     $s->where('name', 'like', "%{$q}%")
-                        ->orWhere('sku', 'like', "%{$q}%")
-                        ->orWhere('description', 'like', "%{$q}%");
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('barcode', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
                 });
             })
             ->when($category_id, fn($w) => $w->where('category_id', $category_id))

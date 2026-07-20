@@ -151,7 +151,7 @@ class PlanController extends Controller
         ]);
     }
 
-    public function choose()
+    public function choose(Request $request)
     {
         $plans = Plan::where('status', 1)
             ->with(['permissions', 'planFeatures' => function ($query) {

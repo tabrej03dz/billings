@@ -7,6 +7,22 @@
             </div>
         @endif
 
+        @if(session('success'))
+            <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-green-700">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-red-700">
+                <ul class="list-disc pl-5">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="flex flex-wrap items-center justify-between gap-3  bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-black dark:text-white">Items</h1>
 
@@ -40,6 +56,21 @@
                     + New Item
                 </a>
 
+                <form
+                    method="POST"
+                    action="{{ route('items.barcodes.generate-missing') }}"
+                    onsubmit="return confirm('Generate barcodes for all items that do not have a barcode?')"
+                >
+                    @csrf
+
+                    <button
+                        type="submit"
+                        class="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
+                    >
+                        Generate Missing Barcodes
+                    </button>
+                </form>
+
 
                 <a href="{{ route('items.ai.create') }}"
                     class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
@@ -49,11 +80,51 @@
         </div>
 
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+            <form
+                id="barcodeBulkForm"
+                method="POST"
+                action="{{ route('items.barcodes.print') }}"
+                target="_blank"
+            >
+                @csrf
+
+                <div class="mb-3 flex flex-wrap items-center gap-3">
+
+                    <label class="text-sm font-medium">
+                        Copies per item
+                    </label>
+
+                    <input
+                        type="number"
+                        name="quantity"
+                        value="1"
+                        min="1"
+                        max="200"
+                        class="w-24 rounded border px-3 py-2"
+                    >
+
+                    <button
+                        type="submit"
+                        class="rounded bg-purple-600 px-4 py-2 text-sm text-white hover:bg-purple-700"
+                    >
+                        Print Selected Barcodes
+                    </button>
+
+                </div>
+            </form>
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                 <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
+                    <th class="px-3 py-3">
+                        <input
+                            type="checkbox"
+                            id="selectAllBarcodeItems"
+                        >
+                    </th>
+
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">SKU</th>
+                    <th class="px-6 py-3">Barcode</th>
                     <th class="px-6 py-3">Category</th>
                     <th class="px-6 py-3">Price</th>
                     <th class="px-6 py-3">Tax %</th>
@@ -65,8 +136,62 @@
                 <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
                 @forelse ($items as $it)
                     <tr>
+                        <td class="px-3 py-3">
+                            <input
+                                class="barcode-item-checkbox"
+                                type="checkbox"
+                                form="barcodeBulkForm"
+                                name="item_ids[]"
+                                value="{{ $it->id }}"
+                            >
+                        </td>
                         <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">{{ $it->name }}</td>
                         <td class="px-6 py-3">{{ $it->sku ?? '—' }}</td>
+                        <td class="px-6 py-3">
+                            @if($it->barcode)
+
+                                <div class="flex min-w-[170px] flex-col gap-2">
+                                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
+                                        {{ $it->barcode }}
+                                    </span>
+
+                                    <a
+                                        href="{{ route('items.barcode.print', [
+                                            'item' => $it->id,
+                                            'quantity' => 1,
+                                            'print' => 1
+                                        ]) }}"
+                                        target="_blank"
+                                        class="inline-flex w-fit items-center rounded-md bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700"
+                                    >
+                                        🖨 Print Barcode
+                                    </a>
+                                </div>
+
+                            @else
+
+                                <div class="flex min-w-[170px] flex-col gap-2">
+                                    <span class="text-xs text-red-600">
+                                        Barcode not generated
+                                    </span>
+
+                                    <form
+                                        action="{{ route('items.barcode.generate', $it->id) }}"
+                                        method="POST"
+                                    >
+                                        @csrf
+
+                                        <button
+                                            type="submit"
+                                            class="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                                        >
+                                            Generate Barcode
+                                        </button>
+                                    </form>
+                                </div>
+
+                            @endif
+                        </td>
                         <td class="px-6 py-3">{{ $it->category?->name ?? '—' }}</td>
                         <td class="px-6 py-3">{{ number_format($it->price,2) }}</td>
                         <td class="px-6 py-3">{{ rtrim(rtrim(number_format($it->tax_rate,2), '0'), '.') }}</td>
@@ -85,6 +210,40 @@
                                 @csrf @method('DELETE')
                                 <button type="submit" class="bg-red-600 hover:underline p-2 text-white ">Delete</button>
                             </form>
+
+
+
+                            @if($it->barcode)
+
+                                <a
+                                    href="{{ route('items.barcode.print', [
+                                        'item' => $it->id,
+                                        'quantity' => 1
+                                    ]) }}"
+                                    target="_blank"
+                                    class="inline-block rounded bg-purple-600 px-3 py-2 text-white hover:bg-purple-700"
+                                >
+                                    Print Barcode
+                                </a>
+
+                            @else
+
+                                <form
+                                    action="{{ route('items.barcode.generate', $it->id) }}"
+                                    method="POST"
+                                    class="inline-block"
+                                >
+                                    @csrf
+
+                                    <button
+                                        type="submit"
+                                        class="rounded bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+                                    >
+                                        Generate Barcode
+                                    </button>
+                                </form>
+
+                            @endif
                         </td>
                     </tr>
                 @empty
@@ -98,4 +257,37 @@
             {{ $items->links() }}
         </div>
     </div>
+
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAll = document.getElementById('selectAllBarcodeItems');
+
+        if (!selectAll) {
+            return;
+        }
+
+        selectAll.addEventListener('change', function () {
+            document
+                .querySelectorAll('.barcode-item-checkbox')
+                .forEach(function (checkbox) {
+                    checkbox.checked = selectAll.checked;
+                });
+        });
+
+        const bulkForm = document.getElementById('barcodeBulkForm');
+
+        bulkForm?.addEventListener('submit', function (event) {
+            const selectedItems = document.querySelectorAll(
+                '.barcode-item-checkbox:checked'
+            );
+
+            if (selectedItems.length === 0) {
+                event.preventDefault();
+                alert('Please select at least one item.');
+            }
+        });
+    });
+</script>
 </x-layouts.app>

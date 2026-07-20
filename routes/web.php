@@ -390,6 +390,38 @@ Route::middleware(['auth'])->group(function () {
         Route::put('update/{item}', 'update')->name('update');
         Route::delete('destroy/{item}', 'destroy')->name('destroy');
         Route::post('store/ajax', 'storeAjax')->name('store.ajax');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode routes
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            'barcode/lookup',
+            [\App\Http\Controllers\ItemBarcodeController::class, 'lookup']
+        )->name('barcode.lookup');
+
+        Route::post(
+            'barcodes/generate-missing',
+            [\App\Http\Controllers\ItemBarcodeController::class, 'generateMissing']
+        )->name('barcodes.generate-missing');
+
+        Route::post(
+            'barcodes/print',
+            [\App\Http\Controllers\ItemBarcodeController::class, 'printBulk']
+        )->name('barcodes.print');
+
+        Route::post(
+            '{item}/barcode/generate',
+            [\App\Http\Controllers\ItemBarcodeController::class, 'generate']
+        )->name('barcode.generate');
+
+        Route::get(
+            '{item}/barcode/print',
+            [\App\Http\Controllers\ItemBarcodeController::class, 'printOne']
+        )->name('barcode.print');
     });
 
     Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('item.create');

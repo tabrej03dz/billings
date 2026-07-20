@@ -20,6 +20,7 @@ class UserActivity extends Model
         'started_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'ended_at' => 'datetime',
+        'last_error_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

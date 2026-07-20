@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Concerns\BelongsToBusiness;
+use App\Services\ItemBarcodeService;
 
 class Item extends Model
 {
@@ -68,6 +69,13 @@ class Item extends Model
     {
         $this->stock_qty = $this->stockMovements()->sum('qty_change');
         $this->saveQuietly();
+    }
+
+    protected static function booted(): void
+    {
+        static::created(function (Item $item): void {
+            app(ItemBarcodeService::class)->generate($item);
+        });
     }
 
 }

@@ -1,6 +1,33 @@
 <x-layouts.app :title="__('Create Sales Invoice')">
     <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl  px-3 sm:px-6 py-4"
         style="margin: -35px">
+
+        <form
+    class="flex flex-wrap items-center gap-2"
+    @submit.prevent="scanBarcode()"
+>
+    <input
+        x-ref="barcodeInput"
+        x-model.trim="barcodeInput"
+        type="text"
+        autocomplete="off"
+        placeholder="Scan barcode and press Enter"
+        class="w-72 rounded border border-gray-400 bg-white px-3 py-2 text-sm text-gray-900"
+    >
+
+    <button
+        type="submit"
+        class="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
+    >
+        Add by Barcode
+    </button>
+
+    <span
+        class="text-xs"
+        :class="barcodeError ? 'text-red-700' : 'text-green-700'"
+        x-text="barcodeMessage"
+    ></span>
+</form>
         <style>
             .invoice-table th,
             .invoice-table td {
@@ -1638,6 +1665,9 @@
                 },
 
                 items: [],
+                barcodeInput: '',
+                barcodeMessage: '',
+                barcodeError: false,
 
                 saving: false,
                 savingClient: false,
@@ -1732,10 +1762,19 @@
                     if (!query) return list;
 
                     return list.filter(it => {
+                        // const name = lower(it.name);
+                        // const sku = lower(it.sku);
+                        // const desc = lower(it.description || it.desc || it.long_description);
+                        // return name.includes(query) || sku.includes(query) || desc.includes(query);
                         const name = lower(it.name);
                         const sku = lower(it.sku);
-                        const desc = lower(it.description || it.desc || it.long_description);
-                        return name.includes(query) || sku.includes(query) || desc.includes(query);
+                        const barcode = lower(it.barcode);
+                        const desc = lower(it.description);
+
+                        return name.includes(query)
+                            || sku.includes(query)
+                            || barcode.includes(query)
+                            || desc.includes(query);
                     });
                 },
 
@@ -2177,6 +2216,145 @@
                     });
 
                     return rec ? n(rec.rate_per_gram ?? rec.rate ?? 0) : 0;
+                },
+
+                async scanBarcode() {
+                    const code = String(this.barcodeInput || '').trim();
+
+                    if (!code) {
+                        this.barcodeError = true;
+                        this.barcodeMessage = 'Please scan or enter a barcode.';
+                        return;
+                    }
+
+                    this.barcodeError = false;
+                    this.barcodeMessage = 'Searching item...';
+
+                    let item = (this.itemsData || []).find((record) => {
+                        const recordBarcode = String(
+                            record.barcode || ''
+                        ).trim().toLowerCase();
+
+                        const recordSku = String(
+                            record.sku || ''
+                        ).trim().toLowerCase();
+
+                        return recordBarcode === code.toLowerCase()
+                            || recordSku === code.toLowerCase();
+                    });
+
+                    if (!item) {
+                        try {
+                            const url = new URL(
+                                `{{ route('items.barcode.lookup') }}`,
+                                window.location.origin
+                            );
+
+                            url.searchParams.set('barcode', code);
+
+                            const response = await fetch(url.toString(), {
+                                method: 'GET',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (!response.ok || !data.ok) {
+                                throw new Error(
+                                    data.message || 'Item not found.'
+                                );
+                            }
+
+                            item = data.item;
+
+                            const alreadyAvailable = this.itemsData.some(
+                                record => Number(record.id) === Number(item.id)
+                            );
+
+                            if (!alreadyAvailable) {
+                                this.itemsData.unshift(item);
+                            }
+
+                        } catch (error) {
+                            this.barcodeError = true;
+                            this.barcodeMessage =
+                                error.message || 'Item not found for this barcode.';
+
+                            this.barcodeInput = '';
+
+                            this.$nextTick(() => {
+                                this.$refs.barcodeInput?.focus();
+                            });
+
+                            return;
+                        }
+                    }
+
+                    /*
+                    * Same item invoice me already hai to uski quantity increase hogi.
+                    */
+                    const existingRowIndex = this.items.findIndex((row) => {
+                        return Number(row.item_id) === Number(item.id);
+                    });
+
+                    if (existingRowIndex >= 0) {
+                        const currentQuantity = Number(
+                            this.items[existingRowIndex].quantity || 0
+                        );
+
+                        this.items[existingRowIndex].quantity =
+                            currentQuantity + 1;
+
+                        this.calc();
+
+                        this.barcodeError = false;
+                        this.barcodeMessage =
+                            `${item.name} quantity increased`;
+
+                        this.barcodeInput = '';
+
+                        this.$nextTick(() => {
+                            this.$refs.barcodeInput?.focus();
+                        });
+
+                        return;
+                    }
+
+                    /*
+                    * Empty invoice row find karega.
+                    */
+                    let rowIndex = this.items.findIndex(
+                        row => !row.item_id
+                    );
+
+                    /*
+                    * Empty row nahi hai to nayi row add karega.
+                    */
+                    if (rowIndex < 0) {
+                        this.add();
+                        rowIndex = this.items.length - 1;
+                    }
+
+                    /*
+                    * Existing pickItem method se item select karega.
+                    */
+                    this.pickItem(rowIndex, item.id);
+
+                    this.items[rowIndex].quantity = 1;
+
+                    this.calc();
+
+                    this.barcodeError = false;
+                    this.barcodeMessage = `${item.name} added successfully`;
+
+                    this.barcodeInput = '';
+
+                    this.$nextTick(() => {
+                        this.$refs.barcodeInput?.focus();
+                    });
                 },
 
                 // ---------- ROW ACTIONS ----------
