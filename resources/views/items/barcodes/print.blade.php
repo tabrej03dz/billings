@@ -291,7 +291,7 @@
                     <div class="barcode">
                         {!! DNS1D::getBarcodeSVG(
                             $barcodeValue,
-                            'C128B',
+                            'C128',
                             3,
                             90,
                             '000000',
