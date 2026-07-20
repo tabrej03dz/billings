@@ -8,12 +8,18 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Print Barcodes</title>
+    <title>Print Barcode Labels</title>
 
     <style>
+        /*
+        |--------------------------------------------------------------------------
+        | Print configuration
+        |--------------------------------------------------------------------------
+        */
+
         @page {
             size: auto;
-            margin: 3mm;
+            margin: 4mm;
         }
 
         * {
@@ -24,29 +30,43 @@
         body {
             margin: 0;
             padding: 0;
+
             color: #000000;
             background: #ffffff;
+
             font-family: Arial, Helvetica, sans-serif;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Toolbar
+        |--------------------------------------------------------------------------
+        */
 
         .toolbar {
             position: sticky;
             top: 0;
             z-index: 100;
+
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             gap: 10px;
+
             padding: 12px;
+
             background: #ffffff;
             border-bottom: 1px solid #d1d5db;
         }
 
         .toolbar button {
             padding: 10px 16px;
+
             border: 0;
             border-radius: 6px;
+
             cursor: pointer;
+
             font-size: 14px;
             font-weight: 700;
         }
@@ -56,9 +76,17 @@
             background: #16a34a;
         }
 
+        .print-button:hover {
+            background: #15803d;
+        }
+
         .close-button {
             color: #111827;
             background: #e5e7eb;
+        }
+
+        .close-button:hover {
+            background: #d1d5db;
         }
 
         .print-note {
@@ -68,12 +96,8 @@
 
         /*
         |--------------------------------------------------------------------------
-        | Label sheet
+        | Barcode sheet
         |--------------------------------------------------------------------------
-        |
-        | Fixed 70mm/80mm width remove kar di gayi hai.
-        | Har label barcode ki natural width ke according expand hoga.
-        |
         */
 
         .sheet {
@@ -81,10 +105,15 @@
             flex-wrap: wrap;
             align-items: flex-start;
             justify-content: flex-start;
-            gap: 4mm;
-            padding: 4mm;
+
+            gap: 5mm;
+            padding: 5mm;
         }
 
+        /*
+         * Barcode ki width fixed nahi rakhi gayi.
+         * Label generated barcode ki natural width ke according expand hoga.
+         */
         .label {
             display: inline-flex;
             flex-direction: column;
@@ -92,11 +121,12 @@
 
             width: max-content;
             min-width: max-content;
-            min-height: 40mm;
 
-            padding: 4mm 8mm;
+            padding: 6mm 10mm;
 
             overflow: visible;
+
+            color: #000000;
             text-align: center;
             white-space: nowrap;
 
@@ -107,96 +137,163 @@
             break-inside: avoid;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Item name
+        |--------------------------------------------------------------------------
+        */
+
         .item-name {
             width: 100%;
-            margin-bottom: 2mm;
+            margin-bottom: 3mm;
 
-            overflow: hidden;
             color: #000000;
 
-            font-size: 12px;
+            font-size: 17px;
             font-weight: 700;
             line-height: 1.2;
 
             text-align: center;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         /*
-         * Quiet zone:
-         * Left aur right me clear white space rakha gaya hai.
-         */
-        .barcode-wrapper {
-            display: inline-block;
-            width: max-content;
-            min-width: max-content;
+        |--------------------------------------------------------------------------
+        | Price
+        |--------------------------------------------------------------------------
+        */
 
-            padding: 0 6mm;
+        .item-price {
+            width: 100%;
+            margin-bottom: 3mm;
 
-            overflow: visible;
-            background: #ffffff;
+            color: #000000;
+
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.2;
+
+            text-align: center;
         }
 
-        .barcode {
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode
+        |--------------------------------------------------------------------------
+        */
+
+        /*
+         * Barcode ke left aur right me large white quiet zone.
+         * Scanner ke liye ye bahut zaruri hai.
+         */
+        .barcode-quiet-zone {
             display: inline-block;
+
             width: max-content;
             min-width: max-content;
 
+            padding: 0 12mm;
+
             overflow: visible;
+
             line-height: 0;
-
             background: #ffffff;
         }
 
         /*
-         * Important:
-         * SVG ki width ko CSS se set nahi kiya gaya.
-         * Generated SVG apni original width me render hoga.
+         * SVG ko CSS se compress nahi kiya jayega.
+         *
+         * width: auto
+         * max-width: none
+         *
+         * Isse generated barcode apni natural width me rahega.
          */
-        .barcode svg {
+        .barcode-quiet-zone svg {
             display: block;
 
             width: auto !important;
             max-width: none !important;
             min-width: 0 !important;
 
-            height: 24mm !important;
+            height: auto !important;
 
             overflow: visible !important;
+
             shape-rendering: crispEdges;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode number
+        |--------------------------------------------------------------------------
+        */
+
         .barcode-number {
-            margin-top: 2mm;
+            margin-top: 3mm;
 
             color: #000000;
-            font-family: "Courier New", Courier, monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0;
             line-height: 1.2;
+
+            text-align: center;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Item meta
+        |--------------------------------------------------------------------------
+        */
 
         .item-meta {
             display: flex;
             width: 100%;
             justify-content: space-between;
-            gap: 10mm;
+            align-items: center;
 
-            margin-top: 2mm;
+            gap: 20mm;
+            margin-top: 3mm;
 
             color: #000000;
-            font-size: 10px;
+
+            font-size: 11px;
             font-weight: 600;
             line-height: 1.2;
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invalid barcode
+        |--------------------------------------------------------------------------
+        */
+
+        .invalid-barcode {
+            min-width: 300px;
+            padding: 20px;
+
+            color: #b91c1c;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.5;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Print mode
+        |--------------------------------------------------------------------------
+        */
 
         @media print {
             html,
             body {
                 margin: 0;
                 padding: 0;
+
                 background: #ffffff !important;
             }
 
@@ -207,7 +304,8 @@
             .sheet {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 3mm;
+
+                gap: 4mm;
                 padding: 0;
             }
 
@@ -215,23 +313,25 @@
                 width: max-content !important;
                 min-width: max-content !important;
 
-                padding: 3mm 7mm;
+                padding: 5mm 10mm;
 
                 overflow: visible !important;
+
                 border: 0;
             }
 
-            .barcode-wrapper,
-            .barcode {
+            .barcode-quiet-zone {
                 width: max-content !important;
                 min-width: max-content !important;
+
                 overflow: visible !important;
             }
 
-            .barcode svg {
+            .barcode-quiet-zone svg {
                 width: auto !important;
                 max-width: none !important;
-                height: 24mm !important;
+                height: auto !important;
+
                 overflow: visible !important;
             }
         }
@@ -240,7 +340,10 @@
 
 <body>
 
+{{-- ================= TOOLBAR ================= --}}
+
 <div class="toolbar">
+
     <button
         type="button"
         class="print-button"
@@ -258,9 +361,12 @@
     </button>
 
     <div class="print-note">
-        Print scale 100%, fit-to-page off aur margins minimum rakhein.
+        Print scale 100%, fit-to-page off, margins minimum.
     </div>
+
 </div>
+
+{{-- ================= LABEL SHEET ================= --}}
 
 <div class="sheet">
 
@@ -274,8 +380,18 @@
                 (int) ($entry['quantity'] ?? 1)
             );
 
-            $barcodeValue = trim(
-                (string) $item->barcode
+            $barcodeValue = strtoupper(
+                trim((string) $item->barcode)
+            );
+
+            /*
+             * Valid barcode format:
+             *
+             * ITM + exactly 15 numeric digits
+             */
+            $validBarcode = preg_match(
+                '/^ITM[0-9]{15}$/',
+                $barcodeValue
             );
         @endphp
 
@@ -283,35 +399,79 @@
 
             <div class="label">
 
+                {{-- Item name --}}
+
                 <div class="item-name">
                     {{ $item->name }}
                 </div>
 
-                <div class="barcode-wrapper">
-                    <div class="barcode">
+                {{-- Price name ke neeche --}}
+
+                <div class="item-price">
+                    Rs. {{ number_format((float) $item->price, 2) }}
+                </div>
+
+                @if($validBarcode)
+
+                    {{--
+                    |--------------------------------------------------------------------------
+                    | Code 128 Auto
+                    |--------------------------------------------------------------------------
+                    |
+                    | C128 use kiya gaya hai, C128B nahi.
+                    |
+                    | C128 automatically:
+                    | - ITM letters ko Code Set B me encode karega.
+                    | - Long numeric part ko compact Code Set C me encode karega.
+                    |
+                    | Bar width: 4
+                    | Height: 150
+                    |
+                    | Isko CSS se compress nahi kiya gaya.
+                    |
+                    --}}
+
+                    <div class="barcode-quiet-zone">
                         {!! DNS1D::getBarcodeSVG(
                             $barcodeValue,
                             'C128',
-                            3,
-                            90,
+                            4,
+                            150,
                             '000000',
                             false
                         ) !!}
                     </div>
-                </div>
 
-                <div class="barcode-number">
-                    {{ $barcodeValue }}
-                </div>
+                    {{-- Barcode text --}}
+
+                    <div class="barcode-number">
+                        {{ $barcodeValue }}
+                    </div>
+
+                @else
+
+                    <div class="invalid-barcode">
+                        Invalid or old barcode:
+                        <br>
+                        {{ $barcodeValue ?: 'Empty barcode' }}
+                        <br><br>
+                        Please regenerate this item's barcode.
+                    </div>
+
+                @endif
+
+                {{-- Bottom information --}}
 
                 <div class="item-meta">
+
                     <span>
                         {{ $item->sku ?: 'ITEM-' . $item->id }}
                     </span>
 
                     <strong>
-                        ₹{{ number_format((float) $item->price, 2) }}
+                        Rs. {{ number_format((float) $item->price, 2) }}
                     </strong>
+
                 </div>
 
             </div>
@@ -322,12 +482,14 @@
 
 </div>
 
+{{-- ================= AUTO PRINT ================= --}}
+
 @if($autoPrint)
     <script>
         window.addEventListener('load', function () {
             window.setTimeout(function () {
                 window.print();
-            }, 700);
+            }, 900);
         });
     </script>
 @endif
