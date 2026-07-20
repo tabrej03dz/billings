@@ -88,9 +88,19 @@
             >
                 @csrf
 
-                <div class="mb-3 flex flex-wrap items-center gap-3">
+                <div class="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-purple-50 p-4 dark:border-gray-700 dark:bg-gray-800">
 
-                    <label class="text-sm font-medium">
+                    <div>
+                        <div class="text-sm font-bold text-gray-900 dark:text-white">
+                            Barcode Label Printing
+                        </div>
+
+                        <div class="text-xs text-gray-600 dark:text-gray-300">
+                            Items select karein aur print button dabayein
+                        </div>
+                    </div>
+
+                    <label class="ml-auto text-sm font-medium text-gray-900 dark:text-white">
                         Copies per item
                     </label>
 
@@ -100,14 +110,14 @@
                         value="1"
                         min="1"
                         max="200"
-                        class="w-24 rounded border px-3 py-2"
+                        class="w-24 rounded border border-gray-400 bg-white px-3 py-2 text-gray-900"
                     >
 
                     <button
                         type="submit"
-                        class="rounded bg-purple-600 px-4 py-2 text-sm text-white hover:bg-purple-700"
+                        class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700"
                     >
-                        Print Selected Barcodes
+                        🖨 Print Selected Barcodes
                     </button>
 
                 </div>
@@ -203,47 +213,33 @@
                                 <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">Inactive</span>
                             @endif
                         </td>
-                        <td class="px-6 py-3 space-x-2">
-                            <a href="{{ route('items.edit', $it->id) }}" class="bg-yellow-600 hover:underline p-2 text-white ">Edit</a>
-                            <form action="{{ route('items.destroy', $it->id) }}" method="POST" class="inline-block"
-                                  onsubmit="return confirm('Delete this item?');">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="bg-red-600 hover:underline p-2 text-white ">Delete</button>
-                            </form>
-
-
-
-                            @if($it->barcode)
+                        <td class="px-6 py-3">
+                            <div class="flex min-w-[150px] items-center gap-2">
 
                                 <a
-                                    href="{{ route('items.barcode.print', [
-                                        'item' => $it->id,
-                                        'quantity' => 1
-                                    ]) }}"
-                                    target="_blank"
-                                    class="inline-block rounded bg-purple-600 px-3 py-2 text-white hover:bg-purple-700"
+                                    href="{{ route('items.edit', $it->id) }}"
+                                    class="rounded bg-yellow-600 px-3 py-2 text-xs font-semibold text-white hover:bg-yellow-700"
                                 >
-                                    Print Barcode
+                                    Edit
                                 </a>
 
-                            @else
-
                                 <form
-                                    action="{{ route('items.barcode.generate', $it->id) }}"
+                                    action="{{ route('items.destroy', $it->id) }}"
                                     method="POST"
-                                    class="inline-block"
+                                    onsubmit="return confirm('Delete this item?');"
                                 >
                                     @csrf
+                                    @method('DELETE')
 
                                     <button
                                         type="submit"
-                                        class="rounded bg-blue-600 px-3 py-2 text-white hover:bg-blue-700"
+                                        class="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
                                     >
-                                        Generate Barcode
+                                        Delete
                                     </button>
                                 </form>
 
-                            @endif
+                            </div>
                         </td>
                     </tr>
                 @empty

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Business;
 use App\Models\Category;
 use App\Models\Item;
+use App\Services\ItemBarcodeService;
 use App\Services\StockService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -16,473 +18,267 @@ use Illuminate\Validation\ValidationException;
 
 class ItemController extends Controller
 {
-    public function index(Request $request)
+    /**
+     * GET /api/items
+     *
+     * Query parameters:
+     * business_id
+     * q
+     * category_id
+     * active
+     * per_page
+     */
+    public function index(Request $request): JsonResponse
     {
-       
-        $bid = $this->resolveBusinessId($request);
+        try {
+            $businessId = $this->resolveBusinessId($request);
 
-        // $items = Item::where('business_id', $request->business_id)->count();
+            $search = trim((string) $request->get('q', ''));
+            $categoryId = $request->integer('category_id');
+            $active = $request->get('active');
 
-        // return response()->json([
-        //     'business_id' => $request->business_id,
-        //     'items' => Item::select('id', 'name', 'business_id')->get(),
-        // ]);
+            $perPage = (int) $request->get('per_page', 15);
+            $perPage = $perPage > 0 && $perPage <= 100
+                ? $perPage
+                : 15;
 
-        $q           = trim((string) $request->get('q', ''));
-        $category_id = $request->integer('category_id');
-        $active      = $request->get('active'); // '1' | '0' | null
-        $perPage     = (int) ($request->get('per_page', 15));
-        $perPage     = ($perPage > 0 && $perPage <= 100) ? $perPage : 15;
+            $items = Item::withoutGlobalScope('business')
+                ->with('category:id,name')
+                ->where('business_id', $businessId)
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($searchQuery) use ($search) {
+                        $searchQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('sku', 'like', "%{$search}%")
+                            ->orWhere('barcode', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    });
+                })
+                ->when(
+                    $categoryId,
+                    fn ($query) => $query->where(
+                        'category_id',
+                        $categoryId
+                    )
+                )
+                ->when(
+                    $active !== null && $active !== '',
+                    fn ($query) => $query->where(
+                        'is_active',
+                        filter_var(
+                            $active,
+                            FILTER_VALIDATE_BOOLEAN,
+                            FILTER_NULL_ON_FAILURE
+                        ) ?? (bool) $active
+                    )
+                )
+                ->latest('id')
+                ->paginate($perPage);
 
-        $items = Item::withoutGlobalScope('business')
-            ->with('category:id,name')
-            ->where('business_id', $bid)
-            ->when($q !== '', function ($w) use ($q) {
-                $w->where(function ($s) use ($q) {
-                    $s->where('name', 'like', "%{$q}%")
-                        ->orWhere('sku', 'like', "%{$q}%")
-                        ->orWhere('description', 'like', "%{$q}%");
-                });
-            })
-            ->when($category_id, fn ($w) => $w->where('category_id', $category_id))
-            ->when($active !== null && $active !== '', fn ($w) => $w->where('is_active', (bool) $active))
-            ->latest()
-            ->paginate($perPage);
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Items fetched successfully.',
+                'data' => $items,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Items list API failed', [
+                'business_id' => $request->input('business_id'),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
 
-        return response()->json([
-            'ok'   => true,
-            'data' => $items,
-        ]);
+            return response()->json([
+                'ok' => false,
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to fetch items.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
+        }
     }
-
 
     /**
      * GET /api/items/categories
      */
-    public function categories(Request $request)
+    public function categories(Request $request): JsonResponse
     {
-        $bid = $this->resolveBusinessId($request);
+        try {
+            $businessId = $this->resolveBusinessId($request);
 
-        $categories = Category::query()
-            ->where('business_id', $bid)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+            $categories = Category::query()
+                ->where('business_id', $businessId)
+                ->orderBy('name')
+                ->get([
+                    'id',
+                    'name',
+                ]);
 
-        return response()->json([
-            'ok' => true,
-            'data' => $categories,
-        ]);
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Categories fetched successfully.',
+                'data' => $categories,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Item categories API failed', [
+                'business_id' => $request->input('business_id'),
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to fetch categories.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
+        }
     }
 
     /**
      * POST /api/items
-     * NOTE: product => opening stock movement (stock_qty) records, item.stock_qty stays 0 initially
+     *
+     * Barcode optional hai.
+     * Barcode missing hone par backend automatically generate karega.
      */
-    // public function store(Request $request, StockService $stock)
-    // {
-    //     $bid = (int) $request->input('business_id');
+    public function store(
+        Request $request,
+        StockService $stock,
+        ItemBarcodeService $barcodeService
+    ): JsonResponse {
+        $businessId = (int) $request->input('business_id');
 
-    //     if ($bid <= 0) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Validation failed',
-    //             'errors' => ['business_id' => ['business_id is required.']],
-    //         ], 422);
-    //     }
-
-    //     try {
-    //         // ✅ validate (same as web, + business_id)
-    //         $data = $request->validate([
-    //             'business_id' => ['required', 'integer', 'min:1'],
-
-    //             'name'        => ['required', 'string', 'max:255'],
-    //             'sku'         => [
-    //                 'nullable', 'string', 'max:100',
-    //                 Rule::unique('items', 'sku')->where(fn($q) => $q->where('business_id', $bid)),
-    //             ],
-    //             'category_id' => ['nullable', 'integer'],
-    //             'type'        => ['required', Rule::in(['product', 'service'])],
-
-    //             // service fields
-    //             'sac'         => ['nullable', 'string', 'max:32', 'required_if:type,service'],
-
-    //             'description' => ['nullable', 'string', 'max:2000'],
-
-    //             // pricing
-    //             'price'         => ['nullable', 'numeric', 'min:0'],
-    //             'cost_price'    => ['nullable', 'numeric', 'min:0'],
-    //             'making_charge' => ['nullable', 'numeric', 'min:0'],
-
-    //             // stock (product only)
-    //             'stock_qty'   => ['nullable', 'integer', 'min:0', 'required_if:type,product'],
-    //             'unit'        => ['nullable', 'string', 'max:50'],
-
-    //             'tax_rate'    => ['required', 'numeric', 'min:0', 'max:100'],
-    //             'is_active'   => ['nullable'],
-
-    //             // metals/weights
-    //             'metal_type'    => ['nullable', Rule::in(['gold','silver','other'])],
-    //             'purity'        => ['nullable', 'string', 'max:50'],
-
-    //             'gross_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'metal_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'stone_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'stone_charges' => ['nullable', 'numeric', 'min:0'],
-
-    //             'gold_weight'     => ['nullable', 'numeric', 'min:0'],
-    //             'gold_purity'     => ['nullable', 'string', 'max:50'],
-    //             'silver_weight'   => ['nullable', 'numeric', 'min:0'],
-    //             'silver_purity'   => ['nullable', 'string', 'max:50'],
-    //             'diamond_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'diamond_charges' => ['nullable', 'numeric', 'min:0'],
-    //         ], [
-    //             'sac.required_if'       => 'SAC Code is required for Service.',
-    //             'stock_qty.required_if' => 'Stock Qty is required for Product.',
-    //         ]);
-
-    //         // ✅ category business-scope check
-    //         //            if (!empty($data['category_id'])) {
-    //         //                $ok = Category::where('id', $data['category_id'])
-    //         //                    ->where('business_id', $bid)
-    //         //                    ->exists();
-    //         //
-    //         //                if (!$ok) {
-    //         //                    throw ValidationException::withMessages([
-    //         //                        'category_id' => ['Invalid category for this business.'],
-    //         //                    ]);
-    //         //                }
-    //         //            }
-
-    //         return DB::transaction(function () use ($data, $request, $stock, $bid) {
-
-    //             $type = $data['type'];
-    //             $openingQty = ($type === 'product') ? (int) ($data['stock_qty'] ?? 0) : 0;
-
-    //             // ❗ we don't save stock_qty directly
-    //             $payload = Arr::except($data, ['stock_qty']);
-    //             $payload['business_id'] = $bid;
-    //             $payload['is_active']   = $request->boolean('is_active');
-    //             $payload['stock_qty']   = 0;
-
-    //             // ✅ if service => nullify product-only fields
-    //             if ($type === 'service') {
-    //                 $payload['making_charge'] = null;
-    //                 $payload['unit']          = null;
-
-    //                 $payload['metal_type']    = null;
-    //                 $payload['purity']        = null;
-
-    //                 $payload['gross_weight']  = null;
-    //                 $payload['metal_weight']  = null;
-    //                 $payload['stone_weight']  = null;
-    //                 $payload['stone_charges'] = null;
-
-    //                 $payload['gold_weight']     = null;
-    //                 $payload['gold_purity']     = null;
-    //                 $payload['silver_weight']   = null;
-    //                 $payload['silver_purity']   = null;
-    //                 $payload['diamond_weight']  = null;
-    //                 $payload['diamond_charges'] = null;
-    //             }
-
-    //             $item = Item::create($payload);
-
-    //             if ($type === 'product' && $openingQty > 0) {
-    //                 $stock->recordOpening($item, $openingQty, 'Opening stock (item create)');
-    //             }
-
-    //             $item->load('category:id,name');
-
-    //             return response()->json([
-    //                 'ok'   => true,
-    //                 'msg'  => 'Item created successfully.',
-    //                 'item' => $item,
-    //             ], 201);
-    //         });
-
-    //     } catch (ValidationException $e) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Validation failed',
-    //             'errors' => $e->errors(),
-    //         ], 422);
-
-    //     } catch (\Throwable $e) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Server error while creating item.',
-    //             // dev debug:
-    //             // 'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
-
-    public function store(Request $request, StockService $stock)
-    {
-        $bid = (int) $request->input('business_id');
-
-        if ($bid <= 0) {
+        if ($businessId <= 0) {
             return response()->json([
                 'ok' => false,
-                'msg' => 'Validation failed',
+                'msg' => 'Validation failed.',
+                'code' => 'VALIDATION_ERROR',
                 'errors' => [
-                    'business_id' => ['business_id is required.']
+                    'business_id' => [
+                        'business_id is required.',
+                    ],
                 ],
             ], 422);
         }
 
         try {
-            $business = Business::with('businessType.itemFields')->find($bid);
+            $this->resolveBusinessId($request);
+
+            $business = Business::with(
+                'businessType.itemFields'
+            )->find($businessId);
 
             if (!$business) {
                 return response()->json([
                     'ok' => false,
                     'msg' => 'Business not found.',
+                    'code' => 'BUSINESS_NOT_FOUND',
                 ], 404);
             }
 
-            $allowedFields = [];
-            $requiredFields = [];
+            [
+                $allowedFields,
+                $requiredFields,
+            ] = $this->resolveItemFields($business);
 
-            if ($business->businessType) {
-                $allowedFields = $business->businessType->itemFields
-                    ->pluck('field_name')
-                    ->toArray();
+            $rules = $this->buildStoreRules(
+                $businessId,
+                $allowedFields,
+                $requiredFields
+            );
 
-                $requiredFields = $business->businessType->itemFields
-                    ->where('is_required', 1)
-                    ->pluck('field_name')
-                    ->toArray();
-            }
-
-            if (empty($allowedFields)) {
-                $allowedFields = [
-                    'name',
-                    'sku',
-                    'category_id',
-                    'type',
-                    'sac',
-                    'description',
-                    'price',
-                    'cost_price',
-                    'making_charge',
-                    'stock_qty',
-                    'unit',
-                    'tax_rate',
-                    'is_active',
-                    'metal_type',
-                    'purity',
-                    'gross_weight',
-                    'metal_weight',
-                    'stone_weight',
-                    'stone_charges',
-                    'gold_weight',
-                    'gold_purity',
-                    'silver_weight',
-                    'silver_purity',
-                    'diamond_weight',
-                    'diamond_charges',
-                ];
-            }
-
-            $isAllowed = fn ($field) => in_array($field, $allowedFields);
-            $isRequired = fn ($field) => in_array($field, $requiredFields) ? 'required' : 'nullable';
-
-            $rules = [
-                'business_id' => ['required', 'integer', 'min:1'],
+            $messages = [
+                'name.required' => 'Item name is required.',
+                'type.required' => 'Item type is required.',
+                'type.in' => 'Item type must be product or service.',
+                'price.numeric' => 'Price must be a valid number.',
+                'tax_rate.numeric' => 'Tax rate must be a valid number.',
+                'barcode.unique' => 'This barcode is already assigned to another item.',
+                'sku.unique' => 'This SKU is already assigned to another item in this business.',
+                'stock_qty.integer' => 'Stock quantity must be a whole number.',
             ];
 
-            if ($isAllowed('name')) {
-                $rules['name'] = [$isRequired('name'), 'string', 'max:255'];
-            }
+            $data = $request->validate($rules, $messages);
 
-            if ($isAllowed('sku')) {
-                $rules['sku'] = [
-                    'nullable',
-                    'string',
-                    'max:100',
-                    Rule::unique('items', 'sku')->where(fn ($q) => $q->where('business_id', $bid)),
-                ];
-            }
+            $this->validateCategory(
+                $businessId,
+                $data['category_id'] ?? null
+            );
 
-            if ($isAllowed('category_id')) {
-                $rules['category_id'] = [$isRequired('category_id'), 'integer'];
-            }
-
-            if ($isAllowed('type')) {
-                $rules['type'] = [$isRequired('type'), Rule::in(['product', 'service'])];
-            }
-
-            if ($isAllowed('sac')) {
-                $rules['sac'] = [$isRequired('sac'), 'string', 'max:32'];
-            }
-
-            if ($isAllowed('description')) {
-                $rules['description'] = ['nullable', 'string', 'max:2000'];
-            }
-
-            if ($isAllowed('price')) {
-                $rules['price'] = [$isRequired('price'), 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('cost_price')) {
-                $rules['cost_price'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('making_charge')) {
-                $rules['making_charge'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('stock_qty')) {
-                $rules['stock_qty'] = [$isRequired('stock_qty'), 'integer', 'min:0'];
-            }
-
-            if ($isAllowed('unit')) {
-                $rules['unit'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('tax_rate')) {
-                $rules['tax_rate'] = [$isRequired('tax_rate'), 'numeric', 'min:0', 'max:100'];
-            }
-
-            if ($isAllowed('is_active')) {
-                $rules['is_active'] = ['nullable'];
-            }
-
-            if ($isAllowed('metal_type')) {
-                $rules['metal_type'] = ['nullable', Rule::in(['gold', 'silver', 'other'])];
-            }
-
-            if ($isAllowed('purity')) {
-                $rules['purity'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('gross_weight')) {
-                $rules['gross_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('metal_weight')) {
-                $rules['metal_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('stone_weight')) {
-                $rules['stone_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('stone_charges')) {
-                $rules['stone_charges'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('gold_weight')) {
-                $rules['gold_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('gold_purity')) {
-                $rules['gold_purity'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('silver_weight')) {
-                $rules['silver_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('silver_purity')) {
-                $rules['silver_purity'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('diamond_weight')) {
-                $rules['diamond_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('diamond_charges')) {
-                $rules['diamond_charges'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            $data = $request->validate($rules);
-
-            if (!empty($data['category_id'])) {
-                $ok = Category::where('id', $data['category_id'])
-                    ->where('business_id', $bid)
-                    ->exists();
-
-                if (!$ok) {
-                    throw ValidationException::withMessages([
-                        'category_id' => ['Invalid category for this business.'],
-                    ]);
-                }
-            }
-
-            return DB::transaction(function () use ($data, $request, $stock, $bid, $allowedFields) {
+            return DB::transaction(function () use (
+                $data,
+                $request,
+                $stock,
+                $barcodeService,
+                $businessId,
+                $allowedFields
+            ) {
                 $type = $data['type'] ?? 'product';
 
-                $openingQty = ($type === 'product')
+                $openingQuantity = $type === 'product'
                     ? (int) ($data['stock_qty'] ?? 0)
                     : 0;
 
-                $payload = Arr::except($data, ['stock_qty', 'business_id']);
+                $payload = Arr::except(
+                    $data,
+                    [
+                        'stock_qty',
+                        'business_id',
+                    ]
+                );
 
-                $payload['business_id'] = $bid;
+                $payload['business_id'] = $businessId;
+
                 $payload['is_active'] = $request->has('is_active')
                     ? $request->boolean('is_active')
                     : true;
 
+                /*
+                 * Actual opening stock StockService me record hoga.
+                 */
                 $payload['stock_qty'] = 0;
 
-                $allItemFields = [
-                    'name',
-                    'sku',
-                    'category_id',
-                    'type',
-                    'sac',
-                    'description',
-                    'price',
-                    'cost_price',
-                    'making_charge',
-                    'stock_qty',
-                    'unit',
-                    'tax_rate',
-                    'is_active',
-                    'metal_type',
-                    'purity',
-                    'gross_weight',
-                    'metal_weight',
-                    'stone_weight',
-                    'stone_charges',
-                    'gold_weight',
-                    'gold_purity',
-                    'silver_weight',
-                    'silver_purity',
-                    'diamond_weight',
-                    'diamond_charges',
-                ];
-
-                foreach ($allItemFields as $field) {
-                    if (!in_array($field, $allowedFields) && $field !== 'stock_qty' && $field !== 'is_active') {
-                        $payload[$field] = null;
-                    }
+                if (array_key_exists('barcode', $payload)) {
+                    $payload['barcode'] = $this->normalizeBarcode(
+                        $payload['barcode']
+                    );
                 }
 
+                $payload = $this->removeDisallowedFields(
+                    $payload,
+                    $allowedFields,
+                    [
+                        'barcode',
+                        'stock_qty',
+                        'is_active',
+                    ]
+                );
+
                 if ($type === 'service') {
-                    $payload['making_charge'] = null;
-                    $payload['unit'] = null;
-                    $payload['metal_type'] = null;
-                    $payload['purity'] = null;
-                    $payload['gross_weight'] = null;
-                    $payload['metal_weight'] = null;
-                    $payload['stone_weight'] = null;
-                    $payload['stone_charges'] = null;
-                    $payload['gold_weight'] = null;
-                    $payload['gold_purity'] = null;
-                    $payload['silver_weight'] = null;
-                    $payload['silver_purity'] = null;
-                    $payload['diamond_weight'] = null;
-                    $payload['diamond_charges'] = null;
+                    $payload = $this->clearProductFields($payload);
                 }
 
                 $item = Item::create($payload);
 
-                if ($type === 'product' && $openingQty > 0) {
-                    $stock->recordOpening($item, $openingQty, 'Opening stock (item create)');
+                /*
+                 * App barcode na bheje to automatic barcode generate hoga.
+                 */
+                if (empty($item->barcode)) {
+                    $barcodeService->generate($item);
+                    $item->refresh();
+                }
+
+                if (
+                    $type === 'product'
+                    && $openingQuantity > 0
+                ) {
+                    $stock->recordOpening(
+                        $item,
+                        $openingQuantity,
+                        'Opening stock (item created through API)'
+                    );
                 }
 
                 $item->load('category:id,name');
@@ -493,472 +289,234 @@ class ItemController extends Controller
                     'item' => $item,
                 ], 201);
             });
-
-        } catch (ValidationException $e) {
+        } catch (ValidationException $exception) {
             return response()->json([
                 'ok' => false,
-                'msg' => 'Validation failed',
-                'errors' => $e->errors(),
+                'msg' => 'Validation failed.',
+                'code' => 'VALIDATION_ERROR',
+                'errors' => $exception->errors(),
             ], 422);
+        } catch (\Throwable $exception) {
+            Log::error('Item create API failed', [
+                'business_id' => $businessId,
+                'user_id' => $request->user()?->id,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
 
-        } catch (\Throwable $e) {
             return response()->json([
                 'ok' => false,
-                'msg' => 'Server error while creating item.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Server error while creating item.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
         }
     }
-
-
 
     /**
      * GET /api/items/{item}
      */
-    public function show(Request $request, Item $item)
-    {
-        $bid = $this->resolveBusinessId($request);
-        abort_unless((int) $item->business_id === (int) $bid, 403, 'Unauthorized item.');
+    public function show(
+        Request $request,
+        Item $item
+    ): JsonResponse {
+        try {
+            $businessId = $this->resolveBusinessId($request);
 
-        return response()->json([
-            'ok'   => true,
-            'item' => $item->load('category:id,name'),
-        ]);
+            if ((int) $item->business_id !== $businessId) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'You are not allowed to access this item.',
+                    'code' => 'FORBIDDEN',
+                ], 403);
+            }
+
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Item fetched successfully.',
+                'item' => $item->load('category:id,name'),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Item show API failed', [
+                'business_id' => $request->input('business_id'),
+                'item_id' => $item->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to fetch item.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
+        }
     }
 
     /**
-     * PUT/PATCH /api/items/{item}
-     * NOTE: stock_qty is final stock; we adjust via StockService setStockTo()
+     * PUT/PATCH /api/items/{id}
      */
-    // public function update(Request $request, StockService $stock, $id)
-    // {
-    //     $bid = (int) $request->input('business_id');
+    public function update(
+        Request $request,
+        StockService $stock,
+        ItemBarcodeService $barcodeService,
+        int $id
+    ): JsonResponse {
+        $businessId = (int) $request->input('business_id');
 
-    //     if ($bid <= 0) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Validation failed',
-    //             'errors' => ['business_id' => ['business_id is required.']],
-    //         ], 422);
-    //     }
-
-    //     // ✅ business-scope item fetch (important)
-    //     $item = Item::where('id', $id)->where('business_id', $bid)->first();
-
-    //     if (!$item) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Item not found for this business.',
-    //         ], 404);
-    //     }
-
-    //     try {
-    //         $data = $request->validate([
-    //             'business_id' => ['required', 'integer', 'min:1'],
-
-    //             'name'        => ['required', 'string', 'max:255'],
-    //             'sku' => [
-    //                 'sometimes', 'nullable', 'string', 'max:100',
-    //                 Rule::unique('items', 'sku')
-    //                     ->where(fn ($q) => $q->where('business_id', $bid))
-    //                     ->ignore($item->id),
-    //             ],
-    //             'category_id' => ['nullable', 'integer'],
-    //             'type'        => ['required', Rule::in(['product', 'service'])],
-
-    //             'sac'         => ['nullable', 'string', 'max:32', 'required_if:type,service'],
-    //             'description' => ['nullable', 'string', 'max:2000'],
-
-    //             'price'         => ['nullable', 'numeric', 'min:0'],
-    //             'cost_price'    => ['nullable', 'numeric', 'min:0'],
-    //             'making_charge' => ['nullable', 'numeric', 'min:0'],
-
-    //             // ✅ UPDATE: stock_qty optional (adjustment) — not required
-    //             'stock_qty'    => ['nullable', 'integer', 'min:0'],
-    //             'unit'         => ['nullable', 'string', 'max:50'],
-
-    //             'tax_rate'     => ['required', 'numeric', 'min:0', 'max:100'],
-    //             'is_active'    => ['nullable'],
-
-    //             'metal_type'    => ['nullable', Rule::in(['gold','silver','other'])],
-    //             'purity'        => ['nullable', 'string', 'max:50'],
-
-    //             'gross_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'metal_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'stone_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'stone_charges' => ['nullable', 'numeric', 'min:0'],
-
-    //             'gold_weight'     => ['nullable', 'numeric', 'min:0'],
-    //             'gold_purity'     => ['nullable', 'string', 'max:50'],
-    //             'silver_weight'   => ['nullable', 'numeric', 'min:0'],
-    //             'silver_purity'   => ['nullable', 'string', 'max:50'],
-    //             'diamond_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'diamond_charges' => ['nullable', 'numeric', 'min:0'],
-    //         ], [
-    //             'sac.required_if' => 'SAC Code is required for Service.',
-    //         ]);
-
-    //         return DB::transaction(function () use ($data, $request, $stock, $bid, $item) {
-
-    //             $newType = $data['type'];
-
-    //             // ✅ if client sends stock_qty in update, treat as "set stock to X" adjustment
-    //             // current stock is in stock system, but item->stock_qty is 0 always in your design.
-    //             // so we only run an adjustment if you want:
-    //             $targetQty = $request->has('stock_qty') ? (int) ($data['stock_qty'] ?? 0) : null;
-
-    //             // ❗ remove stock_qty from payload (stock service will handle)
-    //             $payload = Arr::except($data, ['stock_qty']);
-    //             $payload['business_id'] = $bid;
-    //             $payload['is_active']   = $request->boolean('is_active');
-
-    //             // ✅ if service => nullify product-only fields
-    //             if ($newType === 'service') {
-    //                 $payload['making_charge'] = null;
-    //                 $payload['unit']          = null;
-
-    //                 $payload['metal_type']    = null;
-    //                 $payload['purity']        = null;
-
-    //                 $payload['gross_weight']  = null;
-    //                 $payload['metal_weight']  = null;
-    //                 $payload['stone_weight']  = null;
-    //                 $payload['stone_charges'] = null;
-
-    //                 $payload['gold_weight']     = null;
-    //                 $payload['gold_purity']     = null;
-    //                 $payload['silver_weight']   = null;
-    //                 $payload['silver_purity']   = null;
-    //                 $payload['diamond_weight']  = null;
-    //                 $payload['diamond_charges'] = null;
-    //             }
-
-    //             // ✅ item table stock_qty stays 0 (same as store)
-    //             $payload['stock_qty'] = 0;
-
-    //             $item->update($payload);
-
-    //             /**
-    //              * ✅ Optional stock adjustment on update:
-    //              * If you want "stock_qty" to mean opening/adjust stock to EXACT qty:
-    //              * You need a method in StockService like setOnHand($item, $targetQty, $note)
-    //              *
-    //              * If you DON'T have it, comment this block.
-    //              */
-    //             if ($newType === 'product' && $targetQty !== null) {
-    //                 // Implement in StockService:
-    //                 // $stock->setOnHand($item, $targetQty, 'Stock adjusted (item update)');
-    //                 //
-    //                 // OR if you only have recordOpening(), you can use it only when there is no stock history.
-    //             }
-
-    //             $item->load('category:id,name');
-
-    //             return response()->json([
-    //                 'ok'   => true,
-    //                 'msg'  => 'Item updated successfully.',
-    //                 'item' => $item,
-    //             ], 200);
-    //         });
-
-    //     } catch (ValidationException $e) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Validation failed',
-    //             'errors' => $e->errors(),
-    //         ], 422);
-
-    //     } catch (\Throwable $e) {
-    //         return response()->json([
-    //             'ok' => false,
-    //             'msg' => 'Server error while updating item.',
-    //             // 'error' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
-
-    public function update(Request $request, StockService $stock, $id)
-    {
-        $bid = (int) $request->input('business_id');
-
-        if ($bid <= 0) {
+        if ($businessId <= 0) {
             return response()->json([
                 'ok' => false,
-                'msg' => 'Validation failed',
+                'msg' => 'Validation failed.',
+                'code' => 'VALIDATION_ERROR',
                 'errors' => [
-                    'business_id' => ['business_id is required.'],
+                    'business_id' => [
+                        'business_id is required.',
+                    ],
                 ],
             ], 422);
         }
 
-        $item = Item::where('id', $id)
-            ->where('business_id', $bid)
-            ->first();
-
-        if (!$item) {
-            return response()->json([
-                'ok' => false,
-                'msg' => 'Item not found for this business.',
-            ], 404);
-        }
-
         try {
-            $business = Business::with('businessType.itemFields')->find($bid);
+            $this->resolveBusinessId($request);
+
+            $item = Item::withoutGlobalScope('business')
+                ->where('id', $id)
+                ->where('business_id', $businessId)
+                ->first();
+
+            if (!$item) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'Item not found for this business.',
+                    'code' => 'ITEM_NOT_FOUND',
+                ], 404);
+            }
+
+            $business = Business::with(
+                'businessType.itemFields'
+            )->find($businessId);
 
             if (!$business) {
                 return response()->json([
                     'ok' => false,
                     'msg' => 'Business not found.',
+                    'code' => 'BUSINESS_NOT_FOUND',
                 ], 404);
             }
 
-            $allowedFields = [];
-            $requiredFields = [];
+            [
+                $allowedFields,
+                $requiredFields,
+            ] = $this->resolveItemFields($business);
 
-            if ($business->businessType) {
-                $allowedFields = $business->businessType->itemFields
-                    ->pluck('field_name')
-                    ->toArray();
+            $rules = $this->buildUpdateRules(
+                $businessId,
+                $item,
+                $allowedFields,
+                $requiredFields
+            );
 
-                $requiredFields = $business->businessType->itemFields
-                    ->where('is_required', 1)
-                    ->pluck('field_name')
-                    ->toArray();
-            }
+            $data = $request->validate($rules, [
+                'barcode.unique' => 'This barcode is already assigned to another item.',
+                'sku.unique' => 'This SKU is already assigned to another item in this business.',
+            ]);
 
-            if (empty($allowedFields)) {
-                $allowedFields = [
-                    'name',
-                    'sku',
-                    'category_id',
-                    'type',
-                    'sac',
-                    'description',
-                    'price',
-                    'cost_price',
-                    'making_charge',
-                    'stock_qty',
-                    'unit',
-                    'tax_rate',
-                    'is_active',
-                    'metal_type',
-                    'purity',
-                    'gross_weight',
-                    'metal_weight',
-                    'stone_weight',
-                    'stone_charges',
-                    'gold_weight',
-                    'gold_purity',
-                    'silver_weight',
-                    'silver_purity',
-                    'diamond_weight',
-                    'diamond_charges',
-                ];
-            }
+            $this->validateCategory(
+                $businessId,
+                $data['category_id'] ?? null
+            );
 
-            $isAllowed = fn ($field) => in_array($field, $allowedFields);
-            $isRequired = fn ($field) => in_array($field, $requiredFields) ? 'required' : 'nullable';
+            return DB::transaction(function () use (
+                $data,
+                $request,
+                $stock,
+                $barcodeService,
+                $businessId,
+                $item,
+                $allowedFields
+            ) {
+                $newType = $data['type']
+                    ?? $item->type
+                    ?? 'product';
 
-            $rules = [
-                'business_id' => ['required', 'integer', 'min:1'],
-            ];
-
-            if ($isAllowed('name')) {
-                $rules['name'] = [$isRequired('name'), 'string', 'max:255'];
-            }
-
-            if ($isAllowed('sku')) {
-                $rules['sku'] = [
-                    'sometimes',
-                    'nullable',
-                    'string',
-                    'max:100',
-                    Rule::unique('items', 'sku')
-                        ->where(fn ($q) => $q->where('business_id', $bid))
-                        ->ignore($item->id),
-                ];
-            }
-
-            if ($isAllowed('category_id')) {
-                $rules['category_id'] = [$isRequired('category_id'), 'integer'];
-            }
-
-            if ($isAllowed('type')) {
-                $rules['type'] = [$isRequired('type'), Rule::in(['product', 'service'])];
-            }
-
-            if ($isAllowed('sac')) {
-                $rules['sac'] = [$isRequired('sac'), 'string', 'max:32'];
-            }
-
-            if ($isAllowed('description')) {
-                $rules['description'] = ['nullable', 'string', 'max:2000'];
-            }
-
-            if ($isAllowed('price')) {
-                $rules['price'] = [$isRequired('price'), 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('cost_price')) {
-                $rules['cost_price'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('making_charge')) {
-                $rules['making_charge'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('stock_qty')) {
-                $rules['stock_qty'] = ['nullable', 'integer', 'min:0'];
-            }
-
-            if ($isAllowed('unit')) {
-                $rules['unit'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('tax_rate')) {
-                $rules['tax_rate'] = [$isRequired('tax_rate'), 'numeric', 'min:0', 'max:100'];
-            }
-
-            if ($isAllowed('is_active')) {
-                $rules['is_active'] = ['nullable'];
-            }
-
-            if ($isAllowed('metal_type')) {
-                $rules['metal_type'] = ['nullable', Rule::in(['gold', 'silver', 'other'])];
-            }
-
-            if ($isAllowed('purity')) {
-                $rules['purity'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('gross_weight')) {
-                $rules['gross_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('metal_weight')) {
-                $rules['metal_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('stone_weight')) {
-                $rules['stone_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('stone_charges')) {
-                $rules['stone_charges'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('gold_weight')) {
-                $rules['gold_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('gold_purity')) {
-                $rules['gold_purity'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('silver_weight')) {
-                $rules['silver_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('silver_purity')) {
-                $rules['silver_purity'] = ['nullable', 'string', 'max:50'];
-            }
-
-            if ($isAllowed('diamond_weight')) {
-                $rules['diamond_weight'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            if ($isAllowed('diamond_charges')) {
-                $rules['diamond_charges'] = ['nullable', 'numeric', 'min:0'];
-            }
-
-            $data = $request->validate($rules);
-
-            if (!empty($data['category_id'])) {
-                $ok = Category::where('id', $data['category_id'])
-                    ->where('business_id', $bid)
-                    ->exists();
-
-                if (!$ok) {
-                    throw ValidationException::withMessages([
-                        'category_id' => ['Invalid category for this business.'],
-                    ]);
-                }
-            }
-
-            return DB::transaction(function () use ($data, $request, $stock, $bid, $item, $allowedFields) {
-                $newType = $data['type'] ?? $item->type ?? 'product';
-
-                $targetQty = $request->has('stock_qty')
+                $targetQuantity = $request->has('stock_qty')
                     ? (int) ($data['stock_qty'] ?? 0)
                     : null;
 
-                $payload = Arr::except($data, ['stock_qty', 'business_id']);
+                $payload = Arr::except(
+                    $data,
+                    [
+                        'stock_qty',
+                        'business_id',
+                    ]
+                );
 
-                $payload['business_id'] = $bid;
+                $payload['business_id'] = $businessId;
 
                 $payload['is_active'] = $request->has('is_active')
                     ? $request->boolean('is_active')
-                    : $item->is_active;
+                    : (bool) $item->is_active;
 
-                $allItemFields = [
-                    'name',
-                    'sku',
-                    'category_id',
-                    'type',
-                    'sac',
-                    'description',
-                    'price',
-                    'cost_price',
-                    'making_charge',
-                    'stock_qty',
-                    'unit',
-                    'tax_rate',
-                    'is_active',
-                    'metal_type',
-                    'purity',
-                    'gross_weight',
-                    'metal_weight',
-                    'stone_weight',
-                    'stone_charges',
-                    'gold_weight',
-                    'gold_purity',
-                    'silver_weight',
-                    'silver_purity',
-                    'diamond_weight',
-                    'diamond_charges',
-                ];
-
-                foreach ($allItemFields as $field) {
-                    if (!in_array($field, $allowedFields) && $field !== 'stock_qty' && $field !== 'is_active') {
-                        $payload[$field] = null;
-                    }
+                /*
+                 * Barcode request me nahi aaya to purana barcode preserve hoga.
+                 */
+                if (!$request->has('barcode')) {
+                    unset($payload['barcode']);
+                } elseif (array_key_exists('barcode', $payload)) {
+                    $payload['barcode'] = $this->normalizeBarcode(
+                        $payload['barcode']
+                    );
                 }
+
+                $payload = $this->removeDisallowedFields(
+                    $payload,
+                    $allowedFields,
+                    [
+                        'barcode',
+                        'stock_qty',
+                        'is_active',
+                    ]
+                );
 
                 if ($newType === 'service') {
-                    $payload['making_charge'] = null;
-                    $payload['unit'] = null;
-                    $payload['metal_type'] = null;
-                    $payload['purity'] = null;
-                    $payload['gross_weight'] = null;
-                    $payload['metal_weight'] = null;
-                    $payload['stone_weight'] = null;
-                    $payload['stone_charges'] = null;
-                    $payload['gold_weight'] = null;
-                    $payload['gold_purity'] = null;
-                    $payload['silver_weight'] = null;
-                    $payload['silver_purity'] = null;
-                    $payload['diamond_weight'] = null;
-                    $payload['diamond_charges'] = null;
+                    $payload = $this->clearProductFields($payload);
                 }
 
+                /*
+                 * Stock StockService se manage hoga.
+                 */
                 $payload['stock_qty'] = 0;
 
                 $item->update($payload);
 
-                if ($newType === 'product' && $targetQty !== null) {
-                    // Agar StockService me setOnHand method hai to use karo:
-                    // $stock->setOnHand($item, $targetQty, 'Stock adjusted (item update)');
+                /*
+                 * Barcode explicitly blank bheja ya missing tha to
+                 * automatic new barcode generate hoga.
+                 */
+                if (empty($item->barcode)) {
+                    $barcodeService->generate($item);
+                    $item->refresh();
+                }
+
+                /*
+                 * Stock adjustment method project me available ho to
+                 * is block ko enable karein.
+                 */
+                if (
+                    $newType === 'product'
+                    && $targetQuantity !== null
+                ) {
+                    // Example:
+                    // $stock->setOnHand(
+                    //     $item,
+                    //     $targetQuantity,
+                    //     'Stock adjusted through item API'
+                    // );
                 }
 
                 $item->load('category:id,name');
@@ -967,91 +525,217 @@ class ItemController extends Controller
                     'ok' => true,
                     'msg' => 'Item updated successfully.',
                     'item' => $item,
-                ], 200);
+                ]);
             });
-
-        } catch (ValidationException $e) {
+        } catch (ValidationException $exception) {
             return response()->json([
                 'ok' => false,
-                'msg' => 'Validation failed',
-                'errors' => $e->errors(),
+                'msg' => 'Validation failed.',
+                'code' => 'VALIDATION_ERROR',
+                'errors' => $exception->errors(),
             ], 422);
+        } catch (\Throwable $exception) {
+            Log::error('Item update API failed', [
+                'business_id' => $businessId,
+                'item_id' => $id,
+                'user_id' => $request->user()?->id,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
 
-        } catch (\Throwable $e) {
             return response()->json([
                 'ok' => false,
-                'msg' => 'Server error while updating item.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Server error while updating item.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
+        }
+    }
+
+    /**
+     * GET /api/items/barcode/lookup
+     *
+     * Query:
+     * business_id=1
+     * barcode=8901234567890
+     */
+    public function barcodeLookup(
+        Request $request
+    ): JsonResponse {
+        try {
+            $businessId = $this->resolveBusinessId($request);
+
+            $data = $request->validate([
+                'barcode' => [
+                    'required',
+                    'string',
+                    'max:100',
+                ],
+            ], [
+                'barcode.required' => 'Barcode is required.',
+            ]);
+
+            $barcode = trim($data['barcode']);
+
+            $item = Item::withoutGlobalScope('business')
+                ->with('category:id,name')
+                ->where('business_id', $businessId)
+                ->where('is_active', true)
+                ->where(function ($query) use ($barcode) {
+                    $query
+                        ->where('barcode', $barcode)
+                        ->orWhere('sku', $barcode);
+                })
+                ->first();
+
+            if (!$item) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'Item not found for this barcode.',
+                    'code' => 'ITEM_NOT_FOUND',
+                ], 404);
+            }
+
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Item found successfully.',
+                'item' => $this->formatBarcodeItem($item),
+            ]);
+        } catch (ValidationException $exception) {
+            return response()->json([
+                'ok' => false,
+                'msg' => 'Validation failed.',
+                'code' => 'VALIDATION_ERROR',
+                'errors' => $exception->errors(),
+            ], 422);
+        } catch (\Throwable $exception) {
+            Log::error('Barcode lookup API failed', [
+                'business_id' => $request->input('business_id'),
+                'barcode' => $request->input('barcode'),
+                'user_id' => $request->user()?->id,
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to find item.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
+        }
+    }
+
+    /**
+     * POST /api/items/{id}/barcode/generate
+     */
+    public function generateBarcode(
+        Request $request,
+        ItemBarcodeService $barcodeService,
+        int $id
+    ): JsonResponse {
+        try {
+            $businessId = $this->resolveBusinessId($request);
+
+            $item = Item::withoutGlobalScope('business')
+                ->where('business_id', $businessId)
+                ->where('id', $id)
+                ->first();
+
+            if (!$item) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'Item not found for this business.',
+                    'code' => 'ITEM_NOT_FOUND',
+                ], 404);
+            }
+
+            $barcode = $barcodeService->generate($item);
+
+            $item->refresh();
+
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Barcode generated successfully.',
+                'item' => [
+                    'id' => $item->id,
+                    'business_id' => $item->business_id,
+                    'name' => $item->name,
+                    'sku' => $item->sku,
+                    'barcode' => $barcode,
+                ],
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Barcode generation API failed', [
+                'business_id' => $request->input('business_id'),
+                'item_id' => $id,
+                'user_id' => $request->user()?->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to generate barcode.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
         }
     }
 
     /**
      * DELETE /api/items/{item}
      */
-    public function destroy(Request $request, Item $item)
-    {
-        $bid = $this->resolveBusinessId($request);
-        abort_unless((int) $item->business_id === (int) $bid, 403, 'Unauthorized item.');
+    public function destroy(
+        Request $request,
+        Item $item
+    ): JsonResponse {
+        try {
+            $businessId = $this->resolveBusinessId($request);
 
-        $item->delete();
+            if ((int) $item->business_id !== $businessId) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => 'You are not allowed to delete this item.',
+                    'code' => 'FORBIDDEN',
+                ], 403);
+            }
 
-        return response()->json([
-            'ok'  => true,
-            'msg' => 'Item deleted successfully.',
-        ]);
+            $item->delete();
+
+            return response()->json([
+                'ok' => true,
+                'msg' => 'Item deleted successfully.',
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Item delete API failed', [
+                'business_id' => $request->input('business_id'),
+                'item_id' => $item->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'ok' => false,
+                'msg' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to delete item.'
+                ),
+                'code' => 'SERVER_ERROR',
+            ], $this->exceptionStatus($exception));
+        }
     }
 
     /**
-     * Business resolve (same style as your other controllers)
+     * Testing method.
      */
-    // private function resolveBusinessId(Request $request): int
-    // {
-    //     $user = $request->user();
-
-
-    //     $bid = $user?->current_business_id ?? session('active_business_id');
-
-    //     if (!$bid && $user) {
-    //         $bid = $user->businesses()->pluck('businesses.id')->first();
-    //     }
-
-    //     abort_unless($bid, 422, 'Active business not found.');
-
-    //     return (int) $bid;
-    // }
-
-
-    // private function resolveBusinessId(Request $request): int
-    // {
-    //     $bid = (int) $request->input('business_id');
-
-    //     abort_unless($bid > 0, 422, 'business_id is required.');
-
-    //     return $bid;
-    // }
-
-
-    private function resolveBusinessId(Request $request): int
-    {
-        $bid = (int) $request->input('business_id');
-
-        abort_unless($bid > 0, 422, 'business_id is required.');
-
-        $user = $request->user();
-
-        $hasBusiness = $user->businesses()
-            ->where('businesses.id', $bid)
-            ->exists();
-
-        abort_unless($hasBusiness, 403, 'You do not have access to this business.');
-
-        return $bid;
-    }
-
-
-
-    public function index1(Request $request)
+    public function index1(Request $request): JsonResponse
     {
         $items = Item::query()
             ->with('category:id,name')
@@ -1060,49 +744,669 @@ class ItemController extends Controller
             ->get();
 
         return response()->json([
-            'ok'   => true,
+            'ok' => true,
             'data' => $items,
         ]);
     }
 
-    public function allowedFields(Request $request)
-    {
-        $businessId = $request->business_id;
+    /**
+     * GET /api/items/allowed-fields
+     */
+    public function allowedFields(
+        Request $request
+    ): JsonResponse {
+        try {
+            $businessId = $this->resolveBusinessId($request);
 
-        if (!$businessId) {
+            $business = Business::with(
+                'businessType.itemFields'
+            )->find($businessId);
+
+            if (!$business) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Business not found.',
+                    'allowed_fields' => [],
+                ], 404);
+            }
+
+            $allowedFields = [];
+
+            if ($business->businessType) {
+                $allowedFields = $business
+                    ->businessType
+                    ->itemFields
+                    ->pluck('field_name')
+                    ->values()
+                    ->toArray();
+            }
+
+            /*
+             * Barcode API ke liye hamesha available rahega.
+             */
+            if (!in_array('barcode', $allowedFields, true)) {
+                $allowedFields[] = 'barcode';
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Allowed item fields fetched successfully.',
+                'business_id' => $business->id,
+                'business_type' => $business->businessType?->name,
+                'allowed_fields' => $allowedFields,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('Allowed item fields API failed', [
+                'business_id' => $request->input('business_id'),
+                'message' => $exception->getMessage(),
+            ]);
+
             return response()->json([
                 'status' => false,
-                'message' => 'Active business not found.',
+                'message' => $this->safeExceptionMessage(
+                    $exception,
+                    'Unable to fetch allowed item fields.'
+                ),
                 'allowed_fields' => [],
-            ], 422);
+            ], $this->exceptionStatus($exception));
         }
+    }
 
-        $business = Business::with('businessType.itemFields')
-            ->find($businessId);
+    /**
+     * Authenticated user ke business access ko verify karega.
+     */
+    private function resolveBusinessId(
+        Request $request
+    ): int {
+        $businessId = (int) (
+            $request->input('business_id')
+            ?: $request->header('X-Business-ID')
+        );
 
-        if (!$business) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Business not found.',
-                'allowed_fields' => [],
-            ], 404);
-        }
+        abort_unless(
+            $businessId > 0,
+            422,
+            'business_id is required.'
+        );
 
+        $user = $request->user();
+
+        abort_unless(
+            $user,
+            401,
+            'Unauthenticated.'
+        );
+
+        $hasBusiness = $user
+            ->businesses()
+            ->where('businesses.id', $businessId)
+            ->exists();
+
+        abort_unless(
+            $hasBusiness,
+            403,
+            'You do not have access to this business.'
+        );
+
+        return $businessId;
+    }
+
+    /**
+     * Business type ke allowed aur required item fields.
+     */
+    private function resolveItemFields(
+        Business $business
+    ): array {
         $allowedFields = [];
+        $requiredFields = [];
 
         if ($business->businessType) {
-            $allowedFields = $business->businessType->itemFields
+            $allowedFields = $business
+                ->businessType
+                ->itemFields
                 ->pluck('field_name')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+
+            $requiredFields = $business
+                ->businessType
+                ->itemFields
+                ->where('is_required', 1)
+                ->pluck('field_name')
+                ->filter()
+                ->unique()
                 ->values()
                 ->toArray();
         }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Allowed item fields fetched successfully.',
-            'business_id' => $business->id,
-            'business_type' => $business->businessType?->name,
-            'allowed_fields' => $allowedFields,
-        ]);
+        if (empty($allowedFields)) {
+            $allowedFields = $this->defaultItemFields();
+        }
+
+        /*
+         * Barcode ko dynamic business configuration par depend nahi rakhenge.
+         */
+        if (!in_array('barcode', $allowedFields, true)) {
+            $allowedFields[] = 'barcode';
+        }
+
+        return [
+            $allowedFields,
+            $requiredFields,
+        ];
+    }
+
+    /**
+     * Store validation rules.
+     */
+    private function buildStoreRules(
+        int $businessId,
+        array $allowedFields,
+        array $requiredFields
+    ): array {
+        $isAllowed = fn (string $field): bool => in_array(
+            $field,
+            $allowedFields,
+            true
+        );
+
+        $requirement = fn (string $field): string => in_array(
+            $field,
+            $requiredFields,
+            true
+        )
+            ? 'required'
+            : 'nullable';
+
+        $rules = [
+            'business_id' => [
+                'required',
+                'integer',
+                'min:1',
+            ],
+
+            /*
+             * Barcode always accepted.
+             */
+            'barcode' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('items', 'barcode'),
+            ],
+        ];
+
+        if ($isAllowed('name')) {
+            $rules['name'] = [
+                $requirement('name'),
+                'string',
+                'max:255',
+            ];
+        }
+
+        if ($isAllowed('sku')) {
+            $rules['sku'] = [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('items', 'sku')
+                    ->where(
+                        fn ($query) => $query->where(
+                            'business_id',
+                            $businessId
+                        )
+                    ),
+            ];
+        }
+
+        if ($isAllowed('category_id')) {
+            $rules['category_id'] = [
+                $requirement('category_id'),
+                'integer',
+            ];
+        }
+
+        if ($isAllowed('type')) {
+            $rules['type'] = [
+                $requirement('type'),
+                Rule::in([
+                    'product',
+                    'service',
+                ]),
+            ];
+        }
+
+        if ($isAllowed('sac')) {
+            $rules['sac'] = [
+                $requirement('sac'),
+                'string',
+                'max:32',
+            ];
+        }
+
+        if ($isAllowed('description')) {
+            $rules['description'] = [
+                'nullable',
+                'string',
+                'max:2000',
+            ];
+        }
+
+        if ($isAllowed('price')) {
+            $rules['price'] = [
+                $requirement('price'),
+                'numeric',
+                'min:0',
+            ];
+        }
+
+        if ($isAllowed('cost_price')) {
+            $rules['cost_price'] = [
+                'nullable',
+                'numeric',
+                'min:0',
+            ];
+        }
+
+        if ($isAllowed('making_charge')) {
+            $rules['making_charge'] = [
+                'nullable',
+                'numeric',
+                'min:0',
+            ];
+        }
+
+        if ($isAllowed('stock_qty')) {
+            $rules['stock_qty'] = [
+                $requirement('stock_qty'),
+                'integer',
+                'min:0',
+            ];
+        }
+
+        if ($isAllowed('unit')) {
+            $rules['unit'] = [
+                'nullable',
+                'string',
+                'max:50',
+            ];
+        }
+
+        if ($isAllowed('tax_rate')) {
+            $rules['tax_rate'] = [
+                $requirement('tax_rate'),
+                'numeric',
+                'min:0',
+                'max:100',
+            ];
+        }
+
+        if ($isAllowed('is_active')) {
+            $rules['is_active'] = [
+                'nullable',
+                'boolean',
+            ];
+        }
+
+        if ($isAllowed('metal_type')) {
+            $rules['metal_type'] = [
+                'nullable',
+                Rule::in([
+                    'gold',
+                    'silver',
+                    'other',
+                ]),
+            ];
+        }
+
+        if ($isAllowed('purity')) {
+            $rules['purity'] = [
+                'nullable',
+                'string',
+                'max:50',
+            ];
+        }
+
+        foreach (
+            [
+                'gross_weight',
+                'metal_weight',
+                'stone_weight',
+                'stone_charges',
+                'gold_weight',
+                'silver_weight',
+                'diamond_weight',
+                'diamond_charges',
+            ] as $numericField
+        ) {
+            if ($isAllowed($numericField)) {
+                $rules[$numericField] = [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ];
+            }
+        }
+
+        foreach (
+            [
+                'gold_purity',
+                'silver_purity',
+            ] as $stringField
+        ) {
+            if ($isAllowed($stringField)) {
+                $rules[$stringField] = [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ];
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Update validation rules.
+     */
+    private function buildUpdateRules(
+        int $businessId,
+        Item $item,
+        array $allowedFields,
+        array $requiredFields
+    ): array {
+        $rules = $this->buildStoreRules(
+            $businessId,
+            $allowedFields,
+            $requiredFields
+        );
+
+        $rules['barcode'] = [
+            'sometimes',
+            'nullable',
+            'string',
+            'max:100',
+            Rule::unique('items', 'barcode')
+                ->ignore($item->id),
+        ];
+
+        if (isset($rules['sku'])) {
+            $rules['sku'] = [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('items', 'sku')
+                    ->where(
+                        fn ($query) => $query->where(
+                            'business_id',
+                            $businessId
+                        )
+                    )
+                    ->ignore($item->id),
+            ];
+        }
+
+        foreach ($rules as $field => $fieldRules) {
+            if (
+                $field !== 'business_id'
+                && $field !== 'barcode'
+                && $field !== 'sku'
+            ) {
+                $rules[$field] = $this->makeRulesOptional(
+                    $fieldRules
+                );
+            }
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Update request ke liye required ko sometimes me change karta hai.
+     */
+    private function makeRulesOptional(
+        array $rules
+    ): array {
+        $filteredRules = array_values(
+            array_filter(
+                $rules,
+                fn ($rule) => $rule !== 'required'
+            )
+        );
+
+        if (!in_array('sometimes', $filteredRules, true)) {
+            array_unshift($filteredRules, 'sometimes');
+        }
+
+        return $filteredRules;
+    }
+
+    /**
+     * Category isi business ki honi chahiye.
+     */
+    private function validateCategory(
+        int $businessId,
+        mixed $categoryId
+    ): void {
+        if (empty($categoryId)) {
+            return;
+        }
+
+        $categoryExists = Category::query()
+            ->where('id', $categoryId)
+            ->where('business_id', $businessId)
+            ->exists();
+
+        if (!$categoryExists) {
+            throw ValidationException::withMessages([
+                'category_id' => [
+                    'Invalid category for this business.',
+                ],
+            ]);
+        }
+    }
+
+    /**
+     * Disallowed fields payload se hata deta hai.
+     */
+    private function removeDisallowedFields(
+        array $payload,
+        array $allowedFields,
+        array $alwaysAllowed = []
+    ): array {
+        foreach (array_keys($payload) as $field) {
+            if (
+                !in_array($field, $allowedFields, true)
+                && !in_array($field, $alwaysAllowed, true)
+                && $field !== 'business_id'
+            ) {
+                unset($payload[$field]);
+            }
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Service item ke product-only fields clear karta hai.
+     */
+    private function clearProductFields(
+        array $payload
+    ): array {
+        foreach (
+            [
+                'making_charge',
+                'unit',
+                'metal_type',
+                'purity',
+                'gross_weight',
+                'metal_weight',
+                'stone_weight',
+                'stone_charges',
+                'gold_weight',
+                'gold_purity',
+                'silver_weight',
+                'silver_purity',
+                'diamond_weight',
+                'diamond_charges',
+            ] as $field
+        ) {
+            $payload[$field] = null;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Barcode empty string ko null banata hai.
+     */
+    private function normalizeBarcode(
+        mixed $barcode
+    ): ?string {
+        $barcode = trim((string) $barcode);
+
+        return $barcode !== ''
+            ? $barcode
+            : null;
+    }
+
+    /**
+     * Scanner response format.
+     */
+    private function formatBarcodeItem(
+        Item $item
+    ): array {
+        return [
+            'id' => $item->id,
+            'business_id' => $item->business_id,
+            'name' => $item->name,
+            'sku' => $item->sku,
+            'barcode' => $item->barcode,
+            'description' => $item->description,
+            'category_id' => $item->category_id,
+            'category' => $item->category,
+            'type' => $item->type,
+            'sac' => $item->sac,
+
+            'price' => (float) ($item->price ?? 0),
+            'cost_price' => (float) ($item->cost_price ?? 0),
+            'making_charge' => (float) (
+                $item->making_charge ?? 0
+            ),
+
+            'tax_rate' => (float) ($item->tax_rate ?? 0),
+            'stock_qty' => (float) ($item->stock_qty ?? 0),
+            'unit' => $item->unit,
+
+            'metal_type' => $item->metal_type,
+            'purity' => $item->purity,
+            'gross_weight' => (float) (
+                $item->gross_weight ?? 0
+            ),
+            'metal_weight' => (float) (
+                $item->metal_weight ?? 0
+            ),
+            'stone_weight' => (float) (
+                $item->stone_weight ?? 0
+            ),
+            'stone_charges' => (float) (
+                $item->stone_charges ?? 0
+            ),
+
+            'gold_weight' => (float) (
+                $item->gold_weight ?? 0
+            ),
+            'gold_purity' => $item->gold_purity,
+            'silver_weight' => (float) (
+                $item->silver_weight ?? 0
+            ),
+            'silver_purity' => $item->silver_purity,
+            'diamond_weight' => (float) (
+                $item->diamond_weight ?? 0
+            ),
+            'diamond_charges' => (float) (
+                $item->diamond_charges ?? 0
+            ),
+
+            'is_active' => (bool) $item->is_active,
+        ];
+    }
+
+    /**
+     * Default fields jab business type configuration empty ho.
+     */
+    private function defaultItemFields(): array
+    {
+        return [
+            'name',
+            'sku',
+            'barcode',
+            'category_id',
+            'type',
+            'sac',
+            'description',
+            'price',
+            'cost_price',
+            'making_charge',
+            'stock_qty',
+            'unit',
+            'tax_rate',
+            'is_active',
+            'metal_type',
+            'purity',
+            'gross_weight',
+            'metal_weight',
+            'stone_weight',
+            'stone_charges',
+            'gold_weight',
+            'gold_purity',
+            'silver_weight',
+            'silver_purity',
+            'diamond_weight',
+            'diamond_charges',
+        ];
+    }
+
+    /**
+     * HTTP exception ka proper status.
+     */
+    private function exceptionStatus(
+        \Throwable $exception
+    ): int {
+        if (
+            method_exists($exception, 'getStatusCode')
+            && is_int($exception->getStatusCode())
+        ) {
+            return $exception->getStatusCode();
+        }
+
+        return 500;
+    }
+
+    /**
+     * HTTP exceptions ka useful message preserve karta hai.
+     */
+    private function safeExceptionMessage(
+        \Throwable $exception,
+        string $fallback
+    ): string {
+        $status = $this->exceptionStatus($exception);
+
+        if (
+            in_array($status, [
+                401,
+                403,
+                404,
+                422,
+            ], true)
+            && trim($exception->getMessage()) !== ''
+        ) {
+            return $exception->getMessage();
+        }
+
+        return $fallback;
     }
 }

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\InstallmentReminderController;
 use App\Http\Controllers\Api\ItemController;
 use App\Http\Controllers\Api\BillRequestController;
+use App\Http\Controllers\Api\ItemBarcodeController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\PlanPaymentController;
 use App\Http\Controllers\Api\PurchaseController;
@@ -97,6 +98,37 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
         Route::delete('delete/{item}', 'destroy');
         Route::get('allowed-fields', 'allowedFields');
 
+
+        
+
+    });
+
+
+     Route::prefix('items')->group(function () {
+
+        // Barcode scan karke item details
+        Route::get(
+            '/barcode/{barcode}',
+            [ItemBarcodeController::class, 'lookup']
+        );
+
+        // Single item ka barcode generate
+        Route::post(
+            '/{item}/barcode/generate',
+            [ItemBarcodeController::class, 'generate']
+        );
+
+        // Item create/update with barcode
+        Route::post(
+            '/store-with-barcode',
+            [ItemBarcodeController::class, 'storeWithBarcode']
+        );
+
+        // Barcode print/download data
+        Route::get(
+            '/{item}/barcode/label',
+            [ItemBarcodeController::class, 'label']
+        );
     });
 
     Route::post('ai/scan', [\App\Http\Controllers\Api\ItemAiController::class, 'photoEntry']);
@@ -245,6 +277,7 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     
 
     Route::get('/my-active-plan', [PlanPaymentController::class, 'myActivePlan']);
+
 
 
 });
