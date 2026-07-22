@@ -63,7 +63,7 @@ Route::get('/welcome', function () {
         ->orderBy('price', 'asc')
         ->get();
     return view('welcome', compact('plans'));
-})->name('welcome1');
+})->name('home');
 
 
 Route::view('/privacy-policy', 'frontend.pages.privacy-policy')->name('privacy-policy');
