@@ -49,8 +49,21 @@ Route::get('/', function () {
         ->orderBy('price', 'asc')
         ->get();
 
-    return view('welcome', compact('plans'));
+    return view('ads', compact('plans'));
 })->name('index');
+
+Route::get('/welcome', function () {
+    $plans = Plan::where('status', 1)
+        ->with(['planFeatures' => function ($query) {
+            $query->where('is_active', 1)
+                ->orderBy('sort_order', 'asc');
+        }])
+        ->orderByDesc('is_recommended')
+        ->orderBy('sort_order', 'asc')
+        ->orderBy('price', 'asc')
+        ->get();
+    return view('welcome', compact('plans'));
+})->name('welcome1');
 
 
 Route::view('/privacy-policy', 'frontend.pages.privacy-policy')->name('privacy-policy');
@@ -93,9 +106,9 @@ Route::get('user-register', function (\Illuminate\Http\Request $request) {
 })->name('user.register');
 Route::post('/register', [HomeController::class, 'store'])->name('register.store');
 
-Route::get('/welcome', function () {
-    return view('welcome');
-})->name('home');
+// Route::get('/welcome', function () {
+//     return view('welcome');
+// })->name('home');
 
 
 // use App\Http\Controllers\RazorpayController;
