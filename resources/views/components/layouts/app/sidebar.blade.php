@@ -711,6 +711,11 @@
                 </flux:navlist.group>
             </flux:navlist>
 
+            
+        @endcan
+
+
+        @can('show users')
             <flux:navlist variant="outline">
                 <flux:navlist.group class="grid">
                     <flux:navlist.item
