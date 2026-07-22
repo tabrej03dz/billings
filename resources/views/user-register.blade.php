@@ -136,7 +136,7 @@
                         @endif
 
                         @php
-                            $step1Fields = ['name', 'phone', 'password', 'password_confirmation'];
+                            $step1Fields = ['name', 'phone'];
                             $step2Fields = ['business_name', 'business_email', 'mobile', 'gstin', 'business_type_id', 'address', 'state', 'state_code'];
                             $step3Fields = ['gst_enabled', 'invoice_base_prefix', 'rounding_mode', 'rounding_step', 'terms'];
 
@@ -158,13 +158,15 @@
                             <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
                             <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
                             <input type="hidden" name="current_step" id="current_step" value="{{ $initialStep }}">
+                            <input type="hidden" name="business_skipped" id="business_skipped" value="{{ old('business_skipped', 0) }}">
+                            <input type="hidden" name="billing_skipped" id="billing_skipped" value="{{ old('billing_skipped', 0) }}">
 
                             {{-- STEP 1 --}}
                             <div class="form-step space-y-5" data-step="1">
                                 <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Owner account details</div>
                                     <div class="mt-1 text-xs text-slate-500">
-                                        Owner name, phone OTP aur password se account create karein.
+                                        Owner name aur phone OTP se account create karein.
                                     </div>
                                 </div>
 
@@ -214,10 +216,12 @@
                                                class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
                                                placeholder="Enter 6 digit OTP">
 
-                                        <button type="button" id="verifyOtpBtn"
-                                                class="shrink-0 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800 transition">
-                                            Verify OTP
-                                        </button>
+                                        <div id="otpAutoBadge"
+                                             class="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600">
+                                            Auto Verify
+                                        </div>
+
+                                        <button type="button" id="verifyOtpBtn" class="hidden">Verify OTP</button>
                                     </div>
 
                                     <input type="hidden"
@@ -225,22 +229,6 @@
                                            value="{{ session('register_phone_verified') && session('register_phone_verified') == old('phone', session('register_phone_verified')) ? 1 : 0 }}">
 
                                     <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-500"></p>
-                                </div>
-
-                                <div class="grid sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
-                                        <input type="password" name="password"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Create a password">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Confirm Password</label>
-                                        <input type="password" name="password_confirmation"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Confirm your password">
-                                    </div>
                                 </div>
 
                                 <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-700">
@@ -255,6 +243,18 @@
                                     <div class="mt-1 text-xs text-slate-500">
                                         Business mobile verified owner phone se auto fill hoga.
                                     </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                    <div>
+                                        <div class="text-sm font-black text-slate-900">Business details abhi nahi dena chahte?</div>
+                                        <div class="mt-1 text-xs text-slate-600">Aap is step ko skip karke details baad me profile se add kar sakte hain.</div>
+                                    </div>
+
+                                    <button type="button" id="skipBusinessBtn"
+                                            class="shrink-0 rounded-full border border-amber-300 bg-white px-5 py-3 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                        Skip for now
+                                    </button>
                                 </div>
 
                                 <div>
@@ -391,6 +391,13 @@
                                     <input type="hidden" name="state" id="state" value="{{ old('state') }}">
                                     <input type="hidden" name="state_code" id="state_code" value="{{ old('state_code') }}">
                                 </div>
+
+                                <div class="pt-2">
+                                    <button type="button" id="skipBusinessBottomBtn"
+                                            class="w-full rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                        Skip Business Details for Now
+                                    </button>
+                                </div>
                             </div>
 
                             {{-- STEP 3 --}}
@@ -400,6 +407,20 @@
                                     <div class="mt-1 text-xs text-slate-500">
                                         Choose your default invoice and rounding settings.
                                     </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                    <div>
+                                        <div class="text-sm font-black text-slate-900">Billing settings abhi set nahi karna chahte?</div>
+                                        <div class="mt-1 text-xs text-slate-600">
+                                            Default settings use hongi. Aap baad me settings page se update kar sakte hain.
+                                        </div>
+                                    </div>
+
+                                    <button type="button" id="skipBillingBtn"
+                                            class="shrink-0 rounded-full border border-amber-300 bg-white px-5 py-3 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                        Skip & Create Account
+                                    </button>
                                 </div>
 
                                 <div class="grid sm:grid-cols-2 gap-4">
@@ -458,9 +479,16 @@
                                     <div class="text-sm font-black text-slate-900">Before submitting</div>
                                     <ul class="mt-2 space-y-1.5 text-xs text-slate-600">
                                         <li>• Verify your phone OTP</li>
-                                        <li>• Check showroom details carefully</li>
+                                        <li>• Business details optional hain aur baad me add ho sakti hain</li>
                                         <li>• Billing settings can be updated later</li>
                                     </ul>
+                                </div>
+
+                                <div class="pt-1">
+                                    <button type="button" id="skipBillingBottomBtn"
+                                            class="w-full rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                        Skip Billing Preferences & Create Account
+                                    </button>
                                 </div>
 
                                 <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4">
@@ -535,6 +563,14 @@
 
     const sendOtpBtn = document.getElementById('sendOtpBtn');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+    const otpAutoBadge = document.getElementById('otpAutoBadge');
+    const skipBusinessBtn = document.getElementById('skipBusinessBtn');
+    const skipBusinessBottomBtn = document.getElementById('skipBusinessBottomBtn');
+    const businessSkippedInput = document.getElementById('business_skipped');
+
+    const skipBillingBtn = document.getElementById('skipBillingBtn');
+    const skipBillingBottomBtn = document.getElementById('skipBillingBottomBtn');
+    const billingSkippedInput = document.getElementById('billing_skipped');
 
     const ownerPhoneInput = document.getElementById('owner_phone');
     const businessMobileInput = document.getElementById('business_mobile');
@@ -560,6 +596,8 @@
 
     let currentStep = 0;
     let isSubmitting = false;
+    let isVerifyingOtp = false;
+    let lastAutoVerifiedOtp = '';
 
     const gstStateMap = {
         '01': 'Jammu and Kashmir',
@@ -808,6 +846,14 @@
     function validateStep(index) {
         clearStepErrors(index);
 
+        if (index === 1 && businessSkippedInput?.value === '1') {
+            return true;
+        }
+
+        if (index === 2 && billingSkippedInput?.value === '1') {
+            return true;
+        }
+
         updateStateFromGstin();
         updateStateFields();
         syncBusinessMobileFromOwner();
@@ -842,30 +888,6 @@
 
             if (!input.checkValidity()) {
                 return showError(input, 'Valid value daliyega.');
-            }
-        }
-
-        const password = document.querySelector('input[name="password"]');
-        const confirmPassword = document.querySelector('input[name="password_confirmation"]');
-
-        if (index === 0 && password && confirmPassword) {
-            password.setCustomValidity('');
-            confirmPassword.setCustomValidity('');
-
-            if (!password.value.trim()) {
-                return showError(password, 'Password required hai.');
-            }
-
-            if (!confirmPassword.value.trim()) {
-                return showError(confirmPassword, 'Confirm password required hai.');
-            }
-
-            if (password.value.length < 6) {
-                return showError(password, 'Password minimum 6 characters hona chahiye.');
-            }
-
-            if (password.value !== confirmPassword.value) {
-                return showError(confirmPassword, 'Passwords match nahi ho rahe.');
             }
         }
 
@@ -912,6 +934,101 @@
         }
 
         return true;
+    }
+
+    function setBusinessFieldsDisabled(disabled) {
+        if (!steps[1]) return;
+
+        steps[1].querySelectorAll('input, select, textarea').forEach(input => {
+            if (input.id === 'business_skipped') return;
+            input.disabled = disabled;
+            input.setCustomValidity('');
+            setFieldErrorState(input, false);
+        });
+    }
+
+    function skipBusinessStep() {
+        if (businessSkippedInput) {
+            businessSkippedInput.value = '1';
+        }
+
+        setBusinessFieldsDisabled(true);
+        showStep(2);
+    }
+
+    function restoreBusinessStep() {
+        if (businessSkippedInput?.value !== '1') {
+            setBusinessFieldsDisabled(false);
+        }
+    }
+
+    function setBillingFieldsDisabled(disabled) {
+        if (!steps[2]) return;
+
+        steps[2].querySelectorAll('input, select, textarea').forEach(input => {
+            if (
+                input.id === 'billing_skipped' ||
+                input.id === 'terms'
+            ) {
+                return;
+            }
+
+            input.disabled = disabled;
+            input.setCustomValidity('');
+            setFieldErrorState(input, false);
+        });
+    }
+
+    function applyDefaultBillingValues() {
+        if (gstEnabledSelect) gstEnabledSelect.value = '0';
+
+        const invoicePrefix = document.querySelector('[name="invoice_base_prefix"]');
+        const roundingMode = document.querySelector('[name="rounding_mode"]');
+        const roundingStep = document.querySelector('[name="rounding_step"]');
+
+        if (invoicePrefix && !invoicePrefix.value.trim()) {
+            invoicePrefix.value = 'RV/SL';
+        }
+
+        if (roundingMode) roundingMode.value = 'nearest';
+        if (roundingStep && !roundingStep.value) roundingStep.value = '1.00';
+    }
+
+    function skipBillingAndSubmit() {
+        const terms = document.getElementById('terms');
+
+        if (!terms?.checked) {
+            showError(terms, 'Account create karne ke liye Terms & Conditions accept kijiye.');
+            return;
+        }
+
+        if (billingSkippedInput) {
+            billingSkippedInput.value = '1';
+        }
+
+        applyDefaultBillingValues();
+        setBillingFieldsDisabled(true);
+
+        if (isSubmitting) return;
+
+        if (!validateStep(0)) {
+            showStep(0);
+            return;
+        }
+
+        if (!validateStep(1)) {
+            showStep(1);
+            return;
+        }
+
+        isSubmitting = true;
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+        }
+
+        form.submit();
     }
 
     pills.forEach((pill, index) => {
@@ -1007,6 +1124,8 @@
         const phone = ownerPhoneInput.value.trim();
         const otp = phoneOtpInput.value.trim();
 
+        if (isVerifyingOtp) return;
+
         if (!phone || phone.length !== 10) {
             verifyOtpStatus.textContent = 'Valid 10 digit phone number daliyega.';
             verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
@@ -1023,12 +1142,18 @@
             return;
         }
 
-        verifyOtpStatus.textContent = 'OTP verify ho raha hai...';
+        isVerifyingOtp = true;
+        verifyOtpStatus.textContent = 'OTP automatic verify ho raha hai...';
         verifyOtpStatus.className = 'mt-2 text-xs text-blue-600';
 
         if (verifyOtpBtn) {
             verifyOtpBtn.disabled = true;
             verifyOtpBtn.textContent = 'Verifying...';
+        }
+
+        if (otpAutoBadge) {
+            otpAutoBadge.textContent = 'Verifying...';
+            otpAutoBadge.className = 'shrink-0 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-blue-700';
         }
 
         try {
@@ -1056,6 +1181,7 @@
                 businessMobileInput.value = phone;
             }
 
+            lastAutoVerifiedOtp = otp;
             verifyOtpStatus.textContent = data.message || 'Phone OTP verify ho gaya. Business mobile auto fill kar diya gaya.';
             verifyOtpStatus.className = 'mt-2 text-xs text-green-600';
 
@@ -1080,6 +1206,16 @@
                 verifyOtpBtn.disabled = false;
                 verifyOtpBtn.textContent = 'Verify OTP';
             }
+
+            if (otpAutoBadge) {
+                const verified = phoneVerifiedInput?.value === '1';
+                otpAutoBadge.textContent = verified ? 'Verified' : 'Auto Verify';
+                otpAutoBadge.className = verified
+                    ? 'shrink-0 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-bold text-green-700'
+                    : 'shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600';
+            }
+
+            isVerifyingOtp = false;
         }
     }
 
@@ -1103,6 +1239,22 @@
         verifyOtpBtn.addEventListener('click', verifyOtp);
     }
 
+    if (skipBusinessBtn) {
+        skipBusinessBtn.addEventListener('click', skipBusinessStep);
+    }
+
+    if (skipBusinessBottomBtn) {
+        skipBusinessBottomBtn.addEventListener('click', skipBusinessStep);
+    }
+
+    if (skipBillingBtn) {
+        skipBillingBtn.addEventListener('click', skipBillingAndSubmit);
+    }
+
+    if (skipBillingBottomBtn) {
+        skipBillingBottomBtn.addEventListener('click', skipBillingAndSubmit);
+    }
+
     if (phoneOtpInput) {
         phoneOtpInput.addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').slice(0, 6);
@@ -1110,6 +1262,25 @@
             verifyOtpStatus.textContent = '';
             setFieldErrorState(phoneOtpInput, false);
             phoneOtpInput.setCustomValidity('');
+
+            if (this.value.length < 6) {
+                lastAutoVerifiedOtp = '';
+
+                if (phoneVerifiedInput) {
+                    phoneVerifiedInput.value = '0';
+                }
+
+                if (otpAutoBadge) {
+                    otpAutoBadge.textContent = 'Auto Verify';
+                    otpAutoBadge.className = 'shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600';
+                }
+
+                return;
+            }
+
+            if (this.value.length === 6 && this.value !== lastAutoVerifiedOtp && !isVerifyingOtp) {
+                verifyOtp();
+            }
         });
     }
 
@@ -1127,6 +1298,13 @@
 
             otpStatus.textContent = '';
             verifyOtpStatus.textContent = '';
+            lastAutoVerifiedOtp = '';
+
+            if (phoneOtpInput) phoneOtpInput.value = '';
+            if (otpAutoBadge) {
+                otpAutoBadge.textContent = 'Auto Verify';
+                otpAutoBadge.className = 'shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600';
+            }
 
             setFieldErrorState(ownerPhoneInput, false);
             setFieldErrorState(phoneOtpInput, false);
@@ -1145,6 +1323,10 @@
 
     if (nextBtn) {
         nextBtn.addEventListener('click', function () {
+            if (currentStep === 1 && businessSkippedInput?.value !== '1') {
+                setBusinessFieldsDisabled(false);
+            }
+
             if (!validateStep(currentStep)) return;
 
             if (currentStep < steps.length - 1) {
@@ -1191,6 +1373,17 @@
     }
 
     bindFieldListeners();
+
+    if (businessSkippedInput?.value === '1') {
+        setBusinessFieldsDisabled(true);
+    } else {
+        restoreBusinessStep();
+    }
+
+    if (billingSkippedInput?.value === '1') {
+        applyDefaultBillingValues();
+        setBillingFieldsDisabled(true);
+    }
 
     currentStep = getInitialStep();
     showStep(currentStep, false);

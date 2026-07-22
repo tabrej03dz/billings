@@ -25,6 +25,7 @@ use App\Models\UserPlan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Spatie\Permission\PermissionRegistrar;
+use Illuminate\Validation\Rule;
 
 class RegisterController extends Controller
 {
@@ -181,553 +182,6 @@ class RegisterController extends Controller
         ]);
     }
 
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'name'                 => ['required', 'string', 'max:255'],
-    //         'email'                => ['required', 'email', 'max:255', 'unique:users,email'],
-    //         'password'             => ['required', 'confirmed', 'min:6'],
-
-    //         'business_name'        => ['required', 'string', 'max:255'],
-    //         'business_email'       => ['required', 'email', 'max:255'],
-    //         'mobile'               => ['required', 'string', 'max:20'],
-    //         'gstin'                => ['nullable', 'string', 'max:15'],
-    //         'type'                 => ['required', 'string', 'max:100'],
-    //         'address'              => ['nullable', 'string'],
-    //         'state'                => ['nullable', 'string', 'max:100'],
-    //         'state_code'           => ['nullable', 'string', 'max:10'],
-
-    //         'gst_enabled'          => ['nullable', 'in:0,1'],
-    //         'invoice_base_prefix'  => ['nullable', 'string', 'max:50'],
-    //         'rounding_mode'        => ['nullable', 'in:none,nearest,up,down'],
-    //         'rounding_step'        => ['nullable', 'numeric'],
-    //         'terms'                => ['accepted'],
-    //         'current_step' => ['nullable', 'integer', 'min:1', 'max:3'],
-    //     ]);
-
-    //     $email = strtolower(trim($request->email));
-    //     $verifiedEmail = session('register_email_verified');
-    //     $isOtpVerified = Cache::get('register_otp_verified_' . $email);
-
-    //     if ($verifiedEmail !== $email || !$isOtpVerified) {
-    //         throw ValidationException::withMessages([
-    //             'email' => ['Pehle email OTP verify kijiye.'],
-    //         ]);
-    //     }
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $user = User::create([
-    //             'name'     => $request->name,
-    //             'email'    => $email,
-    //             'password' => Hash::make($request->password),
-    //         ]);
-
-    //         // Agar aapke project me role system hai
-    //         // if (method_exists($user, 'assignRole')) {
-    //         //     $user->assignRole('admin');
-    //         // }
-
-    //         // Business model ke fields apne table ke hisab se adjust kar lena
-    //         $business = Business::create([
-    //             'name'                => $request->business_name,
-    //             'email'               => $request->business_email,
-    //             'mobile'              => $request->mobile,
-    //             'gstin'               => $request->gstin,
-    //             'type'                => $request->type,
-    //             'address'             => $request->address,
-    //             'state'               => $request->state,
-    //             'state_code'          => $request->state_code,
-    //             'gst_enabled'         => $request->gst_enabled ?? 1,
-    //             'invoice_base_prefix' => $request->invoice_base_prefix ?? 'RV/SL',
-    //             'rounding_mode'       => $request->rounding_mode ?? 'nearest',
-    //             'rounding_step'       => $request->rounding_step ?? 1.00,
-    //             'created_by'          => $user->id,
-    //         ]);
-
-    //         // Agar owner mapping field hai to use update kar sakte ho
-    //         if (\Schema::hasColumn('businesses', 'owner_id')) {
-    //             $business->owner_id = $user->id;
-    //             $business->save();
-    //         }
-
-    //         // User ko business se map karna ho to
-    //         if (\Schema::hasColumn('users', 'business_id')) {
-    //             $user->business_id = $business->id;
-    //             $user->save();
-    //         }
-
-    //         DB::commit();
-
-    //         Cache::forget('register_otp_' . $email);
-    //         Cache::forget('register_otp_verified_' . $email);
-    //         session()->forget('register_email_verified');
-
-    //         Auth::login($user);
-
-    //         return redirect()->route('plan.choose')->with('success', 'Account successfully create ho gaya.');
-    //     } catch (\Throwable $e) {
-    //         DB::rollBack();
-
-    //         return back()
-    //             ->withInput()
-    //             ->withErrors([
-    //                 'error' => 'Registration failed: ' . $e->getMessage(),
-    //             ]);
-    //     }
-    // }
-
-
-    //     public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         // user step
-    //         'name' => ['required', 'string', 'max:255'],
-    //         'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-    //         'password' => ['required', 'confirmed', Password::min(6)],
-
-    //         // business step
-    //         'business_name' => ['required', 'string', 'max:255'],
-    //         'business_email' => ['required', 'email', 'max:255', 'unique:businesses,email'],
-    //         'mobile' => ['required', 'string', 'max:20', 'unique:businesses,mobile'],
-    //         'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
-    //         'address' => ['nullable', 'string', 'max:255'],
-    //         'state' => ['nullable', 'string', 'max:255'],
-    //         'state_code' => ['nullable', 'string', 'max:255'],
-    //         'business_type_id' => ['required', 'string', 'max:255'],
-
-    //         // billing step
-    //         'gst_enabled' => ['nullable', 'in:0,1'],
-    //         'invoice_base_prefix' => ['nullable', 'string', 'max:255'],
-    //         'rounding_mode' => ['nullable', 'in:none,nearest,up,down'],
-    //         'rounding_step' => ['nullable', 'numeric', 'min:0'],
-
-    //         'terms' => ['required', 'accepted'],
-    //     ]);
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $user = User::create([
-    //             'name' => $request->name,
-    //             'email' => $request->email,
-    //             'password' => Hash::make($request->password),
-    //         ]);
-
-    //         $slug = $this->generateUniqueBusinessSlug($request->business_name);
-
-    //         $business = Business::create([
-    //             'name' => $request->business_name,
-    //             'slug' => $slug,
-    //             'email' => $request->business_email,
-    //             'mobile' => $request->mobile,
-    //             'gstin' => $request->gstin,
-    //             'gst_enabled' => $request->gst_enabled ?? 1,
-    //             'address' => $request->address,
-    //             'state' => $request->state,
-    //             'state_code' => $request->state_code,
-    //             'business_type_id' => $request->business_type_id,
-    //             'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
-    //             'rounding_mode' => $request->rounding_mode ?: 'nearest',
-    //             'rounding_step' => $request->rounding_step ?: 1.00,
-    //         ]);
-
-    //         DB::table('business_user')->insert([
-    //             'business_id' => $business->id,
-    //             'user_id' => $user->id,
-    //             'role' => 'owner',
-    //             'created_at' => now(),
-    //             'updated_at' => now(),
-    //         ]);
-
-    //         $user->update([
-    //             'current_business_id' => $business->id,
-    //         ]);
-
-
-    //         // 6) Important permissions
-    //         // $importantPermissions = [
-    //         //     'show users',
-    //         //     'create user',
-    //         //     'edit user',
-    //         //     'delete user',
-
-    //         //     'show businesses',
-    //         //     'create business',
-    //         //     'edit business',
-    //         //     'delete business',
-
-    //         //     'show clients',
-    //         //     'create client',
-    //         //     'edit client',
-    //         //     'delete client',
-
-    //         //     'show invoices',
-    //         //     'create invoice',
-    //         //     'edit invoice',
-    //         //     'delete invoice',
-    //         //     'download invoice',
-
-    //         //     'show invoices menu',
-    //         //     'show proformas',
-    //         //     'create proforma',
-    //         //     'edit proforma',
-    //         //     'delete proforma',
-
-    //         //     'show quotations',
-    //         //     'create quotation',
-    //         //     'edit quotation',
-    //         //     'delete quotation',
-
-    //         //     'show categories',
-    //         //     'create category',
-    //         //     'edit category',
-    //         //     'delete category',
-
-    //         //     'show items',
-    //         //     'create item',
-    //         //     'edit item',
-    //         //     'delete item',
-
-    //         //     'show additional charges',
-    //         //     'create additional charge',
-    //         //     'edit additional charge',
-    //         //     'delete additional charge',
-
-    //         //     'show purchases',
-    //         //     'show inventory',
-    //         //     'show invoice sends',
-    //         //     'show bank balance',
-    //         //     'show installment reminders',
-    //         // ];
-
-    //         // // sirf wahi permissions assign hongi jo DB me available hain
-    //         // $existingPermissions = Permission::whereIn('name', $importantPermissions)
-    //         //     ->pluck('name')
-    //         //     ->toArray();
-
-    //         // // direct permissions
-    //         // if (!empty($existingPermissions)) {
-    //         //     $user->givePermissionTo($existingPermissions);
-    //         // }
-
-    //         // // optional: owner role assign karo agar role table me hai
-    //         // $ownerRole = Role::where('name', 'owner')->first();
-    //         // if ($ownerRole) {
-    //         //     $user->assignRole($ownerRole);
-    //         // }
-
-    //         DB::commit();
-
-    //         event(new Registered($user));
-    //         Auth::login($user);
-
-    //         $planId = $request->input('plan_id');
-    //         $isTrial = (int) $request->input('trial', 0) === 1;
-
-    //         if ($planId && $isTrial) {
-    //             return redirect()->route('bill-templates.choose')
-    //                 ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
-    //         }
-
-    //         if ($planId && ! $isTrial) {
-    //             return redirect()->route('plan.payment', $planId)
-    //                 ->with('success', 'Registration successful. Please complete payment to start your plan.');
-    //         }
-
-    //         return redirect()->route('plan.choose')
-    //             ->with('success', 'Registration successful. Your business has been created.');
-    //     } catch (\Throwable $e) {
-    //         DB::rollBack();
-
-    //         return back()
-    //             ->withInput()
-    //             ->withErrors([
-    //                 'register_error' => 'Registration failed: ' . $e->getMessage()
-    //             ]);
-    //     }
-    // }
-
-
-
-//     public function store(Request $request)
-// {
-//     $planId = $request->input('plan_id');
-//     $isTrial = (int) $request->input('trial', 0) === 1;
-//     $paymentDone = session('payment_done') === true || (int) $request->input('payment_done', 0) === 1;
-
-//     $request->validate([
-//         'name' => ['required', 'string', 'max:255'],
-//         'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-//         'password' => ['required', 'confirmed', Password::min(6)],
-
-//         'business_name' => ['required', 'string', 'max:255'],
-//         'business_email' => ['required', 'email', 'max:255', 'unique:businesses,email'],
-//         'mobile' => ['required', 'string', 'max:20', 'unique:businesses,mobile'],
-//         'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
-//         'address' => ['nullable', 'string', 'max:255'],
-//         'state' => ['nullable', 'string', 'max:255'],
-//         'state_code' => ['nullable', 'string', 'max:255'],
-//         'business_type_id' => ['required', 'string', 'max:255'],
-
-//         'gst_enabled' => ['nullable', 'in:0,1'],
-//         'invoice_base_prefix' => ['nullable', 'string', 'max:255'],
-//         'rounding_mode' => ['nullable', 'in:none,nearest,up,down'],
-//         'rounding_step' => ['nullable', 'numeric', 'min:0'],
-
-//         'terms' => ['required', 'accepted'],
-//     ]);
-
-//     DB::beginTransaction();
-
-//     try {
-//         $user = User::create([
-//             'name' => $request->name,
-//             'email' => strtolower(trim($request->email)),
-//             'password' => Hash::make($request->password),
-//         ]);
-
-//         $slug = $this->generateUniqueBusinessSlug($request->business_name);
-
-//         $business = Business::create([
-//             'name' => $request->business_name,
-//             'slug' => $slug,
-//             'email' => $request->business_email,
-//             'mobile' => $request->mobile,
-//             'gstin' => $request->gstin,
-//             'gst_enabled' => $request->gst_enabled ?? 1,
-//             'address' => $request->address,
-//             'state' => $request->state,
-//             'state_code' => $request->state_code,
-//             'business_type_id' => $request->business_type_id,
-//             'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
-//             'rounding_mode' => $request->rounding_mode ?: 'nearest',
-//             'rounding_step' => $request->rounding_step ?: 1.00,
-//         ]);
-
-//         DB::table('business_user')->insert([
-//             'business_id' => $business->id,
-//             'user_id' => $user->id,
-//             'role' => 'owner',
-//             'created_at' => now(),
-//             'updated_at' => now(),
-//         ]);
-
-//         $user->update([
-//             'current_business_id' => $business->id,
-//         ]);
-
-//         session(['active_business_id' => $business->id]);
-
-//         if ($planId && $paymentDone) {
-//             $plan = Plan::with('permissions')->findOrFail($planId);
-
-//             UserPlan::where('user_id', $user->id)
-//                 ->where('status', 1)
-//                 ->update(['status' => 0]);
-
-//             UserPlan::create([
-//                 'business_id' => $business->id,
-//                 'user_id' => $user->id,
-//                 'plan_id' => $plan->id,
-//                 'start_date' => Carbon::today(),
-//                 'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
-//                 'status' => 1,
-//             ]);
-
-//             $permissions = $plan->permissions->pluck('name')->toArray();
-
-//             if (!empty($permissions)) {
-//                 $user->syncPermissions($permissions);
-//             }
-
-//             app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-//         }
-
-//         DB::commit();
-
-//         event(new Registered($user));
-//         Auth::login($user);
-
-//         if ($planId && $paymentDone) {
-//             session()->forget([
-//                 'paid_plan_id',
-//                 'paid_razorpay_order_id',
-//                 'paid_razorpay_payment_id',
-//                 'paid_razorpay_signature',
-//                 'payment_done',
-//             ]);
-
-//             return redirect()->route('bill-templates.choose')
-//                 ->with('success', 'Registration successful. Payment already completed. Please choose your bill template.');
-//         }
-
-//         if ($planId && $isTrial) {
-//             return redirect()->route('bill-templates.choose')
-//                 ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
-//         }
-
-//         if ($planId && !$isTrial) {
-//             return redirect()->route('plan.payment', $planId)
-//                 ->with('success', 'Registration successful. Please complete payment to start your plan.');
-//         }
-
-//         return redirect()->route('plan.choose')
-//             ->with('success', 'Registration successful. Your business has been created.');
-//     } catch (\Throwable $e) {
-//         DB::rollBack();
-
-//         return back()
-//             ->withInput()
-//             ->withErrors([
-//                 'register_error' => 'Registration failed: ' . $e->getMessage(),
-//             ]);
-//     }
-// }
-
-
-// public function store(Request $request)
-// {
-//     $planId = $request->input('plan_id');
-//     $isTrial = (int) $request->input('trial', 0) === 1;
-//     $paymentDone = session('payment_done') === true || (int) $request->input('payment_done', 0) === 1;
-
-//     $request->validate([
-//         'name' => ['required', 'string', 'max:255'],
-//         'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-//         'password' => ['required', 'confirmed', Password::min(6)],
-
-//         'business_name' => ['required', 'string', 'max:255'],
-//         'business_email' => ['required', 'email', 'max:255', 'unique:businesses,email'],
-//         'mobile' => ['required', 'string', 'max:20', 'unique:businesses,mobile'],
-//         'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
-//         'address' => ['nullable', 'string', 'max:255'],
-//         'state' => ['nullable', 'string', 'max:255'],
-//         'state_code' => ['nullable', 'string', 'max:255'],
-//         'business_type_id' => ['required', 'string', 'max:255'],
-
-//         'gst_enabled' => ['nullable', 'in:0,1'],
-//         'invoice_base_prefix' => ['nullable', 'string', 'max:255'],
-//         'rounding_mode' => ['nullable', 'in:none,nearest,up,down'],
-//         'rounding_step' => ['nullable', 'numeric', 'min:0'],
-
-//         'terms' => ['required', 'accepted'],
-//         'phone' => ['required', 'string', 'max:20', 'unique:users,phone'],
-//     ]);
-
-//     DB::beginTransaction();
-
-//     try {
-//         $user = User::create([
-//             'name' => $request->name,
-//             'email' => strtolower(trim($request->email)),
-//             'phone' => $request->phone,
-//             'password' => Hash::make($request->password),
-//         ]);
-
-//         $slug = $this->generateUniqueBusinessSlug($request->business_name);
-
-//         $business = Business::create([
-//             'name' => $request->business_name,
-//             'slug' => $slug,
-//             'email' => $request->business_email,
-//             'mobile' => $request->mobile,
-//             'gstin' => $request->gstin,
-//             'gst_enabled' => $request->gst_enabled ?? 1,
-//             'address' => $request->address,
-//             'state' => $request->state,
-//             'state_code' => $request->state_code,
-//             'business_type_id' => $request->business_type_id,
-//             'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
-//             'rounding_mode' => $request->rounding_mode ?: 'nearest',
-//             'rounding_step' => $request->rounding_step ?: 1.00,
-//         ]);
-
-//         DB::table('business_user')->insert([
-//             'business_id' => $business->id,
-//             'user_id' => $user->id,
-//             'role' => 'owner',
-//             'created_at' => now(),
-//             'updated_at' => now(),
-//         ]);
-
-//         $user->update([
-//             'current_business_id' => $business->id,
-//         ]);
-
-//         session(['active_business_id' => $business->id]);
-
-//         if ($planId && ($paymentDone || $isTrial)) {
-//             $plan = Plan::with('permissions')->findOrFail($planId);
-
-//             UserPlan::where('business_id', $business->id)
-//                 ->where('status', 1)
-//                 ->update(['status' => 0]);
-
-//             UserPlan::create([
-//                 'business_id' => $business->id,
-//                 'user_id' => $user->id,
-//                 'plan_id' => $plan->id,
-//                 'start_date' => Carbon::today(),
-//                 'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
-//                 'status' => 1,
-//             ]);
-
-//             app(PermissionRegistrar::class)->forgetCachedPermissions();
-
-//             $permissions = $plan->permissions()
-//                 ->where('guard_name', 'web')
-//                 ->pluck('name')
-//                 ->toArray();
-
-//             if (!empty($permissions)) {
-//                 $user->syncPermissions($permissions);
-//             }
-//         }
-
-//         DB::commit();
-
-//         event(new Registered($user));
-//         Auth::login($user);
-
-//         if ($planId && $paymentDone) {
-//             session()->forget([
-//                 'paid_plan_id',
-//                 'paid_razorpay_order_id',
-//                 'paid_razorpay_payment_id',
-//                 'paid_razorpay_signature',
-//                 'payment_done',
-//                 'paid_name',
-//                 'paid_email',
-//             ]);
-
-//             return redirect()->route('bill-templates.choose')
-//                 ->with('success', 'Registration successful. Payment already completed. Please choose your bill template.');
-//         }
-
-//         if ($planId && $isTrial) {
-//             return redirect()->route('bill-templates.choose')
-//                 ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
-//         }
-
-//         if ($planId && !$isTrial) {
-//             return redirect()->route('plan.payment', $planId)
-//                 ->with('success', 'Registration successful. Please complete payment to start your plan.');
-//         }
-
-//         return redirect()->route('plan.choose')
-//             ->with('success', 'Registration successful. Your business has been created.');
-//     } catch (\Throwable $e) {
-//         DB::rollBack();
-
-//         return back()
-//             ->withInput()
-//             ->withErrors([
-//                 'register_error' => 'Registration failed: ' . $e->getMessage(),
-//             ]);
-//     }
-// }
 
 // public function store(Request $request)
 // {
@@ -742,7 +196,12 @@ class RegisterController extends Controller
 //         'phone' => ['required', 'digits:10', 'unique:users,phone'],
 
 //         'business_name' => ['required', 'string', 'max:255'],
-//         'mobile' => ['required', 'string', 'max:20', 'unique:businesses,mobile'],
+
+//         // Business email nullable hai
+//         'business_email' => ['nullable', 'email', 'max:255'],
+
+//         // User phone aur business mobile same ho sakta hai
+//         'mobile' => ['required', 'string', 'max:20'],
 
 //         'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
 //         'address' => ['nullable', 'string', 'max:255'],
@@ -772,12 +231,19 @@ class RegisterController extends Controller
 //         $verifiedPhone = trim($request->phone);
 
 //         /*
-//          | Email form se hata diya hai.
+//          | User email form se hata diya hai.
 //          | Agar users.email database me nullable nahi hai,
 //          | to ye fake unique email save hoga.
 //          */
 //         $userEmail = $verifiedPhone . '@noemail.local';
-//         $businessEmail = $verifiedPhone . '@business.local';
+
+//         /*
+//          | Business email optional hai.
+//          | User dalega to save hoga, warna null save hoga.
+//          */
+//         $businessEmail = $request->filled('business_email')
+//             ? strtolower(trim($request->business_email))
+//             : null;
 
 //         $user = User::create([
 //             'name' => $request->name,
@@ -896,41 +362,174 @@ class RegisterController extends Controller
 //     }
 // }
 
+
+
 public function store(Request $request)
 {
     $planId = $request->input('plan_id');
+
     $isTrial = (int) $request->input('trial', 0) === 1;
-    $paymentDone = session('payment_done') === true || (int) $request->input('payment_done', 0) === 1;
 
-    $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'password' => ['required', 'confirmed', Password::min(6)],
+    $paymentDone =
+        session('payment_done') === true ||
+        (int) $request->input('payment_done', 0) === 1;
 
-        'phone' => ['required', 'digits:10', 'unique:users,phone'],
+    /*
+    |--------------------------------------------------------------------------
+    | Skip flags
+    |--------------------------------------------------------------------------
+    */
 
-        'business_name' => ['required', 'string', 'max:255'],
+    $businessSkipped = $request->boolean('business_skipped');
+    $billingSkipped = $request->boolean('billing_skipped');
 
-        // Business email nullable hai
-        'business_email' => ['nullable', 'email', 'max:255'],
+    /*
+    |--------------------------------------------------------------------------
+    | Validation
+    |--------------------------------------------------------------------------
+    |
+    | Password field form se remove kar diya gaya hai.
+    | Business aur billing fields skip flags ke according conditional hain.
+    |
+    */
 
-        // User phone aur business mobile same ho sakta hai
-        'mobile' => ['required', 'string', 'max:20'],
+    $validated = $request->validate([
+        'name' => [
+            'required',
+            'string',
+            'max:255',
+        ],
 
-        'gstin' => ['nullable', 'string', 'max:255', 'unique:businesses,gstin'],
-        'address' => ['nullable', 'string', 'max:255'],
-        'state' => ['nullable', 'string', 'max:255'],
-        'state_code' => ['nullable', 'string', 'max:255'],
-        'business_type_id' => ['required', 'string', 'max:255'],
+        'phone' => [
+            'required',
+            'digits:10',
+            'unique:users,phone',
+        ],
 
-        'gst_enabled' => ['nullable', 'in:0,1'],
-        'invoice_base_prefix' => ['nullable', 'string', 'max:255'],
-        'rounding_mode' => ['nullable', 'in:none,nearest,up,down'],
-        'rounding_step' => ['nullable', 'numeric', 'min:0'],
+        'business_skipped' => [
+            'nullable',
+            'boolean',
+        ],
 
-        'terms' => ['required', 'accepted'],
+        'billing_skipped' => [
+            'nullable',
+            'boolean',
+        ],
+
+        'business_name' => [
+            'nullable',
+            'required_unless:business_skipped,1',
+            'string',
+            'max:255',
+        ],
+
+        'business_email' => [
+            'nullable',
+            'email',
+            'max:255',
+        ],
+
+        'mobile' => [
+            'nullable',
+            'required_unless:business_skipped,1',
+            'digits:10',
+        ],
+
+        'gstin' => [
+            'nullable',
+            'string',
+            'max:255',
+            Rule::unique('businesses', 'gstin'),
+        ],
+
+        'address' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'state' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'state_code' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'business_type_id' => [
+            'nullable',
+            'required_unless:business_skipped,1',
+            'exists:business_types,id',
+        ],
+
+        'gst_enabled' => [
+            'nullable',
+            'required_unless:billing_skipped,1',
+            'in:0,1',
+        ],
+
+        'invoice_base_prefix' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'rounding_mode' => [
+            'nullable',
+            'required_unless:billing_skipped,1',
+            'in:none,nearest,up,down',
+        ],
+
+        'rounding_step' => [
+            'nullable',
+            'required_unless:billing_skipped,1',
+            'numeric',
+            'min:0',
+        ],
+
+        'terms' => [
+            'required',
+            'accepted',
+        ],
+    ], [
+        'business_name.required_unless' =>
+            'Business skip nahi kar rahe hain to business name required hai.',
+
+        'mobile.required_unless' =>
+            'Business skip nahi kar rahe hain to business mobile required hai.',
+
+        'business_type_id.required_unless' =>
+            'Business skip nahi kar rahe hain to business type required hai.',
+
+        'gst_enabled.required_unless' =>
+            'Billing setup skip nahi kar rahe hain to GST setting required hai.',
+
+        'rounding_mode.required_unless' =>
+            'Billing setup skip nahi kar rahe hain to rounding mode required hai.',
+
+        'rounding_step.required_unless' =>
+            'Billing setup skip nahi kar rahe hain to rounding step required hai.',
     ]);
 
-    if (session('register_phone_verified') !== $request->phone) {
+    /*
+    |--------------------------------------------------------------------------
+    | OTP verification
+    |--------------------------------------------------------------------------
+    */
+
+    $verifiedSessionPhone = trim(
+        (string) session('register_phone_verified')
+    );
+
+    $submittedPhone = trim(
+        (string) $validated['phone']
+    );
+
+    if ($verifiedSessionPhone !== $submittedPhone) {
         return back()
             ->withInput()
             ->withErrors([
@@ -941,47 +540,162 @@ public function store(Request $request)
     DB::beginTransaction();
 
     try {
-        $verifiedPhone = trim($request->phone);
+        $verifiedPhone = $submittedPhone;
 
         /*
-         | User email form se hata diya hai.
-         | Agar users.email database me nullable nahi hai,
-         | to ye fake unique email save hoga.
-         */
+        |--------------------------------------------------------------------------
+        | User email
+        |--------------------------------------------------------------------------
+        |
+        | User email form me nahi hai, isliye verified phone se unique internal
+        | email create ki ja rahi hai.
+        |
+        */
+
         $userEmail = $verifiedPhone . '@noemail.local';
 
         /*
-         | Business email optional hai.
-         | User dalega to save hoga, warna null save hoga.
-         */
-        $businessEmail = $request->filled('business_email')
-            ? strtolower(trim($request->business_email))
-            : null;
+        |--------------------------------------------------------------------------
+        | Password
+        |--------------------------------------------------------------------------
+        |
+        | Password fields remove hain. Database column required ho sakta hai,
+        | isliye secure random password generate karke hash save hoga.
+        |
+        */
+
+        $generatedPassword = Str::random(40);
 
         $user = User::create([
-            'name' => $request->name,
+            'name' => trim($validated['name']),
             'email' => $userEmail,
             'phone' => $verifiedPhone,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($generatedPassword),
         ]);
 
-        $slug = $this->generateUniqueBusinessSlug($request->business_name);
+        /*
+        |--------------------------------------------------------------------------
+        | Default business type
+        |--------------------------------------------------------------------------
+        |
+        | Business skip karne par business_type_id form se nahi aayega.
+        | Pehla available business type default ke roop me use hoga.
+        |
+        */
+
+        $defaultBusinessTypeId = DB::table('business_types')
+            ->orderBy('id')
+            ->value('id');
+
+        $businessTypeId = $businessSkipped
+            ? $defaultBusinessTypeId
+            : $validated['business_type_id'];
+
+        if (!$businessTypeId) {
+            throw new \RuntimeException(
+                'Koi business type available nahi hai. Admin panel se kam se kam ek business type create kijiye.'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business information
+        |--------------------------------------------------------------------------
+        */
+
+        if ($businessSkipped) {
+            $businessName = trim($validated['name']) . "'s Business";
+            $businessEmail = null;
+            $businessGstin = null;
+            $businessAddress = null;
+            $businessState = null;
+            $businessStateCode = null;
+        } else {
+            $businessName = trim($validated['business_name']);
+
+            $businessEmail = !empty($validated['business_email'])
+                ? strtolower(trim($validated['business_email']))
+                : null;
+
+            $businessGstin = !empty($validated['gstin'])
+                ? strtoupper(trim($validated['gstin']))
+                : null;
+
+            $businessAddress = !empty($validated['address'])
+                ? trim($validated['address'])
+                : null;
+
+            $businessState = !empty($validated['state'])
+                ? trim($validated['state'])
+                : null;
+
+            $businessStateCode = !empty($validated['state_code'])
+                ? trim($validated['state_code'])
+                : null;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Billing preferences
+        |--------------------------------------------------------------------------
+        |
+        | Billing skip hone par safe defaults save honge.
+        |
+        */
+
+        if ($billingSkipped) {
+            $gstEnabled = 0;
+            $invoiceBasePrefix = 'RV/SL';
+            $roundingMode = 'nearest';
+            $roundingStep = 1.00;
+        } else {
+            $gstEnabled = (int) ($validated['gst_enabled'] ?? 0);
+
+            $invoiceBasePrefix = !empty($validated['invoice_base_prefix'])
+                ? trim($validated['invoice_base_prefix'])
+                : 'RV/SL';
+
+            $roundingMode =
+                $validated['rounding_mode'] ?? 'nearest';
+
+            $roundingStep =
+                (float) ($validated['rounding_step'] ?? 1.00);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create business
+        |--------------------------------------------------------------------------
+        */
+
+        $slug = $this->generateUniqueBusinessSlug($businessName);
 
         $business = Business::create([
-            'name' => $request->business_name,
+            'name' => $businessName,
             'slug' => $slug,
+
             'email' => $businessEmail,
             'mobile' => $verifiedPhone,
-            'gstin' => $request->gstin,
-            'gst_enabled' => $request->gst_enabled ?? 1,
-            'address' => $request->address,
-            'state' => $request->state,
-            'state_code' => $request->state_code,
-            'business_type_id' => $request->business_type_id,
-            'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
-            'rounding_mode' => $request->rounding_mode ?: 'nearest',
-            'rounding_step' => $request->rounding_step ?: 1.00,
+
+            'gstin' => $businessGstin,
+            'gst_enabled' => $gstEnabled,
+
+            'address' => $businessAddress,
+            'state' => $businessState,
+            'state_code' => $businessStateCode,
+
+            'business_type_id' => $businessTypeId,
+
+            'invoice_base_prefix' => $invoiceBasePrefix,
+            'rounding_mode' => $roundingMode,
+            'rounding_step' => $roundingStep,
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Attach owner
+        |--------------------------------------------------------------------------
+        */
 
         DB::table('business_user')->insert([
             'business_id' => $business->id,
@@ -995,25 +709,39 @@ public function store(Request $request)
             'current_business_id' => $business->id,
         ]);
 
-        session(['active_business_id' => $business->id]);
+        session([
+            'active_business_id' => $business->id,
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Plan activation
+        |--------------------------------------------------------------------------
+        */
 
         if ($planId && ($paymentDone || $isTrial)) {
-            $plan = Plan::with('permissions')->findOrFail($planId);
+            $plan = Plan::with('permissions')
+                ->findOrFail($planId);
 
             UserPlan::where('business_id', $business->id)
                 ->where('status', 1)
-                ->update(['status' => 0]);
+                ->update([
+                    'status' => 0,
+                ]);
 
             UserPlan::create([
                 'business_id' => $business->id,
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
                 'start_date' => Carbon::today(),
-                'expiry_date' => Carbon::today()->addDays((int) ($plan->duration_days ?? 30)),
+                'expiry_date' => Carbon::today()->addDays(
+                    (int) ($plan->duration_days ?? 30)
+                ),
                 'status' => 1,
             ]);
 
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            app(PermissionRegistrar::class)
+                ->forgetCachedPermissions();
 
             $permissions = $plan->permissions()
                 ->where('guard_name', 'web')
@@ -1027,7 +755,14 @@ public function store(Request $request)
 
         DB::commit();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Login and session cleanup
+        |--------------------------------------------------------------------------
+        */
+
         event(new Registered($user));
+
         Auth::login($user);
 
         session()->forget([
@@ -1035,6 +770,34 @@ public function store(Request $request)
             'register_phone_otp',
             'register_phone_otp_expires_at',
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Redirect messages
+        |--------------------------------------------------------------------------
+        */
+
+        $registrationMessage = 'Registration successful.';
+
+        if ($businessSkipped && $billingSkipped) {
+            $registrationMessage .=
+                ' Business details aur billing preferences default settings ke saath skip kar di gayi hain.';
+        } elseif ($businessSkipped) {
+            $registrationMessage .=
+                ' Business details abhi skip kar di gayi hain.';
+        } elseif ($billingSkipped) {
+            $registrationMessage .=
+                ' Billing preferences default settings ke saath skip kar di gayi hain.';
+        } else {
+            $registrationMessage .=
+                ' Your business has been created successfully.';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Paid plan
+        |--------------------------------------------------------------------------
+        */
 
         if ($planId && $paymentDone) {
             session()->forget([
@@ -1047,30 +810,67 @@ public function store(Request $request)
                 'paid_email',
             ]);
 
-            return redirect()->route('bill-templates.choose')
-                ->with('success', 'Registration successful. Payment already completed. Please choose your bill template.');
+            return redirect()
+                ->route('bill-templates.choose')
+                ->with(
+                    'success',
+                    $registrationMessage .
+                    ' Payment already completed. Please choose your bill template.'
+                );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Trial plan
+        |--------------------------------------------------------------------------
+        */
 
         if ($planId && $isTrial) {
-            return redirect()->route('bill-templates.choose')
-                ->with('success', 'Registration successful. Free trial started. Please choose your bill template.');
+            return redirect()
+                ->route('bill-templates.choose')
+                ->with(
+                    'success',
+                    $registrationMessage .
+                    ' Free trial started. Please choose your bill template.'
+                );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Unpaid selected plan
+        |--------------------------------------------------------------------------
+        */
 
         if ($planId && !$isTrial) {
-            return redirect()->route('plan.payment', $planId)
-                ->with('success', 'Registration successful. Please complete payment to start your plan.');
+            return redirect()
+                ->route('plan.payment', $planId)
+                ->with(
+                    'success',
+                    $registrationMessage .
+                    ' Please complete payment to start your plan.'
+                );
         }
 
-        return redirect()->route('plan.choose')
-            ->with('success', 'Registration successful. Your business has been created.');
+        /*
+        |--------------------------------------------------------------------------
+        | No selected plan
+        |--------------------------------------------------------------------------
+        */
+
+        return redirect()
+            ->route('plan.choose')
+            ->with('success', $registrationMessage);
 
     } catch (\Throwable $e) {
         DB::rollBack();
 
+        report($e);
+
         return back()
             ->withInput()
             ->withErrors([
-                'register_error' => 'Registration failed: ' . $e->getMessage(),
+                'register_error' =>
+                    'Registration failed: ' . $e->getMessage(),
             ]);
     }
 }
