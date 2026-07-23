@@ -2602,6 +2602,4 @@
         };
     }
 </script>
-
-
 </x-layouts.app>

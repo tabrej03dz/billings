@@ -72,6 +72,340 @@
             </div>
         </div>
 
+        @php
+            $itemGuideStorageKey =
+                'item-guide-v1-user-'
+                . auth()->id()
+                . '-business-'
+                . ($activeBusinessId ?? 'default');
+        @endphp
+
+        @if($showItemSuggestion ?? false)
+            <div
+                id="itemSuggestionGuide"
+                data-storage-key="{{ $itemGuideStorageKey }}"
+                class="relative overflow-hidden rounded-2xl
+                    border border-emerald-200
+                    bg-gradient-to-br from-emerald-50
+                    via-white to-cyan-50
+                    p-5 shadow-sm
+                    dark:border-emerald-900/70
+                    dark:from-emerald-950/50
+                    dark:via-neutral-900
+                    dark:to-cyan-950/30
+                    sm:p-6"
+            >
+                {{-- Decoration --}}
+                <div
+                    class="pointer-events-none absolute -right-16 -top-16
+                        h-40 w-40 rounded-full
+                        bg-emerald-200/40 blur-3xl
+                        dark:bg-emerald-700/20"
+                ></div>
+
+                <div
+                    class="pointer-events-none absolute -bottom-16 left-1/3
+                        h-36 w-36 rounded-full
+                        bg-cyan-200/40 blur-3xl
+                        dark:bg-cyan-700/20"
+                ></div>
+
+                {{-- Close button --}}
+                <button
+                    type="button"
+                    onclick="dismissItemGuide()"
+                    aria-label="Close item guide"
+                    title="Hide this guide"
+                    class="absolute right-3 top-3 z-20
+                        inline-flex h-9 w-9 items-center justify-center
+                        rounded-full border border-gray-200
+                        bg-white/90 text-gray-500 shadow-sm
+                        transition hover:bg-white hover:text-red-600
+                        dark:border-neutral-700
+                        dark:bg-neutral-800
+                        dark:text-neutral-300
+                        dark:hover:text-red-400"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18 18 6M6 6l12 12"
+                        />
+                    </svg>
+                </button>
+
+                <div class="relative z-10 pr-8">
+                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+
+                        {{-- Icon --}}
+                        <div
+                            class="flex h-14 w-14 shrink-0 items-center
+                                justify-center rounded-2xl
+                                bg-emerald-600 text-white
+                                shadow-lg shadow-emerald-600/20"
+                        >
+                            <svg
+                                class="h-7 w-7"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M20 7 9 18l-5-5M9 7h11M4 7h.01"
+                                />
+                            </svg>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2
+                                    class="text-lg font-bold text-gray-900
+                                        dark:text-white sm:text-xl"
+                                >
+                                    How to create and manage Items
+                                </h2>
+
+                                <span
+                                    class="rounded-full bg-emerald-100
+                                        px-2.5 py-1 text-[11px]
+                                        font-bold uppercase tracking-wide
+                                        text-emerald-700
+                                        dark:bg-emerald-900/60
+                                        dark:text-emerald-300"
+                                >
+                                    Quick Guide
+                                </span>
+                            </div>
+
+                            <p
+                                class="mt-2 max-w-3xl text-sm leading-6
+                                    text-gray-600 dark:text-neutral-300"
+                            >
+                                Apne products ya services ko item master me add karein.
+                                Inhi items ko invoice banate waqt search aur select kiya
+                                ja sakta hai.
+                            </p>
+
+                            {{-- Steps --}}
+                            <div class="mt-5 grid gap-3 md:grid-cols-3">
+
+                                <div
+                                    class="rounded-xl border border-emerald-100
+                                        bg-white/80 p-4 shadow-sm
+                                        dark:border-emerald-900/50
+                                        dark:bg-neutral-800/70"
+                                >
+                                    <div class="flex items-start gap-3">
+                                        <span
+                                            class="flex h-8 w-8 shrink-0 items-center
+                                                justify-center rounded-full
+                                                bg-emerald-100 text-sm font-bold
+                                                text-emerald-700
+                                                dark:bg-emerald-900/70
+                                                dark:text-emerald-300"
+                                        >
+                                            1
+                                        </span>
+
+                                        <div>
+                                            <h3
+                                                class="text-sm font-bold
+                                                    text-gray-900 dark:text-white"
+                                            >
+                                                Create item
+                                            </h3>
+
+                                            <p
+                                                class="mt-1 text-xs leading-5
+                                                    text-gray-500
+                                                    dark:text-neutral-400"
+                                            >
+                                                New Item button se product ya service
+                                                ka naam, price aur tax add karein.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="rounded-xl border border-emerald-100
+                                        bg-white/80 p-4 shadow-sm
+                                        dark:border-emerald-900/50
+                                        dark:bg-neutral-800/70"
+                                >
+                                    <div class="flex items-start gap-3">
+                                        <span
+                                            class="flex h-8 w-8 shrink-0 items-center
+                                                justify-center rounded-full
+                                                bg-emerald-100 text-sm font-bold
+                                                text-emerald-700
+                                                dark:bg-emerald-900/70
+                                                dark:text-emerald-300"
+                                        >
+                                            2
+                                        </span>
+
+                                        <div>
+                                            <h3
+                                                class="text-sm font-bold
+                                                    text-gray-900 dark:text-white"
+                                            >
+                                                Add barcode
+                                            </h3>
+
+                                            <p
+                                                class="mt-1 text-xs leading-5
+                                                    text-gray-500
+                                                    dark:text-neutral-400"
+                                            >
+                                                Barcode generate karke label print karein
+                                                aur invoice me scanner use karein.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="rounded-xl border border-emerald-100
+                                        bg-white/80 p-4 shadow-sm
+                                        dark:border-emerald-900/50
+                                        dark:bg-neutral-800/70"
+                                >
+                                    <div class="flex items-start gap-3">
+                                        <span
+                                            class="flex h-8 w-8 shrink-0 items-center
+                                                justify-center rounded-full
+                                                bg-emerald-100 text-sm font-bold
+                                                text-emerald-700
+                                                dark:bg-emerald-900/70
+                                                dark:text-emerald-300"
+                                        >
+                                            3
+                                        </span>
+
+                                        <div>
+                                            <h3
+                                                class="text-sm font-bold
+                                                    text-gray-900 dark:text-white"
+                                            >
+                                                Use in invoice
+                                            </h3>
+
+                                            <p
+                                                class="mt-1 text-xs leading-5
+                                                    text-gray-500
+                                                    dark:text-neutral-400"
+                                            >
+                                                Invoice create page par item search ya
+                                                barcode scan karke quickly add karein.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Tip --}}
+                            <div
+                                class="mt-4 rounded-xl border border-amber-200
+                                    bg-amber-50 p-3 text-sm text-amber-800
+                                    dark:border-amber-900/60
+                                    dark:bg-amber-950/30
+                                    dark:text-amber-300"
+                            >
+                                <strong>Helpful tip:</strong>
+                                Item ka SKU aur barcode unique rakhein. Isse search,
+                                billing aur stock management easy rahega.
+                            </div>
+
+                            <div
+                                class="mt-5 flex flex-col gap-3
+                                    sm:flex-row sm:items-center"
+                            >
+                                <a
+                                    href="{{ route('item.create') }}"
+                                    class="inline-flex items-center justify-center
+                                        gap-2 rounded-xl bg-emerald-600
+                                        px-4 py-2.5 text-sm font-semibold
+                                        text-white shadow-sm transition
+                                        hover:bg-emerald-700"
+                                >
+                                    <svg
+                                        class="h-4 w-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 4v16m8-8H4"
+                                        />
+                                    </svg>
+
+                                    Create First Item
+                                </a>
+
+                                <button
+                                    type="button"
+                                    onclick="dismissItemGuide()"
+                                    class="inline-flex items-center justify-center
+                                        rounded-xl border border-gray-300
+                                        bg-white px-4 py-2.5
+                                        text-sm font-semibold text-gray-700
+                                        transition hover:bg-gray-50
+                                        dark:border-neutral-600
+                                        dark:bg-neutral-800
+                                        dark:text-neutral-200
+                                        dark:hover:bg-neutral-700"
+                                >
+                                    Got it, hide this guide
+                                </button>
+
+                                <span
+                                    class="text-xs text-gray-500
+                                        dark:text-neutral-400"
+                                >
+                                    Current items: {{ $currentItemCount ?? 0 }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Reopen button --}}
+            <div
+                id="itemSuggestionReopen"
+                class="hidden justify-end"
+            >
+                <button
+                    type="button"
+                    onclick="showItemGuide()"
+                    class="inline-flex items-center gap-2
+                        rounded-xl border border-emerald-200
+                        bg-emerald-50 px-3 py-2
+                        text-xs font-semibold text-emerald-700
+                        transition hover:bg-emerald-100
+                        dark:border-emerald-900
+                        dark:bg-emerald-950/40
+                        dark:text-emerald-300"
+                >
+                    Show Item Guide
+                </button>
+            </div>
+        @endif
+
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <form
                 id="barcodeBulkForm"
@@ -279,4 +613,99 @@
         });
     });
 </script>
+
+
+
+@if($showItemSuggestion ?? false)
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initializeItemGuide();
+    });
+
+    function getItemGuideElements() {
+        return {
+            guide: document.getElementById('itemSuggestionGuide'),
+            reopen: document.getElementById('itemSuggestionReopen')
+        };
+    }
+
+    function initializeItemGuide() {
+        const elements = getItemGuideElements();
+
+        if (!elements.guide) {
+            return;
+        }
+
+        const storageKey = elements.guide.dataset.storageKey;
+        const dismissed = storageKey
+            ? localStorage.getItem(storageKey) === '1'
+            : false;
+
+        if (dismissed) {
+            elements.guide.classList.add('hidden');
+
+            if (elements.reopen) {
+                elements.reopen.classList.remove('hidden');
+                elements.reopen.classList.add('flex');
+            }
+
+            return;
+        }
+
+        elements.guide.classList.remove('hidden');
+
+        if (elements.reopen) {
+            elements.reopen.classList.add('hidden');
+            elements.reopen.classList.remove('flex');
+        }
+    }
+
+    function dismissItemGuide() {
+        const elements = getItemGuideElements();
+
+        if (!elements.guide) {
+            return;
+        }
+
+        const storageKey = elements.guide.dataset.storageKey;
+
+        if (storageKey) {
+            localStorage.setItem(storageKey, '1');
+        }
+
+        elements.guide.classList.add('hidden');
+
+        if (elements.reopen) {
+            elements.reopen.classList.remove('hidden');
+            elements.reopen.classList.add('flex');
+        }
+    }
+
+    function showItemGuide() {
+        const elements = getItemGuideElements();
+
+        if (!elements.guide) {
+            return;
+        }
+
+        const storageKey = elements.guide.dataset.storageKey;
+
+        if (storageKey) {
+            localStorage.removeItem(storageKey);
+        }
+
+        elements.guide.classList.remove('hidden');
+
+        if (elements.reopen) {
+            elements.reopen.classList.add('hidden');
+            elements.reopen.classList.remove('flex');
+        }
+
+        elements.guide.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+</script>
+@endif
 </x-layouts.app>

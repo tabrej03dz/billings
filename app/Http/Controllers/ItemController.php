@@ -13,35 +13,146 @@ use Illuminate\Validation\Rule;
 
 class ItemController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $q           = trim($request->get('q', ''));
+    //     $category_id = $request->integer('category_id');
+    //     $active      = $request->get('active'); // '1' | '0' | null
+
+    //     $items = Item::query()
+    //         ->with('category:id,name') // eager-load for table
+    //         ->when($q !== '', function ($w) use ($q) {
+    //             $w->where(function ($s) use ($q) {
+    //                 // $s->where('name', 'like', "%{$q}%")
+    //                 //     ->orWhere('sku', 'like', "%{$q}%")
+    //                 //     ->orWhere('description', 'like', "%{$q}%");
+    //                 $s->where('name', 'like', "%{$q}%")
+    //                 ->orWhere('sku', 'like', "%{$q}%")
+    //                 ->orWhere('barcode', 'like', "%{$q}%")
+    //                 ->orWhere('description', 'like', "%{$q}%");
+    //             });
+    //         })
+    //         ->when($category_id, fn($w) => $w->where('category_id', $category_id))
+    //         ->when($active !== null && $active !== '', fn($w) => $w->where('is_active', (bool)$active))
+    //         ->latest()
+    //         ->paginate(15)
+    //         ->withQueryString();
+
+    //     // current business ki categories (BelongsToBusiness scope ke sath)
+    //     $categories = Category::orderBy('name')->get(['id','name']);
+
+    //     return view('items.index', compact('items', 'categories', 'q', 'category_id', 'active'));
+    // }
+
+
     public function index(Request $request)
     {
-        $q           = trim($request->get('q', ''));
-        $category_id = $request->integer('category_id');
-        $active      = $request->get('active'); // '1' | '0' | null
+        $user = $request->user();
 
-        $items = Item::query()
-            ->with('category:id,name') // eager-load for table
-            ->when($q !== '', function ($w) use ($q) {
-                $w->where(function ($s) use ($q) {
-                    // $s->where('name', 'like', "%{$q}%")
-                    //     ->orWhere('sku', 'like', "%{$q}%")
-                    //     ->orWhere('description', 'like', "%{$q}%");
-                    $s->where('name', 'like', "%{$q}%")
-                    ->orWhere('sku', 'like', "%{$q}%")
-                    ->orWhere('barcode', 'like', "%{$q}%")
-                    ->orWhere('description', 'like', "%{$q}%");
+        /*
+        |--------------------------------------------------------------------------
+        | Active business resolve
+        |--------------------------------------------------------------------------
+        */
+        $businessId = $user->current_business_id
+            ?? session('active_business_id');
+
+        if (!$businessId) {
+            $businessId = $user->businesses()
+                ->pluck('businesses.id')
+                ->first();
+        }
+
+        if (!$businessId) {
+            return back()->withErrors([
+                'business' => 'Active business select/attach नहीं है.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filters
+        |--------------------------------------------------------------------------
+        */
+        $q = trim((string) $request->get('q', ''));
+
+        $categoryId = $request->integer('category_id');
+
+        $active = $request->get('active');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Items query
+        |--------------------------------------------------------------------------
+        */
+        $itemsQuery = Item::query()
+            ->where('business_id', $businessId)
+            ->with('category:id,name')
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($searchQuery) use ($q) {
+                    $searchQuery
+                        ->where('name', 'like', "%{$q}%")
+                        ->orWhere('sku', 'like', "%{$q}%")
+                        ->orWhere('barcode', 'like', "%{$q}%")
+                        ->orWhere('description', 'like', "%{$q}%");
                 });
             })
-            ->when($category_id, fn($w) => $w->where('category_id', $category_id))
-            ->when($active !== null && $active !== '', fn($w) => $w->where('is_active', (bool)$active))
+            ->when(
+                $categoryId,
+                fn ($query) => $query->where(
+                    'category_id',
+                    $categoryId
+                )
+            )
+            ->when(
+                $active !== null && $active !== '',
+                fn ($query) => $query->where(
+                    'is_active',
+                    (int) $active
+                )
+            );
+
+        $items = $itemsQuery
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        // current business ki categories (BelongsToBusiness scope ke sath)
-        $categories = Category::orderBy('name')->get(['id','name']);
+        /*
+        |--------------------------------------------------------------------------
+        | Categories
+        |--------------------------------------------------------------------------
+        */
+        $categories = Category::query()
+            ->where('business_id', $businessId)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
 
-        return view('items.index', compact('items', 'categories', 'q', 'category_id', 'active'));
+        /*
+        |--------------------------------------------------------------------------
+        | Suggestion visibility
+        |--------------------------------------------------------------------------
+        | Current business me 5 se kam items hone tak guide dikhega.
+        */
+        $currentItemCount = Item::query()
+            ->where('business_id', $businessId)
+            ->count();
+
+        $showItemSuggestion = $currentItemCount < 5;
+
+        return view('items.index', [
+            'items'              => $items,
+            'categories'         => $categories,
+            'q'                  => $q,
+            'category_id'        => $categoryId,
+            'active'             => $active,
+
+            'currentItemCount'   => $currentItemCount,
+            'showItemSuggestion' => $showItemSuggestion,
+            'activeBusinessId'   => $businessId,
+        ]);
     }
 
     // public function create()

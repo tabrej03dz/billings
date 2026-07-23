@@ -180,6 +180,295 @@
             </div>
         </div>
 
+        {{-- GETTING STARTED GUIDE: ITEM / PURCHASE / INVOICE --}}
+        @php
+            $dashboardGuideStorageKey =
+                'dashboard-setup-guide-v2-user-'
+                . auth()->id()
+                . '-business-'
+                . ($bid ?? 'default');
+
+            $itemSetupDone = (int) ($dashboardItemCount ?? 0) > 0;
+            $purchaseSetupDone = (int) ($dashboardPurchaseCount ?? 0) > 0;
+            $invoiceSetupDone = (int) ($dashboardInvoiceCount ?? 0) > 0;
+
+            $completedSetupSteps = collect([
+                $itemSetupDone,
+                $purchaseSetupDone,
+                $invoiceSetupDone,
+            ])->filter()->count();
+
+            $dashboardSetupProgress = (int) round(
+                ($completedSetupSteps / 3) * 100
+            );
+
+            $purchaseCreateRoute = \Illuminate\Support\Facades\Route::has('purchases.create')
+                ? route('purchases.create')
+                : route('purchases.index');
+        @endphp
+
+        @if($showDashboardSuggestion ?? false)
+            <section
+                id="dashboardSetupGuide"
+                data-storage-key="{{ $dashboardGuideStorageKey }}"
+                class="relative overflow-hidden rounded-2xl border border-indigo-200
+                       bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-5 shadow-sm
+                       dark:border-indigo-900/70 dark:from-indigo-950/50
+                       dark:via-neutral-900 dark:to-cyan-950/30 sm:p-6"
+            >
+                <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40
+                            rounded-full bg-indigo-200/40 blur-3xl dark:bg-indigo-700/20"></div>
+
+                <div class="pointer-events-none absolute -bottom-16 left-1/3 h-36 w-36
+                            rounded-full bg-cyan-200/40 blur-3xl dark:bg-cyan-700/20"></div>
+
+                <button
+                    type="button"
+                    onclick="dismissDashboardSetupGuide()"
+                    aria-label="Close setup guide"
+                    title="Hide this guide"
+                    class="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center
+                           justify-center rounded-full border border-gray-200 bg-white/90
+                           text-gray-500 shadow-sm transition hover:bg-white hover:text-red-600
+                           dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300
+                           dark:hover:text-red-400"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="relative z-10 pr-8">
+                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+                        <div class="flex h-14 w-14 shrink-0 items-center justify-center
+                                    rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+                            <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 12h6m-6 4h6M5 5h14v14H5z" />
+                            </svg>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
+                                    Complete your billing setup
+                                </h2>
+
+                                <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-[11px]
+                                             font-bold uppercase tracking-wide text-indigo-700
+                                             dark:bg-indigo-900/60 dark:text-indigo-300">
+                                    Getting Started
+                                </span>
+                            </div>
+
+                            <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-neutral-300">
+                                Billing ko properly start karne ke liye item add karein, purchase entry karein
+                                aur customer ke liye tax invoice create karein.
+                            </p>
+
+                            <div class="mt-4">
+                                <div class="mb-1 flex items-center justify-between text-xs">
+                                    <span class="font-semibold text-gray-700 dark:text-neutral-300">
+                                        Setup progress
+                                    </span>
+
+                                    <span class="font-bold text-indigo-700 dark:text-indigo-300">
+                                        {{ $dashboardSetupProgress }}%
+                                    </span>
+                                </div>
+
+                                <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-neutral-700">
+                                    <div class="h-full rounded-full bg-indigo-600 transition-all"
+                                         style="width: {{ $dashboardSetupProgress }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 grid gap-3 md:grid-cols-3">
+                                {{-- ITEM STEP --}}
+                                <article class="rounded-xl border p-4 shadow-sm
+                                    {{ $itemSetupDone
+                                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                        : 'border-indigo-100 bg-white/80 dark:border-indigo-900/50 dark:bg-neutral-800/70' }}">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                                                     text-sm font-bold
+                                            {{ $itemSetupDone
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-300' }}">
+                                            {{ $itemSetupDone ? '✓' : '1' }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Add Item</h3>
+                                            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
+                                                Product ya service ka naam, rate, tax, barcode aur stock add karein.
+                                            </p>
+
+                                            <div class="mt-3">
+                                                @if($itemSetupDone)
+                                                    <span class="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5
+                                                                 text-xs font-semibold text-emerald-700
+                                                                 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        {{ $dashboardItemCount }} item added
+                                                    </span>
+                                                @else
+                                                    @can('create item')
+                                                        <a href="{{ route('item.create') }}"
+                                                           class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
+                                                                  text-xs font-semibold text-white hover:bg-indigo-700">
+                                                            + Add Item
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                {{-- PURCHASE STEP --}}
+                                <article class="rounded-xl border p-4 shadow-sm
+                                    {{ $purchaseSetupDone
+                                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                        : 'border-indigo-100 bg-white/80 dark:border-indigo-900/50 dark:bg-neutral-800/70' }}">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                                                     text-sm font-bold
+                                            {{ $purchaseSetupDone
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-300' }}">
+                                            {{ $purchaseSetupDone ? '✓' : '2' }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Add Purchase</h3>
+                                            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
+                                                Supplier purchase record karke stock aur cost price maintain karein.
+                                            </p>
+
+                                            <div class="mt-3">
+                                                @if($purchaseSetupDone)
+                                                    <span class="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5
+                                                                 text-xs font-semibold text-emerald-700
+                                                                 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        {{ $dashboardPurchaseCount }} purchase added
+                                                    </span>
+                                                @else
+                                                    @can('create purchase')
+                                                        <a href="{{ $purchaseCreateRoute }}"
+                                                           class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
+                                                                  text-xs font-semibold text-white hover:bg-indigo-700">
+                                                            + Add Purchase
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                {{-- INVOICE STEP --}}
+                                <article class="rounded-xl border p-4 shadow-sm
+                                    {{ $invoiceSetupDone
+                                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                        : 'border-indigo-100 bg-white/80 dark:border-indigo-900/50 dark:bg-neutral-800/70' }}">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                                                     text-sm font-bold
+                                            {{ $invoiceSetupDone
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-300' }}">
+                                            {{ $invoiceSetupDone ? '✓' : '3' }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Create Invoice</h3>
+                                            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
+                                                Customer select karke items add karein aur final tax invoice save karein.
+                                            </p>
+
+                                            <div class="mt-3">
+                                                @if($invoiceSetupDone)
+                                                    <span class="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5
+                                                                 text-xs font-semibold text-emerald-700
+                                                                 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        {{ $dashboardInvoiceCount }} invoice created
+                                                    </span>
+                                                @else
+                                                    @can('create invoice')
+                                                        <a href="{{ route('invoices.create', 'tax') }}"
+                                                           class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
+                                                                  text-xs font-semibold text-white hover:bg-indigo-700">
+                                                            + Create Invoice
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3
+                                        text-sm text-amber-800 dark:border-amber-900/60
+                                        dark:bg-amber-950/30 dark:text-amber-300">
+                                <strong>Recommended order:</strong>
+                                Item → Purchase → Invoice. Purchase optional ho sakta hai, lekin stock aur profit
+                                calculation ke liye useful hai.
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap items-center gap-3">
+                                @if(!$itemSetupDone)
+                                    @can('create item')
+                                        <a href="{{ route('item.create') }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600
+                                                  px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Start with Item
+                                        </a>
+                                    @endcan
+                                @elseif(!$purchaseSetupDone)
+                                    @can('create purchase')
+                                        <a href="{{ $purchaseCreateRoute }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600
+                                                  px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Add Purchase
+                                        </a>
+                                    @endcan
+                                @elseif(!$invoiceSetupDone)
+                                    @can('create invoice')
+                                        <a href="{{ route('invoices.create', 'tax') }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600
+                                                  px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Create Invoice
+                                        </a>
+                                    @endcan
+                                @endif
+
+                                <button type="button" onclick="dismissDashboardSetupGuide()"
+                                        class="inline-flex items-center justify-center rounded-xl border
+                                               border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold
+                                               text-gray-700 transition hover:bg-gray-50
+                                               dark:border-neutral-600 dark:bg-neutral-800
+                                               dark:text-neutral-200 dark:hover:bg-neutral-700">
+                                    Hide guide
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div id="dashboardSetupGuideReopen" class="hidden justify-end">
+                <button type="button" onclick="showDashboardSetupGuide()"
+                        class="inline-flex items-center gap-2 rounded-xl border border-indigo-200
+                               bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700
+                               hover:bg-indigo-100 dark:border-indigo-900
+                               dark:bg-indigo-950/40 dark:text-indigo-300">
+                    Show Setup Guide
+                </button>
+            </div>
+        @endif
+
         {{-- FILTER BAR (Month / From-To) --}}
         <div class="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-xl p-4">
             <form method="GET" action="{{ url()->current() }}" class="flex flex-col lg:flex-row gap-3 lg:items-end">
@@ -745,4 +1034,98 @@
         </div>
 
     </div>
+
+
+    @if($showDashboardSuggestion ?? false)
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                initializeDashboardSetupGuide();
+            });
+
+            function dashboardSetupGuideElements() {
+                return {
+                    guide: document.getElementById('dashboardSetupGuide'),
+                    reopen: document.getElementById('dashboardSetupGuideReopen')
+                };
+            }
+
+            function initializeDashboardSetupGuide() {
+                const elements = dashboardSetupGuideElements();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                const storageKey = elements.guide.dataset.storageKey;
+                const dismissed = storageKey
+                    ? localStorage.getItem(storageKey) === '1'
+                    : false;
+
+                if (dismissed) {
+                    elements.guide.classList.add('hidden');
+
+                    if (elements.reopen) {
+                        elements.reopen.classList.remove('hidden');
+                        elements.reopen.classList.add('flex');
+                    }
+
+                    return;
+                }
+
+                elements.guide.classList.remove('hidden');
+
+                if (elements.reopen) {
+                    elements.reopen.classList.add('hidden');
+                    elements.reopen.classList.remove('flex');
+                }
+            }
+
+            function dismissDashboardSetupGuide() {
+                const elements = dashboardSetupGuideElements();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                const storageKey = elements.guide.dataset.storageKey;
+
+                if (storageKey) {
+                    localStorage.setItem(storageKey, '1');
+                }
+
+                elements.guide.classList.add('hidden');
+
+                if (elements.reopen) {
+                    elements.reopen.classList.remove('hidden');
+                    elements.reopen.classList.add('flex');
+                }
+            }
+
+            function showDashboardSetupGuide() {
+                const elements = dashboardSetupGuideElements();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                const storageKey = elements.guide.dataset.storageKey;
+
+                if (storageKey) {
+                    localStorage.removeItem(storageKey);
+                }
+
+                elements.guide.classList.remove('hidden');
+
+                if (elements.reopen) {
+                    elements.reopen.classList.add('hidden');
+                    elements.reopen.classList.remove('flex');
+                }
+
+                elements.guide.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        </script>
+    @endif
 </x-layouts.app>

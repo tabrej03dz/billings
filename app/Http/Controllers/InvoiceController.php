@@ -37,116 +37,6 @@ class InvoiceController extends Controller
     }
 
 
-    // public function index(Request $request)
-    // {
-    //     $me  = $request->user();
-
-    //     // ✅ Active business resolve
-    //     $bid = $me->current_business_id ?? session('active_business_id');
-    //     if (!$bid) {
-    //         $bid = $me->businesses()->pluck('businesses.id')->first();
-    //     }
-    //     if (!$bid) {
-    //         return back()->withErrors(['business' => 'Active business select/attach नहीं है.']);
-    //     }
-
-    //     // ✅ Tab type (tax / proforma / quotation)
-    //     $type = strtolower(trim((string) $request->get('type', 'tax')));
-    //     if (!in_array($type, ['tax', 'proforma', 'quotation'], true)) {
-    //         $type = 'tax';
-    //     }
-
-    //     // ✅ Permission mapping by type
-    //     $permByType = [
-    //         'tax'       => 'show invoices',
-    //         'proforma'  => 'show proformas',
-    //         'quotation' => 'show quotations',
-    //     ];
-
-    //     $requiredPerm = $permByType[$type] ?? 'show invoices';
-
-    //     // ✅ Permission check
-    //     if (!$me->can($requiredPerm)) {
-    //         abort(403, "You don't have permission: {$requiredPerm}");
-    //         // or: return back()->with('error', "Permission denied: {$requiredPerm}");
-    //     }
-
-    //     // ✅ Filters
-    //     $search   = trim((string)$request->get('search', ''));
-    //     $fromDate = $request->get('from_date');
-    //     $toDate   = $request->get('to_date');
-    //     $status   = $request->get('status');
-
-    //     $q = \App\Models\Invoice::query()
-    //         ->with(['client:id,name','createdBy','updatedBy'])
-    //         ->where('business_id', $bid)
-    //         ->where('invoice_type', $type);
-
-    //     // ✅ Search (invoice_number OR client name)
-
-    //     if ($search !== '') {
-    //         $q->where(function ($w) use ($search) {
-
-    //             // invoice number search
-    //             $w->where('invoice_number', 'like', "%{$search}%")
-    //             // ✅ amount search
-    //             ->orWhere('total', 'like', "%{$search}%")
-    //             ->orWhere('balance', 'like', "%{$search}%")
-    //             ->orWhere('received_amount', 'like', "%{$search}%")
-    //             // client details search
-    //             ->orWhereHas('client', function ($c) use ($search) {
-    //                 $c->where('name', 'like', "%{$search}%")
-    //                 ->orWhere('mobile', 'like', "%{$search}%")
-    //                 ->orWhere('gstin', 'like', "%{$search}%")
-    //                 ->orWhere('pan', 'like', "%{$search}%")
-    //                 ->orWhere('address', 'like', "%{$search}%");
-    //             });
-
-    //         });
-    //     }
-
-    //     // ✅ Date filter
-    //     if (!empty($fromDate)) $q->whereDate('invoice_date', '>=', $fromDate);
-    //     if (!empty($toDate))   $q->whereDate('invoice_date', '<=', $toDate);
-
-    //     // ✅ Status filter
-    //     if (!empty($status)) {
-    //         if ($status === 'paid') {
-    //             $q->where('balance', '<=', 0);
-    //         } elseif ($status === 'unpaid') {
-    //             $q->where('received_amount', '<=', 0);
-    //         } elseif ($status === 'partial') {
-    //             $q->where('received_amount', '>', 0)->where('balance', '>', 0);
-    //         }
-    //     }
-
-    //     $invoices = $q->orderByDesc('invoice_date')
-    //         ->orderByDesc('id')
-    //         ->paginate(20)
-    //         ->withQueryString();
-
-    //     // ✅ Counts (optional) - but ONLY if user has permission for that tab
-    //     $taxCount = $me->can('show invoices')
-    //         ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'tax')->count()
-    //         : null;
-
-    //     $proCount = $me->can('show proformas')
-    //         ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'proforma')->count()
-    //         : null;
-
-    //     $quoCount = $me->can('show quotations')
-    //         ? \App\Models\Invoice::where('business_id', $bid)->where('invoice_type', 'quotation')->count()
-    //         : null;
-
-    //     return view('invoices.index', [
-    //         'invoices'   => $invoices,
-    //         'type'       => $type,
-    //         'taxCount'   => $taxCount,
-    //         'proCount'   => $proCount,
-    //         'quoCount'   => $quoCount,
-    //     ]);
-    // }
-
 
     public function index(Request $request)
 {
@@ -405,82 +295,290 @@ class InvoiceController extends Controller
 }
 
 
+    // public function create(Request $request, $type = 'proforma')
+    // {
+    //     $today = now()->toDateString();
+
+    //     // ✅ detect doc type from route OR query
+    //     $docType = strtolower(trim((string)$type));
+    //     if (!in_array($docType, ['tax','proforma','quotation'], true)) {
+    //         $docType = 'proforma';
+    //     }
+
+    //     // Active business resolve
+    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
+    //     if (!$bid) {
+    //         $bid = $request->user()->businesses()->pluck('businesses.id')->first();
+    //     }
+
+    //     // $business = Business::findOrFail($bid);
+
+    //     $business = Business::with('businessType.itemFields')->findOrFail($bid);
+
+    //     $allowedFields = [];
+
+    //     if ($business && $business->businessType) {
+    //         $allowedFields = $business->businessType->itemFields
+    //             ->pluck('field_name')
+    //             ->toArray();
+    //     }
+
+    //     // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
+    //     $taxBase = optional(
+    //             $request->user()->businesses()->where('businesses.id', $bid)->first()
+    //         )->invoice_base_prefix ?? 'RV/SL';
+
+    //     if ($docType === 'proforma') {
+    //         $base = 'PF';
+    //     } elseif ($docType === 'quotation') {
+    //         $base = 'QT';
+    //     } else {
+    //         $base = $taxBase;
+    //     }
+
+    //     $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
+
+    //     // ✅ Clients
+    //     $clients = Client::where('business_id', $bid)->where('is_save', true)
+    //         ->orderBy('name')
+    //         ->get(['id','name','mobile','address','state','state_code','gstin']);
+
+    //     // ✅ Items
+
+    //     $items = Item::where('items.business_id', $bid)
+    //     ->where('items.is_active', true)
+    //     ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
+    //     ->select(
+    //         'items.id',
+    //         'items.name',
+    //         'items.type',
+    //         'items.sku',
+    //         'items.barcode',
+    //         'items.description',
+    //         'items.tax_rate',
+    //         'items.making_charge',
+    //         'items.sac',
+    //         'items.gold_weight',
+    //         'items.gold_purity',
+    //         'items.silver_weight',
+    //         'items.silver_purity',
+    //         'items.stone_weight',
+    //         'items.stone_charges',
+    //         'items.diamond_weight',
+    //         'items.making_charge_type',
+    //         'items.making_charge',
+    //         'items.price',
+    //         DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
+    //     )
+    //     ->groupBy(
+    //         'items.id',
+    //         'items.name',
+    //         'items.type',
+    //         'items.sku',
+    //         'items.barcode',
+    //         'items.description',
+    //         'items.tax_rate',
+    //         'items.making_charge',
+    //         'items.sac',
+    //         'items.gold_weight',
+    //         'items.gold_purity',
+    //         'items.silver_weight',
+    //         'items.silver_purity',
+    //         'items.stone_weight',
+    //         'items.stone_charges',
+    //         'items.diamond_weight',
+    //         'items.diamond_charges',
+    //         'items.price',
+    //         'items.making_charge_type',
+    //         'items.making_charge',
+    //     )
+    //     ->orderByDesc('total_sold') // 🔥 Most sold first
+    //     ->get();
+
+    //     $categories = Category::where('business_id', $bid)
+    //         ->orderBy('name')
+    //         ->get(['id', 'name']);
+    //     // ✅ Metal rates
+    //     $metalRates = MetalRate::where('business_id', $bid)
+    //         ->whereDate('rate_date', $today)
+    //         ->where('is_active', true)
+    //         ->get(['metal_type','purity','rate_per_gram']);
+
+    //     // ✅ preview number (tax/proforma/quotation different sequence)
+    //     $preview = \App\Services\InvoiceNumber::peek($bid, $today, $suggestedPrefix, 3, $docType);
+
+    //     $banks = BankAccount::where('business_id', $bid)
+    //         ->orderBy('bank_name')
+    //         ->get(['id','bank_name','account_holder','account_no','ifsc']);
+
+    //     return view('invoices.create_kapoor_style', [
+    //         'today'              => $today,
+    //         'clientsJson'        => $clients->values()->toJson(),
+    //         'itemsJson'          => $items->values()->toJson(),
+    //         'categoriesJson' => $categories->values()->toJson(),
+    //         'metalRatesJson'     => $metalRates->values()->toJson(),
+    //         'banksJson'          => $banks->values()->toJson(),
+
+    //         'suggestedPrefix'    => $suggestedPrefix,
+    //         'basePrefix'         => $base,
+    //         'initialInvoiceNo'   => $preview['full'] ?? 'Auto',
+    //         'defaultTerms'       => $business->terms,
+
+    //         'businessState'      => $business->state,
+    //         'businessStateCode'  => $business->state_code,
+    //         'businessGstin'      => $business->gstin,
+    //         'businessName'      => $business->name,
+    //         'businessSignature'  => $business->signature,
+
+    //         // ✅ NEW
+    //         'docType'            => $docType,
+    //         'allowedFields' => $allowedFields,
+    //     ]);
+    // }
+
     public function create(Request $request, $type = 'proforma')
-    {
-        $today = now()->toDateString();
+{
+    $user  = $request->user();
+    $today = now()->toDateString();
 
-        // ✅ detect doc type from route OR query
-        $docType = strtolower(trim((string)$type));
-        if (!in_array($docType, ['tax','proforma','quotation'], true)) {
-            $docType = 'proforma';
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Detect document type
+    |--------------------------------------------------------------------------
+    */
+    $docType = strtolower(trim((string) $type));
 
-        // Active business resolve
-        $bid = $request->user()->current_business_id ?? session('active_business_id');
-        if (!$bid) {
-            $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-        }
+    if (!in_array($docType, [
+        'tax',
+        'proforma',
+        'quotation',
+    ], true)) {
+        $docType = 'proforma';
+    }
 
-        // $business = Business::findOrFail($bid);
+    /*
+    |--------------------------------------------------------------------------
+    | Permission check
+    |--------------------------------------------------------------------------
+    */
+    $permissionByType = [
+        'tax'       => 'create invoice',
+        'proforma'  => 'create proforma',
+        'quotation' => 'create quotation',
+    ];
 
-        $business = Business::with('businessType.itemFields')->findOrFail($bid);
+    $requiredPermission = $permissionByType[$docType]
+        ?? 'create invoice';
 
-        $allowedFields = [];
+    if (!$user->can($requiredPermission)) {
+        abort(
+            403,
+            "You don't have permission: {$requiredPermission}"
+        );
+    }
 
-        if ($business && $business->businessType) {
-            $allowedFields = $business->businessType->itemFields
-                ->pluck('field_name')
-                ->toArray();
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve active business
+    |--------------------------------------------------------------------------
+    */
+    $bid = $user->current_business_id
+        ?? session('active_business_id');
 
-        // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
-        $taxBase = optional(
-                $request->user()->businesses()->where('businesses.id', $bid)->first()
-            )->invoice_base_prefix ?? 'RV/SL';
+    if (!$bid) {
+        $bid = $user->businesses()
+            ->pluck('businesses.id')
+            ->first();
+    }
 
-        if ($docType === 'proforma') {
-            $base = 'PF';
-        } elseif ($docType === 'quotation') {
-            $base = 'QT';
-        } else {
-            $base = $taxBase;
-        }
+    if (!$bid) {
+        return redirect()
+            ->route('invoices.index')
+            ->withErrors([
+                'business' => 'Active business select/attach नहीं है.',
+            ]);
+    }
 
-        $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
+    /*
+    |--------------------------------------------------------------------------
+    | Business and allowed item fields
+    |--------------------------------------------------------------------------
+    */
+    $business = Business::with([
+        'businessType.itemFields',
+    ])->findOrFail($bid);
 
-        // ✅ Clients
-        $clients = Client::where('business_id', $bid)->where('is_save', true)
-            ->orderBy('name')
-            ->get(['id','name','mobile','address','state','state_code','gstin']);
+    $allowedFields = [];
 
-        // ✅ Items
+    if ($business->businessType) {
+        $allowedFields = $business
+            ->businessType
+            ->itemFields
+            ->pluck('field_name')
+            ->filter()
+            ->values()
+            ->toArray();
+    }
 
-        $items = Item::where('items.business_id', $bid)
+    /*
+    |--------------------------------------------------------------------------
+    | Invoice prefix
+    |--------------------------------------------------------------------------
+    */
+    $attachedBusiness = $user->businesses()
+        ->where('businesses.id', $bid)
+        ->first();
+
+    $taxBase = $attachedBusiness?->invoice_base_prefix
+        ?? 'RV/SL';
+
+    $base = match ($docType) {
+        'proforma'  => 'PF',
+        'quotation' => 'QT',
+        default     => $taxBase,
+    };
+
+    $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix(
+        $today,
+        $base
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Clients
+    |--------------------------------------------------------------------------
+    */
+    $clients = Client::query()
+        ->where('business_id', $bid)
+        ->where('is_save', true)
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+            'mobile',
+            'address',
+            'state',
+            'state_code',
+            'pincode',
+            'gstin',
+            'pan',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Items
+    |--------------------------------------------------------------------------
+    */
+    $items = Item::query()
+        ->where('items.business_id', $bid)
         ->where('items.is_active', true)
-        ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
-        ->select(
+        ->leftJoin(
+            'invoice_items',
             'items.id',
-            'items.name',
-            'items.type',
-            'items.sku',
-            'items.barcode',
-            'items.description',
-            'items.tax_rate',
-            'items.making_charge',
-            'items.sac',
-            'items.gold_weight',
-            'items.gold_purity',
-            'items.silver_weight',
-            'items.silver_purity',
-            'items.stone_weight',
-            'items.stone_charges',
-            'items.diamond_weight',
-            'items.making_charge_type',
-            'items.making_charge',
-            'items.price',
-            DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
+            '=',
+            'invoice_items.item_id'
         )
-        ->groupBy(
+        ->select([
             'items.id',
             'items.name',
             'items.type',
@@ -498,53 +596,136 @@ class InvoiceController extends Controller
             'items.stone_charges',
             'items.diamond_weight',
             'items.diamond_charges',
-            'items.price',
             'items.making_charge_type',
+            'items.price',
+            DB::raw(
+                'COALESCE(SUM(invoice_items.quantity), 0) as total_sold'
+            ),
+        ])
+        ->groupBy([
+            'items.id',
+            'items.name',
+            'items.type',
+            'items.sku',
+            'items.barcode',
+            'items.description',
+            'items.tax_rate',
             'items.making_charge',
-        )
-        ->orderByDesc('total_sold') // 🔥 Most sold first
+            'items.sac',
+            'items.gold_weight',
+            'items.gold_purity',
+            'items.silver_weight',
+            'items.silver_purity',
+            'items.stone_weight',
+            'items.stone_charges',
+            'items.diamond_weight',
+            'items.diamond_charges',
+            'items.making_charge_type',
+            'items.price',
+        ])
+        ->orderByDesc('total_sold')
+        ->orderBy('items.name')
         ->get();
 
-        $categories = Category::where('business_id', $bid)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-        // ✅ Metal rates
-        $metalRates = MetalRate::where('business_id', $bid)
-            ->whereDate('rate_date', $today)
-            ->where('is_active', true)
-            ->get(['metal_type','purity','rate_per_gram']);
-
-        // ✅ preview number (tax/proforma/quotation different sequence)
-        $preview = \App\Services\InvoiceNumber::peek($bid, $today, $suggestedPrefix, 3, $docType);
-
-        $banks = BankAccount::where('business_id', $bid)
-            ->orderBy('bank_name')
-            ->get(['id','bank_name','account_holder','account_no','ifsc']);
-
-        return view('invoices.create_kapoor_style', [
-            'today'              => $today,
-            'clientsJson'        => $clients->values()->toJson(),
-            'itemsJson'          => $items->values()->toJson(),
-            'categoriesJson' => $categories->values()->toJson(),
-            'metalRatesJson'     => $metalRates->values()->toJson(),
-            'banksJson'          => $banks->values()->toJson(),
-
-            'suggestedPrefix'    => $suggestedPrefix,
-            'basePrefix'         => $base,
-            'initialInvoiceNo'   => $preview['full'] ?? 'Auto',
-            'defaultTerms'       => $business->terms,
-
-            'businessState'      => $business->state,
-            'businessStateCode'  => $business->state_code,
-            'businessGstin'      => $business->gstin,
-            'businessName'      => $business->name,
-            'businessSignature'  => $business->signature,
-
-            // ✅ NEW
-            'docType'            => $docType,
-            'allowedFields' => $allowedFields,
+    /*
+    |--------------------------------------------------------------------------
+    | Categories
+    |--------------------------------------------------------------------------
+    */
+    $categories = Category::query()
+        ->where('business_id', $bid)
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
         ]);
-    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Metal rates
+    |--------------------------------------------------------------------------
+    */
+    $metalRates = MetalRate::query()
+        ->where('business_id', $bid)
+        ->whereDate('rate_date', $today)
+        ->where('is_active', true)
+        ->get([
+            'metal_type',
+            'purity',
+            'rate_per_gram',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Preview invoice number
+    |--------------------------------------------------------------------------
+    */
+    $preview = \App\Services\InvoiceNumber::peek(
+        $bid,
+        $today,
+        $suggestedPrefix,
+        3,
+        $docType
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Bank accounts
+    |--------------------------------------------------------------------------
+    */
+    $banks = BankAccount::query()
+        ->where('business_id', $bid)
+        ->orderBy('bank_name')
+        ->get([
+            'id',
+            'bank_name',
+            'account_holder',
+            'account_no',
+            'ifsc',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Suggestion visibility
+    |--------------------------------------------------------------------------
+    | Current document type में 5 से कम records होने तक suggestion दिखेगा.
+    */
+    $currentTypeCount = \App\Models\Invoice::query()
+        ->where('business_id', $bid)
+        ->where('invoice_type', $docType)
+        ->count();
+
+    $showInvoiceSuggestion = $currentTypeCount < 5;
+
+    return view('invoices.create_kapoor_style', [
+        'today'                 => $today,
+
+        'clientsJson'           => $clients->values()->toJson(),
+        'itemsJson'             => $items->values()->toJson(),
+        'categoriesJson'        => $categories->values()->toJson(),
+        'metalRatesJson'        => $metalRates->values()->toJson(),
+        'banksJson'             => $banks->values()->toJson(),
+
+        'suggestedPrefix'       => $suggestedPrefix,
+        'basePrefix'            => $base,
+        'initialInvoiceNo'      => $preview['full'] ?? 'Auto',
+        'defaultTerms'          => $business->terms,
+
+        'businessState'         => $business->state,
+        'businessStateCode'     => $business->state_code,
+        'businessGstin'         => $business->gstin,
+        'businessName'          => $business->name,
+        'businessSignature'     => $business->signature,
+
+        'docType'               => $docType,
+        'allowedFields'         => $allowedFields,
+
+        // Suggestion variables
+        'currentTypeCount'      => $currentTypeCount,
+        'showInvoiceSuggestion' => $showInvoiceSuggestion,
+        'activeBusinessId'      => $bid,
+    ]);
+}
 
 
 
