@@ -1,18 +1,20 @@
 @php
+    $templateSetting = $templateSetting ?? null;
     $termsText = $inv->terms ?? null;
 
     // Dynamic setting with same default colors
-    $primaryColor  = $templateSetting->primary_color ?? '#dc2626';
-    $textColor     = $templateSetting->text_color ?? '#1f2937';
-    $mutedColor    = $templateSetting->muted_color ?? '#4b5563';
-    $borderColor   = $templateSetting->border_color ?? '#e5e7eb';
-    $lightBgColor  = $templateSetting->light_bg_color ?? '#f9fafb';
-    $softBgColor   = $templateSetting->soft_bg_color ?? '#fef2f2';
-    $fontFamily    = $templateSetting->font_family ?? 'DejaVu Sans';
+    $primaryColor  = $templateSetting?->primary_color ?? '#dc2626';
+    $textColor     = $templateSetting?->text_color ?? '#1f2937';
+    $mutedColor    = $templateSetting?->muted_color ?? '#4b5563';
+    $borderColor   = $templateSetting?->border_color ?? '#e5e7eb';
+    $lightBgColor  = $templateSetting?->light_bg_color ?? '#f9fafb';
+    $softBgColor   = $templateSetting?->soft_bg_color ?? '#fef2f2';
+    // Same Hindi-compatible mPDF font used in the first template
+    $fontFamily    = 'freeserif';
 
-    $showLogo      = $templateSetting->show_logo ?? true;
-    $showSignature = $templateSetting->show_signature ?? true;
-    $showTerms     = $templateSetting->show_terms ?? true;
+    $showLogo      = $templateSetting?->show_logo ?? true;
+    $showSignature = $templateSetting?->show_signature ?? true;
+    $showTerms     = $templateSetting?->show_terms ?? true;
 
     /** @var \App\Models\Invoice $inv */
     $b = $biz ?? ($inv->business ?? null);
@@ -128,12 +130,34 @@
     $invoiceSignatureUrl = $invoiceSignature
         ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
             ? $invoiceSignature
-            : public_path('storage/' . $invoiceSignature))
+            : public_path('storage/' . ltrim($invoiceSignature, '/')))
         : null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve logo path for mPDF
+    |--------------------------------------------------------------------------
+    */
+    $logoSrc = $logo ?? null;
+
+    if (!empty($logoSrc)) {
+        $logoSrc = (string) $logoSrc;
+
+        if (!\Illuminate\Support\Str::startsWith(
+            $logoSrc,
+            ['http://', 'https://', 'data:', '/']
+        )) {
+            if (file_exists(public_path($logoSrc))) {
+                $logoSrc = public_path($logoSrc);
+            } elseif (file_exists(public_path('storage/' . ltrim($logoSrc, '/')))) {
+                $logoSrc = public_path('storage/' . ltrim($logoSrc, '/'));
+            }
+        }
+    }
 @endphp
 
 <!doctype html>
-<html>
+<html lang="hi">
 <head>
     <meta charset="utf-8">
     <title>{{ ucfirst($type) }} {{ $type != 'quotation' ? 'Invoice' : '' }} {{ $invoiceNo }}</title>
@@ -142,7 +166,7 @@
         *{ box-sizing:border-box; }
 
         body{
-            font-family:"{{ $fontFamily }}", "DejaVu Sans", sans-serif;
+            font-family:{{ $fontFamily }}, sans-serif;
             font-size:12px;
             color:{{ $textColor }};
             margin:0;
@@ -318,8 +342,8 @@
         </div>
 
         <div class="right">
-            @if($showLogo && !empty($logo))
-                <img src="{{ $logo }}" alt="Logo" style="max-width:110px; max-height:80px;">
+            @if($showLogo && !empty($logoSrc))
+                <img src="{{ $logoSrc }}" alt="Logo" style="max-width:110px; max-height:80px;">
             @endif
         </div>
     </div>
@@ -441,39 +465,39 @@
     <table class="summary">
         <tr class="head">
             <td>Taxable Amount</td>
-            <td class="text-right">₹ {{ $fmt2($taxable) }}</td>
+            <td class="text-right">&#8377; {{ $fmt2($taxable) }}</td>
         </tr>
 
         @if($isIGST)
             <tr>
                 <td>IGST</td>
-                <td class="text-right">₹ {{ $fmt2($igst_db) }}</td>
+                <td class="text-right">&#8377; {{ $fmt2($igst_db) }}</td>
             </tr>
         @else
             <tr>
                 <td>CGST</td>
-                <td class="text-right">₹ {{ $fmt2($cgst_db) }}</td>
+                <td class="text-right">&#8377; {{ $fmt2($cgst_db) }}</td>
             </tr>
 
             <tr>
                 <td>SGST</td>
-                <td class="text-right">₹ {{ $fmt2($sgst_db) }}</td>
+                <td class="text-right">&#8377; {{ $fmt2($sgst_db) }}</td>
             </tr>
         @endif
 
         <tr>
             <td>Received Amount</td>
-            <td class="text-right">₹ {{ $fmt2($receivedTot) }}</td>
+            <td class="text-right">&#8377; {{ $fmt2($receivedTot) }}</td>
         </tr>
 
         <tr>
             <td>Balance</td>
-            <td class="text-right">₹ {{ $fmt2($balanceNow) }}</td>
+            <td class="text-right">&#8377; {{ $fmt2($balanceNow) }}</td>
         </tr>
 
         <tr class="grand">
             <td>Total Amount</td>
-            <td class="text-right">₹ {{ $fmt2($finalTotal) }}</td>
+            <td class="text-right">&#8377; {{ $fmt2($finalTotal) }}</td>
         </tr>
     </table>
 
