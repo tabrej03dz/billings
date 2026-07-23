@@ -1,21 +1,447 @@
 <x-layouts.app :title="__('Edit Sales Invoice')">
-    <div x-data="invoiceForm()" x-init="init()" class="space-y-4 max-w-7xl mx-auto px-3 sm:px-6 py-4" style="margin: -35px">
+    <div x-data="invoiceForm()" x-init="init()"
+        class="invoice-create-page w-full max-w-none min-w-0 space-y-1.5 px-1.5 py-1.5 sm:px-2 lg:px-2">
         <style>
+            /*
+             * Invoice item table ko browser compress na kare.
+             * Extra fields horizontal scroll me jayengi, inputs chhote nahi honge.
+             */
+            .invoice-table {
+                width: max-content !important;
+                min-width: 100% !important;
+                table-layout: auto !important;
+            }
+
             .invoice-table th,
             .invoice-table td {
-                padding: 4px 6px !important;   /* 👈 yahin se space kam hota hai */
+                padding: 7px 8px !important;
                 vertical-align: top;
+                white-space: nowrap;
+                box-sizing: border-box;
             }
 
             .invoice-table input,
-            .invoice-table select,
-            .invoice-table textarea {
-                padding: 2px 6px !important;
-                height: 26px;
-                font-size: 12px;
+            .invoice-table select {
+                width: 100% !important;
+                min-width: 0;
+                padding: 6px 8px !important;
+                height: 36px;
+                font-size: 13px;
+                box-sizing: border-box;
             }
 
-        </style>
+            .invoice-table textarea {
+                width: 100% !important;
+                padding: 7px 9px !important;
+                min-height: 58px;
+                height: auto;
+                font-size: 13px;
+                white-space: normal;
+                box-sizing: border-box;
+            }
+
+            /* Serial number */
+            .invoice-table th:nth-child(1),
+            .invoice-table td:nth-child(1) {
+                width: 52px !important;
+                min-width: 52px !important;
+                max-width: 52px !important;
+            }
+
+            /* Item search + description */
+            .invoice-table th:nth-child(2),
+            .invoice-table td:nth-child(2) {
+                width: 390px !important;
+                min-width: 390px !important;
+                max-width: 390px !important;
+            }
+
+            /* HSN/SAC */
+            .invoice-table th:nth-child(3),
+            .invoice-table td:nth-child(3) {
+                width: 125px !important;
+                min-width: 125px !important;
+            }
+
+            /* Qty */
+            .invoice-table th:nth-child(4),
+            .invoice-table td:nth-child(4) {
+                width: 90px !important;
+                min-width: 90px !important;
+            }
+
+            /* Rate / Price */
+            .invoice-table th:nth-child(5),
+            .invoice-table td:nth-child(5) {
+                width: 145px !important;
+                min-width: 145px !important;
+            }
+
+            /* Making Rate */
+            .invoice-table th:nth-child(6),
+            .invoice-table td:nth-child(6) {
+                width: 135px !important;
+                min-width: 135px !important;
+            }
+
+            /* Making Type */
+            .invoice-table th:nth-child(7),
+            .invoice-table td:nth-child(7) {
+                width: 180px !important;
+                min-width: 180px !important;
+            }
+
+            /* Gold/Silver/Stone/Diamond fields */
+            .invoice-table th:nth-child(n+8):nth-child(-n+15),
+            .invoice-table td:nth-child(n+8):nth-child(-n+15) {
+                width: 145px !important;
+                min-width: 145px !important;
+            }
+
+            /* Tax */
+            .invoice-table th:nth-child(16),
+            .invoice-table td:nth-child(16) {
+                width: 100px !important;
+                min-width: 100px !important;
+            }
+
+            /* Amount */
+            .invoice-table th:nth-child(17),
+            .invoice-table td:nth-child(17) {
+                width: 155px !important;
+                min-width: 155px !important;
+            }
+
+            /* Action */
+            .invoice-table th:nth-child(18),
+            .invoice-table td:nth-child(18) {
+                width: 75px !important;
+                min-width: 75px !important;
+                max-width: 75px !important;
+            }
+
+            .invoice-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+            /* Smooth and clearly visible horizontal scrollbar */
+            .invoice-items-scroll {
+                overflow-x: auto;
+                overflow-y: visible;
+                scrollbar-width: auto;
+                scrollbar-color: #9ca3af #e5e7eb;
+            }
+
+            .invoice-items-scroll::-webkit-scrollbar {
+                height: 12px;
+            }
+
+            .invoice-items-scroll::-webkit-scrollbar-track {
+                background: #e5e7eb;
+                border-radius: 999px;
+            }
+
+            .invoice-items-scroll::-webkit-scrollbar-thumb {
+                background: #9ca3af;
+                border: 2px solid #e5e7eb;
+                border-radius: 999px;
+            }
+
+            .invoice-items-scroll::-webkit-scrollbar-thumb:hover {
+                background: #6b7280;
+            }
+
+            @media (max-width: 640px) {
+                .invoice-table th:nth-child(2),
+                .invoice-table td:nth-child(2) {
+                    width: 300px !important;
+                    min-width: 300px !important;
+                    max-width: 300px !important;
+                }
+            }
+
+            /* Full-width, compact invoice screen */
+            .invoice-create-page {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                font-size: 12px;
+                overflow-x: hidden;
+            }
+
+            .invoice-create-page h1 { font-size: 16px !important; }
+            .invoice-create-page h2,
+            .invoice-create-page h3 { line-height: 1.25; }
+
+            .invoice-create-page label,
+            .invoice-create-page p,
+            .invoice-create-page span,
+            .invoice-create-page button,
+            .invoice-create-page input,
+            .invoice-create-page select,
+            .invoice-create-page textarea {
+                font-size: 11px;
+            }
+
+            .invoice-create-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            .invoice-create-page select {
+                min-height: 30px;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+            }
+
+            .invoice-create-page textarea {
+                line-height: 1.35;
+            }
+
+            .invoice-table th,
+            .invoice-table td {
+                padding: 5px 6px !important;
+            }
+
+            .invoice-table th {
+                font-size: 9.5px !important;
+                line-height: 1.15;
+            }
+
+            .invoice-table input,
+            .invoice-table select {
+                height: 31px !important;
+                min-height: 31px !important;
+                padding: 4px 6px !important;
+                font-size: 11px !important;
+            }
+
+            .invoice-table textarea {
+                min-height: 44px !important;
+                padding: 5px 6px !important;
+                font-size: 11px !important;
+            }
+
+            /* Keep fields readable, but use screen space efficiently */
+            .invoice-table th:nth-child(2),
+            .invoice-table td:nth-child(2) {
+                width: 340px !important;
+                min-width: 340px !important;
+                max-width: 340px !important;
+            }
+
+            .invoice-table th:nth-child(n+3):nth-child(-n+18),
+            .invoice-table td:nth-child(n+3):nth-child(-n+18) {
+                padding-left: 5px !important;
+                padding-right: 5px !important;
+            }
+
+            @media (min-width: 1536px) {
+                .invoice-create-page { padding-left: 10px !important; padding-right: 10px !important; }
+            }
+        
+
+            /* =========================================================
+             * ULTRA COMPACT DESKTOP INVOICE UI
+             * ========================================================= */
+            .invoice-create-page {
+                font-size: 12px;
+                line-height: 1.25;
+            }
+
+            .invoice-create-page > div,
+            .invoice-create-page form > div {
+                border-radius: 8px !important;
+            }
+
+            .invoice-create-page h1 {
+                font-size: 15px !important;
+                line-height: 20px !important;
+            }
+
+            .invoice-create-page h2,
+            .invoice-create-page .text-lg {
+                font-size: 13px !important;
+                line-height: 18px !important;
+            }
+
+            .invoice-create-page label,
+            .invoice-create-page .text-sm {
+                font-size: 11px !important;
+            }
+
+            .invoice-create-page .text-xs {
+                font-size: 10px !important;
+            }
+
+            .invoice-create-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            .invoice-create-page select {
+                min-height: 30px;
+                font-size: 11px !important;
+                line-height: 16px;
+                border-radius: 6px !important;
+            }
+
+            .invoice-create-page button {
+                font-size: 11px !important;
+                border-radius: 6px !important;
+            }
+
+            /* Barcode area */
+            .invoice-create-page > div:first-child {
+                padding: 8px 10px !important;
+            }
+
+            .invoice-create-page > div:first-child form {
+                gap: 6px !important;
+            }
+
+            .invoice-create-page > div:first-child input {
+                height: 30px !important;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
+            }
+
+            .invoice-create-page > div:first-child button {
+                min-height: 30px !important;
+                padding: 4px 12px !important;
+            }
+
+            /* Main form cards */
+            .invoice-create-page form > .border,
+            .invoice-create-page form > .my-4,
+            .invoice-create-page form > .grid {
+                margin-top: 6px !important;
+                margin-bottom: 6px !important;
+            }
+
+            /* Invoice table sizing */
+            .invoice-table {
+                font-size: 10px !important;
+            }
+
+            .invoice-table th,
+            .invoice-table td {
+                padding: 4px 5px !important;
+            }
+
+            .invoice-table thead th {
+                height: 26px;
+                font-size: 9px !important;
+                line-height: 11px !important;
+                letter-spacing: .01em !important;
+            }
+
+            .invoice-table input,
+            .invoice-table select {
+                height: 30px !important;
+                min-height: 30px !important;
+                padding: 4px 6px !important;
+                font-size: 10px !important;
+            }
+
+            .invoice-table textarea {
+                min-height: 40px !important;
+                height: 40px !important;
+                padding: 5px 6px !important;
+                font-size: 10px !important;
+                line-height: 14px !important;
+                resize: vertical;
+            }
+
+            .invoice-table th:nth-child(1),
+            .invoice-table td:nth-child(1) {
+                width: 38px !important;
+                min-width: 38px !important;
+                max-width: 38px !important;
+            }
+
+            .invoice-table th:nth-child(2),
+            .invoice-table td:nth-child(2) {
+                left: 38px !important;
+                width: 300px !important;
+                min-width: 300px !important;
+                max-width: 300px !important;
+            }
+
+            .invoice-table th:nth-child(3),
+            .invoice-table td:nth-child(3) {
+                width: 100px !important;
+                min-width: 100px !important;
+            }
+
+            .invoice-table th:nth-child(4),
+            .invoice-table td:nth-child(4) {
+                width: 70px !important;
+                min-width: 70px !important;
+            }
+
+            .invoice-table th:nth-child(5),
+            .invoice-table td:nth-child(5) {
+                width: 115px !important;
+                min-width: 115px !important;
+            }
+
+            .invoice-table th:nth-child(6),
+            .invoice-table td:nth-child(6) {
+                width: 105px !important;
+                min-width: 105px !important;
+            }
+
+            .invoice-table th:nth-child(7),
+            .invoice-table td:nth-child(7) {
+                width: 135px !important;
+                min-width: 135px !important;
+            }
+
+            .invoice-table th:nth-child(n+8):nth-child(-n+15),
+            .invoice-table td:nth-child(n+8):nth-child(-n+15) {
+                width: 110px !important;
+                min-width: 110px !important;
+            }
+
+            .invoice-table th:nth-child(16),
+            .invoice-table td:nth-child(16) {
+                width: 75px !important;
+                min-width: 75px !important;
+            }
+
+            .invoice-table th:nth-child(17),
+            .invoice-table td:nth-child(17) {
+                width: 120px !important;
+                min-width: 120px !important;
+            }
+
+            .invoice-table th:nth-child(18),
+            .invoice-table td:nth-child(18) {
+                width: 52px !important;
+                min-width: 52px !important;
+                max-width: 52px !important;
+            }
+
+            .invoice-items-scroll::-webkit-scrollbar {
+                height: 8px;
+            }
+
+            /* Compact table footer */
+            .invoice-items-scroll + div {
+                min-height: 42px;
+                padding-top: 7px !important;
+                padding-bottom: 7px !important;
+            }
+
+            @media (min-width: 1024px) {
+                .invoice-create-page {
+                    width: 100% !important;
+                    max-width: none !important;
+                }
+            }
+
+            @media (max-width: 640px) {
+                .invoice-table th:nth-child(2),
+                .invoice-table td:nth-child(2) {
+                    width: 260px !important;
+                    min-width: 260px !important;
+                    max-width: 260px !important;
+                }
+            }
+</style>
         {{-- errors --}}
         @if ($errors->any())
             <div class="p-3 rounded border border-red-300 bg-red-50 text-red-700">
@@ -35,14 +461,17 @@
             {!! json_encode($allowedFields ?? []) !!}
         </script>
 
-        <div class="flex items-center justify-between">
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-neutral-100">Edit Sales Invoice</h1>
+        <div class="flex items-center justify-between rounded-lg bg-[#BFE0E0] dark:bg-[#354A54] px-4 py-3">
+            <h1 class="text-base font-semibold text-gray-900 dark:text-neutral-100">Edit Sales Invoice</h1>
             <button type="button"
                     @click="submitForm()"
                     :disabled="saving"
-                    class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed">
-                <span x-show="!saving">Update</span>
-                <span x-show="saving">Updating...</span>
+                    class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                <svg x-show="saving" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span x-text="saving ? 'Updating...' : 'Update'"></span>
             </button>
            
 
@@ -59,12 +488,12 @@
             {{-- TOP PANELS --}}
             {{-- TOP PANELS - COMPACT --}}
             {{-- TOP PANELS --}}
-            <div class="grid lg:grid-cols-2 gap-4">
+            <div class="grid lg:grid-cols-2 gap-3">
 
                 {{-- LEFT: Bill To --}}
-                <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                <div class="p-3 border rounded-lg border-gray-200 dark:border-neutral-700 bg-white dark:bg-[#1A1D23]">
                     <div class="mb-3">
-                        <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100">
+                        <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100">
                             Bill To
                         </div>
                     </div>
@@ -130,7 +559,7 @@
                     </div>
 
                     {{-- Party Details --}}
-                    <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div class="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                         <div>
                             <div class="text-gray-500 dark:text-neutral-400">Name</div>
                             <div class="font-semibold text-gray-800 dark:text-neutral-100 truncate"
@@ -184,14 +613,14 @@
                 </div>
 
                 {{-- RIGHT: Invoice Details --}}
-                <div class="p-4 border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                <div class="p-3 border rounded-lg border-gray-200 dark:border-neutral-700 bg-white dark:bg-[#1A1D23]">
                     <div class="mb-3">
-                        <div class="text-lg font-semibold text-gray-800 dark:text-neutral-100">
+                        <div class="text-sm font-semibold text-gray-800 dark:text-neutral-100">
                             Invoice Details
                         </div>
                     </div>
 
-                    <div class="grid md:grid-cols-2 gap-3">
+                    <div class="grid md:grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-medium text-gray-700 dark:text-neutral-300">
                                 Date
@@ -236,269 +665,288 @@
                     </div>
                 </div>
             </div>
-
             {{-- ================= TABLE ================= --}}
-            {{-- ================= ITEMS ================= --}}
-            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-[#BFE0E0] dark:bg-neutral-900 my-4 overflow-visible">
+            {{-- ================= ITEMS: HORIZONTAL TABULAR LAYOUT ================= --}}
+            <div class="my-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-[#1A1D23]">
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-[#BFE0E0] px-3 py-2 dark:bg-[#354A54]">
+                    <div>
+                        <h2 class="text-sm font-bold text-gray-900 dark:text-neutral-100">Invoice Items</h2>
+                        <p class="mt-0.5 text-[11px] text-gray-600 dark:text-neutral-300">
+                            Item select karein aur details horizontal table me fill karein.
+                        </p>
+                    </div>
 
-                <div class="bg-[#BFE0E0] dark:bg-neutral-800 px-4 py-3">
-                    <h2 class="text-sm font-semibold text-gray-800 dark:text-neutral-100">
-                        Invoice Items
-                    </h2>
+                    <button type="button"
+                        @click="add()"
+                        class="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700">
+                        <span class="text-base leading-none">+</span>
+                        Add Item
+                    </button>
                 </div>
 
-                <div class="p-3 space-y-3 bg-[#F3F4F6] dark:bg-[#1A1D23]">
-                    <template x-for="(row, i) in items" :key="row._k">
-                        <div class="rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 p-3">
+                <div class="invoice-items-scroll bg-[#F3F4F6] dark:bg-[#1A1D23]">
+                    <table class="invoice-table min-w-max w-full border-collapse text-xs">
+                        <thead class="sticky top-0 z-30 bg-gray-100 text-left text-[11px] font-bold uppercase tracking-wide text-gray-600 dark:bg-[#242833] dark:text-neutral-300">
+                            <tr>
+                                <th class="sticky left-0 z-40 w-12 min-w-[48px] border-b border-r border-gray-300 bg-gray-100 text-center dark:border-neutral-700 dark:bg-[#242833]">#</th>
+                                <th class="sticky left-[48px] z-40 w-[330px] min-w-[330px] border-b border-r border-gray-300 bg-gray-100 dark:border-neutral-700 dark:bg-[#242833]">Item / Description</th>
+                                <th class="w-[105px] min-w-[105px] border-b border-r border-gray-300 dark:border-neutral-700">HSN / SAC</th>
+                                <th class="w-[75px] min-w-[75px] border-b border-r border-gray-300 text-center dark:border-neutral-700">Qty</th>
+                                <th class="w-[115px] min-w-[115px] border-b border-r border-gray-300 text-right dark:border-neutral-700">Rate / Price</th>
 
-                            <div class="flex items-center justify-between mb-3">
-                                <div class="text-xs font-semibold text-gray-700 dark:text-neutral-200">
-                                    Item #<span x-text="i + 1"></span>
-                                </div>
+                                <th x-show="showItemField('making_charge')"
+                                    class="w-[105px] min-w-[105px] border-b border-r border-gray-300 dark:border-neutral-700">Making Rate</th>
+                                <th x-show="showItemField('making_charge')"
+                                    class="w-[140px] min-w-[140px] border-b border-r border-gray-300 dark:border-neutral-700">Making Type</th>
+                                <th x-show="showItemField('gold_purity')"
+                                    class="w-[115px] min-w-[115px] border-b border-r border-gray-300 dark:border-neutral-700">Gold Rate</th>
+                                <th x-show="showItemField('gold_weight')"
+                                    class="w-[105px] min-w-[105px] border-b border-r border-gray-300 dark:border-neutral-700">Gold Wt.</th>
+                                <th x-show="showItemField('silver_purity')"
+                                    class="w-[115px] min-w-[115px] border-b border-r border-gray-300 dark:border-neutral-700">Silver Rate</th>
+                                <th x-show="showItemField('silver_weight')"
+                                    class="w-[105px] min-w-[105px] border-b border-r border-gray-300 dark:border-neutral-700">Silver Wt.</th>
+                                <th x-show="showItemField('stone_weight')"
+                                    class="w-[110px] min-w-[110px] border-b border-r border-gray-300 dark:border-neutral-700">Stone Wt.</th>
+                                <th x-show="showItemField('stone_charges')"
+                                    class="w-[125px] min-w-[125px] border-b border-r border-gray-300 dark:border-neutral-700">Stone Charge</th>
+                                <th x-show="showItemField('diamond_weight')"
+                                    class="w-[115px] min-w-[115px] border-b border-r border-gray-300 dark:border-neutral-700">Diamond Wt.</th>
+                                <th x-show="showItemField('diamond_charges')"
+                                    class="w-[135px] min-w-[135px] border-b border-r border-gray-300 dark:border-neutral-700">Diamond Charge</th>
 
-                                <button type="button" @click="remove(i)"
-                                    class="text-red-600 hover:text-red-700 text-xl leading-none">
-                                    ×
-                                </button>
-                            </div>
+                                <th class="w-[85px] min-w-[85px] border-b border-r border-gray-300 text-center dark:border-neutral-700">Tax %</th>
+                                <th class="w-[135px] min-w-[135px] border-b border-r border-gray-300 text-right dark:border-neutral-700">Amount</th>
+                                <th class="sticky right-0 z-40 w-[60px] min-w-[60px] border-b border-l border-gray-300 bg-gray-100 text-center dark:border-neutral-700 dark:bg-[#242833]">Action</th>
+                            </tr>
+                        </thead>
 
-                            <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
+                        <tbody class="divide-y divide-gray-200 bg-white dark:divide-neutral-700 dark:bg-[#1A1D23]">
+                            <template x-for="(row, i) in items" :key="row._k">
+                                <tr class="group align-top hover:bg-blue-50/50 dark:hover:bg-[#20242D]">
+                                    <td class="sticky left-0 z-20 border-r border-gray-200 bg-white text-center font-bold text-gray-500 group-hover:bg-blue-50 dark:border-neutral-700 dark:bg-[#1A1D23] dark:text-neutral-400 dark:group-hover:bg-[#20242D]">
+                                        <span x-text="i + 1"></span>
+                                    </td>
 
-                                {{-- LEFT: Description --}}
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">
-                                        Description
-                                    </label>
+                                    <td class="sticky left-[48px] z-20 border-r border-gray-200 bg-white group-hover:bg-blue-50 dark:border-neutral-700 dark:bg-[#1A1D23] dark:group-hover:bg-[#20242D]">
+                                        <div class="relative" @click.away="closeItemDD(i)">
+                                            <div class="flex items-center gap-1.5">
+                                                <input type="text"
+                                                    :id="'item_search_' + i"
+                                                    x-model="row.search"
+                                                    placeholder="Search item by name or SKU"
+                                                    autocomplete="off"
+                                                    @focus="openItemDD(i)"
+                                                    @input.debounce.50ms="openItemDD(i)"
+                                                    @keydown.escape.prevent="closeItemDD(i)"
+                                                    @keydown.arrow-down.prevent="itemDDDown(i)"
+                                                    @keydown.arrow-up.prevent="itemDDUp(i)"
+                                                    @keydown.enter.prevent="itemDDEnter(i)"
+                                                    class="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
 
-                                    <div class="relative mb-2" @click.outside="closeItemDD(i)">
-                                        <div class="flex items-center gap-1">
-                                            <input type="text"
-                                                :id="'item_search_' + i"
-                                                class="flex-1 border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs"
-                                                placeholder="Search item..."
-                                                x-model="row.search"
-                                                @focus="openItemDD(i)"
-                                                @input.debounce.50ms="openItemDD(i)"
-                                                @keydown.escape.prevent="closeItemDD(i)"
-                                                @keydown.arrow-down.prevent="itemDDDown(i)"
-                                                @keydown.arrow-up.prevent="itemDDUp(i)"
-                                                @keydown.enter.prevent="itemDDPick(i)">
+                                                <button type="button"
+                                                    @click="openItemModal(i)"
+                                                    title="Create new item"
+                                                    class="h-[28px] shrink-0 rounded-md bg-sky-600 px-2.5 text-xs font-bold text-white hover:bg-sky-700">
+                                                    + New
+                                                </button>
+                                            </div>
 
-                                            <button type="button"
-                                                class="px-3 py-1 rounded border border-gray-300 dark:border-neutral-700 text-xs whitespace-nowrap bg-sky-600 text-white hover:bg-sky-700"
-                                                @click="openItemModal(i)">
-                                                + New
-                                            </button>
-                                        </div>
+                                            <input type="hidden" :name="'items[' + i + '][item_id]'" :value="row.item_id">
 
-                                        <input type="hidden" :name="'item_id_'+i" :value="row.item_id">
+                                            <div x-show="row.ddOpen"
+                                                x-transition.opacity
+                                                class="fixed z-[999999] mt-1 max-h-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-[#242833]"
+                                                :style="row.ddStyle + ';width:900px;max-width:95vw;'"
+                                                style="display:none;"
+                                                @mousedown.prevent>
 
-                                        <div x-show="row.ddOpen"
-                                            x-transition.opacity
-                                            class="fixed mt-1 rounded border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-2xl z-[999999] overflow-hidden"
-                                            :style="row.ddStyle + ';width:900px;max-width:95vw;'"
-                                            style="display:none;"
-                                            @mousedown.prevent.stop>
+                                                <div class="grid h-64 grid-cols-12">
+                                                    <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
+                                                        <template x-if="filteredItems(row.search).length === 0">
+                                                            <div class="px-3 py-3 text-xs text-gray-500 dark:text-neutral-400">No results</div>
+                                                        </template>
 
-                                            <div class="grid grid-cols-12 h-72">
-                                                <div class="col-span-7 overflow-auto border-r border-gray-200 dark:border-neutral-700">
-                                                    <template x-if="filteredItems(row.search).length === 0">
-                                                        <div class="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400">
-                                                            No results
-                                                        </div>
-                                                    </template>
-
-                                                    <template x-for="(it, idx) in filteredItems(row.search).slice(0,80)" :key="it.id">
-                                                        <div class="px-3 py-2 text-xs cursor-pointer flex items-start justify-between gap-3 hover:bg-gray-100 dark:hover:bg-neutral-800"
-                                                            :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
-                                                            @mouseenter="
-                                                                row.ddHi = idx;
-                                                                row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
-                                                                row.ddPreview = it.description || it.desc || it.long_description || '';
-                                                            "
-                                                            @mousedown.prevent.stop="selectItemFromDD(i, it)">
-
-                                                            <div class="flex-1 pr-3 whitespace-normal break-words leading-4"
-                                                                x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></div>
-
-                                                            <div class="text-[11px] text-gray-500 dark:text-neutral-400 whitespace-nowrap w-[110px] text-right"
-                                                                x-text="it.price ? '₹ ' + Number(it.price).toFixed(2) : ''"></div>
-                                                        </div>
-                                                    </template>
-                                                </div>
-
-                                                <div class="col-span-5 p-3 overflow-auto">
-                                                    <div class="text-[11px] text-gray-500 dark:text-neutral-400 mb-1">
-                                                        Preview
+                                                        <template x-for="(it, idx) in filteredItems(row.search).slice(0, 80)" :key="it.id">
+                                                            <button type="button"
+                                                                class="flex w-full items-start justify-between gap-3 border-b border-gray-100 px-3 py-2 text-left text-xs hover:bg-gray-100 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                                                                :class="idx === row.ddHi ? 'bg-gray-100 dark:bg-neutral-800' : ''"
+                                                                @mouseenter="
+                                                                    row.ddHi = idx;
+                                                                    row.ddPreviewName = it.sku ? (it.name + ' (' + it.sku + ')') : it.name;
+                                                                    row.ddPreview = it.description || it.desc || it.long_description || '';
+                                                                "
+                                                                @click="selectItemFromDD(i, it)">
+                                                                <span class="flex-1 whitespace-normal break-words leading-4 text-gray-900 dark:text-neutral-100"
+                                                                    x-text="it.sku ? (it.name + ' (' + it.sku + ')') : it.name"></span>
+                                                                <span class="w-[95px] shrink-0 text-right text-[11px] text-gray-500 dark:text-neutral-400"
+                                                                    x-text="it.price ? ('₹ ' + Number(it.price).toFixed(2)) : ''"></span>
+                                                            </button>
+                                                        </template>
                                                     </div>
-                                                    <div class="text-xs font-semibold text-gray-900 dark:text-neutral-100 mb-2"
-                                                        x-text="row.ddPreviewName || 'Hover on an item'"></div>
-                                                    <div class="text-xs text-gray-700 dark:text-neutral-200 whitespace-pre-line"
-                                                        x-text="row.ddPreview || 'No description available'"></div>
+
+                                                    <div class="col-span-5 overflow-auto p-3">
+                                                        <div class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-neutral-400">Preview</div>
+                                                        <div class="mb-2 text-sm font-semibold text-gray-900 dark:text-neutral-100"
+                                                            x-text="row.ddPreviewName || 'Hover on an item'"></div>
+                                                        <div class="whitespace-pre-line text-xs leading-5 text-gray-700 dark:text-neutral-200"
+                                                            x-text="row.ddPreview || 'No description available'"></div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <textarea x-model="row.description"
-                                        required
-                                        rows="6"
-                                        class="w-full border rounded px-2 py-2 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 text-xs resize-y leading-tight min-h-[160px]"
-                                        placeholder="Enter description..."></textarea>
-                                </div>
+                                        <textarea x-model="row.description"
+                                            rows="2"
+                                            placeholder="Description"
+                                            class="mt-1.5 min-h-[48px] w-full resize-y rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs leading-4 text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100"></textarea>
+                                    </td>
 
-                                {{-- RIGHT: Fields - 4 in one row --}}
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 content-start">
+                                    <td class="border-r border-gray-200 dark:border-neutral-700">
+                                        <input x-model="row.hsn" placeholder="HSN/SAC"
+                                            class="w-full rounded-md border border-gray-300 bg-white text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div>
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">HSN / SAC</label>
-                                        <input x-model="row.hsn"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Qty</label>
+                                    <td class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" min="1" step="1"
                                             x-model.number="row.quantity"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-center">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-center text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div>
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Price</label>
+                                    <td class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.fixed_price"
-                                            @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
-                                    </div>
+                                            @input="row.service_rate = Number(row.fixed_price || 0); onAutoChange(row);"
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('making_charge')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Making Charge</label>
+                                    <td x-show="showItemField('making_charge')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.making_rate"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('making_charge')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Making Type</label>
+                                    <td x-show="showItemField('making_charge')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <select x-model="row.making_charge_type"
                                             @change="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
+                                            class="w-full rounded-md border border-gray-300 bg-white text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
                                             <option value="percentage">Percent (%)</option>
                                             <option value="fixed">Fixed Amount (₹)</option>
                                             <option value="per_gram">Per Gram</option>
                                             <option value="per_product">Whole Product</option>
                                         </select>
+                                        <div class="mt-1 whitespace-nowrap text-[10px] text-blue-600" x-text="makingTypeLabel(row)"></div>
+                                    </td>
 
-                                        <div class="mt-0.5 text-[10px] text-blue-600"
-                                            x-text="makingTypeLabel(row)">
-                                        </div>
-                                    </div>
-
-                                    <div x-show="showItemField('gold_purity')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gold Rate (₹/g)</label>
+                                    <td x-show="showItemField('gold_purity')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gold_rate"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                        <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                            x-show="hasValue(row.gold_purity)"
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                        <div x-show="hasValue(row.gold_purity)" class="mt-1 whitespace-nowrap text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-text="'Purity: ' + row.gold_purity"></div>
-                                    </div>
+                                    </td>
 
-                                    <div x-show="showItemField('gold_weight')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gold Wt.(Gm)</label>
+                                    <td x-show="showItemField('gold_weight')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gold_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('silver_purity')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Silver Rate (₹/g)</label>
+                                    <td x-show="showItemField('silver_purity')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.silver_rate"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                        <div class="mt-0.5 text-[10px] text-gray-500 dark:text-neutral-400"
-                                            x-show="hasValue(row.silver_purity)"
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                        <div x-show="hasValue(row.silver_purity)" class="mt-1 whitespace-nowrap text-[10px] text-gray-500 dark:text-neutral-400"
                                             x-text="'Purity: ' + row.silver_purity"></div>
-                                    </div>
+                                    </td>
 
-                                    <div x-show="showItemField('silver_weight')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Silver Wt.(Gm)</label>
+                                    <td x-show="showItemField('silver_weight')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.silver_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('stone_weight')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gem Stone Wt.(Ct.)</label>
+                                    <td x-show="showItemField('stone_weight')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.gemstone_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('stone_charges')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Gemstone Charge</label>
+                                    <td x-show="showItemField('stone_charges')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.gemstone_charge"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('diamond_weight')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Diamond Wt.(Ct.)</label>
+                                    <td x-show="showItemField('diamond_weight')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.001" min="0"
                                             x-model.number="row.diamond_wt"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div x-show="showItemField('diamond_charges')">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Diamond Charge</label>
+                                    <td x-show="showItemField('diamond_charges')" class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.diamond_charge"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div>
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Tax %</label>
+                                    <td class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0" max="100"
                                             x-model.number="row.tax_percent"
                                             @input="onAutoChange(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs">
-                                    </div>
+                                            class="w-full rounded-md border border-gray-300 bg-white text-center text-xs dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                    </td>
 
-                                    <div class="col-span-1">
-                                        <label class="block text-[11px] font-semibold text-gray-600 dark:text-neutral-300 mb-1">Amount</label>
+                                    <td class="border-r border-gray-200 dark:border-neutral-700">
                                         <input type="number" step="0.01" min="0"
                                             x-model.number="row.manual_amount"
                                             @input="onAmountEdit(row)"
-                                            class="w-full border rounded px-2 py-1 border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-xs text-right">
+                                            class="w-full rounded-md border border-gray-300 bg-white text-right text-xs font-semibold dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
+                                        <div class="mt-1 whitespace-nowrap text-right text-[10px]"
+                                            :class="row.amount_mode === 'manual' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
+                                            x-text="row.amount_mode === 'manual' ? 'Manual amount' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))"></div>
+                                    </td>
 
-                                        <div class="mt-0.5 text-[10px]"
-                                            :class="row.amount_mode === 'manual_user' ? 'text-orange-600' : 'text-gray-500 dark:text-neutral-400'"
-                                            x-text="row.amount_mode === 'manual_user' ? 'Manual' : ('Auto: ₹ ' + lineAmount(row).toFixed(2))">
-                                        </div>
-                                    </div>
+                                    <td class="sticky right-0 z-20 border-l border-gray-200 bg-white text-center group-hover:bg-blue-50 dark:border-neutral-700 dark:bg-[#1A1D23] dark:group-hover:bg-[#20242D]">
+                                        <button type="button"
+                                            @click="remove(i)"
+                                            title="Remove item"
+                                            class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-lg font-bold leading-none text-red-600 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30">
+                                            ×
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
 
-                                </div>
-                            </div>
-                        </div>
-                    </template>
+                            <tr x-show="items.length === 0">
+                                <td colspan="18" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-neutral-400">
+                                    Abhi koi item add nahi hai. “Add Item” par click karein.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                    <div>
-                        <button type="button"
-                            @click="add()"
-                            class="bg-green-500 px-4 py-2 rounded-lg text-white hover:bg-green-600 text-sm">
-                            + Add Item
-                        </button>
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-[#1A1D23]">
+                    <div class="text-xs text-gray-500 dark:text-neutral-400">
+                        Total rows: <span class="font-bold text-gray-800 dark:text-neutral-100" x-text="items.length"></span>
                     </div>
+
+                    <button type="button"
+                        @click="add()"
+                        class="inline-flex items-center gap-2 rounded-lg border border-green-600 bg-white px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-50 dark:bg-[#242833] dark:text-green-400">
+                        + Add Another Item
+                    </button>
                 </div>
             </div>
 

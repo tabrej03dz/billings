@@ -1,4 +1,3 @@
-```blade
 <section
     id="template-selection"
     class="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm
@@ -712,8 +711,7 @@
     </div>
 </div>
 
-@push('scripts')
-    <script>
+<script>
         (() => {
             const initialiseInvoiceTemplateSelection = () => {
                 const section = document.getElementById(
@@ -882,15 +880,46 @@
                 };
 
                 /*
-                 * Radio change listener.
+                 * Radio aur select button listeners.
+                 *
+                 * Explicit click handling isliye rakha gaya hai kyunki kuch
+                 * layouts/components mein label click hidden radio ko reliably
+                 * trigger nahi karta. Ab button, circle aur card par click se
+                 * template turant select hoga.
                  */
                 cards.forEach(card => {
                     const radio = card.querySelector(
                         '.template-radio'
                     );
 
+                    if (!radio) {
+                        return;
+                    }
+
+                    const selectTemplate = event => {
+                        if (
+                            event?.target?.closest(
+                                '[data-preview-button]'
+                            )
+                        ) {
+                            return;
+                        }
+
+                        if (event) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+
+                        radio.checked = true;
+
+                        radio.dispatchEvent(
+                            new Event('change', {
+                                bubbles: true
+                            })
+                        );
+                    };
+
                     if (
-                        radio &&
                         radio.dataset.listenerInitialised !== 'true'
                     ) {
                         radio.dataset.listenerInitialised = 'true';
@@ -898,6 +927,50 @@
                         radio.addEventListener(
                             'change',
                             updateTemplateCards
+                        );
+                    }
+
+                    card
+                        .querySelectorAll(
+                            '[data-select-button], [data-radio-indicator]'
+                        )
+                        .forEach(button => {
+                            if (
+                                button.dataset.selectListenerInitialised ===
+                                'true'
+                            ) {
+                                return;
+                            }
+
+                            button.dataset.selectListenerInitialised =
+                                'true';
+
+                            button.addEventListener(
+                                'click',
+                                selectTemplate
+                            );
+                        });
+
+                    if (
+                        card.dataset.cardSelectListenerInitialised !==
+                        'true'
+                    ) {
+                        card.dataset.cardSelectListenerInitialised =
+                            'true';
+
+                        card.addEventListener(
+                            'click',
+                            event => {
+                                if (
+                                    event.target.closest(
+                                        '[data-preview-button]'
+                                    )
+                                ) {
+                                    return;
+                                }
+
+                                selectTemplate(event);
+                            }
                         );
                     }
                 });
@@ -1089,5 +1162,4 @@
 
             initialiseInvoiceTemplateSelection();
         })();
-    </script>
-@endpush
+</script>

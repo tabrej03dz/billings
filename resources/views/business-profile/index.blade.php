@@ -138,13 +138,7 @@
             >
                 @csrf
 
-                {{--
-                    Agar route Route::put() hai to ye line rakhein:
-
-                    @method('PUT')
-
-                    Agar route Route::post() hai to ise mat lagaiye.
-                --}}
+                @method('PUT')
 
                 @include('business-profile.partials.basic-information')
 
@@ -205,7 +199,6 @@
                             ></path>
                         </svg>
 
-                        {{-- Native Submit Input --}}
                         <input
                             id="businessProfileSubmitButton"
                             type="submit"
@@ -232,14 +225,10 @@
     <script>
         (() => {
             function initialiseBusinessProfileForm() {
-                const form = document.getElementById(
-                    'businessProfileForm'
-                );
-
+                const form = document.getElementById('businessProfileForm');
                 const submitButton = document.getElementById(
                     'businessProfileSubmitButton'
                 );
-
                 const spinner = document.getElementById(
                     'businessProfileSubmitSpinner'
                 );
@@ -249,18 +238,14 @@
                 }
 
                 /*
-                 * Browser back aur Livewire navigation ke baad reset.
+                 * Browser back / Livewire navigation ke baad button reset.
                  */
                 submitButton.disabled = false;
                 submitButton.value = 'Save Business Profile';
-
+                submitButton.classList.remove('pl-12');
                 spinner?.classList.add('hidden');
-
                 form.dataset.isSubmitting = 'false';
 
-                /*
-                 * Duplicate submit listener se bachna.
-                 */
                 if (form.dataset.submitInitialised === 'true') {
                     return;
                 }
@@ -268,26 +253,70 @@
                 form.dataset.submitInitialised = 'true';
 
                 form.addEventListener('submit', function (event) {
+                    const selectedTemplate = form.querySelector(
+                        'input[name="pdf_template_id"]:checked'
+                    );
+
                     /*
-                     * HTML required fields check honge.
+                     * Actual radio button ko validate karein.
+                     * Purana selectedTemplateId hidden input is page me hai hi nahi.
+                     */
+                    if (!selectedTemplate) {
+                        event.preventDefault();
+
+                        let templateError = document.getElementById(
+                            'templateSelectionClientError'
+                        );
+
+                        if (!templateError) {
+                            templateError = document.createElement('div');
+                            templateError.id =
+                                'templateSelectionClientError';
+                            templateError.className =
+                                'mt-4 rounded-xl border border-red-200 ' +
+                                'bg-red-50 p-4 text-sm font-semibold ' +
+                                'text-red-700 dark:border-red-900 ' +
+                                'dark:bg-red-950/30 dark:text-red-300';
+                            templateError.textContent =
+                                'Please select an invoice template.';
+
+                            document
+                                .getElementById('template-selection')
+                                ?.appendChild(templateError);
+                        } else {
+                            templateError.classList.remove('hidden');
+                        }
+
+                        document
+                            .getElementById('template-selection')
+                            ?.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+
+                        return;
+                    }
+
+                    document
+                        .getElementById('templateSelectionClientError')
+                        ?.classList.add('hidden');
+
+                    /*
+                     * Native required validation.
                      */
                     if (!form.checkValidity()) {
                         event.preventDefault();
-
                         form.reportValidity();
 
                         const firstInvalidField =
                             form.querySelector(':invalid');
 
-                        if (firstInvalidField) {
-                            firstInvalidField.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
+                        firstInvalidField?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
 
-                            firstInvalidField.focus();
-                        }
-
+                        firstInvalidField?.focus();
                         return;
                     }
 
@@ -300,16 +329,23 @@
                     }
 
                     form.dataset.isSubmitting = 'true';
-
-                    /*
-                     * Submit button loading state.
-                     */
                     submitButton.disabled = true;
                     submitButton.value = 'Saving...';
                     submitButton.classList.add('pl-12');
-
                     spinner?.classList.remove('hidden');
                 });
+
+                form
+                    .querySelectorAll('input[name="pdf_template_id"]')
+                    .forEach(function (radio) {
+                        radio.addEventListener('change', function () {
+                            document
+                                .getElementById(
+                                    'templateSelectionClientError'
+                                )
+                                ?.classList.add('hidden');
+                        });
+                    });
             }
 
             document.addEventListener(

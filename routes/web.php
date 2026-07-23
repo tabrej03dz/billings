@@ -222,7 +222,7 @@ Route::middleware(['auth'])->group(function () {
     ->group(function () {
         Route::get('/', 'index')->name('index');
 
-        Route::post('/', 'update')->name('update');
+        Route::put('/', 'update')->name('update');
 
         Route::post(
             '/template/{billTemplate}',

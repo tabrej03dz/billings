@@ -278,66 +278,89 @@
                         @enderror
                     </div>
 
-                    {{-- State Code --}}
-                    <div>
-                        <label
-                            for="state_code"
-                            class="mb-2 block text-sm font-bold text-zinc-700 dark:text-zinc-200"
-                        >
-                            State Code
-                        </label>
-
-                        <input
-                            id="state_code"
-                            type="text"
-                            name="state_code"
-                            value="{{ old('state_code', $business->state_code) }}"
-                            maxlength="2"
-                            inputmode="numeric"
-                            placeholder="Example: 09"
-                            class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition
-                                   {{ $errors->has('state_code')
-                                        ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:bg-red-950/20'
-                                        : 'border-zinc-300 bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:ring-indigo-950'
-                                   }}
-                                   text-zinc-900 placeholder:text-zinc-400 dark:text-white"
-                        >
-
-                        @error('state_code')
-                            <p class="mt-2 text-sm font-medium text-red-600">
-                                {{ $message }}
-                            </p>
-                        @enderror
-                    </div>
                 </div>
             </div>
         </div>
 
         {{-- State --}}
-        <div>
+        @php
+            $states = [
+                ['code'=>'01','name'=>'Jammu and Kashmir'], ['code'=>'02','name'=>'Himachal Pradesh'],
+                ['code'=>'03','name'=>'Punjab'], ['code'=>'04','name'=>'Chandigarh'],
+                ['code'=>'05','name'=>'Uttarakhand'], ['code'=>'06','name'=>'Haryana'],
+                ['code'=>'07','name'=>'Delhi'], ['code'=>'08','name'=>'Rajasthan'],
+                ['code'=>'09','name'=>'Uttar Pradesh'], ['code'=>'10','name'=>'Bihar'],
+                ['code'=>'11','name'=>'Sikkim'], ['code'=>'12','name'=>'Arunachal Pradesh'],
+                ['code'=>'13','name'=>'Nagaland'], ['code'=>'14','name'=>'Manipur'],
+                ['code'=>'15','name'=>'Mizoram'], ['code'=>'16','name'=>'Tripura'],
+                ['code'=>'17','name'=>'Meghalaya'], ['code'=>'18','name'=>'Assam'],
+                ['code'=>'19','name'=>'West Bengal'], ['code'=>'20','name'=>'Jharkhand'],
+                ['code'=>'21','name'=>'Odisha'], ['code'=>'22','name'=>'Chhattisgarh'],
+                ['code'=>'23','name'=>'Madhya Pradesh'], ['code'=>'24','name'=>'Gujarat'],
+                ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
+                ['code'=>'27','name'=>'Maharashtra'], ['code'=>'29','name'=>'Karnataka'],
+                ['code'=>'30','name'=>'Goa'], ['code'=>'31','name'=>'Lakshadweep'],
+                ['code'=>'32','name'=>'Kerala'], ['code'=>'33','name'=>'Tamil Nadu'],
+                ['code'=>'34','name'=>'Puducherry'], ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
+                ['code'=>'36','name'=>'Telangana'], ['code'=>'37','name'=>'Andhra Pradesh'],
+                ['code'=>'38','name'=>'Ladakh'],
+            ];
+            $selectedState = old('state');
+
+            if (
+                !$selectedState &&
+                !empty($business->state_code) &&
+                !empty($business->state)
+            ) {
+                $selectedState =
+                    $business->state_code . ',' . $business->state;
+            }
+@endphp
+
+                <div>
             <label
-                for="business_state"
-                class="mb-2 block text-sm font-bold text-zinc-700 dark:text-zinc-200"
+                for="state"
+                class="mb-2 block text-sm font-bold
+                       text-zinc-700 dark:text-zinc-200"
             >
-                State
+                State (GST Code)
                 <span class="text-red-500">*</span>
             </label>
 
-            <input
-                id="business_state"
-                type="text"
+            <select
+                id="state"
                 name="state"
-                value="{{ old('state', $business->state) }}"
                 required
-                maxlength="255"
-                placeholder="Enter state name"
-                class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition
+                class="w-full rounded-xl border px-4 py-3 text-sm
+                       outline-none transition
                        {{ $errors->has('state')
                             ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:bg-red-950/20'
                             : 'border-zinc-300 bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-indigo-950'
                        }}
-                       text-zinc-900 placeholder:text-zinc-400 dark:text-white"
+                       text-zinc-900 dark:text-white"
             >
+                <option value="">Select state</option>
+
+                @foreach($states as $stateOption)
+                    @php
+                        $optionValue =
+                            $stateOption['code'] . ',' .
+                            $stateOption['name'];
+                    @endphp
+
+                    <option
+                        value="{{ $optionValue }}"
+                        @selected($selectedState === $optionValue)
+                    >
+                        {{ $stateOption['name'] }}
+                        ({{ $stateOption['code'] }})
+                    </option>
+                @endforeach
+            </select>
+
+            <p class="mt-2 text-xs leading-5 text-zinc-500">
+                State code will be saved automatically from the selected state.
+            </p>
 
             @error('state')
                 <p class="mt-2 text-sm font-medium text-red-600">
@@ -384,15 +407,56 @@
     <script>
         (() => {
             const gstToggle = document.getElementById('gst_enabled');
-            const gstContainer = document.getElementById('gstFieldsContainer');
+            const gstContainer = document.getElementById(
+                'gstFieldsContainer'
+            );
             const gstInput = document.getElementById('gstin');
-            const stateCodeInput = document.getElementById('state_code');
+            const stateSelect = document.getElementById('state');
 
-            if (!gstToggle || !gstContainer) {
-                return;
-            }
+            const stateMap = {
+                '01': 'Jammu and Kashmir',
+                '02': 'Himachal Pradesh',
+                '03': 'Punjab',
+                '04': 'Chandigarh',
+                '05': 'Uttarakhand',
+                '06': 'Haryana',
+                '07': 'Delhi',
+                '08': 'Rajasthan',
+                '09': 'Uttar Pradesh',
+                '10': 'Bihar',
+                '11': 'Sikkim',
+                '12': 'Arunachal Pradesh',
+                '13': 'Nagaland',
+                '14': 'Manipur',
+                '15': 'Mizoram',
+                '16': 'Tripura',
+                '17': 'Meghalaya',
+                '18': 'Assam',
+                '19': 'West Bengal',
+                '20': 'Jharkhand',
+                '21': 'Odisha',
+                '22': 'Chhattisgarh',
+                '23': 'Madhya Pradesh',
+                '24': 'Gujarat',
+                '26': 'Dadra and Nagar Haveli and Daman and Diu',
+                '27': 'Maharashtra',
+                '29': 'Karnataka',
+                '30': 'Goa',
+                '31': 'Lakshadweep',
+                '32': 'Kerala',
+                '33': 'Tamil Nadu',
+                '34': 'Puducherry',
+                '35': 'Andaman and Nicobar Islands',
+                '36': 'Telangana',
+                '37': 'Andhra Pradesh',
+                '38': 'Ladakh'
+            };
 
             const updateGstFields = () => {
+                if (!gstToggle || !gstContainer) {
+                    return;
+                }
+
                 const enabled = gstToggle.checked;
 
                 gstContainer.classList.toggle('hidden', !enabled);
@@ -400,26 +464,32 @@
                 if (gstInput) {
                     gstInput.disabled = !enabled;
                     gstInput.required = enabled;
-                }
 
-                if (stateCodeInput) {
-                    stateCodeInput.disabled = !enabled;
-                }
-
-                if (!enabled) {
-                    if (gstInput) {
+                    if (!enabled) {
                         gstInput.value = '';
-                    }
-
-                    if (stateCodeInput) {
-                        stateCodeInput.value = '';
                     }
                 }
             };
 
-            updateGstFields();
+            const selectStateFromGstin = code => {
+                if (!stateSelect || !stateMap[code]) {
+                    return;
+                }
 
-            gstToggle.addEventListener('change', updateGstFields);
+                stateSelect.value =
+                    `${code},${stateMap[code]}`;
+
+                stateSelect.dispatchEvent(
+                    new Event('change', {
+                        bubbles: true
+                    })
+                );
+            };
+
+            gstToggle?.addEventListener(
+                'change',
+                updateGstFields
+            );
 
             gstInput?.addEventListener('input', function () {
                 this.value = this.value
@@ -427,21 +497,14 @@
                     .replace(/[^0-9A-Z]/g, '')
                     .slice(0, 15);
 
-                const detectedStateCode = this.value.slice(0, 2);
+                const stateCode = this.value.slice(0, 2);
 
-                if (
-                    stateCodeInput &&
-                    /^\d{2}$/.test(detectedStateCode)
-                ) {
-                    stateCodeInput.value = detectedStateCode;
+                if (/^\d{2}$/.test(stateCode)) {
+                    selectStateFromGstin(stateCode);
                 }
             });
 
-            stateCodeInput?.addEventListener('input', function () {
-                this.value = this.value
-                    .replace(/\D/g, '')
-                    .slice(0, 2);
-            });
+            updateGstFields();
         })();
     </script>
 @endpush
