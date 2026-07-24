@@ -1489,6 +1489,47 @@
 
         const normalizeGstin = (v) => s(v).toUpperCase().replace(/[^0-9A-Z]/g, '').trim();
 
+
+        // ---------- INDIAN GST STATES ----------
+        const STATES = [
+            { code: '01', name: 'Jammu and Kashmir' },
+            { code: '02', name: 'Himachal Pradesh' },
+            { code: '03', name: 'Punjab' },
+            { code: '04', name: 'Chandigarh' },
+            { code: '05', name: 'Uttarakhand' },
+            { code: '06', name: 'Haryana' },
+            { code: '07', name: 'Delhi' },
+            { code: '08', name: 'Rajasthan' },
+            { code: '09', name: 'Uttar Pradesh' },
+            { code: '10', name: 'Bihar' },
+            { code: '11', name: 'Sikkim' },
+            { code: '12', name: 'Arunachal Pradesh' },
+            { code: '13', name: 'Nagaland' },
+            { code: '14', name: 'Manipur' },
+            { code: '15', name: 'Mizoram' },
+            { code: '16', name: 'Tripura' },
+            { code: '17', name: 'Meghalaya' },
+            { code: '18', name: 'Assam' },
+            { code: '19', name: 'West Bengal' },
+            { code: '20', name: 'Jharkhand' },
+            { code: '21', name: 'Odisha' },
+            { code: '22', name: 'Chhattisgarh' },
+            { code: '23', name: 'Madhya Pradesh' },
+            { code: '24', name: 'Gujarat' },
+            { code: '26', name: 'Dadra and Nagar Haveli and Daman and Diu' },
+            { code: '27', name: 'Maharashtra' },
+            { code: '29', name: 'Karnataka' },
+            { code: '30', name: 'Goa' },
+            { code: '31', name: 'Lakshadweep' },
+            { code: '32', name: 'Kerala' },
+            { code: '33', name: 'Tamil Nadu' },
+            { code: '34', name: 'Puducherry' },
+            { code: '35', name: 'Andaman and Nicobar Islands' },
+            { code: '36', name: 'Telangana' },
+            { code: '37', name: 'Andhra Pradesh' },
+            { code: '38', name: 'Ladakh' },
+        ];
+
         const validateGstinLocal = (gstin) => {
             const g = normalizeGstin(gstin);
             if (!g) return { ok: true, empty: true, message: '' };
@@ -1574,6 +1615,7 @@
             metalRates: METAL_RATES,
             banks: BANKS,
             categories: CATEGORIES,
+            states: STATES,
 
             saving: false,
             savingClient: false,
@@ -2570,6 +2612,132 @@
 
             closeItemModal() {
                 this.modals.item = false;
+            },
+
+
+            async saveClient() {
+                this.newClientError = '';
+
+                const name = String(this.newClient.name || '').trim();
+                if (!name) {
+                    this.newClientError = 'Client name is required.';
+                    return;
+                }
+
+                let mobile = String(this.newClient.mobile || '').replace(/\D/g, '');
+
+                if (mobile.length > 10 && mobile.startsWith('91')) {
+                    mobile = mobile.slice(-10);
+                }
+
+                if (mobile && mobile.length !== 10) {
+                    this.newClientError = 'Mobile number must be exactly 10 digits.';
+                    return;
+                }
+
+                if (!this.newClient.state || !this.newClient.state_code) {
+                    this.newClientError = 'Please select state.';
+                    return;
+                }
+
+                const gstin = normalizeGstin(this.newClient.gstin || '');
+                if (gstin) {
+                    const gstResult = validateGstinLocal(gstin);
+                    if (!gstResult.ok) {
+                        this.newClientError = gstResult.message || 'Please enter a valid GSTIN.';
+                        return;
+                    }
+                }
+
+                this.newClient.name = name;
+                this.newClient.mobile = mobile;
+                this.newClient.gstin = gstin;
+
+                try {
+                    this.savingClient = true;
+
+                    const response = await fetch(@js(route('clients.quick-store')), {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': this.csrf(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            name: this.newClient.name,
+                            mobile: this.newClient.mobile || null,
+                            address: String(this.newClient.address || '').trim() || null,
+                            state: String(this.newClient.state || '').trim(),
+                            state_code: String(this.newClient.state_code || '').trim(),
+                            gstin: this.newClient.gstin || null,
+                            pincode: String(this.newClient.pincode || '').trim() || null,
+                            is_save: this.clientAutoSelect ? 1 : 0,
+                        }),
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        if (data?.errors && typeof data.errors === 'object') {
+                            const firstError = Object.values(data.errors)
+                                .flat()
+                                .find(Boolean);
+
+                            this.newClientError = firstError
+                                || data?.message
+                                || 'Failed to save client.';
+                        } else {
+                            this.newClientError = data?.message || 'Failed to save client.';
+                        }
+
+                        return;
+                    }
+
+                    const client = data?.client || data?.data?.client || data?.data;
+
+                    if (!client || !client.id) {
+                        this.newClientError = 'Client saved, but valid client data was not received.';
+                        return;
+                    }
+
+                    const alreadyExists = (this.clients || []).some(
+                        existing => String(existing.id) === String(client.id)
+                    );
+
+                    if (!alreadyExists) {
+                        this.clients.unshift(client);
+                    }
+
+                    if (this.clientAutoSelect) {
+                        this.clientId = client.id;
+                        this.clientSearch = client.mobile
+                            ? `${client.name} (${client.mobile})`
+                            : (client.name || '');
+
+                        this.syncParty();
+                    }
+
+                    this.closeClientDD();
+                    this.modals.client = false;
+
+                    this.newClient = {
+                        name: '',
+                        mobile: '',
+                        address: '',
+                        state: '',
+                        state_code: '',
+                        gstin: '',
+                        pincode: '',
+                        state_pick: '',
+                    };
+                } catch (error) {
+                    console.error('Quick client save failed:', error);
+                    this.newClientError = 'Network or server error. Please try again.';
+                } finally {
+                    this.savingClient = false;
+                }
             },
 
             applyClientState() {
