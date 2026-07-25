@@ -155,11 +155,6 @@ class ItemController extends Controller
         ]);
     }
 
-    // public function create()
-    // {
-    //     $categories = Category::orderBy('name')->get(['id','name']);
-    //     return view('items.create', compact('categories'));
-    // }
 
     public function create()
     {

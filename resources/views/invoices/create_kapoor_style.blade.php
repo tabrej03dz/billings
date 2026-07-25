@@ -331,6 +331,116 @@
                 </span>
             </div>
 
+
+            {{-- ========================================================= --}}
+            {{-- CREATE FIRST CLIENT SUGGESTION --}}
+            {{-- ========================================================= --}}
+
+            <div
+                x-show="Array.isArray(clients) && clients.length === 0"
+                x-transition
+                class="client-create-suggestion relative overflow-hidden rounded-xl
+                    border border-orange-300
+                    bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50
+                    p-4 shadow-md
+                    dark:border-orange-900/70
+                    dark:from-orange-950/50
+                    dark:via-amber-950/30
+                    dark:to-neutral-900"
+                style="display: none;"
+            >
+                {{-- Decorative glow --}}
+                <div
+                    class="pointer-events-none absolute -right-12 -top-12
+                        h-32 w-32 rounded-full bg-orange-300/30 blur-3xl
+                        dark:bg-orange-600/20"
+                ></div>
+
+                <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                    <div class="flex min-w-0 items-start gap-3">
+
+                        {{-- Animated Icon --}}
+                        <div class="relative shrink-0">
+                            <span
+                                class="absolute inset-0 animate-ping rounded-xl
+                                    bg-orange-400 opacity-30"
+                            ></span>
+
+                            <div
+                                class="relative flex h-11 w-11 items-center justify-center
+                                    rounded-xl bg-orange-500 text-white shadow-lg"
+                            >
+                                <svg
+                                    class="h-6 w-6"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3
+                                        M13 7a4 4 0 11-8 0 4 4 0 018 0Z
+                                        M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"
+                                    />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-sm font-bold text-orange-900 dark:text-orange-200">
+                                    Pehle Client Add Karein
+                                </h2>
+
+                                <span
+                                    class="rounded-full bg-orange-200 px-2 py-0.5
+                                        text-[10px] font-bold uppercase tracking-wide
+                                        text-orange-800
+                                        dark:bg-orange-900/60 dark:text-orange-300"
+                                >
+                                    Required Step
+                                </span>
+                            </div>
+
+                            <p class="mt-1 text-xs leading-5 text-orange-800 dark:text-orange-300">
+                                Abhi is business me koi client available nahi hai.
+                                Invoice banane ke liye pehle customer/client add karna zaroori hai.
+                            </p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="openClientModal()"
+                        class="client-suggestion-button inline-flex shrink-0 items-center
+                            justify-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5
+                            text-xs font-bold text-white shadow-lg
+                            transition hover:bg-orange-700 hover:shadow-xl
+                            focus:outline-none focus:ring-4 focus:ring-orange-200
+                            dark:focus:ring-orange-900"
+                    >
+                        <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 4v16m8-8H4"
+                            />
+                        </svg>
+
+                        Add First Client
+                    </button>
+
+                </div>
+            </div>
             <form
                 class="flex flex-wrap items-center gap-2"
                 @submit.prevent="scanBarcode()"
@@ -856,7 +966,73 @@
                     max-width: 260px !important;
                 }
             }
-</style>
+
+            /*
+            |--------------------------------------------------------------------------
+            | First Client Suggestion
+            |--------------------------------------------------------------------------
+            */
+
+            @keyframes clientSuggestionGlow {
+                0%,
+                100% {
+                    box-shadow:
+                        0 0 0 0 rgba(249, 115, 22, 0),
+                        0 4px 12px rgba(249, 115, 22, 0.08);
+                }
+
+                50% {
+                    box-shadow:
+                        0 0 0 5px rgba(249, 115, 22, 0.14),
+                        0 8px 22px rgba(249, 115, 22, 0.18);
+                }
+            }
+
+            .client-create-suggestion {
+                animation: clientSuggestionGlow 1.5s ease-in-out infinite;
+            }
+
+            @keyframes clientButtonPulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                }
+
+                50% {
+                    transform: scale(1.04);
+                }
+            }
+
+            .client-suggestion-button {
+                animation: clientButtonPulse 1.2s ease-in-out infinite;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .client-create-suggestion,
+                .client-suggestion-button {
+                    animation: none;
+                }
+            }
+
+
+
+            @keyframes clientNewButtonAttention {
+                0%,
+                100% {
+                    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.65);
+                    transform: scale(1);
+                }
+
+                50% {
+                    box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+                    transform: scale(1.04);
+                }
+            }
+
+            .client-new-button-attention {
+                animation: clientNewButtonAttention 1.2s ease-in-out infinite;
+            }
+        </style>
         {{-- errors --}}
         @if ($errors->any())
             <div class="p-3 rounded border border-red-300 bg-red-50 text-red-700">
@@ -961,10 +1137,19 @@
                                 </div>
                             </div>
 
-                            <button type="button"
-                                class="px-4 py-2 rounded-lg bg-[#4C8DFF] hover:bg-[#6CA8FF] text-white text-sm font-medium whitespace-nowrap shrink-0"
-                                @click="openClientModal()">
-                                + New
+                            <button
+                                type="button"
+                                @click="openClientModal()"
+                                :class="clients.length === 0
+                                    ? 'client-new-button-attention bg-orange-600 hover:bg-orange-700'
+                                    : 'bg-[#4C8DFF] hover:bg-[#6CA8FF]'"
+                                class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap
+                                    rounded-lg px-4 py-2 text-sm font-semibold text-white
+                                    transition"
+                            >
+                                <span class="text-base leading-none">+</span>
+
+                                <span x-text="clients.length === 0 ? 'Add Client' : 'New'"></span>
                             </button>
                         </div>
 

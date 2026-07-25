@@ -13,22 +13,39 @@
     };
 @endphp
 
+
 <style>
     select.rv-select {
-        background: #fff !important;
+        background-color: #ffffff !important;
         color: #0f172a !important;
     }
 
     select.rv-select option {
-        background: #fff !important;
-        color: #1A1D23 !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+
+    .category-blink {
+        animation: categoryBlink 1.25s infinite;
+    }
+
+    @keyframes categoryBlink {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(249, 115, 22, .55);
+        }
+
+        50% {
+            transform: scale(1.035);
+            box-shadow: 0 0 0 9px rgba(249, 115, 22, 0);
+        }
     }
 </style>
 
 <div class="space-y-6">
 
-    <div class="border-b pb-4">
-        <h3 class="font-semibold text-gray-700 mb-3">Basic Details</h3>
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
+        <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Basic Details</h3>
 
         <div class="grid md:grid-cols-2 gap-4">
 
@@ -44,38 +61,88 @@
 
             @if($showField('name'))
                 <div>
-                    <label class="block text-sm font-medium mb-1">
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                         Name <span class="text-red-600">*</span>
                     </label>
                     <input type="text" name="name" required
                            value="{{ old('name', $item->name ?? '') }}"
-                           class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                           class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                     @error('name') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
             @endif
-
             @if($showField('category_id'))
                 <div>
-                    <label class="block text-sm font-medium mb-1">Category</label>
-                    <select name="category_id" class="rv-select mt-1 w-full border rounded px-3 py-2">
+                    <div class="flex items-center justify-between gap-3 mb-1">
+                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            Category
+                        </label>
+
+                        @if($categories->isEmpty())
+                            <button
+                                type="button"
+                                id="openCategoryModal"
+                                class="category-blink inline-flex items-center gap-1 px-3 py-1.5
+                                    rounded-lg bg-orange-500 text-white text-xs font-semibold
+                                    hover:bg-orange-600 shadow-lg"
+                            >
+                                <span class="text-base leading-none">+</span>
+                                Add Category
+                            </button>
+                        @else
+                            <button
+                                type="button"
+                                id="openCategoryModal"
+                                class="inline-flex items-center gap-1 px-3 py-1.5
+                                    rounded-lg bg-blue-600 text-white text-xs font-semibold
+                                    hover:bg-blue-700"
+                            >
+                                <span class="text-base leading-none">+</span>
+                                Add Category
+                            </button>
+                        @endif
+                    </div>
+
+                    <select
+                        name="category_id"
+                        class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
+                    >
                         <option value="">— None —</option>
+
                         @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}"
-                                @selected((string) old('category_id', $item->category_id ?? '') === (string) $cat->id)>
+                            <option
+                                value="{{ $cat->id }}"
+                                @selected(
+                                    (string) old(
+                                        'category_id',
+                                        $item->category_id ?? ''
+                                    ) === (string) $cat->id
+                                )
+                            >
                                 {{ $cat->name }}
                             </option>
                         @endforeach
                     </select>
-                    @error('category_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+
+                    @if($categories->isEmpty())
+                        <p class="mt-2 text-xs font-medium text-orange-600">
+                            Abhi koi category nahi bani hai. Pehle category create karein.
+                        </p>
+                    @endif
+
+                    @error('category_id')
+                        <p class="text-xs text-red-600 mt-1">
+                            {{ $message }}
+                        </p>
+                    @enderror
                 </div>
             @endif
 
             @if($showField('sku'))
                 <div>
-                    <label class="block text-sm font-medium mb-1">SKU</label>
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">SKU</label>
                     <input type="text" name="sku"
                         value="{{ old('sku', $item->sku ?? '') }}"
-                        class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                        class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                         placeholder="Example: ITEM-001">
                     @error('sku') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -83,10 +150,10 @@
 
             @if($showField('type'))
                 <div>
-                    <label class="block text-sm font-medium mb-1">
+                    <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                         Type <span class="text-red-600">*</span>
                     </label>
-                    <select id="typeSelect" name="type" required class="rv-select mt-1 w-full border rounded px-3 py-2">
+                    <select id="typeSelect" name="type" required class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         <option value="">— Select Type —</option>
                         <option value="product" @selected($currentType === 'product')>Product</option>
                         <option value="service" @selected($currentType === 'service')>Service</option>
@@ -101,16 +168,16 @@
     </div>
 
     @if($showField('sac') || $showField('service_duration'))
-    <div id="serviceFields" class="border-b pb-4">
-            <h3 class="font-semibold text-gray-700 mb-3">Service Details</h3>
+    <div id="serviceFields" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
+            <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Service Details</h3>
 
             <div class="grid md:grid-cols-2 gap-4">
                 @if($showField('sac'))
                     <div>
-                        <label class="block text-sm font-medium mb-1">SAC Code</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">SAC Code</label>
                         <input id="sacField" type="text" name="sac"
                                value="{{ old('sac', $item->sac ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                                placeholder="Optional">
                         @error('sac') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -118,10 +185,10 @@
 
                 @if($showField('service_duration'))
                     <div>
-                        <label class="block text-sm font-medium mb-1">Service Duration (mins)</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Service Duration (mins)</label>
                         <input type="number" name="service_duration"
                                value="{{ old('service_duration', $item->service_duration ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                                placeholder="Optional">
                         @error('service_duration') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -145,51 +212,51 @@
     )
         <div id="productFields" class="space-y-6 hidden">
 
-            <div class="border-b pb-4">
-                <h3 class="font-semibold text-gray-700 mb-3">Metal & Weights</h3>
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
+                <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Metal & Weights</h3>
 
                 <div class="grid md:grid-cols-3 gap-4">
 
                     @if($showField('gross_weight'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Gross Weight (gm)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gross Weight (gm)</label>
                             <input type="number" step="0.001" name="gross_weight"
                                    value="{{ old('gross_weight', $item->gross_weight ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
 
                     @if($showField('stone_weight'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Gemstone Weight (gm)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gemstone Weight (gm)</label>
                             <input type="number" step="0.001" name="stone_weight"
                                    value="{{ old('stone_weight', $item->stone_weight ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
 
                     @if($showField('stone_charges'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Gemstone Charges (₹)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gemstone Charges (₹)</label>
                             <input type="number" step="0.01" name="stone_charges"
                                    value="{{ old('stone_charges', $item->stone_charges ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
 
                     @if($showField('gold_weight'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Gold Weight (gm)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gold Weight (gm)</label>
                             <input type="number" step="0.001" name="gold_weight"
                                    value="{{ old('gold_weight', $item->gold_weight ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
 
                     @if($showField('gold_purity'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Gold Purity</label>
-                            <select name="gold_purity" class="rv-select mt-1 w-full border rounded px-3 py-2">
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gold Purity</label>
+                            <select name="gold_purity" class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                                 <option value="">Select Gold Purity</option>
                                 <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
                                 <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
@@ -202,17 +269,17 @@
 
                     @if($showField('silver_weight'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Silver Weight (gm)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Silver Weight (gm)</label>
                             <input type="number" step="0.001" name="silver_weight"
                                    value="{{ old('silver_weight', $item->silver_weight ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
 
                     @if($showField('silver_purity'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Silver Purity</label>
-                            <select name="silver_purity" class="rv-select mt-1 w-full border rounded px-3 py-2">
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Silver Purity</label>
+                            <select name="silver_purity" class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                                 <option value="">Select Silver Purity</option>
                                 <option value="999" @selected(old('silver_purity', $item->silver_purity ?? '') == '999')>Silver 999</option>
                                 <option value="925" @selected(old('silver_purity', $item->silver_purity ?? '') == '925')>Silver 925</option>
@@ -222,46 +289,46 @@
 
                     @if($showField('diamond_weight'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Diamond Weight (ct)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Diamond Weight (ct)</label>
                             <input type="number" step="0.001" name="diamond_weight"
                                    value="{{ old('diamond_weight', $item->diamond_weight ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
 
                     @if($showField('diamond_charges'))
                         <div>
-                            <label class="block text-sm font-medium mb-1">Diamond Charges (₹)</label>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Diamond Charges (₹)</label>
                             <input type="number" step="0.01" name="diamond_charges"
                                    value="{{ old('diamond_charges', $item->diamond_charges ?? '') }}"
-                                   class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                         </div>
                     @endif
                 </div>
             </div>
 
             @if($showField('stock_qty') || $showField('unit'))
-                <div class="border-b pb-4" id="stockBlock">
-                    <h3 class="font-semibold text-gray-700 mb-3">Stock Details</h3>
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]" id="stockBlock">
+                    <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Stock Details</h3>
 
                     <div class="grid md:grid-cols-2 gap-4">
                         @if($showField('stock_qty'))
                             <div>
-                                <label class="block text-sm font-medium mb-1">
+                                <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                                     Stock Qty <span class="text-red-600">*</span>
                                 </label>
                                 <input id="stockQty" type="number" step="1" min="0" name="stock_qty"
                                        value="{{ old('stock_qty', $item->stock_qty ?? 0) }}"
-                                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                             </div>
                         @endif
 
                         @if($showField('unit'))
                             <div>
-                                <label class="block text-sm font-medium mb-1">Unit</label>
+                                <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Unit</label>
                                 <input id="unitField" type="text" name="unit"
                                        value="{{ old('unit', $item->unit ?? '') }}"
-                                       class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                                        placeholder="pcs / gm / ml ...">
                             </div>
                         @endif
@@ -272,35 +339,35 @@
     @endif
 
     @if($showField('price') || $showField('cost_price') || $showField('making_charge') || $showField('tax_rate'))
-        <div class="border-b pb-4">
-            <h3 class="font-semibold text-gray-700 mb-3">Pricing</h3>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
+            <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Pricing</h3>
 
             <div class="grid md:grid-cols-2 gap-4">
 
                 @if($showField('price'))
                     <div>
-                        <label class="block text-sm font-medium mb-1">Price (₹)</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Price (₹)</label>
                         <input type="number" step="0.01" min="0" name="price"
                                value="{{ old('price', $item->price ?? 0) }}"
-                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                     </div>
                 @endif
 
                 @if($showField('cost_price'))
                     <div>
-                        <label class="block text-sm font-medium mb-1">Cost Price (₹)</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Cost Price (₹)</label>
                         <input type="number" step="0.01" min="0" name="cost_price"
                                value="{{ old('cost_price', $item->cost_price ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                     </div>
                 @endif
 
                 {{-- @if($showField('making_charge'))
                     <div id="makingChargeBlock" class="hidden">
-                        <label class="block text-sm font-medium mb-1">Making Charge (%)</label>
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Making Charge (%)</label>
                         <input id="makingChargeField" type="number" step="0.01" min="0" max="100" name="making_charge"
                                value="{{ old('making_charge', $item->making_charge ?? '') }}"
-                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                                placeholder="Example: 10">
                     </div>
                 @endif --}}
@@ -310,9 +377,9 @@
                         <div class="grid md:grid-cols-2 gap-4">
                             
                             <div>
-                                <label class="block text-sm font-medium mb-1">Making Charge Type</label>
+                                <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Making Charge Type</label>
                                 <select id="makingChargeType" name="making_charge_type"
-                                        class="rv-select mt-1 w-full border rounded px-3 py-2">
+                                        class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                                     <option value="percentage"
                                         @selected(old('making_charge_type', $item->making_charge_type ?? 'percentage') === 'percentage')>
                                         Percent (%)
@@ -336,13 +403,13 @@
                             </div>
 
                             <div>
-                                <label id="makingChargeLabel" class="block text-sm font-medium mb-1">
+                                <label id="makingChargeLabel" class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                                     Making Charge (%)
                                 </label>
                                 <input id="makingChargeField" type="number" step="0.01" min="0"
                                     name="making_charge"
                                     value="{{ old('making_charge', $item->making_charge ?? '') }}"
-                                    class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                                     placeholder="Example: 10">
                             </div>
 
@@ -352,12 +419,12 @@
 
                 @if($showField('tax_rate'))
                     <div>
-                        <label class="block text-sm font-medium mb-1">
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                             Tax % <span class="text-red-600">*</span>
                         </label>
                         <input type="number" step="0.01" min="0" max="100" name="tax_rate" required
                                value="{{ old('tax_rate', $item->tax_rate ?? 0) }}"
-                               class="mt-1 w-full border rounded px-3 py-2 bg-slate-200">
+                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                     </div>
                 @endif
             </div>
@@ -366,9 +433,9 @@
 
     @if($showField('description'))
         <div>
-            <label class="block text-sm font-medium mb-1">Description</label>
+            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Description</label>
             <textarea name="description" rows="3"
-                      class="mt-1 w-full border rounded px-3 py-2 bg-slate-200"
+                      class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                       placeholder="Optional">{{ old('description', $item->description ?? '') }}</textarea>
         </div>
     @endif
@@ -385,16 +452,30 @@
         <input type="hidden" name="is_active" value="1">
     @endif
 
-    <div class="flex items-center gap-3">
-        <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
-            {{ $isEdit ? 'Update Item' : 'Create Item' }}
-        </button>
+    <div class="sticky bottom-0 z-20 -mx-5 mt-8 border-t border-slate-200 bg-white/95 px-5 py-4 backdrop-blur-md dark:border-slate-700 dark:bg-[#171c22]/95">
+        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <a href="{{ route('items.index') }}"
+               class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Cancel
+            </a>
 
-        <a href="{{ route('items.index') }}" class="bg-red-400 p-2 rounded-sm text-gray-50 hover:underline">
-            Cancel
-        </a>
+            <button type="submit"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-teal-600/20 transition hover:-translate-y-0.5 hover:from-teal-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-teal-200 dark:focus:ring-teal-900">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                {{ $isEdit ? 'Update Item' : 'Create Item' }}
+            </button>
+        </div>
     </div>
 </div>
+
+
+
+
 
 <script>
     (function () {
@@ -415,61 +496,6 @@
                 el.disabled = disabled;
             });
         }
-
-        // function toggleByType(val) {
-        //     if (!val) {
-        //         productFields?.classList.add('hidden');
-        //         // serviceFields?.classList.add('hidden');
-        //         makingChargeBlock?.classList.add('hidden');
-
-        //         setDisabledInside(productFields, true);
-        //         // setDisabledInside(serviceFields, true);
-
-        //         if (makingChargeField) makingChargeField.disabled = true;
-        //         if (stockQty) stockQty.required = false;
-        //         if (sacField) sacField.required = false;
-
-        //         return;
-        //     }
-
-        //     if (val === 'service') {
-        //         serviceFields?.classList.remove('hidden');
-        //         productFields?.classList.add('hidden');
-        //         makingChargeBlock?.classList.add('hidden');
-
-        //         setDisabledInside(serviceFields, false);
-        //         setDisabledInside(productFields, true);
-
-        //         if (makingChargeField) {
-        //             makingChargeField.disabled = true;
-        //             makingChargeField.value = '';
-        //         }
-
-        //         if (stockQty) {
-        //             stockQty.required = false;
-        //             stockQty.value = '';
-        //         }
-
-        //         if (unitField) unitField.value = '';
-        //         if (sacField) sacField.required = true;
-
-        //     } else {
-        //         productFields?.classList.remove('hidden');
-        //         serviceFields?.classList.add('hidden');
-        //         makingChargeBlock?.classList.remove('hidden');
-
-        //         setDisabledInside(productFields, false);
-        //         setDisabledInside(serviceFields, true);
-
-        //         if (makingChargeField) makingChargeField.disabled = false;
-        //         if (stockQty) stockQty.required = true;
-
-        //         if (sacField) {
-        //             sacField.required = false;
-        //             sacField.value = '';
-        //         }
-        //     }
-        // }
 
         function toggleByType(val) {
 

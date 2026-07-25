@@ -5,6 +5,111 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     @include('partials.head')
+
+    <style>
+    summary::-webkit-details-marker {
+        display: none;
+    }
+
+    @keyframes businessProfileGlow {
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+            transform: translateY(0);
+        }
+
+        50% {
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+            transform: translateY(-1px);
+        }
+    }
+
+    .business-profile-attention {
+        animation: businessProfileGlow 1.8s ease-in-out infinite;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Item Menu Attention
+    |--------------------------------------------------------------------------
+    */
+
+    @keyframes itemMenuGlow {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 0 rgba(249, 115, 22, 0),
+                inset 0 0 0 1px rgba(249, 115, 22, 0.15);
+
+            transform: translateX(0);
+        }
+
+        50% {
+            box-shadow:
+                0 0 0 5px rgba(249, 115, 22, 0.14),
+                inset 0 0 0 1px rgba(249, 115, 22, 0.45);
+
+            transform: translateX(2px);
+        }
+    }
+
+    .item-menu-attention {
+        border-radius: 0.75rem !important;
+        background: rgba(255, 247, 237, 0.95) !important;
+        color: #c2410c !important;
+        animation: itemMenuGlow 1.4s ease-in-out infinite;
+    }
+
+    .dark .item-menu-attention {
+        background: rgba(124, 45, 18, 0.25) !important;
+        color: #fdba74 !important;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create Invoice Attention
+    |--------------------------------------------------------------------------
+    */
+
+    @keyframes invoiceMenuGlow {
+        0%,
+        100% {
+            box-shadow:
+                0 0 0 0 rgba(16, 185, 129, 0),
+                inset 0 0 0 1px rgba(16, 185, 129, 0.15);
+
+            transform: scale(1);
+        }
+
+        50% {
+            box-shadow:
+                0 0 0 5px rgba(16, 185, 129, 0.14),
+                inset 0 0 0 1px rgba(16, 185, 129, 0.45);
+
+            transform: scale(1.015);
+        }
+    }
+
+    .invoice-menu-attention {
+        border-radius: 0.75rem !important;
+        background: rgba(236, 253, 245, 0.95) !important;
+        color: #047857 !important;
+        animation: invoiceMenuGlow 1.4s ease-in-out infinite;
+    }
+
+    .dark .invoice-menu-attention {
+        background: rgba(6, 78, 59, 0.28) !important;
+        color: #6ee7b7 !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .business-profile-attention,
+        .item-menu-attention,
+        .invoice-menu-attention {
+            animation: none;
+        }
+    }
+</style>
 </head>
 
 <body class="min-h-screen bg-white dark:bg-zinc-800">
@@ -98,6 +203,158 @@
                     ->url($storedLogo);
             }
         }
+
+
+
+
+            /*
+                |--------------------------------------------------------------------------
+                | Guided Setup: Items and Invoices
+                |--------------------------------------------------------------------------
+                */
+
+                $hasItems = false;
+                $hasInvoices = false;
+
+                if ($activeBusinessId) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Check Items For Active Business
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $itemModel = new \App\Models\Item();
+                    $itemTable = $itemModel->getTable();
+
+                    $itemQuery = \App\Models\Item::query();
+
+                    if (
+                        \Illuminate\Support\Facades\Schema::hasColumn(
+                            $itemTable,
+                            'business_id'
+                        )
+                    ) {
+                        $itemQuery->where('business_id', $activeBusinessId);
+                    } elseif (
+                        \Illuminate\Support\Facades\Schema::hasColumn(
+                            $itemTable,
+                            'company_id'
+                        )
+                    ) {
+                        $itemQuery->where('company_id', $activeBusinessId);
+                    } elseif (
+                        \Illuminate\Support\Facades\Schema::hasColumn(
+                            $itemTable,
+                            'user_id'
+                        )
+                    ) {
+                        $itemQuery->where('user_id', $user->id);
+                    }
+
+                    $hasItems = $itemQuery->exists();
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Check Tax Invoices For Active Business
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if ($hasItems) {
+                        $invoiceModel = new \App\Models\Invoice();
+                        $invoiceTable = $invoiceModel->getTable();
+
+                        $invoiceQuery = \App\Models\Invoice::query();
+
+                        if (
+                            \Illuminate\Support\Facades\Schema::hasColumn(
+                                $invoiceTable,
+                                'business_id'
+                            )
+                        ) {
+                            $invoiceQuery->where(
+                                'business_id',
+                                $activeBusinessId
+                            );
+                        } elseif (
+                            \Illuminate\Support\Facades\Schema::hasColumn(
+                                $invoiceTable,
+                                'company_id'
+                            )
+                        ) {
+                            $invoiceQuery->where(
+                                'company_id',
+                                $activeBusinessId
+                            );
+                        } elseif (
+                            \Illuminate\Support\Facades\Schema::hasColumn(
+                                $invoiceTable,
+                                'user_id'
+                            )
+                        ) {
+                            $invoiceQuery->where(
+                                'user_id',
+                                $user->id
+                            );
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Sirf actual invoice count karein
+                        |--------------------------------------------------------------------------
+                        |
+                        | Quotation aur proforma ko invoice nahi maana jayega.
+                        */
+
+                        if (
+                            \Illuminate\Support\Facades\Schema::hasColumn(
+                                $invoiceTable,
+                                'type'
+                            )
+                        ) {
+                            $invoiceQuery->where(function ($query) {
+                                $query
+                                    ->where('type', 'tax')
+                                    ->orWhere('type', 'invoice')
+                                    ->orWhereNull('type');
+                            });
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Soft deleted invoices ignore karein
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            \Illuminate\Support\Facades\Schema::hasColumn(
+                                $invoiceTable,
+                                'deleted_at'
+                            )
+                        ) {
+                            $invoiceQuery->whereNull('deleted_at');
+                        }
+
+                        $hasInvoices = $invoiceQuery->exists();
+                    }
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Menu Attention Conditions
+                |--------------------------------------------------------------------------
+                |
+                | Profile incomplete hone se Items ya Invoice suggestion block nahi hoga.
+                */
+
+                $itemMenuAttention =
+                    (bool) $business &&
+                    !$hasItems;
+
+                $createInvoiceAttention =
+                    (bool) $business &&
+                    $hasItems &&
+                    !$hasInvoices;
     @endphp
 
     <flux:sidebar
@@ -363,14 +620,57 @@
 
 
          @can('create invoice')
-            <flux:navlist.item
-                icon="plus"
-                :href="route('invoices.create', ['type' => 'tax'])"
-                :current="request()->routeIs('invoices.create')"
-                wire:navigate
-            >
-                Create Invoice
-            </flux:navlist.item>
+            <div class="relative mt-2">
+
+                @if($createInvoiceAttention)
+                    <span
+                        class="absolute -right-1 -top-1 z-20 flex h-3 w-3"
+                        aria-hidden="true"
+                    >
+                        <span
+                            class="absolute inline-flex h-full w-full animate-ping
+                                rounded-full bg-emerald-400 opacity-75"
+                        ></span>
+
+                        <span
+                            class="relative inline-flex h-3 w-3 rounded-full
+                                bg-emerald-500"
+                        ></span>
+                    </span>
+                @endif
+
+                <flux:navlist.item
+                    icon="plus"
+                    :href="route('invoices.create', ['type' => 'tax'])"
+                    :current="request()->routeIs('invoices.create')"
+                    wire:navigate
+                    class="{{ $createInvoiceAttention ? 'invoice-menu-attention' : '' }}"
+                >
+                    <div class="flex w-full items-center justify-between gap-2">
+                        <span>Create Invoice</span>
+
+                        @if($createInvoiceAttention)
+                            <span
+                                class="rounded-full bg-emerald-100 px-2 py-0.5
+                                    text-[10px] font-bold text-emerald-700
+                                    dark:bg-emerald-950/60 dark:text-emerald-300"
+                            >
+                                Next Step
+                            </span>
+                        @endif
+                    </div>
+                </flux:navlist.item>
+
+                @if($createInvoiceAttention)
+                    <p
+                        class="mt-1 px-3 text-[10px] font-medium
+                            text-emerald-600 dark:text-emerald-400"
+                    >
+                        Item ready hai. Ab pehla invoice banayein.
+                    </p>
+                @endif
+
+            </div>
         @endcan
 
         @can('show invoices menu')
@@ -460,14 +760,29 @@
                             @endcan
 
                             @can('create invoice')
-                                <flux:navlist.item
-                                    icon="plus"
-                                    :href="route('invoices.create', ['type' => 'tax'])"
-                                    :current="request()->routeIs('invoices.create') && $type === 'tax'"
-                                    wire:navigate
-                                >
-                                    Create Invoice
-                                </flux:navlist.item>
+                                <div class="relative">
+
+                                    <flux:navlist.item
+                                        icon="plus"
+                                        :href="route('invoices.create', ['type' => 'tax'])"
+                                        :current="request()->routeIs('invoices.create') && $type === 'tax'"
+                                        wire:navigate
+                                        class="{{ $createInvoiceAttention ? 'invoice-menu-attention' : '' }}"
+                                    >
+                                        <div class="flex w-full items-center justify-between gap-2">
+                                            <span>Create Invoice</span>
+
+                                            @if($createInvoiceAttention)
+                                                <span
+                                                    class="inline-flex h-2.5 w-2.5 rounded-full
+                                                        bg-emerald-500 ring-4 ring-emerald-200
+                                                        dark:ring-emerald-900"
+                                                ></span>
+                                            @endif
+                                        </div>
+                                    </flux:navlist.item>
+
+                                </div>
                             @endcan
 
                             @can('show invoices')
@@ -913,48 +1228,124 @@
         {{-- ITEMS --}}
         {{-- ============================================================= --}}
 
+        {{-- ============================================================= --}}
+        {{-- ITEMS --}}
+        {{-- ============================================================= --}}
+
         @can('show items')
-            <flux:navlist variant="outline">
-                <flux:navlist.group class="grid">
-                    <flux:navlist.item
-                        :href="route('items.index')"
-                        :current="request()->routeIs('items.*')"
-                        wire:navigate
+            <div class="relative mt-1">
+
+                @if($itemMenuAttention)
+                    <span
+                        class="absolute -right-1 -top-1 z-20 flex h-3 w-3"
+                        aria-hidden="true"
                     >
-                        {{ __('Items') }}
+                        <span
+                            class="absolute inline-flex h-full w-full animate-ping
+                                rounded-full bg-orange-400 opacity-75"
+                        ></span>
 
-                        <x-slot:icon>
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-5 w-5"
-                                viewBox="0 0 64 64"
-                            >
-                                <rect x="6" y="6" width="52" height="52" rx="10" fill="#EFF6FF" />
+                        <span
+                            class="relative inline-flex h-3 w-3 rounded-full
+                                bg-orange-500"
+                        ></span>
+                    </span>
+                @endif
 
-                                <rect x="20" y="20" width="24" height="24" rx="4" fill="#3B82F6" />
+                <flux:navlist variant="outline">
+                    <flux:navlist.group class="grid">
 
-                                <path
-                                    d="M20 20l12 12 12-12"
-                                    stroke="#93C5FD"
-                                    stroke-width="2"
-                                    fill="none"
-                                />
+                        <flux:navlist.item
+                            :href="route('items.index')"
+                            :current="request()->routeIs('items.*')"
+                            wire:navigate
+                            class="{{ $itemMenuAttention ? 'item-menu-attention' : '' }}"
+                        >
+                            <div class="flex w-full items-center justify-between gap-2">
 
-                                <line
-                                    x1="32"
-                                    y1="32"
-                                    x2="32"
-                                    y2="44"
-                                    stroke="#93C5FD"
-                                    stroke-width="2"
-                                />
+                                <span>
+                                    {{ __('Items') }}
+                                </span>
 
-                                <rect x="22" y="46" width="20" height="4" rx="1" fill="#60A5FA" />
-                            </svg>
-                        </x-slot:icon>
-                    </flux:navlist.item>
-                </flux:navlist.group>
-            </flux:navlist>
+                                @if($itemMenuAttention)
+                                    <span
+                                        class="rounded-full bg-orange-100 px-2 py-0.5
+                                            text-[10px] font-bold text-orange-700
+                                            dark:bg-orange-950/60
+                                            dark:text-orange-300"
+                                    >
+                                        Create
+                                    </span>
+                                @endif
+
+                            </div>
+
+                            <x-slot:icon>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-5 w-5"
+                                    viewBox="0 0 64 64"
+                                >
+                                    <rect
+                                        x="6"
+                                        y="6"
+                                        width="52"
+                                        height="52"
+                                        rx="10"
+                                        fill="{{ $itemMenuAttention ? '#FFF7ED' : '#EFF6FF' }}"
+                                    />
+
+                                    <rect
+                                        x="20"
+                                        y="20"
+                                        width="24"
+                                        height="24"
+                                        rx="4"
+                                        fill="{{ $itemMenuAttention ? '#F97316' : '#3B82F6' }}"
+                                    />
+
+                                    <path
+                                        d="M20 20l12 12 12-12"
+                                        stroke="{{ $itemMenuAttention ? '#FED7AA' : '#93C5FD' }}"
+                                        stroke-width="2"
+                                        fill="none"
+                                    />
+
+                                    <line
+                                        x1="32"
+                                        y1="32"
+                                        x2="32"
+                                        y2="44"
+                                        stroke="{{ $itemMenuAttention ? '#FED7AA' : '#93C5FD' }}"
+                                        stroke-width="2"
+                                    />
+
+                                    <rect
+                                        x="22"
+                                        y="46"
+                                        width="20"
+                                        height="4"
+                                        rx="1"
+                                        fill="{{ $itemMenuAttention ? '#FB923C' : '#60A5FA' }}"
+                                    />
+                                </svg>
+                            </x-slot:icon>
+
+                        </flux:navlist.item>
+
+                    </flux:navlist.group>
+                </flux:navlist>
+
+                @if($itemMenuAttention)
+                    <p
+                        class="mt-1 px-3 text-[10px] font-medium
+                            text-orange-600 dark:text-orange-400"
+                    >
+                        Invoice banane se pehle item create karein.
+                    </p>
+                @endif
+
+            </div>
         @endcan
 
         {{-- ============================================================= --}}

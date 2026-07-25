@@ -514,14 +514,10 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('delete/{business}', 'destroy')->name('delete');
     });
 
-    //    Route::prefix('categories')->name('categories.')->controller(\App\Http\Controllers\CategoryController::class)->group(function(){
-    //        Route::get('/', 'index')->name('index');
-    //        Route::get('create', 'create')->name('create');
-    //        Route::post('store', 'store')->name('store');
-    //        Route::get('edit/{category}', 'edit')->name('edit');
-    //        Route::post('update/{category}', 'update')->name('update');
-    //        Route::post('delete/{category}', 'delete')->name('delete');
-    //    });
+    Route::post(
+        '/categories/quick-store',
+        [CategoryController::class, 'quickStore']
+    )->name('categories.quick-store');
 
     Route::resource('categories', CategoryController::class);
 
