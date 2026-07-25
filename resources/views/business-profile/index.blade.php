@@ -1,4 +1,5 @@
 <x-layouts.app :title="__('Business Profile Setup')">
+    <div class="mb-5"><x-billing-setup-guide :step="2" /></div>
 
     <div class="min-h-screen bg-zinc-50 py-6 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">

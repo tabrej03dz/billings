@@ -35,8 +35,65 @@ use Livewire\Volt\Volt;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\BusinessProfileController;
+use App\Http\Controllers\AdRegistrationController;
 
 // frontend web routes:::::
+
+
+
+Route::prefix('start')
+    ->name('ad.register.')
+    ->group(function () {
+        Route::get(
+            '/',
+            [AdRegistrationController::class, 'show']
+        )->name('page');
+
+        Route::post(
+            '/save-step',
+            [AdRegistrationController::class, 'saveStep']
+        )->name('save-step');
+
+        Route::post(
+            '/complete',
+            [AdRegistrationController::class, 'complete']
+        )->name('complete');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| OTP
+|--------------------------------------------------------------------------
+*/
+
+Route::post(
+    '/register/send-otp',
+    [RegisterController::class, 'sendOtp']
+)->name('register.sendOtp');
+
+Route::post(
+    '/register/verify-otp',
+    [RegisterController::class, 'verifyOtp']
+)->name('register.verifyOtp');
+
+/*
+|--------------------------------------------------------------------------
+| Choose plan
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth')->group(function () {
+    Route::get(
+        '/choose-plan',
+        [PlanController::class, 'choose']
+    )->name('plan.choose');
+
+    Route::post(
+        '/choose-plan/save',
+        [PlanController::class, 'choosenSave']
+    )->name('plan.choosen-save');
+});
+
 
 Route::get('/', function () {
     $plans = Plan::where('status', 1)

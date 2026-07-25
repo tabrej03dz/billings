@@ -45,7 +45,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'phone_verified_at' => 'datetime',
         ];
+    }
+
+
+    public function onboardingRegistration()
+    {
+        return $this->hasOne(OnboardingRegistration::class);
     }
 
     /**

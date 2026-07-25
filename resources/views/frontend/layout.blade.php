@@ -97,7 +97,8 @@
                 Login
             </a>
 
-            <a href="user-register" class="px-5 py-3 rounded-full bg-mvDark text-white text-sm font-bold">
+           <a href="{{ route('ad.register.page', ['open_register' => 1]) }}"
+            class="px-5 py-3 rounded-full bg-mvDark text-white text-sm font-bold">
                 Register
             </a>
 
@@ -116,7 +117,10 @@
         <a href="#pricing" class="block">Pricing</a>
         <a href="#contact" class="block">Demo</a>
         <a href="/login" class="block text-center rounded-xl border px-4 py-3">Login</a>
-        <a href="user-register" class="block text-center rounded-xl brand-gradient text-white px-4 py-3">Register</a>
+        <a href="{{ route('ad.register.page', ['open_register' => 1]) }}"
+        class="px-5 py-3 rounded-full bg-mvDark text-white text-sm font-bold">
+            Register
+        </a>
     </div>
 </header>
 
