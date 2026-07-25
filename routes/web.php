@@ -41,7 +41,7 @@ use App\Http\Controllers\AdRegistrationController;
 
 
 
-Route::prefix('start')
+Route::prefix('ad')
     ->name('ad.register.')
     ->group(function () {
         Route::get(
