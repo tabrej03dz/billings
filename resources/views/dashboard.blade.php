@@ -650,7 +650,9 @@
                 </div>
             </div>
 
-            @if($business->type == 'jewellery')
+            {{-- @if($business->type == 'jewellery') --}}
+            @can('show metal rates')
+                
             {{-- Today Metal Rates + button --}}
             <div class="w-full xl:w-1/3">
                 <div class="bg-white dark:bg-neutral-900 rounded-xl border border-red-200 dark:border p-3 dark:border-neutral-700 shadow-sm px-4 py-3 h-full">
@@ -691,7 +693,9 @@
                     @endif
                 </div>
             </div>
-            @endif
+            {{-- @endif --}}
+            @endcan
+
         </div>
 
         {{-- METAL RATES FORM (toggle) --}}

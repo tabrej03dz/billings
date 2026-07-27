@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\ItemBarcodeController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\PlanPaymentController;
 use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\MetalRateController;
 
 Route::get('items1/', [ItemController::class, 'index1']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
@@ -103,6 +104,29 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
 
     });
 
+
+
+    Route::prefix('metal-rates')
+    ->controller(MetalRateController::class)
+    ->group(function () {
+        Route::get('/', 'index');
+        Route::get('/current', 'currentRates');
+        Route::get('/latest', 'latestRate');
+        Route::get('/by-date', 'rateByDate');
+
+        Route::post('/today', 'storeToday');
+        Route::post('/store', 'store');
+
+        Route::get('/show/{metalRate}', 'show');
+
+        Route::post('/update/{metalRate}', 'update');
+        Route::put('/update/{metalRate}', 'update');
+
+        Route::patch('/status/{metalRate}', 'toggle');
+        Route::post('/status/{metalRate}', 'toggle');
+
+        Route::delete('/delete/{metalRate}', 'destroy');
+    });
 
      Route::prefix('items')->group(function () {
 
