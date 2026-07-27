@@ -164,7 +164,7 @@ class BusinessController extends Controller
             //     Rule::exists('business_types', 'id'),
             // ],
 
-             'type' => ['required', 'exists:business_types,id'],
+             'business_type_id' => ['required', 'exists:business_types,id'],
 
             'gstin'   => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:1000'],
@@ -371,7 +371,7 @@ class BusinessController extends Controller
             ],
 
             // ✅ Dynamic Business Type
-            'type' => [
+            'business_type_id' => [
                 'required',
                 'integer',
                 Rule::exists('business_types', 'id'),

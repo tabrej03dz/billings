@@ -873,7 +873,18 @@
         <div class="p-5 sm:p-7">
 
             <div id="registrationMessage"
-                 class="registration-message">
+                 class="registration-message {{ $errors->any() ? 'show error' : '' }}">
+                @if($errors->any())
+                    <div class="font-black mb-2">
+                        Registration complete nahi hua:
+                    </div>
+
+                    <ul class="list-disc pl-5 space-y-1">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                @endif
             </div>
 
             <form id="popupRegistrationForm"
@@ -1667,6 +1678,16 @@ document.addEventListener('DOMContentLoaded', function () {
         )?.getAttribute('content')
         || '{{ csrf_token() }}';
 
+    /*
+     * Backend validation errors.
+     * Laravel redirect back kare to errors popup ke andar show honge.
+     */
+    const serverValidationErrors = @json($errors->all());
+
+    const serverValidationFields = @json(
+        $errors->keys()
+    );
+
     function cleanPhone(value) {
         return value
             .replace(/\D/g, '')
@@ -2231,10 +2252,36 @@ document.addEventListener('DOMContentLoaded', function () {
     skipBusinessBtn.addEventListener(
         'click',
         async function () {
+            /*
+             * Business details completely optional hain.
+             * Skip par incomplete/invalid optional values clear kar do,
+             * taaki backend validation registration ko na roke.
+             */
             businessSkipped.value = '1';
 
-            const saved =
-                await saveCurrentStep(2);
+            [
+                'business_name',
+                'business_email',
+                'business_type_id',
+                'gstin',
+                'address',
+                'state',
+                'state_code',
+            ].forEach(function (fieldName) {
+                const field = form.querySelector(
+                    '[name="' + fieldName + '"]'
+                );
+
+                if (field) {
+                    field.value = '';
+                }
+            });
+
+            if (stateSelect) {
+                stateSelect.value = '';
+            }
+
+            const saved = await saveCurrentStep(2);
 
             if (saved) {
                 showStep(2);
@@ -2245,14 +2292,44 @@ document.addEventListener('DOMContentLoaded', function () {
     skipBillingBtn.addEventListener(
         'click',
         async function () {
+            /*
+             * Billing settings completely optional hain.
+             * Skip par safe defaults set karke final registration submit karo.
+             */
             billingSkipped.value = '1';
 
-            const saved =
-                await saveCurrentStep(3);
+            const gstField =
+                form.querySelector('[name="gst_enabled"]');
+
+            const prefixField =
+                form.querySelector('[name="invoice_base_prefix"]');
+
+            const roundingModeField =
+                form.querySelector('[name="rounding_mode"]');
+
+            const roundingStepField =
+                form.querySelector('[name="rounding_step"]');
+
+            if (gstField) {
+                gstField.value = '0';
+            }
+
+            if (prefixField) {
+                prefixField.value = 'RV/SL';
+            }
+
+            if (roundingModeField) {
+                roundingModeField.value = 'nearest';
+            }
+
+            if (roundingStepField) {
+                roundingStepField.value = '1.00';
+            }
+
+            const saved = await saveCurrentStep(3);
 
             if (saved) {
-                markRegistrationCompleted();
-                form.submit();
+                HTMLFormElement.prototype.submit.call(form);
             }
         }
     );
@@ -2292,8 +2369,24 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            markRegistrationCompleted();
-            form.submit();
+            /*
+             * Business details blank hon to automatically skip mode.
+             * Backend default business create karega.
+             */
+            const businessNameField =
+                form.querySelector('[name="business_name"]');
+
+            const businessTypeField =
+                form.querySelector('[name="business_type_id"]');
+
+            if (
+                !businessNameField?.value.trim()
+                || !businessTypeField?.value
+            ) {
+                businessSkipped.value = '1';
+            }
+
+            HTMLFormElement.prototype.submit.call(form);
         }
     );
 
@@ -2389,6 +2482,108 @@ document.addEventListener('DOMContentLoaded', function () {
         showStep(1);
     } else {
         showStep(0);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Show backend validation errors
+    |--------------------------------------------------------------------------
+    |
+    | Validation fail hone par Laravel isi page par redirect karta hai.
+    | Modal force open hoga, relevant step khulega aur complete error list
+    | popup ke top par dikhayi degi.
+    |
+    */
+
+    if (
+        Array.isArray(serverValidationErrors)
+        && serverValidationErrors.length > 0
+    ) {
+        registrationCompleted = false;
+
+        localStorage.removeItem(
+            REGISTRATION_COMPLETED_KEY
+        );
+
+        const stepOneFields = [
+            'name',
+            'phone',
+        ];
+
+        const stepTwoFields = [
+            'business_name',
+            'business_email',
+            'mobile',
+            'business_type_id',
+            'gstin',
+            'address',
+            'state',
+            'state_code',
+        ];
+
+        const hasStepOneError =
+            serverValidationFields.some(function (field) {
+                return stepOneFields.includes(field);
+            });
+
+        const hasStepTwoError =
+            serverValidationFields.some(function (field) {
+                return stepTwoFields.includes(field);
+            });
+
+        if (hasStepOneError) {
+            showStep(0);
+        } else if (hasStepTwoError) {
+            showStep(1);
+        } else {
+            showStep(2);
+        }
+
+        registrationModal.classList.add('show');
+        registrationModal.setAttribute(
+            'aria-hidden',
+            'false'
+        );
+
+        document.body.classList.add(
+            'registration-modal-open'
+        );
+
+        messageBox.innerHTML =
+            '<div class="font-black mb-2">'
+            + 'Registration complete nahi hua:'
+            + '</div>'
+            + '<ul class="list-disc pl-5 space-y-1">'
+            + serverValidationErrors
+                .map(function (error) {
+                    return '<li>'
+                        + String(error)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#039;')
+                        + '</li>';
+                })
+                .join('')
+            + '</ul>';
+
+        messageBox.className =
+            'registration-message show error';
+
+        setButtonLoading(
+            submitBtn,
+            false
+        );
+
+        registrationModal
+            .querySelector(
+                '.registration-modal-dialog'
+            )
+            ?.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+            });
     }
 });
 </script>

@@ -120,32 +120,46 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium mb-1">
-                Business Type <span class="text-red-600">*</span>
+            <label
+                for="business_type_id"
+                class="block text-sm font-medium mb-1"
+            >
+                Business Type
+                <span class="text-red-600">*</span>
             </label>
 
             <select
-                name="type"
+                id="business_type_id"
+                name="business_type_id"
                 required
-                class="mt-1 w-full border rounded px-3 py-2
-                bg-gray-300 dark:bg-[#242833]
-                text-gray-700 dark:text-gray-300 border-gray-600
-                focus:border-blue-500 focus:ring-blue-500"
+                class="mt-1 w-full rounded border border-gray-600
+                    bg-gray-300 px-3 py-2 text-gray-700
+                    focus:border-blue-500 focus:ring-blue-500
+                    dark:bg-[#242833] dark:text-gray-300"
             >
-                <option value="">-- Select Business Type --</option>
+                <option value="">
+                    -- Select Business Type --
+                </option>
 
                 @foreach($businessTypes as $businessType)
                     <option
                         value="{{ $businessType->id }}"
-                        {{ (string) old('type', $business?->type ?? '') === (string) $businessType->id ? 'selected' : '' }}
+                        @selected(
+                            (string) old(
+                                'business_type_id',
+                                $business->business_type_id ?? ''
+                            ) === (string) $businessType->id
+                        )
                     >
                         {{ $businessType->name }}
                     </option>
                 @endforeach
             </select>
 
-            @error('type')
-                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+            @error('business_type_id')
+                <p class="mt-1 text-xs text-red-600">
+                    {{ $message }}
+                </p>
             @enderror
         </div>
 

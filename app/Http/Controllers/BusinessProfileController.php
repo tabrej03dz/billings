@@ -49,6 +49,7 @@ public function update(Request $request)
 {
     $business = $this->resolveBusiness($request);
 
+
     $validated = $request->validate(
         [
             'name' => [

@@ -108,6 +108,8 @@ class AdRegistrationController extends Controller
                 'digits:10',
                 'regex:/^[6-9][0-9]{9}$/',
             ],
+            'business_skipped' => ['nullable', 'boolean'],
+            'billing_skipped' => ['nullable', 'boolean'],
 
             'business_name' => [
                 'nullable',
@@ -228,165 +230,72 @@ class AdRegistrationController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function complete(
-        Request $request
-    ): RedirectResponse {
-        $businessSkipped = $request->boolean(
-            'business_skipped'
-        );
-
-        $billingSkipped = $request->boolean(
-            'billing_skipped'
-        );
-
+    public function complete(Request $request): RedirectResponse
+    {
         /*
-        |--------------------------------------------------------------------------
-        | Validation
-        |--------------------------------------------------------------------------
-        */
+         * Business aur billing details hamesha optional hain.
+         * Skip hone par incomplete values ko validation se pehle clear/default
+         * kar diya jayega.
+         */
+        $businessSkipped = $request->boolean('business_skipped');
+        $billingSkipped = $request->boolean('billing_skipped');
+
+        if ($businessSkipped) {
+            $request->merge([
+                'business_name' => null,
+                'business_email' => null,
+                'business_type_id' => null,
+                'gstin' => null,
+                'address' => null,
+                'state' => null,
+                'state_code' => null,
+            ]);
+        }
+
+        if ($billingSkipped) {
+            $request->merge([
+                'gst_enabled' => 0,
+                'invoice_base_prefix' => 'RV/SL',
+                'rounding_mode' => 'nearest',
+                'rounding_step' => 1.00,
+            ]);
+        }
 
         $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
+            'name' => ['required', 'string', 'max:255'],
             'phone' => [
                 'required',
                 'digits:10',
                 'regex:/^[6-9][0-9]{9}$/',
-                'unique:users,phone',
             ],
-
-            'business_skipped' => [
-                'nullable',
-                'boolean',
-            ],
-
-            'billing_skipped' => [
-                'nullable',
-                'boolean',
-            ],
-
-            'business_name' => [
-                'nullable',
-                'required_unless:business_skipped,1',
-                'string',
-                'max:255',
-            ],
-
-            'business_email' => [
-                'nullable',
-                'email',
-                'max:255',
-            ],
-
-            'mobile' => [
-                'nullable',
-                'required_unless:business_skipped,1',
-                'digits:10',
-            ],
-
+            'business_name' => ['nullable', 'string', 'max:255'],
+            'business_email' => ['nullable', 'email', 'max:255'],
+            'mobile' => ['nullable', 'digits:10'],
             'gstin' => [
                 'nullable',
                 'string',
                 'max:15',
                 Rule::unique('businesses', 'gstin'),
             ],
-
             'business_type_id' => [
                 'nullable',
-                'required_unless:business_skipped,1',
                 'exists:business_types,id',
             ],
-
-            'address' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-
-            'state' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'state_code' => [
-                'nullable',
-                'string',
-                'max:10',
-            ],
-
+            'address' => ['nullable', 'string', 'max:1000'],
+            'state' => ['nullable', 'string', 'max:255'],
+            'state_code' => ['nullable', 'string', 'max:10'],
             'gst_enabled' => [
                 'nullable',
-                'required_unless:billing_skipped,1',
                 Rule::in(['0', '1', 0, 1]),
             ],
-
-            'invoice_base_prefix' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
+            'invoice_base_prefix' => ['nullable', 'string', 'max:100'],
             'rounding_mode' => [
                 'nullable',
-                'required_unless:billing_skipped,1',
-                Rule::in([
-                    'none',
-                    'nearest',
-                    'up',
-                    'down',
-                ]),
+                Rule::in(['none', 'nearest', 'up', 'down']),
             ],
-
-            'rounding_step' => [
-                'nullable',
-                'required_unless:billing_skipped,1',
-                'numeric',
-                'min:0',
-            ],
-
-            'plan_id' => [
-                'nullable',
-                'exists:plans,id',
-            ],
-        ], [
-            'name.required' =>
-                'Full name required hai.',
-
-            'phone.required' =>
-                'Mobile number required hai.',
-
-            'phone.unique' =>
-                'Ye mobile number already registered hai.',
-
-            'business_name.required_unless' =>
-                'Business details skip nahi kar rahe hain to business name required hai.',
-
-            'mobile.required_unless' =>
-                'Business details skip nahi kar rahe hain to business mobile required hai.',
-
-            'business_type_id.required_unless' =>
-                'Business details skip nahi kar rahe hain to business type required hai.',
-
-            'gst_enabled.required_unless' =>
-                'Billing settings skip nahi kar rahe hain to GST setting required hai.',
-
-            'rounding_mode.required_unless' =>
-                'Billing settings skip nahi kar rahe hain to rounding mode required hai.',
-
-            'rounding_step.required_unless' =>
-                'Billing settings skip nahi kar rahe hain to rounding value required hai.',
+            'rounding_step' => ['nullable', 'numeric', 'min:0'],
+            'plan_id' => ['nullable', 'exists:plans,id'],
         ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Verify OTP session
-        |--------------------------------------------------------------------------
-        */
 
         $verifiedPhone = preg_replace(
             '/\D/',
@@ -407,8 +316,7 @@ class AdRegistrationController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'phone' =>
-                        'Pehle mobile number OTP se verify kijiye.',
+                    'phone' => 'Pehle mobile number OTP se verify kijiye.',
                 ]);
         }
 
@@ -418,278 +326,182 @@ class AdRegistrationController extends Controller
             $name = trim($validated['name']);
 
             /*
-            |--------------------------------------------------------------------------
-            | Create user
-            |--------------------------------------------------------------------------
-            */
+             * OTP verify method ne user pehle create kar diya ho to wahi user
+             * update hoga. Duplicate phone ke karan registration nahi rukega.
+             */
+            $user = User::query()
+                ->where('phone', $submittedPhone)
+                ->first();
 
-            $user = User::create([
-                'name' => $name,
+            if (!$user) {
+                $user = new User();
+                $user->phone = $submittedPhone;
+                $user->email = $submittedPhone . '@noemail.local';
+                $user->password = Hash::make(Str::random(40));
+            }
 
-                'email' =>
-                    $submittedPhone . '@noemail.local',
+            $user->name = $name;
 
-                'phone' => $submittedPhone,
+            if (empty($user->email)) {
+                $user->email = $submittedPhone . '@noemail.local';
+            }
 
-                'password' => Hash::make(
-                    Str::random(40)
-                ),
+            if (empty($user->password)) {
+                $user->password = Hash::make(Str::random(40));
+            }
 
-                'phone_verified_at' => now(),
-            ]);
+            if (empty($user->phone_verified_at)) {
+                $user->phone_verified_at = now();
+            }
+
+            $user->save();
 
             /*
-            |--------------------------------------------------------------------------
-            | Resolve business type
-            |--------------------------------------------------------------------------
-            */
+             * Business type optional hai. Pehla available type default hoga.
+             */
+            $defaultBusinessTypeId = BusinessType::query()
+                ->orderBy('id')
+                ->value('id');
 
-            $defaultBusinessTypeId =
-                BusinessType::query()
-                    ->orderBy('id')
-                    ->value('id');
-
-            $businessTypeId = $businessSkipped
-                ? $defaultBusinessTypeId
-                : ($validated['business_type_id'] ?? null);
+            $businessTypeId =
+                $validated['business_type_id']
+                ?? $defaultBusinessTypeId;
 
             if (!$businessTypeId) {
                 throw new \RuntimeException(
-                    'Koi business type available nahi hai. Admin panel se ek business type create kijiye.'
+                    'Admin panel se kam se kam ek business type create kijiye.'
                 );
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | Business data
-            |--------------------------------------------------------------------------
-            */
+             * Business name/details blank hon tab bhi default business banega.
+             */
+            $businessName = filled($validated['business_name'] ?? null)
+                ? trim($validated['business_name'])
+                : $name . "'s Business";
 
-            if ($businessSkipped) {
-                $businessName =
-                    $name . "'s Business";
+            $businessEmail = filled($validated['business_email'] ?? null)
+                ? strtolower(trim($validated['business_email']))
+                : null;
 
-                $businessEmail = null;
-                $businessGstin = null;
-                $businessAddress = null;
-                $businessState = null;
-                $businessStateCode = null;
-            } else {
-                $businessName = trim(
-                    (string) $validated['business_name']
-                );
+            $businessGstin = filled($validated['gstin'] ?? null)
+                ? strtoupper(trim($validated['gstin']))
+                : null;
 
-                $businessEmail = filled(
-                    $validated['business_email'] ?? null
-                )
-                    ? strtolower(
-                        trim($validated['business_email'])
-                    )
-                    : null;
+            $businessAddress = filled($validated['address'] ?? null)
+                ? trim($validated['address'])
+                : null;
 
-                $businessGstin = filled(
-                    $validated['gstin'] ?? null
-                )
-                    ? strtoupper(
-                        trim($validated['gstin'])
-                    )
-                    : null;
+            $businessState = filled($validated['state'] ?? null)
+                ? trim($validated['state'])
+                : null;
 
-                $businessAddress = filled(
-                    $validated['address'] ?? null
-                )
-                    ? trim($validated['address'])
-                    : null;
+            $businessStateCode = filled($validated['state_code'] ?? null)
+                ? trim($validated['state_code'])
+                : null;
 
-                $businessState = filled(
-                    $validated['state'] ?? null
-                )
-                    ? trim($validated['state'])
-                    : null;
+            $gstEnabled = (int) ($validated['gst_enabled'] ?? 0);
 
-                $businessStateCode = filled(
-                    $validated['state_code'] ?? null
-                )
-                    ? trim($validated['state_code'])
-                    : null;
+            $invoicePrefix = filled(
+                $validated['invoice_base_prefix'] ?? null
+            )
+                ? strtoupper(trim($validated['invoice_base_prefix']))
+                : 'RV/SL';
+
+            $roundingMode =
+                $validated['rounding_mode'] ?? 'nearest';
+
+            $roundingStep =
+                (float) ($validated['rounding_step'] ?? 1.00);
+
+            /*
+             * User ke paas pehle se business ho to duplicate create na karein.
+             */
+            $existingBusinessId = DB::table('business_user')
+                ->where('user_id', $user->id)
+                ->value('business_id');
+
+            $business = $existingBusinessId
+                ? Business::find($existingBusinessId)
+                : null;
+
+            if (!$business) {
+                $baseSlug = Str::slug($businessName);
+
+                if ($baseSlug === '') {
+                    $baseSlug = 'business-' . $submittedPhone;
+                }
+
+                $slug = $baseSlug;
+                $suffix = 1;
+
+                while (
+                    Business::query()
+                        ->where('slug', $slug)
+                        ->exists()
+                ) {
+                    $slug = $baseSlug . '-' . $suffix;
+                    $suffix++;
+                }
+
+                $business = Business::create([
+                    'name' => $businessName,
+                    'slug' => $slug,
+                    'email' => $businessEmail,
+                    'mobile' => $submittedPhone,
+                    'gstin' => $businessGstin,
+                    'gst_enabled' => $gstEnabled,
+                    'address' => $businessAddress,
+                    'state' => $businessState,
+                    'state_code' => $businessStateCode,
+                    'business_type_id' => $businessTypeId,
+                    'invoice_base_prefix' => $invoicePrefix,
+                    'rounding_mode' => $roundingMode,
+                    'rounding_step' => $roundingStep,
+                ]);
+
+                DB::table('business_user')->insert([
+                    'business_id' => $business->id,
+                    'user_id' => $user->id,
+                    'role' => 'owner',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Billing data
-            |--------------------------------------------------------------------------
-            */
-
-            if ($billingSkipped) {
-                $gstEnabled = 0;
-                $invoicePrefix = 'RV/SL';
-                $roundingMode = 'nearest';
-                $roundingStep = 1.00;
-            } else {
-                $gstEnabled = (int) (
-                    $validated['gst_enabled'] ?? 0
-                );
-
-                $invoicePrefix = filled(
-                    $validated['invoice_base_prefix']
-                        ?? null
-                )
-                    ? trim(
-                        $validated['invoice_base_prefix']
-                    )
-                    : 'RV/SL';
-
-                $roundingMode =
-                    $validated['rounding_mode']
-                    ?? 'nearest';
-
-                $roundingStep = (float) (
-                    $validated['rounding_step']
-                    ?? 1.00
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Unique business slug
-            |--------------------------------------------------------------------------
-            */
-
-            $baseSlug = Str::slug($businessName);
-
-            if ($baseSlug === '') {
-                $baseSlug =
-                    'business-' . $submittedPhone;
-            }
-
-            $slug = $baseSlug;
-            $suffix = 1;
-
-            while (
-                Business::query()
-                    ->where('slug', $slug)
-                    ->exists()
-            ) {
-                $slug =
-                    $baseSlug . '-' . $suffix;
-
-                $suffix++;
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | Create business
-            |--------------------------------------------------------------------------
-            */
-
-            $business = Business::create([
-                'name' => $businessName,
-                'slug' => $slug,
-
-                'email' => $businessEmail,
-                'mobile' => $submittedPhone,
-
-                'gstin' => $businessGstin,
-                'gst_enabled' => $gstEnabled,
-
-                'address' => $businessAddress,
-                'state' => $businessState,
-                'state_code' => $businessStateCode,
-
-                'business_type_id' =>
-                    $businessTypeId,
-
-                'invoice_base_prefix' =>
-                    $invoicePrefix,
-
-                'rounding_mode' =>
-                    $roundingMode,
-
-                'rounding_step' =>
-                    $roundingStep,
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Attach owner to business
-            |--------------------------------------------------------------------------
-            */
-
-            DB::table('business_user')->insert([
-                'business_id' => $business->id,
-                'user_id' => $user->id,
-                'role' => 'owner',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            $user->update([
-                'current_business_id' =>
-                    $business->id,
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Owner role
-            |--------------------------------------------------------------------------
-            */
+            $user->current_business_id = $business->id;
+            $user->save();
 
             if (
                 method_exists($user, 'assignRole') &&
                 Role::query()
                     ->where('name', 'owner')
                     ->where('guard_name', 'web')
-                    ->exists()
+                    ->exists() &&
+                !$user->hasRole('owner')
             ) {
                 $user->assignRole('owner');
             }
 
             DB::commit();
 
-            /*
-            |--------------------------------------------------------------------------
-            | Login
-            |--------------------------------------------------------------------------
-            */
-
             event(new Registered($user));
 
             Auth::login($user, true);
-
             $request->session()->regenerate();
 
             session([
-                'active_business_id' =>
-                    $business->id,
-
-                'active_business_name' =>
-                    $business->name,
+                'active_business_id' => $business->id,
+                'active_business_name' => $business->name,
             ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Keep clicked pricing plan only for highlighting
-            |--------------------------------------------------------------------------
-            |
-            | Plan abhi activate nahi hoga.
-            | User choose-plan page par plan confirm karega.
-            |
-            */
 
             if (!empty($validated['plan_id'])) {
                 session([
-                    'suggested_plan_id' =>
-                        (int) $validated['plan_id'],
+                    'suggested_plan_id' => (int) $validated['plan_id'],
                 ]);
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Cleanup
-            |--------------------------------------------------------------------------
-            */
-
-            session()->forget([
+            $request->session()->forget([
                 'register_phone_verified',
                 'register_phone_otp',
                 'register_phone_otp_expires_at',
@@ -698,11 +510,8 @@ class AdRegistrationController extends Controller
             ]);
 
             /*
-            |--------------------------------------------------------------------------
-            | Registration → Choose Plan
-            |--------------------------------------------------------------------------
-            */
-
+             * Registration ke baad har haal me choose plan.
+             */
             return redirect()
                 ->route('plan.choose')
                 ->with(
@@ -718,10 +527,9 @@ class AdRegistrationController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'registration' =>
-                        app()->environment('local')
-                            ? $exception->getMessage()
-                            : 'Registration complete nahi ho paya. Dobara try kijiye.',
+                    'registration' => app()->environment('local')
+                        ? $exception->getMessage()
+                        : 'Registration complete nahi ho paya. Dobara try kijiye.',
                 ]);
         }
     }
