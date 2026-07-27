@@ -96,7 +96,7 @@ class BusinessProfileController extends Controller
                 /*
                  * Bilkul BusinessController wale pattern par.
                  */
-                'business_type_id' => [
+                'type' => [
                     'nullable',
                     'integer',
                     Rule::exists('business_types', 'id'),
@@ -220,7 +220,7 @@ class BusinessProfileController extends Controller
                 ],
             ],
             [
-                'business_type_id.exists' =>
+                'type.exists' =>
                     'The selected business type is invalid.',
 
                 'pdf_template_id.exists' =>
@@ -259,9 +259,9 @@ class BusinessProfileController extends Controller
         |
         */
 
-        $data['business_type_id'] =
-            $request->filled('business_type_id')
-                ? (int) $request->input('business_type_id')
+        $data['type'] =
+            $request->filled('type')
+                ? (int) $request->input('type')
                 : null;
 
         /*

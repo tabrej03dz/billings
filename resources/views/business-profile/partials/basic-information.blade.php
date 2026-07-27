@@ -81,7 +81,7 @@
         {{-- Business Type --}}
         <div class="md:col-span-1">
             <label
-                for="business_type_id"
+                for="type"
                 class="mb-2 block text-sm font-bold text-zinc-700 dark:text-zinc-200"
             >
                 Business Type
@@ -89,11 +89,11 @@
             </label>
 
             <select
-                id="business_type_id"
-                name="business_type_id"
+                id="type"
+                name="type"
                 required
                 class="w-full rounded-xl border px-4 py-3 text-sm outline-none transition
-                       {{ $errors->has('business_type_id')
+                       {{ $errors->has('type')
                             ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:bg-red-950/20'
                             : 'border-zinc-300 bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:ring-indigo-950'
                        }}
@@ -108,8 +108,8 @@
                         value="{{ $businessType->id }}"
                         @selected(
                             (string) old(
-                                'business_type_id',
-                                $business->business_type_id
+                                'type',
+                                $business->type
                             ) === (string) $businessType->id
                         )
                     >
@@ -118,7 +118,7 @@
                 @endforeach
             </select>
 
-            @error('business_type_id')
+            @error('type')
                 <p class="mt-2 text-sm font-medium text-red-600">
                     {{ $message }}
                 </p>

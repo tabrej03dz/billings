@@ -1,83 +1,82 @@
 <section
     id="branding"
-    class="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm
+    class="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm
            dark:border-zinc-800 dark:bg-zinc-900"
 >
+    {{-- Compact Header --}}
     <div
-        class="border-b border-zinc-200 bg-zinc-50 px-6 py-5
+        class="flex items-center gap-2.5 border-b border-zinc-200
+               bg-zinc-50 px-3 py-2.5
                dark:border-zinc-800 dark:bg-zinc-900"
     >
-        <div class="flex items-start gap-4">
-            <div
-                class="flex h-12 w-12 shrink-0 items-center justify-center
-                       rounded-2xl bg-violet-100 text-violet-600
-                       dark:bg-violet-950/60 dark:text-violet-300"
+        <div
+            class="flex h-8 w-8 shrink-0 items-center justify-center
+                   rounded-lg bg-violet-100 text-violet-600
+                   dark:bg-violet-950/60 dark:text-violet-300"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
             >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4v2m0-6V4"
-                    />
-                </svg>
-            </div>
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4v2m0-6V4"
+                />
+            </svg>
+        </div>
 
-            <div>
-                <h2 class="text-xl font-black text-zinc-900 dark:text-white">
-                    Business Branding
-                </h2>
+        <div class="min-w-0">
+            <h2 class="text-sm font-black text-zinc-900 dark:text-white">
+                Business Branding
+            </h2>
 
-                <p class="mt-1 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                    Upload your business logo, signature and letterhead for
-                    professional invoices and documents.
-                </p>
-            </div>
+            <p class="truncate text-[11px] leading-4 text-zinc-500 dark:text-zinc-400">
+                Add logo, signature and letterhead to invoices.
+            </p>
         </div>
     </div>
 
-    <div class="grid gap-6 p-6 lg:grid-cols-3">
+    {{-- Three compact upload cards --}}
+    <div class="grid gap-2.5 p-3 md:grid-cols-3">
 
-        {{-- Logo --}}
+        {{-- Business Logo --}}
         <div
-            class="rounded-2xl border border-zinc-200 p-5
-                   dark:border-zinc-700"
+            class="flex min-w-0 items-center gap-3 rounded-xl border
+                   border-zinc-200 bg-white p-2.5
+                   dark:border-zinc-700 dark:bg-zinc-950"
         >
-            <div class="mb-4">
-                <h3 class="font-black text-zinc-900 dark:text-white">
-                    Business Logo
-                </h3>
-
-                <p class="mt-1 text-xs leading-5 text-zinc-500">
-                    Recommended: square PNG or WebP, maximum 2 MB.
-                </p>
-            </div>
-
-            <div
-                class="mb-4 flex aspect-square max-h-52 items-center justify-center
-                       overflow-hidden rounded-2xl border-2 border-dashed
-                       border-zinc-300 bg-zinc-50
-                       dark:border-zinc-700 dark:bg-zinc-950"
+            <button
+                type="button"
+                data-file-trigger="logo"
+                class="relative flex h-16 w-16 shrink-0 cursor-pointer
+                       items-center justify-center overflow-hidden rounded-lg
+                       border border-dashed border-zinc-300 bg-zinc-50
+                       transition hover:border-violet-400 hover:bg-violet-50
+                       dark:border-zinc-700 dark:bg-zinc-900
+                       dark:hover:bg-zinc-800"
+                aria-label="Choose business logo"
             >
                 <img
                     id="logoPreview"
                     src="{{ $business->logo ? Storage::url($business->logo) : '' }}"
                     alt="Business logo preview"
-                    class="{{ $business->logo ? '' : 'hidden' }} h-full w-full object-contain p-4"
+                    class="{{ $business->logo ? '' : 'hidden' }}
+                           h-full w-full object-contain p-1"
                 >
 
-                <div
+                <span
                     id="logoPlaceholder"
-                    class="{{ $business->logo ? 'hidden' : '' }} px-5 text-center"
+                    class="{{ $business->logo ? 'hidden' : 'flex' }}
+                           h-full w-full flex-col items-center justify-center
+                           text-zinc-400"
                 >
                     <svg
-                        class="mx-auto h-10 w-10 text-zinc-400"
+                        class="h-5 w-5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -90,78 +89,89 @@
                         />
                     </svg>
 
-                    <p class="mt-2 text-sm font-semibold text-zinc-500">
-                        No logo selected
-                    </p>
-                </div>
-            </div>
+                    <span class="mt-1 text-[9px] font-bold">Preview</span>
+                </span>
+            </button>
 
-            <label
-                for="logo"
-                class="flex cursor-pointer items-center justify-center gap-2
-                       rounded-xl border border-zinc-300 bg-white px-4 py-3
-                       text-sm font-bold text-zinc-700 transition
-                       hover:border-indigo-400 hover:bg-indigo-50
-                       dark:border-zinc-700 dark:bg-zinc-950
-                       dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-                Choose Logo
-            </label>
-
-            <input
-                id="logo"
-                type="file"
-                name="logo"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                class="hidden"
-            >
-
-            <p
-                id="logoFileName"
-                class="mt-2 truncate text-center text-xs text-zinc-500"
-            ></p>
-
-            @error('logo')
-                <p class="mt-2 text-sm font-medium text-red-600">
-                    {{ $message }}
-                </p>
-            @enderror
-        </div>
-
-        {{-- Signature --}}
-        <div
-            class="rounded-2xl border border-zinc-200 p-5
-                   dark:border-zinc-700"
-        >
-            <div class="mb-4">
-                <h3 class="font-black text-zinc-900 dark:text-white">
-                    Authorized Signature
+            <div class="min-w-0 flex-1">
+                <h3 class="truncate text-xs font-black text-zinc-900 dark:text-white">
+                    Business Logo
                 </h3>
 
-                <p class="mt-1 text-xs leading-5 text-zinc-500">
-                    Upload a clean signature image with a transparent background.
+                <p class="mt-0.5 truncate text-[10px] text-zinc-500">
+                    PNG, JPG or WebP · Max 2 MB
                 </p>
-            </div>
 
-            <div
-                class="mb-4 flex aspect-square max-h-52 items-center justify-center
-                       overflow-hidden rounded-2xl border-2 border-dashed
-                       border-zinc-300 bg-zinc-50
-                       dark:border-zinc-700 dark:bg-zinc-950"
+                <label
+                    for="logo"
+                    class="mt-2 inline-flex cursor-pointer items-center gap-1.5
+                           rounded-md bg-violet-600 px-2.5 py-1.5
+                           text-[10px] font-bold text-white transition
+                           hover:bg-violet-700"
+                >
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 4v16m8-8H4" />
+                    </svg>
+                    Choose
+                </label>
+
+                <input
+                    id="logo"
+                    type="file"
+                    name="logo"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                >
+
+                <p
+                    id="logoFileName"
+                    class="mt-1 max-w-full truncate text-[9px] text-zinc-500"
+                >
+                    {{ $business->logo ? basename($business->logo) : '' }}
+                </p>
+
+                @error('logo')
+                    <p class="mt-1 text-[10px] font-medium text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+        </div>
+
+        {{-- Authorized Signature --}}
+        <div
+            class="flex min-w-0 items-center gap-3 rounded-xl border
+                   border-zinc-200 bg-white p-2.5
+                   dark:border-zinc-700 dark:bg-zinc-950"
+        >
+            <button
+                type="button"
+                data-file-trigger="signature"
+                class="relative flex h-16 w-16 shrink-0 cursor-pointer
+                       items-center justify-center overflow-hidden rounded-lg
+                       border border-dashed border-zinc-300 bg-zinc-50
+                       transition hover:border-violet-400 hover:bg-violet-50
+                       dark:border-zinc-700 dark:bg-zinc-900
+                       dark:hover:bg-zinc-800"
+                aria-label="Choose authorized signature"
             >
                 <img
                     id="signaturePreview"
                     src="{{ $business->signature ? Storage::url($business->signature) : '' }}"
                     alt="Signature preview"
-                    class="{{ $business->signature ? '' : 'hidden' }} h-full w-full object-contain p-4"
+                    class="{{ $business->signature ? '' : 'hidden' }}
+                           h-full w-full object-contain p-1"
                 >
 
-                <div
+                <span
                     id="signaturePlaceholder"
-                    class="{{ $business->signature ? 'hidden' : '' }} px-5 text-center"
+                    class="{{ $business->signature ? 'hidden' : 'flex' }}
+                           h-full w-full flex-col items-center justify-center
+                           text-zinc-400"
                 >
                     <svg
-                        class="mx-auto h-10 w-10 text-zinc-400"
+                        class="h-5 w-5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -174,78 +184,89 @@
                         />
                     </svg>
 
-                    <p class="mt-2 text-sm font-semibold text-zinc-500">
-                        No signature selected
-                    </p>
-                </div>
-            </div>
+                    <span class="mt-1 text-[9px] font-bold">Preview</span>
+                </span>
+            </button>
 
-            <label
-                for="signature"
-                class="flex cursor-pointer items-center justify-center gap-2
-                       rounded-xl border border-zinc-300 bg-white px-4 py-3
-                       text-sm font-bold text-zinc-700 transition
-                       hover:border-indigo-400 hover:bg-indigo-50
-                       dark:border-zinc-700 dark:bg-zinc-950
-                       dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-                Choose Signature
-            </label>
-
-            <input
-                id="signature"
-                type="file"
-                name="signature"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                class="hidden"
-            >
-
-            <p
-                id="signatureFileName"
-                class="mt-2 truncate text-center text-xs text-zinc-500"
-            ></p>
-
-            @error('signature')
-                <p class="mt-2 text-sm font-medium text-red-600">
-                    {{ $message }}
-                </p>
-            @enderror
-        </div>
-
-        {{-- Letter Head --}}
-        <div
-            class="rounded-2xl border border-zinc-200 p-5
-                   dark:border-zinc-700"
-        >
-            <div class="mb-4">
-                <h3 class="font-black text-zinc-900 dark:text-white">
-                    Letterhead
+            <div class="min-w-0 flex-1">
+                <h3 class="truncate text-xs font-black text-zinc-900 dark:text-white">
+                    Signature
                 </h3>
 
-                <p class="mt-1 text-xs leading-5 text-zinc-500">
-                    Upload an A4-sized letterhead image, maximum 4 MB.
+                <p class="mt-0.5 truncate text-[10px] text-zinc-500">
+                    Transparent image preferred
                 </p>
-            </div>
 
-            <div
-                class="mb-4 flex aspect-square max-h-52 items-center justify-center
-                       overflow-hidden rounded-2xl border-2 border-dashed
-                       border-zinc-300 bg-zinc-50
-                       dark:border-zinc-700 dark:bg-zinc-950"
+                <label
+                    for="signature"
+                    class="mt-2 inline-flex cursor-pointer items-center gap-1.5
+                           rounded-md bg-violet-600 px-2.5 py-1.5
+                           text-[10px] font-bold text-white transition
+                           hover:bg-violet-700"
+                >
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 4v16m8-8H4" />
+                    </svg>
+                    Choose
+                </label>
+
+                <input
+                    id="signature"
+                    type="file"
+                    name="signature"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                >
+
+                <p
+                    id="signatureFileName"
+                    class="mt-1 max-w-full truncate text-[9px] text-zinc-500"
+                >
+                    {{ $business->signature ? basename($business->signature) : '' }}
+                </p>
+
+                @error('signature')
+                    <p class="mt-1 text-[10px] font-medium text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+        </div>
+
+        {{-- Letterhead --}}
+        <div
+            class="flex min-w-0 items-center gap-3 rounded-xl border
+                   border-zinc-200 bg-white p-2.5
+                   dark:border-zinc-700 dark:bg-zinc-950"
+        >
+            <button
+                type="button"
+                data-file-trigger="letter_head"
+                class="relative flex h-16 w-16 shrink-0 cursor-pointer
+                       items-center justify-center overflow-hidden rounded-lg
+                       border border-dashed border-zinc-300 bg-zinc-50
+                       transition hover:border-violet-400 hover:bg-violet-50
+                       dark:border-zinc-700 dark:bg-zinc-900
+                       dark:hover:bg-zinc-800"
+                aria-label="Choose letterhead"
             >
                 <img
                     id="letterHeadPreview"
                     src="{{ $business->letter_head ? Storage::url($business->letter_head) : '' }}"
                     alt="Letterhead preview"
-                    class="{{ $business->letter_head ? '' : 'hidden' }} h-full w-full object-contain p-3"
+                    class="{{ $business->letter_head ? '' : 'hidden' }}
+                           h-full w-full object-contain p-1"
                 >
 
-                <div
+                <span
                     id="letterHeadPlaceholder"
-                    class="{{ $business->letter_head ? 'hidden' : '' }} px-5 text-center"
+                    class="{{ $business->letter_head ? 'hidden' : 'flex' }}
+                           h-full w-full flex-col items-center justify-center
+                           text-zinc-400"
                 >
                     <svg
-                        class="mx-auto h-10 w-10 text-zinc-400"
+                        class="h-5 w-5"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -258,63 +279,112 @@
                         />
                     </svg>
 
-                    <p class="mt-2 text-sm font-semibold text-zinc-500">
-                        No letterhead selected
-                    </p>
-                </div>
-            </div>
+                    <span class="mt-1 text-[9px] font-bold">Preview</span>
+                </span>
+            </button>
 
-            <label
-                for="letter_head"
-                class="flex cursor-pointer items-center justify-center gap-2
-                       rounded-xl border border-zinc-300 bg-white px-4 py-3
-                       text-sm font-bold text-zinc-700 transition
-                       hover:border-indigo-400 hover:bg-indigo-50
-                       dark:border-zinc-700 dark:bg-zinc-950
-                       dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-                Choose Letterhead
-            </label>
+            <div class="min-w-0 flex-1">
+                <h3 class="truncate text-xs font-black text-zinc-900 dark:text-white">
+                    Letterhead
+                </h3>
 
-            <input
-                id="letter_head"
-                type="file"
-                name="letter_head"
-                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
-                class="hidden"
-            >
-
-            <p
-                id="letterHeadFileName"
-                class="mt-2 truncate text-center text-xs text-zinc-500"
-            ></p>
-
-            @error('letter_head')
-                <p class="mt-2 text-sm font-medium text-red-600">
-                    {{ $message }}
+                <p class="mt-0.5 truncate text-[10px] text-zinc-500">
+                    A4 image · Max 4 MB
                 </p>
-            @enderror
+
+                <label
+                    for="letter_head"
+                    class="mt-2 inline-flex cursor-pointer items-center gap-1.5
+                           rounded-md bg-violet-600 px-2.5 py-1.5
+                           text-[10px] font-bold text-white transition
+                           hover:bg-violet-700"
+                >
+                    <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 4v16m8-8H4" />
+                    </svg>
+                    Choose
+                </label>
+
+                <input
+                    id="letter_head"
+                    type="file"
+                    name="letter_head"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    class="hidden"
+                >
+
+                <p
+                    id="letterHeadFileName"
+                    class="mt-1 max-w-full truncate text-[9px] text-zinc-500"
+                >
+                    {{ $business->letter_head ? basename($business->letter_head) : '' }}
+                </p>
+
+                @error('letter_head')
+                    <p class="mt-1 text-[10px] font-medium text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
         </div>
     </div>
 </section>
 
 @push('scripts')
-    <script>
-        (() => {
-            const setupImagePreview = ({
-                inputId,
-                previewId,
-                placeholderId,
-                fileNameId
-            }) => {
-                const input = document.getElementById(inputId);
-                const preview = document.getElementById(previewId);
-                const placeholder = document.getElementById(placeholderId);
-                const fileName = document.getElementById(fileNameId);
+<script>
+    (() => {
+        const initialiseBrandingUploads = () => {
+            const brandingSection = document.getElementById('branding');
+
+            if (!brandingSection) {
+                return;
+            }
+
+            const fields = [
+                {
+                    inputId: 'logo',
+                    previewId: 'logoPreview',
+                    placeholderId: 'logoPlaceholder',
+                    fileNameId: 'logoFileName',
+                    maxSize: 2 * 1024 * 1024,
+                    maxSizeText: '2 MB'
+                },
+                {
+                    inputId: 'signature',
+                    previewId: 'signaturePreview',
+                    placeholderId: 'signaturePlaceholder',
+                    fileNameId: 'signatureFileName',
+                    maxSize: 2 * 1024 * 1024,
+                    maxSizeText: '2 MB'
+                },
+                {
+                    inputId: 'letter_head',
+                    previewId: 'letterHeadPreview',
+                    placeholderId: 'letterHeadPlaceholder',
+                    fileNameId: 'letterHeadFileName',
+                    maxSize: 4 * 1024 * 1024,
+                    maxSizeText: '4 MB'
+                }
+            ];
+
+            fields.forEach(field => {
+                const input = document.getElementById(field.inputId);
+                const preview = document.getElementById(field.previewId);
+                const placeholder = document.getElementById(
+                    field.placeholderId
+                );
+                const fileName = document.getElementById(field.fileNameId);
 
                 if (!input || !preview) {
                     return;
                 }
+
+                if (input.dataset.previewInitialised === 'true') {
+                    return;
+                }
+
+                input.dataset.previewInitialised = 'true';
 
                 input.addEventListener('change', () => {
                     const file = input.files?.[0];
@@ -325,48 +395,64 @@
 
                     if (!file.type.startsWith('image/')) {
                         input.value = '';
-
                         window.alert('Please select a valid image file.');
-
                         return;
                     }
 
-                    const reader = new FileReader();
+                    if (file.size > field.maxSize) {
+                        input.value = '';
+                        window.alert(
+                            `Image size must not exceed ${field.maxSizeText}.`
+                        );
+                        return;
+                    }
 
-                    reader.onload = event => {
-                        preview.src = event.target.result;
-                        preview.classList.remove('hidden');
-                        placeholder?.classList.add('hidden');
+                    const objectUrl = URL.createObjectURL(file);
 
-                        if (fileName) {
-                            fileName.textContent = file.name;
-                        }
+                    preview.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
                     };
 
-                    reader.readAsDataURL(file);
+                    preview.src = objectUrl;
+                    preview.classList.remove('hidden');
+
+                    placeholder?.classList.add('hidden');
+                    placeholder?.classList.remove('flex');
+
+                    if (fileName) {
+                        fileName.textContent = file.name;
+                        fileName.title = file.name;
+                    }
                 });
-            };
-
-            setupImagePreview({
-                inputId: 'logo',
-                previewId: 'logoPreview',
-                placeholderId: 'logoPlaceholder',
-                fileNameId: 'logoFileName'
             });
 
-            setupImagePreview({
-                inputId: 'signature',
-                previewId: 'signaturePreview',
-                placeholderId: 'signaturePlaceholder',
-                fileNameId: 'signatureFileName'
-            });
+            brandingSection
+                .querySelectorAll('[data-file-trigger]')
+                .forEach(trigger => {
+                    if (trigger.dataset.triggerInitialised === 'true') {
+                        return;
+                    }
 
-            setupImagePreview({
-                inputId: 'letter_head',
-                previewId: 'letterHeadPreview',
-                placeholderId: 'letterHeadPlaceholder',
-                fileNameId: 'letterHeadFileName'
-            });
-        })();
-    </script>
+                    trigger.dataset.triggerInitialised = 'true';
+
+                    trigger.addEventListener('click', () => {
+                        const inputId = trigger.dataset.fileTrigger;
+                        document.getElementById(inputId)?.click();
+                    });
+                });
+        };
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            initialiseBrandingUploads
+        );
+
+        document.addEventListener(
+            'livewire:navigated',
+            initialiseBrandingUploads
+        );
+
+        initialiseBrandingUploads();
+    })();
+</script>
 @endpush

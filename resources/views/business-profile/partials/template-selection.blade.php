@@ -1,3 +1,43 @@
+<style>
+    /*
+     * Slider card widths are kept in plain CSS instead of dynamic Tailwind
+     * calc classes, so they work even when Tailwind has not compiled those
+     * arbitrary classes.
+     */
+    #template-selection [data-template-slider] {
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    #template-selection [data-template-slider]::-webkit-scrollbar {
+        display: none;
+    }
+
+    #template-selection .invoice-template-slide {
+        flex: 0 0 100%;
+        width: 100%;
+        max-width: 100%;
+        scroll-snap-align: start;
+    }
+
+    @media (min-width: 640px) {
+        #template-selection .invoice-template-slide {
+            flex-basis: calc((100% - 16px) / 2);
+            width: calc((100% - 16px) / 2);
+            max-width: calc((100% - 16px) / 2);
+        }
+    }
+
+    @media (min-width: 1024px) {
+        #template-selection .invoice-template-slide {
+            flex-basis: calc((100% - 32px) / 3);
+            width: calc((100% - 32px) / 3);
+            max-width: calc((100% - 32px) / 3);
+        }
+    }
+</style>
+
 <section
     id="template-selection"
     class="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm
@@ -73,7 +113,7 @@
         </div>
     </div>
 
-    <div class="p-5 sm:p-6">
+    <div class="p-3 sm:p-4">
         @if($billTemplates->isEmpty())
             {{-- Empty State --}}
             <div
@@ -111,8 +151,14 @@
                 </p>
             </div>
         @else
-            {{-- Template Grid --}}
-            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {{-- Compact Template Slider --}}
+            <div class="relative">
+                <div
+                    data-template-slider
+                    class="flex snap-x snap-mandatory gap-4 overflow-x-auto
+                           scroll-smooth pb-2 [scrollbar-width:none]
+                           [&::-webkit-scrollbar]:hidden"
+                >
                 @foreach($billTemplates as $template)
                     @php
                         $isSelected =
@@ -140,8 +186,9 @@
                     @endphp
 
                     <article
-                        class="invoice-template-card group relative flex h-full
-                               flex-col overflow-hidden rounded-3xl border-2
+                        class="invoice-template-card invoice-template-slide group relative flex h-full
+                               shrink-0 snap-start flex-col overflow-hidden
+                               rounded-2xl border
                                bg-white transition duration-300
                                dark:bg-zinc-950
                                {{ $isSelected
@@ -169,8 +216,8 @@
                         >
                             <span
                                 class="inline-flex items-center gap-1.5
-                                       rounded-full bg-indigo-600 px-3 py-1.5
-                                       text-xs font-bold text-white shadow-lg"
+                                       rounded-full bg-indigo-600 px-2.5 py-1
+                                       text-[11px] font-bold text-white shadow-lg"
                             >
                                 <svg
                                     class="h-3.5 w-3.5"
@@ -242,12 +289,12 @@
                                    dark:border-zinc-800 dark:bg-zinc-900"
                         >
                             <div
-                                class="mx-auto flex h-[360px] max-w-[290px]
-                                       items-center justify-center p-4"
+                                class="mx-auto flex h-[245px] max-w-[210px]
+                                       items-center justify-center p-3"
                             >
                                 <div
                                     class="relative h-full w-full overflow-hidden
-                                           rounded-xl border border-zinc-200
+                                           rounded-lg border border-zinc-200
                                            bg-white shadow-md
                                            dark:border-zinc-700"
                                 >
@@ -365,11 +412,11 @@
                         </div>
 
                         {{-- Card Content --}}
-                        <div class="flex flex-1 flex-col p-5">
+                        <div class="flex flex-1 flex-col p-4">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0 flex-1">
                                     <h3
-                                        class="truncate text-lg font-black
+                                        class="truncate text-base font-black
                                                text-zinc-900 dark:text-white"
                                         title="{{ $template->name }}"
                                     >
@@ -437,8 +484,8 @@
                             </div>
 
                             <p
-                                class="mt-4 line-clamp-3 min-h-[72px]
-                                       text-sm leading-6 text-zinc-500
+                                class="mt-3 line-clamp-2 min-h-[40px]
+                                       text-xs leading-5 text-zinc-500
                                        dark:text-zinc-400"
                             >
                                 {{ $template->description
@@ -452,17 +499,17 @@
 
                             {{-- Card Actions --}}
                             <div
-                                class="mt-auto grid grid-cols-1 gap-2
-                                       border-t border-zinc-100 pt-5
-                                       sm:grid-cols-2 dark:border-zinc-800"
+                                class="mt-auto grid grid-cols-2 gap-2
+                                       border-t border-zinc-100 pt-3
+                                       dark:border-zinc-800"
                             >
                                 @if($preview && ($isImage || $isPdf))
                                     <button
                                         type="button"
                                         class="inline-flex items-center justify-center
-                                               gap-2 rounded-xl border
-                                               border-zinc-300 bg-white px-4 py-2.5
-                                               text-sm font-bold text-zinc-700
+                                               gap-2 rounded-lg border
+                                               border-zinc-300 bg-white px-2 py-2
+                                               text-xs font-bold text-zinc-700
                                                transition hover:border-indigo-300
                                                hover:bg-indigo-50
                                                hover:text-indigo-700
@@ -504,7 +551,7 @@
                                         disabled
                                         class="inline-flex cursor-not-allowed
                                                items-center justify-center gap-2
-                                               rounded-xl border border-zinc-200
+                                               rounded-lg border border-zinc-200
                                                bg-zinc-100 px-4 py-2.5
                                                text-sm font-bold text-zinc-400
                                                dark:border-zinc-800
@@ -517,8 +564,8 @@
                                 <label
                                     for="invoice-template-{{ $template->id }}"
                                     class="inline-flex cursor-pointer items-center
-                                           justify-center gap-2 rounded-xl px-4
-                                           py-2.5 text-sm font-bold text-white
+                                           justify-center gap-2 rounded-lg px-2
+                                           py-2 text-xs font-bold text-white
                                            transition
                                            {{ $isSelected
                                                 ? 'bg-emerald-600 hover:bg-emerald-700'
@@ -549,6 +596,47 @@
                         </div>
                     </article>
                 @endforeach
+                </div>
+
+                {{-- Bottom compact arrows --}}
+                <div class="mt-3 flex items-center justify-center gap-3">
+                    <button
+                        type="button"
+                        data-template-slider-prev
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full
+                               border border-zinc-300 bg-white text-zinc-700 shadow-sm
+                               transition hover:border-indigo-400 hover:bg-indigo-50
+                               hover:text-indigo-700 disabled:cursor-not-allowed
+                               disabled:opacity-35 dark:border-zinc-700 dark:bg-zinc-950
+                               dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        aria-label="Previous invoice template"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+
+                    <span
+                        data-template-slider-status
+                        class="min-w-[54px] text-center text-xs font-bold text-zinc-500 dark:text-zinc-400"
+                    >1 / {{ $billTemplates->count() }}</span>
+
+                    <button
+                        type="button"
+                        data-template-slider-next
+                        class="inline-flex h-8 w-8 items-center justify-center rounded-full
+                               border border-zinc-300 bg-white text-zinc-700 shadow-sm
+                               transition hover:border-indigo-400 hover:bg-indigo-50
+                               hover:text-indigo-700 disabled:cursor-not-allowed
+                               disabled:opacity-35 dark:border-zinc-700 dark:bg-zinc-950
+                               dark:text-zinc-200 dark:hover:bg-zinc-800"
+                        aria-label="Next invoice template"
+                    >
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+                </div>
             </div>
         @endif
 
@@ -606,7 +694,7 @@
 
                     <h3
                         id="invoiceTemplatePreviewTitle"
-                        class="mt-1 truncate text-lg font-black
+                        class="mt-1 truncate text-base font-black
                                text-zinc-900 dark:text-white"
                     >
                         Template Preview
@@ -726,6 +814,22 @@
                     '[data-template-card]'
                 );
 
+                const templateSlider = section.querySelector(
+                    '[data-template-slider]'
+                );
+
+                const previousButtons = section.querySelectorAll(
+                    '[data-template-slider-prev]'
+                );
+
+                const nextButtons = section.querySelectorAll(
+                    '[data-template-slider-next]'
+                );
+
+                const sliderStatus = section.querySelector(
+                    '[data-template-slider-status]'
+                );
+
                 const modal = document.getElementById(
                     'invoiceTemplatePreviewModal'
                 );
@@ -753,6 +857,152 @@
                 const previewPdf = document.getElementById(
                     'invoiceTemplatePreviewPdf'
                 );
+
+                /*
+                 * Slider navigation and arrow states.
+                 */
+                const getSliderStep = () => {
+                    const firstCard = templateSlider?.querySelector(
+                        '[data-template-card]'
+                    );
+
+                    if (!firstCard) {
+                        return templateSlider?.clientWidth || 320;
+                    }
+
+                    const sliderStyles = window.getComputedStyle(
+                        templateSlider
+                    );
+
+                    const gap = parseFloat(
+                        sliderStyles.columnGap || sliderStyles.gap || 0
+                    );
+
+                    return firstCard.getBoundingClientRect().width + gap;
+                };
+
+                const updateSliderArrows = () => {
+                    if (!templateSlider) {
+                        return;
+                    }
+
+                    const maxScrollLeft = Math.max(
+                        0,
+                        templateSlider.scrollWidth -
+                            templateSlider.clientWidth
+                    );
+
+                    const atStart = templateSlider.scrollLeft <= 2;
+                    const atEnd =
+                        templateSlider.scrollLeft >=
+                        maxScrollLeft - 2;
+
+                    previousButtons.forEach(button => {
+                        button.disabled = atStart;
+                    });
+
+                    nextButtons.forEach(button => {
+                        button.disabled = atEnd;
+                    });
+
+                    if (sliderStatus && cards.length) {
+                        const cardsPerView =
+                            window.innerWidth >= 1024
+                                ? 3
+                                : window.innerWidth >= 640
+                                    ? 2
+                                    : 1;
+
+                        const pageWidth = getSliderStep() * cardsPerView;
+                        const totalPages = Math.max(
+                            1,
+                            Math.ceil(cards.length / cardsPerView)
+                        );
+
+                        const currentPage = Math.min(
+                            totalPages - 1,
+                            Math.max(
+                                0,
+                                Math.round(templateSlider.scrollLeft / pageWidth)
+                            )
+                        );
+
+                        sliderStatus.textContent =
+                            `${currentPage + 1} / ${totalPages}`;
+                    }
+                };
+
+                const moveTemplateSlider = direction => {
+                    if (!templateSlider) {
+                        return;
+                    }
+
+                    const cardsPerView =
+                        window.innerWidth >= 1024
+                            ? 3
+                            : window.innerWidth >= 640
+                                ? 2
+                                : 1;
+
+                    templateSlider.scrollBy({
+                        left: getSliderStep() * cardsPerView * direction,
+                        behavior: 'smooth'
+                    });
+                };
+
+                previousButtons.forEach(button => {
+                    if (
+                        button.dataset.sliderListenerInitialised ===
+                        'true'
+                    ) {
+                        return;
+                    }
+
+                    button.dataset.sliderListenerInitialised = 'true';
+
+                    button.addEventListener('click', event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        moveTemplateSlider(-1);
+                    });
+                });
+
+                nextButtons.forEach(button => {
+                    if (
+                        button.dataset.sliderListenerInitialised ===
+                        'true'
+                    ) {
+                        return;
+                    }
+
+                    button.dataset.sliderListenerInitialised = 'true';
+
+                    button.addEventListener('click', event => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        moveTemplateSlider(1);
+                    });
+                });
+
+                if (
+                    templateSlider &&
+                    templateSlider.dataset.scrollListenerInitialised !==
+                        'true'
+                ) {
+                    templateSlider.dataset.scrollListenerInitialised =
+                        'true';
+
+                    templateSlider.addEventListener(
+                        'scroll',
+                        updateSliderArrows,
+                        { passive: true }
+                    );
+
+                    window.addEventListener(
+                        'resize',
+                        updateSliderArrows
+                    );
+                }
 
                 /*
                  * Template card selected state update.
@@ -1148,6 +1398,8 @@
                 }
 
                 updateTemplateCards();
+
+                requestAnimationFrame(updateSliderArrows);
             };
 
             document.addEventListener(
