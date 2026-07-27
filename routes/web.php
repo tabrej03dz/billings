@@ -36,6 +36,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\AdRegistrationController;
+use App\Http\Controllers\OnboardingRegistrationController;
+
 
 // frontend web routes:::::
 
@@ -94,6 +96,37 @@ Route::middleware('auth')->group(function () {
     )->name('plan.choosen-save');
 });
 
+
+Route::prefix('onboarding-registrations')
+    ->name('onboarding-registrations.')
+    ->controller(OnboardingRegistrationController::class)
+    ->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{onboardingRegistration}', 'show')->name('show');
+        Route::get('/{onboardingRegistration}/edit', 'edit')->name('edit');
+        Route::put('/{onboardingRegistration}', 'update')->name('update');
+        Route::delete('/{onboardingRegistration}', 'destroy')->name('destroy');
+
+        Route::patch(
+            '/{onboardingRegistration}/verify-phone',
+            'markPhoneVerified'
+        )->name('verify-phone');
+
+        Route::patch(
+            '/{onboardingRegistration}/unverify-phone',
+            'markPhoneUnverified'
+        )->name('unverify-phone');
+
+        Route::patch(
+            '/{onboardingRegistration}/complete',
+            'markCompleted'
+        )->name('complete');
+
+        Route::patch(
+            '/{onboardingRegistration}/status',
+            'changeStatus'
+        )->name('change-status');
+    });
 
 Route::get('/', function () {
     $plans = Plan::where('status', 1)

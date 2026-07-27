@@ -1060,6 +1060,65 @@
             </flux:navlist>
         @endcan
 
+        @can('show onboarding registration')
+            <flux:navlist variant="outline">
+                <flux:navlist.group class="grid">
+                    <flux:navlist.item
+                        :href="route('onboarding-registrations.index')"
+                        :current="request()->routeIs('onboarding-registrations.*')"
+                        wire:navigate
+                    >
+                        {{ __('Onboarding Registrations') }}
+
+                        <x-slot:icon>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5"
+                                viewBox="0 0 64 64"
+                            >
+                                <rect
+                                    x="6"
+                                    y="6"
+                                    width="52"
+                                    height="52"
+                                    rx="10"
+                                    fill="#F3E8FF"
+                                />
+
+                                <circle
+                                    cx="26"
+                                    cy="25"
+                                    r="8"
+                                    fill="#9333EA"
+                                />
+
+                                <path
+                                    d="M13 47c0-8 6-14 13-14s13 6 13 14"
+                                    fill="#C084FC"
+                                />
+
+                                <circle
+                                    cx="45"
+                                    cy="42"
+                                    r="10"
+                                    fill="#22C55E"
+                                />
+
+                                <path
+                                    d="M40 42l3 3 6-7"
+                                    fill="none"
+                                    stroke="#FFFFFF"
+                                    stroke-width="3"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                            </svg>
+                        </x-slot:icon>
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            </flux:navlist>
+        @endcan
+
         {{-- ============================================================= --}}
         {{-- RECYCLE BIN --}}
         {{-- ============================================================= --}}

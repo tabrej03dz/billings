@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\OnboardingRegistration;
@@ -154,7 +154,7 @@ class OnboardingRegistrationController extends Controller
         ];
 
         return view(
-            'admin.onboarding-registrations.index',
+            'onboarding-registrations.index',
             compact('registrations', 'summary')
         );
     }
@@ -166,7 +166,7 @@ class OnboardingRegistrationController extends Controller
      */
     public function create()
     {
-        return view('admin.onboarding-registrations.create');
+        return view('onboarding-registrations.create');
     }
 
     /**
@@ -179,7 +179,7 @@ class OnboardingRegistrationController extends Controller
         ]);
 
         return view(
-            'admin.onboarding-registrations.show',
+            'onboarding-registrations.show',
             compact('onboardingRegistration')
         );
     }
@@ -192,7 +192,7 @@ class OnboardingRegistrationController extends Controller
         $onboardingRegistration->load('user');
 
         return view(
-            'admin.onboarding-registrations.edit',
+            'onboarding-registrations.edit',
             compact('onboardingRegistration')
         );
     }
@@ -321,7 +321,7 @@ class OnboardingRegistrationController extends Controller
 
             return redirect()
                 ->route(
-                    'admin.onboarding-registrations.show',
+                    'onboarding-registrations.show',
                     $onboardingRegistration
                 )
                 ->with(
@@ -352,7 +352,7 @@ class OnboardingRegistrationController extends Controller
             $onboardingRegistration->delete();
 
             return redirect()
-                ->route('admin.onboarding-registrations.index')
+                ->route('onboarding-registrations.index')
                 ->with(
                     'success',
                     'Onboarding registration successfully delete ho gaya.'
