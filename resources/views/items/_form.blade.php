@@ -254,18 +254,23 @@
                     @endif
 
                     @if($showField('gold_purity'))
-                        <div>
-                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gold Purity</label>
-                            <select name="gold_purity" class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
-                                <option value="">Select Gold Purity</option>
-                                <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
-                                <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
-                                <option value="20K (833)" @selected(old('gold_purity', $item->gold_purity ?? '') == '20K (833)')>20K (833)</option>
-                                <option value="18K (750)" @selected(old('gold_purity', $item->gold_purity ?? '') == '18K (750)')>18K (750)</option>
-                                <option value="14K (585)" @selected(old('gold_purity', $item->gold_purity ?? '') == '14K (585)')>14K (585)</option>
-                            </select>
-                        </div>
-                    @endif
+                    <div>
+                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            Gold Purity
+                        </label>
+
+                        <select name="gold_purity"
+                                class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            <option value="">Select Gold Purity</option>
+                            <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
+                            <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
+                            <option value="20K (833)" @selected(old('gold_purity', $item->gold_purity ?? '') == '20K (833)')>20K (833)</option>
+                            <option value="18K (750)" @selected(old('gold_purity', $item->gold_purity ?? '') == '18K (750)')>18K (750)</option>
+                            <option value="16K (667)" @selected(old('gold_purity', $item->gold_purity ?? '') == '16K (667)')>16K (667)</option>
+                            <option value="14K (585)" @selected(old('gold_purity', $item->gold_purity ?? '') == '14K (585)')>14K (585)</option>
+                        </select>
+                    </div>
+                @endif
 
                     @if($showField('silver_weight'))
                         <div>
