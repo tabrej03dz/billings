@@ -223,7 +223,7 @@
         </div>
     </div>
 
-    <script>
+    {{-- <script>
         (() => {
             function initialiseBusinessProfileForm() {
                 const form = document.getElementById('businessProfileForm');
@@ -366,6 +366,77 @@
 
             initialiseBusinessProfileForm();
         })();
-    </script>
+    </script> --}}
+
+    <script>
+    (() => {
+        function initialiseBusinessProfileForm() {
+            const form = document.getElementById('businessProfileForm');
+            const submitButton = document.getElementById(
+                'businessProfileSubmitButton'
+            );
+            const spinner = document.getElementById(
+                'businessProfileSubmitSpinner'
+            );
+
+            if (!form || !submitButton) {
+                return;
+            }
+
+            // Sabhi HTML required validations hata do.
+            form.querySelectorAll('[required]').forEach(function (field) {
+                field.removeAttribute('required');
+            });
+
+            // Browser ki native validation completely disable.
+            form.setAttribute('novalidate', 'novalidate');
+
+            // Back navigation ke baad button reset.
+            submitButton.disabled = false;
+            submitButton.value = 'Save Business Profile';
+            submitButton.classList.remove('pl-12');
+            spinner?.classList.add('hidden');
+            form.dataset.isSubmitting = 'false';
+
+            if (form.dataset.submitInitialised === 'true') {
+                return;
+            }
+
+            form.dataset.submitInitialised = 'true';
+
+            form.addEventListener('submit', function (event) {
+                // Koi field ya template required nahi hai.
+
+                if (form.dataset.isSubmitting === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.dataset.isSubmitting = 'true';
+                submitButton.disabled = true;
+                submitButton.value = 'Saving...';
+                submitButton.classList.add('pl-12');
+                spinner?.classList.remove('hidden');
+            });
+        }
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            initialiseBusinessProfileForm
+        );
+
+        document.addEventListener(
+            'livewire:navigated',
+            initialiseBusinessProfileForm
+        );
+
+        window.addEventListener(
+            'pageshow',
+            initialiseBusinessProfileForm
+        );
+
+        initialiseBusinessProfileForm();
+    })();
+</script>
 
 </x-layouts.app>
