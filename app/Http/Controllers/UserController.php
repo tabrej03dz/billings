@@ -193,14 +193,40 @@ class UserController extends Controller
 
     return redirect()->route('users.index')->with('success', 'User updated successfully.');
 }
+    // public function destroy(User $user)
+    // {
+    //     // Detach pivot (optional; cascade is safe too)
+    //     $user->businesses()->detach();
+    //     $user->delete();
+
+    //     return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+    // }
+
+
     public function destroy(User $user)
     {
-        // Detach pivot (optional; cascade is safe too)
-        $user->businesses()->detach();
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            $businesses = $user->businesses()->get();
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+            foreach ($businesses as $business) {
+                $otherUsersExist = $business->users()
+                    ->where('users.id', '!=', $user->id)
+                    ->exists();
+
+                if (!$otherUsersExist && !$business->trashed()) {
+                    $business->delete();
+                }
+            }
+
+            $user->delete();
+        });
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User deleted successfully.');
     }
+
+
 
     public function permissions(User $user){
         $permissions = $user->permissions;
