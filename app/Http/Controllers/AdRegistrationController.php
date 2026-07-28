@@ -107,7 +107,7 @@ class AdRegistrationController extends Controller
         'mobile' => ['nullable', 'digits:10'],
         'gstin' => ['nullable', 'string', 'max:15'],
 
-        'business_type_id' => [
+        'type' => [
             'nullable',
             'exists:business_types,id',
         ],
@@ -215,8 +215,8 @@ class AdRegistrationController extends Controller
                     )
                     : null,
 
-                'business_type_id' =>
-                    $mergedData['business_type_id']
+                'type' =>
+                    $mergedData['type']
                     ?? null,
 
                 'address' => filled(
@@ -624,7 +624,7 @@ class AdRegistrationController extends Controller
             $request->merge([
                 'business_name' => null,
                 'business_email' => null,
-                'business_type_id' => null,
+                'type' => null,
                 'gstin' => null,
                 'address' => null,
                 'state' => null,
@@ -678,7 +678,7 @@ class AdRegistrationController extends Controller
                 Rule::unique('businesses', 'gstin'),
             ],
 
-            'business_type_id' => [
+            'type' => [
                 'nullable',
                 'exists:business_types,id',
             ],
@@ -801,7 +801,7 @@ class AdRegistrationController extends Controller
                     ->value('id');
 
             $businessTypeId =
-                $validated['business_type_id']
+                $validated['type']
                 ?? $defaultBusinessTypeId;
 
             if (!$businessTypeId) {
@@ -913,7 +913,7 @@ class AdRegistrationController extends Controller
                     'address' => $businessAddress,
                     'state' => $businessState,
                     'state_code' => $businessStateCode,
-                    'business_type_id' =>
+                    'type' =>
                         $businessTypeId,
                     'invoice_base_prefix' =>
                         $invoicePrefix,
@@ -942,7 +942,7 @@ class AdRegistrationController extends Controller
                     'address' => $businessAddress,
                     'state' => $businessState,
                     'state_code' => $businessStateCode,
-                    'business_type_id' =>
+                    'type' =>
                         $businessTypeId,
                     'invoice_base_prefix' =>
                         $invoicePrefix,
@@ -1032,8 +1032,8 @@ class AdRegistrationController extends Controller
                 'business_email' => $business->email,
                 'mobile' => $business->mobile,
                 'gstin' => $business->gstin,
-                'business_type_id' =>
-                    $business->business_type_id,
+                'type' =>
+                    $business->type,
                 'address' => $business->address,
                 'state' => $business->state,
                 'state_code' => $business->state_code,
