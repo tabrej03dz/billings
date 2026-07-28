@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class OnboardingRegistration extends Model
 {
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     protected function casts(): array
     {

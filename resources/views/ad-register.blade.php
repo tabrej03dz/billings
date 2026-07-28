@@ -1107,42 +1107,42 @@
 
                     @php
                         $states = [
-                            ['01', 'Jammu and Kashmir'],
-                            ['02', 'Himachal Pradesh'],
-                            ['03', 'Punjab'],
-                            ['04', 'Chandigarh'],
-                            ['05', 'Uttarakhand'],
-                            ['06', 'Haryana'],
-                            ['07', 'Delhi'],
-                            ['08', 'Rajasthan'],
-                            ['09', 'Uttar Pradesh'],
-                            ['10', 'Bihar'],
-                            ['11', 'Sikkim'],
-                            ['12', 'Arunachal Pradesh'],
-                            ['13', 'Nagaland'],
-                            ['14', 'Manipur'],
-                            ['15', 'Mizoram'],
-                            ['16', 'Tripura'],
-                            ['17', 'Meghalaya'],
-                            ['18', 'Assam'],
-                            ['19', 'West Bengal'],
-                            ['20', 'Jharkhand'],
-                            ['21', 'Odisha'],
-                            ['22', 'Chhattisgarh'],
-                            ['23', 'Madhya Pradesh'],
-                            ['24', 'Gujarat'],
-                            ['26', 'Dadra and Nagar Haveli and Daman and Diu'],
-                            ['27', 'Maharashtra'],
-                            ['29', 'Karnataka'],
-                            ['30', 'Goa'],
-                            ['31', 'Lakshadweep'],
-                            ['32', 'Kerala'],
-                            ['33', 'Tamil Nadu'],
-                            ['34', 'Puducherry'],
                             ['35', 'Andaman and Nicobar Islands'],
-                            ['36', 'Telangana'],
                             ['37', 'Andhra Pradesh'],
+                            ['12', 'Arunachal Pradesh'],
+                            ['18', 'Assam'],
+                            ['10', 'Bihar'],
+                            ['04', 'Chandigarh'],
+                            ['22', 'Chhattisgarh'],
+                            ['26', 'Dadra and Nagar Haveli and Daman and Diu'],
+                            ['07', 'Delhi'],
+                            ['30', 'Goa'],
+                            ['24', 'Gujarat'],
+                            ['06', 'Haryana'],
+                            ['02', 'Himachal Pradesh'],
+                            ['01', 'Jammu and Kashmir'],
+                            ['20', 'Jharkhand'],
+                            ['29', 'Karnataka'],
+                            ['32', 'Kerala'],
                             ['38', 'Ladakh'],
+                            ['31', 'Lakshadweep'],
+                            ['23', 'Madhya Pradesh'],
+                            ['27', 'Maharashtra'],
+                            ['14', 'Manipur'],
+                            ['17', 'Meghalaya'],
+                            ['15', 'Mizoram'],
+                            ['13', 'Nagaland'],
+                            ['21', 'Odisha'],
+                            ['34', 'Puducherry'],
+                            ['03', 'Punjab'],
+                            ['08', 'Rajasthan'],
+                            ['11', 'Sikkim'],
+                            ['33', 'Tamil Nadu'],
+                            ['36', 'Telangana'],
+                            ['16', 'Tripura'],
+                            ['05', 'Uttarakhand'],
+                            ['09', 'Uttar Pradesh'],
+                            ['19', 'West Bengal'],
                         ];
 
                         $selectedState = old('state_code') && old('state')
@@ -1160,6 +1160,7 @@
 
                         <select id="popupStateSelect"
                                 class="registration-field">
+
                             <option value="">
                                 Select state
                             </option>
@@ -1175,7 +1176,6 @@
                                 </option>
                             @endforeach
                         </select>
-
                         <input type="hidden"
                                name="state"
                                id="popupState"
@@ -1293,16 +1293,16 @@
                     </button>
 
                     <div class="flex w-full flex-col gap-3 sm:ml-auto sm:w-auto sm:flex-row">
-                        <button type="button"
+                        {{-- <button type="button"
                                 id="popupNextBtn"
                                 class="registration-primary-button hidden w-full sm:w-auto">
                             Continue
-                        </button>
+                        </button> --}}
 
-                        <button type="submit"
+                        <button type="button"
                                 id="popupSubmitBtn"
                                 class="registration-primary-button hidden w-full sm:w-auto">
-                            Finish Setup
+                            Continue
                         </button>
                     </div>
                 </div>
@@ -1320,427 +1320,495 @@
     </div>
 </div>
 
+
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    /*
-    |--------------------------------------------------------------------------
-    | Typing animation
-    |--------------------------------------------------------------------------
-    */
+    document.addEventListener('DOMContentLoaded', function () {
+        const words = [
+            'Typing Kam, Billing Fast.',
+            'Entry Kam, Billing Smart.',
+            'Time Save, Billing Easy.',
+            'Photo Entry, Invoice Ready.',
+            'Smart Shop, Fast Billing.',
+            'GST Bill, One Click.'
+        ];
 
-    const words = [
-        'Typing Kam, Billing Fast.',
-        'Entry Kam, Billing Smart.',
-        'Time Save, Billing Easy.',
-        'Photo Entry, Invoice Ready.',
-        'Smart Shop, Fast Billing.',
-        'GST Bill, One Click.'
-    ];
+        let wordIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
 
-    let wordIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
+        const typingText = document.getElementById('typingText');
 
-    const typingText =
-        document.getElementById('typingText');
+        function typeEffect() {
+            if (!typingText) {
+                return;
+            }
 
-    function typeEffect() {
-        if (!typingText) {
-            return;
+            const currentWord = words[wordIndex];
+
+            if (isDeleting) {
+                typingText.textContent =
+                    currentWord.substring(0, charIndex--);
+            } else {
+                typingText.textContent =
+                    currentWord.substring(0, charIndex++);
+            }
+
+            let speed = isDeleting ? 45 : 70;
+
+            if (
+                !isDeleting &&
+                charIndex === currentWord.length + 1
+            ) {
+                speed = 1200;
+                isDeleting = true;
+            }
+
+            if (
+                isDeleting &&
+                charIndex === 0
+            ) {
+                isDeleting = false;
+                wordIndex =
+                    (wordIndex + 1) % words.length;
+
+                speed = 300;
+            }
+
+            setTimeout(typeEffect, speed);
         }
 
-        const currentWord = words[wordIndex];
+        typeEffect();
 
-        if (isDeleting) {
-            typingText.textContent =
-                currentWord.substring(0, charIndex--);
-        } else {
-            typingText.textContent =
-                currentWord.substring(0, charIndex++);
-        }
+        const registrationModal =
+            document.getElementById('registrationModal');
 
-        let speed = isDeleting ? 45 : 70;
+        const openRegistrationButtons =
+            document.querySelectorAll(
+                '.open-registration-modal'
+            );
 
-        if (
-            !isDeleting &&
-            charIndex === currentWord.length + 1
-        ) {
-            speed = 1200;
-            isDeleting = true;
-        }
+        const closeRegistrationButtons =
+            document.querySelectorAll(
+                '[data-close-registration-modal]'
+            );
 
-        if (
-            isDeleting &&
-            charIndex === 0
-        ) {
-            isDeleting = false;
-            wordIndex =
-                (wordIndex + 1) % words.length;
+        const popupPlanId =
+            document.getElementById('popupPlanId');
 
-            speed = 300;
-        }
+        const INITIAL_POPUP_DELAY = 800;
+        const REOPEN_POPUP_DELAY = 10000;
 
-        setTimeout(typeEffect, speed);
-    }
+        const REGISTRATION_COMPLETED_KEY =
+            'myvictory_registration_completed';
 
-    typeEffect();
+        let registrationPopupTimer = null;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Registration modal
-    |--------------------------------------------------------------------------
-    */
+        let registrationCompleted = false;
 
-    const registrationModal =
-        document.getElementById('registrationModal');
+        function clearRegistrationPopupTimer() {
+            if (!registrationPopupTimer) {
+                return;
+            }
 
-    const openRegistrationButtons =
-        document.querySelectorAll('.open-registration-modal');
-
-    const closeRegistrationButtons =
-        document.querySelectorAll('[data-close-registration-modal]');
-
-    const popupPlanId =
-        document.getElementById('popupPlanId');
-
-    const INITIAL_POPUP_DELAY = 800;
-    const REOPEN_POPUP_DELAY = 30000;
-    const REGISTRATION_COMPLETED_KEY =
-        'myvictory_registration_completed';
-
-    let registrationPopupTimer = null;
-    let registrationCompleted =
-        localStorage.getItem(REGISTRATION_COMPLETED_KEY) === '1';
-
-    function clearRegistrationPopupTimer() {
-        if (registrationPopupTimer) {
             clearTimeout(registrationPopupTimer);
             registrationPopupTimer = null;
         }
-    }
 
-    function canOpenRegistrationModal() {
-        if (!registrationModal) {
-            return false;
-        }
 
-        if (registrationCompleted) {
-            return false;
-        }
-
-        if (registrationModal.classList.contains('show')) {
-            return false;
-        }
-
-        return true;
-    }
-
-    function openRegistrationModal(planId = '') {
-        clearRegistrationPopupTimer();
-
-        if (!canOpenRegistrationModal()) {
-            return;
-        }
-
-        if (planId && popupPlanId) {
-            popupPlanId.value = planId;
-        }
-
-        registrationModal.classList.add('show');
-        registrationModal.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('registration-modal-open');
-
-        setTimeout(function () {
-            if (
-                typeof phoneVerified !== 'undefined' &&
-                phoneVerified &&
-                phoneVerified.value !== '1' &&
-                typeof ownerPhone !== 'undefined' &&
-                ownerPhone
-            ) {
-                ownerPhone.focus();
+        function canOpenRegistrationModal(ignoreCompletedStatus = false) {
+            if (!registrationModal) {
+                return false;
             }
-        }, 200);
-    }
 
-    function scheduleRegistrationPopup(
-        delay = REOPEN_POPUP_DELAY
-    ) {
-        clearRegistrationPopupTimer();
-
-        if (registrationCompleted) {
-            return;
+            /*
+            * Automatic popup completed registration ke baad nahi khulega.
+            * Manual Register button click par forceOpen=true hone se popup
+            * hamesha khul sakta hai.
+            */
+            return !registrationModal.classList.contains('show');
         }
 
-        registrationPopupTimer = setTimeout(function () {
-            openRegistrationModal();
-        }, delay);
-    }
+        function openRegistrationModal(planId = '', forceOpen = false) {
+            clearRegistrationPopupTimer();
 
-    function closeRegistrationModal(
-        reopenLater = true
-    ) {
-        if (!registrationModal) {
-            return;
+            if (!canOpenRegistrationModal(forceOpen)) {
+                return;
+            }
+
+            if (popupPlanId) {
+                popupPlanId.value = planId || '';
+            }
+
+            registrationModal.classList.add('show');
+            registrationModal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('registration-modal-open');
+
+            setTimeout(function () {
+                const currentPhoneVerified =
+                    document.getElementById('popupPhoneVerified');
+
+                const currentOwnerName =
+                    document.getElementById('popupOwnerName');
+
+                if (
+                    currentPhoneVerified &&
+                    currentPhoneVerified.value !== '1' &&
+                    currentOwnerName
+                ) {
+                    currentOwnerName.focus();
+                }
+            }, 200);
         }
 
-        registrationModal.classList.remove('show');
-        registrationModal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('registration-modal-open');
+        function scheduleRegistrationPopup(delay = REOPEN_POPUP_DELAY) {
+            clearRegistrationPopupTimer();
 
-        if (reopenLater && !registrationCompleted) {
-            scheduleRegistrationPopup(REOPEN_POPUP_DELAY);
+            registrationPopupTimer = setTimeout(function () {
+                openRegistrationModal('', false);
+            }, delay);
         }
-    }
 
-    function markRegistrationCompleted() {
-        registrationCompleted = true;
-        localStorage.setItem(
-            REGISTRATION_COMPLETED_KEY,
-            '1'
-        );
-        clearRegistrationPopupTimer();
-    }
-
-    openRegistrationButtons.forEach(function (button) {
-        button.addEventListener('click', function () {
-            const planId = button.dataset.planId || '';
-            openRegistrationModal(planId);
-        });
-    });
-
-    closeRegistrationButtons.forEach(function (button) {
-        button.addEventListener('click', function () {
-            closeRegistrationModal(true);
-        });
-    });
-
-    document.addEventListener('keydown', function (event) {
-        if (
-            event.key === 'Escape' &&
-            registrationModal &&
-            registrationModal.classList.contains('show')
+        function closeRegistrationModal(
+            reopenLater = true
         ) {
-            closeRegistrationModal(true);
+            if (!registrationModal) {
+                return;
+            }
+
+            registrationModal.classList.remove('show');
+
+            registrationModal.setAttribute(
+                'aria-hidden',
+                'true'
+            );
+
+            document.body.classList.remove(
+                'registration-modal-open'
+            );
+
+            if (reopenLater) {
+                scheduleRegistrationPopup(
+                    REOPEN_POPUP_DELAY
+                );
+            }
         }
-    });
 
-    @guest
-        if (!registrationCompleted) {
-            scheduleRegistrationPopup(INITIAL_POPUP_DELAY);
+        function markRegistrationCompleted() {
+            registrationCompleted = true;
+
+            localStorage.setItem(
+                REGISTRATION_COMPLETED_KEY,
+                '1'
+            );
+
+            clearRegistrationPopupTimer();
         }
-    @endguest
 
-    /*
-    |--------------------------------------------------------------------------
-    | Registration form
-    |--------------------------------------------------------------------------
-    */
+        openRegistrationButtons.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
 
-    const form =
-        document.getElementById('popupRegistrationForm');
+                const planId =
+                    button.getAttribute('data-plan-id') || '';
 
-    const steps = Array.from(
-        document.querySelectorAll(
-            '[data-registration-step]'
-        )
-    );
+                /*
+                * Manual click par completed localStorage flag popup ko
+                * block nahi karega.
+                */
+                openRegistrationModal(planId, true);
+            });
+        });
 
-    const pills = [
-        document.getElementById('popupStepPill1'),
-        document.getElementById('popupStepPill2'),
-        document.getElementById('popupStepPill3'),
-    ];
-
-    const stepTitles = [
-        'Name & Mobile Verification',
-        'Business Information',
-        'Billing Setup',
-    ];
-
-    const currentStepInput =
-        document.getElementById('popupCurrentStep');
-
-    const currentStepNumber =
-        document.getElementById(
-            'popupCurrentStepNumber'
+        closeRegistrationButtons.forEach(
+            function (button) {
+                button.addEventListener(
+                    'click',
+                    function () {
+                        closeRegistrationModal(true);
+                    }
+                );
+            }
         );
 
-    const currentStepTitle =
-        document.getElementById(
-            'popupCurrentStepTitle'
+        document.addEventListener(
+            'keydown',
+            function (event) {
+                if (
+                    event.key === 'Escape' &&
+                    registrationModal &&
+                    registrationModal.classList.contains(
+                        'show'
+                    )
+                ) {
+                    closeRegistrationModal(true);
+                }
+            }
         );
 
-    const progressBar =
-        document.getElementById('popupProgressBar');
+        @guest
+            scheduleRegistrationPopup(
+                INITIAL_POPUP_DELAY
+            );
+        @endguest
 
-    const prevBtn =
-        document.getElementById('popupPrevBtn');
+        const form =
+            document.getElementById(
+                'popupRegistrationForm'
+            );
 
-    const nextBtn =
-        document.getElementById('popupNextBtn');
-
-    const submitBtn =
-        document.getElementById('popupSubmitBtn');
-
-    const sendOtpBtn =
-        document.getElementById('popupSendOtpBtn');
-
-    const ownerPhone =
-        document.getElementById('popupOwnerPhone');
-
-    const ownerName =
-        document.getElementById('popupOwnerName');
-
-    const businessMobile =
-        document.getElementById(
-            'popupBusinessMobile'
-        );
-
-    const phoneOtp =
-        document.getElementById('popupPhoneOtp');
-
-    const phoneVerified =
-        document.getElementById(
-            'popupPhoneVerified'
-        );
-
-    const otpSection =
-        document.getElementById('popupOtpSection');
-
-    const otpLoader =
-        document.getElementById('popupOtpLoader');
-
-    const otpSendStatus =
-        document.getElementById(
-            'popupOtpSendStatus'
-        );
-
-    const otpVerifyStatus =
-        document.getElementById(
-            'popupOtpVerifyStatus'
-        );
-
-    const skipBusinessBtn =
-        document.getElementById(
-            'popupSkipBusinessBtn'
-        );
-
-    const skipBillingBtn =
-        document.getElementById(
-            'popupSkipBillingBtn'
-        );
-
-    const businessSkipped =
-        document.getElementById(
-            'popupBusinessSkipped'
-        );
-
-    const billingSkipped =
-        document.getElementById(
-            'popupBillingSkipped'
-        );
-
-    const stateSelect =
-        document.getElementById(
-            'popupStateSelect'
-        );
-
-    const stateInput =
-        document.getElementById('popupState');
-
-    const stateCodeInput =
-        document.getElementById(
-            'popupStateCode'
-        );
-
-    const gstinInput =
-        document.getElementById('popupGstin');
-
-    const gstEnabled =
-        document.getElementById(
-            'popupGstEnabled'
-        );
-
-    const messageBox =
-        document.getElementById(
-            'registrationMessage'
-        );
-
-    let currentStep = 0;
-    let requestRunning = false;
-    let otpVerificationRunning = false;
-    let lastVerifiedOtp = '';
-
-    const csrfToken =
-        document.querySelector(
-            'meta[name="csrf-token"]'
-        )?.getAttribute('content')
-        || '{{ csrf_token() }}';
-
-    /*
-     * Backend validation errors.
-     * Laravel redirect back kare to errors popup ke andar show honge.
-     */
-    const serverValidationErrors = @json($errors->all());
-
-    const serverValidationFields = @json(
-        $errors->keys()
-    );
-
-    function cleanPhone(value) {
-        return value
-            .replace(/\D/g, '')
-            .slice(0, 10);
-    }
-
-    function cleanOtp(value) {
-        return value
-            .replace(/\D/g, '')
-            .slice(0, 6);
-    }
-
-    function validPhone(phone) {
-        return /^[6-9][0-9]{9}$/.test(phone);
-    }
-
-    function showMessage(message, type = 'success') {
-        messageBox.textContent = message;
-
-        messageBox.className =
-            'registration-message show ' + type;
-    }
-
-    function hideMessage() {
-        messageBox.textContent = '';
-
-        messageBox.className =
-            'registration-message';
-    }
-
-    function setButtonLoading(
-        button,
-        loading,
-        loadingText
-    ) {
-        if (!button) {
+        if (!form) {
             return;
         }
 
-        if (loading) {
-            if (!button.dataset.originalText) {
-                button.dataset.originalText =
-                    button.textContent.trim();
+        const steps = Array.from(
+            document.querySelectorAll(
+                '[data-registration-step]'
+            )
+        );
+
+        const pills = [
+            document.getElementById('popupStepPill1'),
+            document.getElementById('popupStepPill2'),
+            document.getElementById('popupStepPill3')
+        ];
+
+        const stepTitles = [
+            'Name & Mobile Verification',
+            'Business Information',
+            'Billing Setup'
+        ];
+
+        const currentStepInput =
+            document.getElementById(
+                'popupCurrentStep'
+            );
+
+        const currentStepNumber =
+            document.getElementById(
+                'popupCurrentStepNumber'
+            );
+
+        const currentStepTitle =
+            document.getElementById(
+                'popupCurrentStepTitle'
+            );
+
+        const progressBar =
+            document.getElementById(
+                'popupProgressBar'
+            );
+
+        const prevBtn =
+            document.getElementById(
+                'popupPrevBtn'
+            );
+
+        /*
+        * popupNextBtn HTML me nahi hai.
+        * Step 2 par popupSubmitBtn ko hi Continue
+        * aur Step 3 par final Continue banaya gaya hai.
+        */
+        const submitBtn =
+            document.getElementById(
+                'popupSubmitBtn'
+            );
+
+        const sendOtpBtn =
+            document.getElementById(
+                'popupSendOtpBtn'
+            );
+
+        const ownerPhone =
+            document.getElementById(
+                'popupOwnerPhone'
+            );
+
+        const ownerName =
+            document.getElementById(
+                'popupOwnerName'
+            );
+
+        const businessMobile =
+            document.getElementById(
+                'popupBusinessMobile'
+            );
+
+        const phoneOtp =
+            document.getElementById(
+                'popupPhoneOtp'
+            );
+
+        const phoneVerified =
+            document.getElementById(
+                'popupPhoneVerified'
+            );
+
+        const otpSection =
+            document.getElementById(
+                'popupOtpSection'
+            );
+
+        const otpLoader =
+            document.getElementById(
+                'popupOtpLoader'
+            );
+
+        const otpSendStatus =
+            document.getElementById(
+                'popupOtpSendStatus'
+            );
+
+        const otpVerifyStatus =
+            document.getElementById(
+                'popupOtpVerifyStatus'
+            );
+
+        const skipBusinessBtn =
+            document.getElementById(
+                'popupSkipBusinessBtn'
+            );
+
+        const skipBillingBtn =
+            document.getElementById(
+                'popupSkipBillingBtn'
+            );
+
+        const businessSkipped =
+            document.getElementById(
+                'popupBusinessSkipped'
+            );
+
+        const billingSkipped =
+            document.getElementById(
+                'popupBillingSkipped'
+            );
+
+        const stateSelect =
+            document.getElementById(
+                'popupStateSelect'
+            );
+
+        const stateInput =
+            document.getElementById(
+                'popupState'
+            );
+
+        const stateCodeInput =
+            document.getElementById(
+                'popupStateCode'
+            );
+
+        const gstinInput =
+            document.getElementById(
+                'popupGstin'
+            );
+
+        const gstEnabled =
+            document.getElementById(
+                'popupGstEnabled'
+            );
+
+        const messageBox =
+            document.getElementById(
+                'registrationMessage'
+            );
+
+        const dialog =
+            registrationModal?.querySelector(
+                '.registration-modal-dialog'
+            );
+
+        let currentStep = 0;
+        let requestRunning = false;
+        let otpVerificationRunning = false;
+        let finalSubmissionRunning = false;
+        let lastVerifiedOtp = '';
+
+        const csrfToken =
+            document.querySelector(
+                'meta[name="csrf-token"]'
+            )?.getAttribute('content')
+            || '{{ csrf_token() }}';
+
+        const serverValidationErrors =
+            @json($errors->all());
+
+        const serverValidationFields =
+            @json($errors->keys());
+
+        function cleanPhone(value) {
+            return String(value || '')
+                .replace(/\D/g, '')
+                .slice(0, 10);
+        }
+
+        function cleanOtp(value) {
+            return String(value || '')
+                .replace(/\D/g, '')
+                .slice(0, 6);
+        }
+
+        function validPhone(phone) {
+            return /^[6-9][0-9]{9}$/.test(phone);
+        }
+
+        function showMessage(
+            message,
+            type = 'success'
+        ) {
+            if (!messageBox) {
+                return;
             }
 
-            button.disabled = true;
-            button.textContent = loadingText;
+            messageBox.textContent = message;
 
-            button.classList.add(
-                'opacity-60',
-                'cursor-not-allowed'
-            );
-        } else {
+            messageBox.className =
+                'registration-message show ' + type;
+
+            dialog?.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function hideMessage() {
+            if (!messageBox) {
+                return;
+            }
+
+            messageBox.textContent = '';
+
+            messageBox.className =
+                'registration-message';
+        }
+
+        function setButtonLoading(
+            button,
+            loading,
+            loadingText = 'Please wait...'
+        ) {
+            if (!button) {
+                return;
+            }
+
+            if (loading) {
+                if (!button.dataset.originalText) {
+                    button.dataset.originalText =
+                        button.textContent.trim();
+                }
+
+                button.disabled = true;
+                button.textContent = loadingText;
+
+                button.classList.add(
+                    'opacity-60',
+                    'cursor-not-allowed'
+                );
+
+                return;
+            }
+
             button.disabled = false;
 
             button.textContent =
@@ -1752,306 +1820,344 @@ document.addEventListener('DOMContentLoaded', function () {
                 'cursor-not-allowed'
             );
         }
-    }
 
-    function setOtpLoading(loading) {
-        otpLoader.classList.toggle(
-            'show',
-            loading
-        );
-
-        phoneOtp.disabled = loading;
-    }
-
-    function showStep(index) {
-        currentStep = index;
-
-        steps.forEach(function (step, stepIndex) {
-            step.classList.toggle(
-                'active',
-                stepIndex === index
-            );
-        });
-
-        pills.forEach(function (pill, pillIndex) {
-            pill.classList.remove(
-                'active',
-                'done'
-            );
-
-            if (pillIndex === index) {
-                pill.classList.add('active');
-            } else if (pillIndex < index) {
-                pill.classList.add('done');
-            }
-        });
-
-        currentStepInput.value = index + 1;
-        currentStepNumber.textContent = index + 1;
-        currentStepTitle.textContent =
-            stepTitles[index];
-
-        progressBar.style.width =
-            (((index + 1) / steps.length) * 100)
-            + '%';
-
-        prevBtn.classList.toggle(
-            'hidden',
-            index === 0
-        );
-
-        nextBtn.classList.toggle(
-            'hidden',
-            index === 0
-            || index === steps.length - 1
-        );
-
-        submitBtn.classList.toggle(
-            'hidden',
-            index !== steps.length - 1
-        );
-
-        hideMessage();
-    }
-
-    async function parseResponse(response) {
-        const contentType =
-            response.headers.get('content-type') || '';
-
-        let data = {};
-
-        if (contentType.includes('application/json')) {
-            data = await response.json().catch(function () {
-                return {};
-            });
-        } else {
-            const rawText = await response.text();
-
-            data = {
-                message: response.status === 419
-                    ? 'Page expire ho gaya hai. Page refresh karke dobara OTP bhejiye.'
-                    : (rawText ? 'Server se valid response nahi mila.' : 'Request failed.')
-            };
-        }
-
-        if (!response.ok) {
-            let message =
-                data.message || 'Request failed.';
-
-            if (data.errors) {
-                const firstError =
-                    Object.values(data.errors)[0];
-
-                if (Array.isArray(firstError)) {
-                    message = firstError[0];
-                }
+        function setOtpLoading(loading) {
+            if (otpLoader) {
+                otpLoader.classList.toggle(
+                    'show',
+                    loading
+                );
             }
 
-            throw new Error(message);
+            if (phoneOtp) {
+                phoneOtp.disabled = loading;
+            }
         }
 
-        return data;
-    }
+        function syncStateFields() {
+            if (
+                !stateSelect ||
+                !stateInput ||
+                !stateCodeInput
+            ) {
+                return;
+            }
 
-    async function saveCurrentStep(stepNumber) {
-        if (phoneVerified.value !== '1') {
-            showMessage(
-                'Pehle mobile number verify kijiye.',
-                'error'
-            );
+            const value = stateSelect.value;
 
-            showStep(0);
-            return false;
+            if (!value) {
+                stateInput.value = '';
+                stateCodeInput.value = '';
+                return;
+            }
+
+            const parts = value.split(',');
+
+            stateCodeInput.value =
+                parts.shift() || '';
+
+            stateInput.value =
+                parts.join(',') || '';
         }
 
-        const formData =
-            new FormData(form);
+        function showStep(index) {
+            if (
+                index < 0 ||
+                index >= steps.length
+            ) {
+                return;
+            }
 
-        formData.set(
-            'step',
-            String(stepNumber)
-        );
+            currentStep = index;
 
-        try {
-            const response = await fetch(
-                "{{ route('ad.register.save-step') }}",
-                {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json',
-                    },
-                    body: formData,
+            steps.forEach(
+                function (step, stepIndex) {
+                    step.classList.toggle(
+                        'active',
+                        stepIndex === index
+                    );
                 }
             );
 
-            const result =
-                await parseResponse(response);
+            pills.forEach(
+                function (pill, pillIndex) {
+                    if (!pill) {
+                        return;
+                    }
 
-            return result.success === true;
-        } catch (error) {
-            showMessage(
-                error.message,
-                'error'
-            );
+                    pill.classList.remove(
+                        'active',
+                        'done'
+                    );
 
-            return false;
-        }
-    }
-
-    async function verifyOtpAutomatically() {
-        if (
-            otpVerificationRunning
-            || phoneVerified.value === '1'
-        ) {
-            return;
-        }
-
-        const phone =
-            cleanPhone(ownerPhone.value);
-
-        const otp =
-            cleanOtp(phoneOtp.value);
-
-        ownerPhone.value = phone;
-        phoneOtp.value = otp;
-
-        if (
-            !validPhone(phone)
-            || otp.length !== 6
-        ) {
-            return;
-        }
-
-        if (lastVerifiedOtp === otp) {
-            return;
-        }
-
-        otpVerificationRunning = true;
-        lastVerifiedOtp = otp;
-
-        otpVerifyStatus.textContent = '';
-        setOtpLoading(true);
-
-        try {
-            const response = await fetch(
-                "{{ route('register.verifyOtp') }}",
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type':
-                            'application/json',
-
-                        'X-CSRF-TOKEN':
-                            csrfToken,
-
-                        'Accept':
-                            'application/json',
-                    },
-
-                    body: JSON.stringify({
-                        phone: phone,
-                        otp: otp,
-                        name: ownerName
-                            ? ownerName.value.trim()
-                            : '',
-                    }),
+                    if (pillIndex === index) {
+                        pill.classList.add('active');
+                    } else if (pillIndex < index) {
+                        pill.classList.add('done');
+                    }
                 }
             );
 
-            const result =
-                await parseResponse(response);
+            if (currentStepInput) {
+                currentStepInput.value =
+                    String(index + 1);
+            }
 
-            phoneVerified.value = '1';
-            ownerPhone.readOnly = true;
-            businessMobile.value = phone;
+            if (currentStepNumber) {
+                currentStepNumber.textContent =
+                    String(index + 1);
+            }
 
-            sendOtpBtn.classList.add('hidden');
+            if (currentStepTitle) {
+                currentStepTitle.textContent =
+                    stepTitles[index];
+            }
 
-            otpVerifyStatus.textContent =
-                result.message
-                || 'Mobile verified successfully.';
+            if (progressBar) {
+                progressBar.style.width =
+                    (
+                        ((index + 1) / steps.length)
+                        * 100
+                    ) + '%';
+            }
 
-            otpVerifyStatus.className =
-                'mt-2 text-xs font-bold text-green-600';
+            if (prevBtn) {
+                prevBtn.classList.toggle(
+                    'hidden',
+                    index === 0
+                );
+            }
 
-            setOtpLoading(false);
+            /*
+            * Step 1 par button hidden rahega.
+            * OTP verify hone par automatic Step 2 khulega.
+            *
+            * Step 2 par button Business Continue hoga.
+            * Step 3 par button final Continue hoga.
+            */
+            if (submitBtn) {
+                submitBtn.classList.toggle(
+                    'hidden',
+                    index === 0
+                );
+
+                submitBtn.disabled = false;
+
+                if (index === 1) {
+                    submitBtn.textContent = 'Continue';
+                }
+
+                if (index === 2) {
+                    submitBtn.textContent = 'Continue';
+                }
+
+                submitBtn.dataset.originalText =
+                    'Continue';
+            }
+
+            hideMessage();
 
             setTimeout(function () {
-                showStep(1);
-
-                if (ownerName) {
-                    ownerName.focus();
-                }
-            }, 450);
-        } catch (error) {
-            lastVerifiedOtp = '';
-
-            otpVerifyStatus.textContent =
-                error.message;
-
-            otpVerifyStatus.className =
-                'mt-2 text-xs font-bold text-red-600';
-
-            phoneOtp.value = '';
-            phoneOtp.focus();
-
-            setOtpLoading(false);
-        } finally {
-            otpVerificationRunning = false;
+                dialog?.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            }, 50);
         }
-    }
 
-    sendOtpBtn.addEventListener(
-        'click',
-        async function () {
-            if (requestRunning) {
+        async function parseResponse(response) {
+            const contentType =
+                response.headers.get(
+                    'content-type'
+                ) || '';
+
+            let data = {};
+
+            if (
+                contentType.includes(
+                    'application/json'
+                )
+            ) {
+                data = await response
+                    .json()
+                    .catch(function () {
+                        return {};
+                    });
+            } else {
+                const rawText =
+                    await response.text();
+
+                data = {
+                    message:
+                        response.status === 419
+                            ? 'Page expire ho gaya hai. Page refresh karke dobara try kijiye.'
+                            : (
+                                rawText
+                                    ? 'Server se valid response nahi mila.'
+                                    : 'Request failed.'
+                            )
+                };
+            }
+
+            if (!response.ok) {
+                let message =
+                    data.message
+                    || 'Request failed.';
+
+                if (data.errors) {
+                    const firstError =
+                        Object.values(
+                            data.errors
+                        )[0];
+
+                    if (
+                        Array.isArray(firstError)
+                        && firstError.length
+                    ) {
+                        message = firstError[0];
+                    }
+                }
+
+                throw new Error(message);
+            }
+
+            return data;
+        }
+
+        async function saveCurrentStep(
+            stepNumber
+        ) {
+            if (
+                !phoneVerified ||
+                phoneVerified.value !== '1'
+            ) {
+                showMessage(
+                    'Pehle mobile number verify kijiye.',
+                    'error'
+                );
+
+                showStep(0);
+                return false;
+            }
+
+            syncStateFields();
+
+            const formData =
+                new FormData(form);
+
+            formData.set(
+                'step',
+                String(stepNumber)
+            );
+
+            try {
+                const response = await fetch(
+                    "{{ route('ad.register.save-step') }}",
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            'X-CSRF-TOKEN':
+                                csrfToken,
+
+                            'Accept':
+                                'application/json',
+
+                            'X-Requested-With':
+                                'XMLHttpRequest'
+                        },
+
+                        body: formData
+                    }
+                );
+
+                const result =
+                    await parseResponse(response);
+
+                if (result.success !== true) {
+                    throw new Error(
+                        result.message
+                        || 'Details save nahi ho payi.'
+                    );
+                }
+
+                return true;
+            } catch (error) {
+                showMessage(
+                    error.message
+                    || 'Details save nahi ho payi.',
+                    'error'
+                );
+
+                return false;
+            }
+        }
+
+        async function verifyOtpAutomatically() {
+            if (
+                otpVerificationRunning ||
+                !phoneVerified ||
+                phoneVerified.value === '1'
+            ) {
                 return;
             }
 
             const name =
-                ownerName ? ownerName.value.trim() : '';
+                ownerName
+                    ? ownerName.value.trim()
+                    : '';
 
             const phone =
-                cleanPhone(ownerPhone.value);
+                cleanPhone(
+                    ownerPhone?.value
+                );
 
-            ownerPhone.value = phone;
+            const otp =
+                cleanOtp(
+                    phoneOtp?.value
+                );
 
             if (!name) {
-                otpSendStatus.textContent =
-                    'Pehle apna naam enter kijiye.';
+                showMessage(
+                    'Pehle apna naam enter kijiye.',
+                    'error'
+                );
 
-                otpSendStatus.className =
-                    'mt-2 text-xs font-bold text-red-600';
-
-                ownerName.focus();
+                ownerName?.focus();
                 return;
             }
 
-            if (!validPhone(phone)) {
-                otpSendStatus.textContent =
-                    'Valid 10 digit mobile number enter kijiye.';
+            if (ownerPhone) {
+                ownerPhone.value = phone;
+            }
 
-                otpSendStatus.className =
-                    'mt-2 text-xs font-bold text-red-600';
+            if (phoneOtp) {
+                phoneOtp.value = otp;
+            }
 
-                ownerPhone.focus();
+            if (
+                !validPhone(phone) ||
+                otp.length !== 6
+            ) {
                 return;
             }
 
-            requestRunning = true;
+            if (lastVerifiedOtp === otp) {
+                return;
+            }
 
-            setButtonLoading(
-                sendOtpBtn,
-                true,
-                'Sending...'
-            );
+            otpVerificationRunning = true;
+            lastVerifiedOtp = otp;
 
-            otpSendStatus.textContent = '';
+            if (otpVerifyStatus) {
+                otpVerifyStatus.textContent = '';
+            }
+
+            setOtpLoading(true);
 
             try {
                 const response = await fetch(
-                    "{{ route('register.sendOtp') }}",
+                    "{{ route('register.verifyOtp') }}",
                     {
                         method: 'POST',
 
@@ -2064,282 +2170,433 @@ document.addEventListener('DOMContentLoaded', function () {
 
                             'Accept':
                                 'application/json',
+
+                            'X-Requested-With':
+                                'XMLHttpRequest'
                         },
 
                         body: JSON.stringify({
                             name: name,
                             phone: phone,
-                        }),
+                            otp: otp
+                        })
                     }
                 );
 
                 const result =
                     await parseResponse(response);
 
-                otpSection.classList.remove(
+                phoneVerified.value = '1';
+
+                if (ownerPhone) {
+                    ownerPhone.readOnly = true;
+                }
+
+                if (businessMobile) {
+                    businessMobile.value = phone;
+                }
+
+                sendOtpBtn?.classList.add(
                     'hidden'
                 );
 
-                otpSendStatus.textContent =
-                    result.message
-                    || 'OTP sent successfully.';
+                if (otpVerifyStatus) {
+                    otpVerifyStatus.textContent =
+                        result.message
+                        || 'Mobile verified successfully.';
 
-                if (result.debug_otp) {
-                    otpSendStatus.textContent +=
-                        ' Testing OTP: '
-                        + result.debug_otp;
+                    otpVerifyStatus.className =
+                        'mt-2 text-xs font-bold text-green-600';
                 }
 
-                otpSendStatus.className =
-                    'mt-2 text-xs font-bold text-green-600';
+                setOtpLoading(false);
 
-                ownerPhone.readOnly = true;
+                const firstStepSaved =
+                    await saveCurrentStep(1);
 
-                sendOtpBtn.dataset.originalText =
-                    'Resend OTP';
+                if (!firstStepSaved) {
+                    /*
+                    * OTP server par verify ho chuka hai.
+                    * Isliye phoneVerified ko dobara 0 nahi karna.
+                    * User retry kar sakta hai.
+                    */
+                    showMessage(
+                        'Mobile verify ho gaya hai, lekin Step 1 database me save nahi hua. Continue dobara try kijiye.',
+                        'error'
+                    );
 
-                phoneOtp.value = '';
-                lastVerifiedOtp = '';
-                phoneOtp.focus();
+                    return;
+                }
+
+                showStep(1);
+
+                setTimeout(function () {
+                    form
+                        .querySelector(
+                            '[name="business_name"]'
+                        )
+                        ?.focus();
+                }, 200);
+
             } catch (error) {
-                otpSendStatus.textContent =
-                    error.message;
+                lastVerifiedOtp = '';
 
-                otpSendStatus.className =
-                    'mt-2 text-xs font-bold text-red-600';
+                if (otpVerifyStatus) {
+                    otpVerifyStatus.textContent =
+                        error.message;
+
+                    otpVerifyStatus.className =
+                        'mt-2 text-xs font-bold text-red-600';
+                }
+
+                if (phoneOtp) {
+                    phoneOtp.value = '';
+                    phoneOtp.focus();
+                }
+
+                setOtpLoading(false);
+
             } finally {
-                requestRunning = false;
+                otpVerificationRunning = false;
+            }
+        }
+
+        sendOtpBtn?.addEventListener(
+            'click',
+            async function () {
+                if (requestRunning) {
+                    return;
+                }
+
+                hideMessage();
+
+                const name =
+                    ownerName
+                        ? ownerName.value.trim()
+                        : '';
+
+                const phone =
+                    cleanPhone(
+                        ownerPhone?.value
+                    );
+
+                if (ownerPhone) {
+                    ownerPhone.value = phone;
+                }
+
+                if (!name) {
+                    if (otpSendStatus) {
+                        otpSendStatus.textContent =
+                            'Pehle apna naam enter kijiye.';
+
+                        otpSendStatus.className =
+                            'mt-2 text-xs font-bold text-red-600';
+                    }
+
+                    ownerName?.focus();
+                    return;
+                }
+
+                if (!validPhone(phone)) {
+                    if (otpSendStatus) {
+                        otpSendStatus.textContent =
+                            'Valid 10 digit mobile number enter kijiye.';
+
+                        otpSendStatus.className =
+                            'mt-2 text-xs font-bold text-red-600';
+                    }
+
+                    ownerPhone?.focus();
+                    return;
+                }
+
+                requestRunning = true;
+
                 setButtonLoading(
                     sendOtpBtn,
+                    true,
+                    'Sending...'
+                );
+
+                if (otpSendStatus) {
+                    otpSendStatus.textContent = '';
+                }
+
+                try {
+                    const response = await fetch(
+                        "{{ route('register.sendOtp') }}",
+                        {
+                            method: 'POST',
+
+                            headers: {
+                                'Content-Type':
+                                    'application/json',
+
+                                'X-CSRF-TOKEN':
+                                    csrfToken,
+
+                                'Accept':
+                                    'application/json',
+
+                                'X-Requested-With':
+                                    'XMLHttpRequest'
+                            },
+
+                            body: JSON.stringify({
+                                name: name,
+                                phone: phone
+                            })
+                        }
+                    );
+
+                    const result =
+                        await parseResponse(response);
+
+                    otpSection?.classList.remove(
+                        'hidden'
+                    );
+
+                    if (otpSendStatus) {
+                        otpSendStatus.textContent =
+                            result.message
+                            || 'OTP sent successfully.';
+
+                        if (result.debug_otp) {
+                            otpSendStatus.textContent +=
+                                ' Testing OTP: '
+                                + result.debug_otp;
+                        }
+
+                        otpSendStatus.className =
+                            'mt-2 text-xs font-bold text-green-600';
+                    }
+
+                    if (ownerPhone) {
+                        ownerPhone.readOnly = true;
+                    }
+
+                    sendOtpBtn.dataset.originalText =
+                        'Resend OTP';
+
+                    if (phoneOtp) {
+                        phoneOtp.value = '';
+                    }
+
+                    lastVerifiedOtp = '';
+
+                    phoneOtp?.focus();
+
+                } catch (error) {
+                    if (otpSendStatus) {
+                        otpSendStatus.textContent =
+                            error.message;
+
+                        otpSendStatus.className =
+                            'mt-2 text-xs font-bold text-red-600';
+                    }
+
+                    if (ownerPhone) {
+                        ownerPhone.readOnly = false;
+                    }
+
+                } finally {
+                    requestRunning = false;
+
+                    setButtonLoading(
+                        sendOtpBtn,
+                        false
+                    );
+                }
+            }
+        );
+
+        phoneOtp?.addEventListener(
+            'input',
+            function () {
+                phoneOtp.value =
+                    cleanOtp(phoneOtp.value);
+
+                if (otpVerifyStatus) {
+                    otpVerifyStatus.textContent = '';
+                }
+
+                if (
+                    phoneOtp.value.length === 6
+                ) {
+                    verifyOtpAutomatically();
+                }
+            }
+        );
+
+        if (
+            'OTPCredential' in window &&
+            navigator.credentials &&
+            window.AbortController
+        ) {
+            const otpAbortController =
+                new AbortController();
+
+            navigator.credentials.get({
+                otp: {
+                    transport: ['sms']
+                },
+
+                signal:
+                    otpAbortController.signal
+
+            }).then(function (otpCredential) {
+                if (!otpCredential?.code) {
+                    return;
+                }
+
+                if (phoneOtp) {
+                    phoneOtp.value =
+                        cleanOtp(
+                            otpCredential.code
+                        );
+                }
+
+                verifyOtpAutomatically();
+
+            }).catch(function () {
+            });
+        }
+
+        ownerPhone?.addEventListener(
+            'input',
+            function () {
+                if (
+                    phoneVerified &&
+                    phoneVerified.value === '1'
+                ) {
+                    return;
+                }
+
+                ownerPhone.value =
+                    cleanPhone(ownerPhone.value);
+
+                if (businessMobile) {
+                    businessMobile.value =
+                        ownerPhone.value;
+                }
+
+                otpSection?.classList.add(
+                    'hidden'
+                );
+
+                if (phoneOtp) {
+                    phoneOtp.value = '';
+                }
+
+                lastVerifiedOtp = '';
+            }
+        );
+
+        ownerPhone?.addEventListener(
+            'keydown',
+            function (event) {
+                if (
+                    event.key === 'Enter' &&
+                    validPhone(
+                        cleanPhone(
+                            ownerPhone.value
+                        )
+                    )
+                ) {
+                    event.preventDefault();
+                    sendOtpBtn?.click();
+                }
+            }
+        );
+
+        prevBtn?.addEventListener(
+            'click',
+            function () {
+                if (
+                    requestRunning ||
+                    finalSubmissionRunning
+                ) {
+                    return;
+                }
+
+                if (currentStep > 0) {
+                    showStep(currentStep - 1);
+                }
+            }
+        );
+
+        skipBusinessBtn?.addEventListener(
+            'click',
+            async function () {
+                if (requestRunning) {
+                    return;
+                }
+
+                requestRunning = true;
+
+                setButtonLoading(
+                    skipBusinessBtn,
+                    true,
+                    'Saving...'
+                );
+
+                businessSkipped.value = '1';
+
+                [
+                    'business_name',
+                    'business_email',
+                    'business_type_id',
+                    'gstin',
+                    'address',
+                    'state',
+                    'state_code'
+                ].forEach(function (fieldName) {
+                    const field =
+                        form.querySelector(
+                            '[name="' +
+                            fieldName +
+                            '"]'
+                        );
+
+                    if (field) {
+                        field.value = '';
+                    }
+                });
+
+                if (stateSelect) {
+                    stateSelect.value = '';
+                }
+
+                syncStateFields();
+
+                const saved =
+                    await saveCurrentStep(2);
+
+                requestRunning = false;
+
+                setButtonLoading(
+                    skipBusinessBtn,
                     false
                 );
-            }
-        }
-    );
 
-    phoneOtp.addEventListener(
-        'input',
-        function () {
-            phoneOtp.value =
-                cleanOtp(phoneOtp.value);
-
-            otpVerifyStatus.textContent = '';
-
-            if (phoneOtp.value.length === 6) {
-                verifyOtpAutomatically();
-            }
-        }
-    );
-
-    /*
-     * Supported mobile browsers SMS se OTP
-     * automatically read karne ki koshish karenge.
-     */
-    if (
-        'OTPCredential' in window
-        && navigator.credentials
-        && window.AbortController
-    ) {
-        const otpAbortController =
-            new AbortController();
-
-        navigator.credentials.get({
-            otp: {
-                transport: ['sms']
-            },
-
-            signal:
-                otpAbortController.signal,
-
-        }).then(function (otpCredential) {
-            if (!otpCredential?.code) {
-                return;
-            }
-
-            phoneOtp.value =
-                cleanOtp(otpCredential.code);
-
-            verifyOtpAutomatically();
-
-        }).catch(function () {
-            // Manual OTP entry normal chalegi.
-        });
-    }
-
-    ownerPhone.addEventListener(
-        'input',
-        function () {
-            if (phoneVerified.value === '1') {
-                return;
-            }
-
-            ownerPhone.value =
-                cleanPhone(ownerPhone.value);
-
-            businessMobile.value =
-                ownerPhone.value;
-
-            otpSection.classList.add('hidden');
-            phoneOtp.value = '';
-            lastVerifiedOtp = '';
-        }
-    );
-
-    ownerPhone.addEventListener(
-        'keydown',
-        function (event) {
-            if (
-                event.key === 'Enter'
-                && validPhone(
-                    cleanPhone(ownerPhone.value)
-                )
-            ) {
-                event.preventDefault();
-                sendOtpBtn.click();
-            }
-        }
-    );
-
-    nextBtn.addEventListener(
-        'click',
-        async function () {
-            if (requestRunning) {
-                return;
-            }
-
-            requestRunning = true;
-
-            setButtonLoading(
-                nextBtn,
-                true,
-                'Saving...'
-            );
-
-            const saved =
-                await saveCurrentStep(
-                    currentStep + 1
-                );
-
-            requestRunning = false;
-
-            setButtonLoading(
-                nextBtn,
-                false
-            );
-
-            if (!saved) {
-                return;
-            }
-
-            if (
-                currentStep
-                < steps.length - 1
-            ) {
-                showStep(currentStep + 1);
-            }
-        }
-    );
-
-    prevBtn.addEventListener(
-        'click',
-        function () {
-            if (currentStep > 0) {
-                showStep(currentStep - 1);
-            }
-        }
-    );
-
-    skipBusinessBtn.addEventListener(
-        'click',
-        async function () {
-            /*
-             * Business details completely optional hain.
-             * Skip par incomplete/invalid optional values clear kar do,
-             * taaki backend validation registration ko na roke.
-             */
-            businessSkipped.value = '1';
-
-            [
-                'business_name',
-                'business_email',
-                'business_type_id',
-                'gstin',
-                'address',
-                'state',
-                'state_code',
-            ].forEach(function (fieldName) {
-                const field = form.querySelector(
-                    '[name="' + fieldName + '"]'
-                );
-
-                if (field) {
-                    field.value = '';
+                if (saved) {
+                    showStep(2);
                 }
-            });
+            }
+        );
 
-            if (stateSelect) {
-                stateSelect.value = '';
+        async function submitFinalRegistration() {
+            if (
+                finalSubmissionRunning ||
+                requestRunning
+            ) {
+                return;
             }
 
-            const saved = await saveCurrentStep(2);
-
-            if (saved) {
-                showStep(2);
-            }
-        }
-    );
-
-    skipBillingBtn.addEventListener(
-        'click',
-        async function () {
-            /*
-             * Billing settings completely optional hain.
-             * Skip par safe defaults set karke final registration submit karo.
-             */
-            billingSkipped.value = '1';
-
-            const gstField =
-                form.querySelector('[name="gst_enabled"]');
-
-            const prefixField =
-                form.querySelector('[name="invoice_base_prefix"]');
-
-            const roundingModeField =
-                form.querySelector('[name="rounding_mode"]');
-
-            const roundingStepField =
-                form.querySelector('[name="rounding_step"]');
-
-            if (gstField) {
-                gstField.value = '0';
-            }
-
-            if (prefixField) {
-                prefixField.value = 'RV/SL';
-            }
-
-            if (roundingModeField) {
-                roundingModeField.value = 'nearest';
-            }
-
-            if (roundingStepField) {
-                roundingStepField.value = '1.00';
-            }
-
-            const saved = await saveCurrentStep(3);
-
-            if (saved) {
-                HTMLFormElement.prototype.submit.call(form);
-            }
-        }
-    );
-
-    form.addEventListener(
-        'submit',
-        async function (event) {
-            event.preventDefault();
+            hideMessage();
 
             if (
+                !phoneVerified ||
                 phoneVerified.value !== '1'
             ) {
                 showMessage(
@@ -2351,241 +2608,411 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
+            finalSubmissionRunning = true;
+
             setButtonLoading(
                 submitBtn,
                 true,
-                'Saving...'
+                'Creating Account...'
             );
 
-            const saved =
-                await saveCurrentStep(3);
+            if (skipBillingBtn) {
+                skipBillingBtn.disabled = true;
+            }
 
-            if (!saved) {
+            try {
+                syncStateFields();
+
+                const businessNameField =
+                    form.querySelector(
+                        '[name="business_name"]'
+                    );
+
+                const businessTypeField =
+                    form.querySelector(
+                        '[name="business_type_id"]'
+                    );
+
+                if (
+                    !businessNameField?.value.trim() ||
+                    !businessTypeField?.value
+                ) {
+                    businessSkipped.value = '1';
+                }
+
+                const saved =
+                    await saveCurrentStep(3);
+
+                if (!saved) {
+                    throw new Error(
+                        'Last step database me save nahi hua.'
+                    );
+                }
+
+                /*
+                * Backend complete route successful redirect karega.
+                * Validation fail hone se pehle localStorage ko completed
+                * mark nahi karna hai.
+                *
+                * Native form submit se submit event dobara trigger nahi hoga.
+                */
+                HTMLFormElement.prototype.submit.call(
+                    form
+                );
+
+            } catch (error) {
+                finalSubmissionRunning = false;
+
+                if (skipBillingBtn) {
+                    skipBillingBtn.disabled = false;
+                }
+
                 setButtonLoading(
                     submitBtn,
                     false
                 );
 
-                return;
-            }
-
-            /*
-             * Business details blank hon to automatically skip mode.
-             * Backend default business create karega.
-             */
-            const businessNameField =
-                form.querySelector('[name="business_name"]');
-
-            const businessTypeField =
-                form.querySelector('[name="business_type_id"]');
-
-            if (
-                !businessNameField?.value.trim()
-                || !businessTypeField?.value
-            ) {
-                businessSkipped.value = '1';
-            }
-
-            HTMLFormElement.prototype.submit.call(form);
-        }
-    );
-
-    stateSelect.addEventListener(
-        'change',
-        function () {
-            const value =
-                stateSelect.value;
-
-            if (!value) {
-                stateInput.value = '';
-                stateCodeInput.value = '';
-                return;
-            }
-
-            const parts =
-                value.split(',');
-
-            stateCodeInput.value =
-                parts.shift() || '';
-
-            stateInput.value =
-                parts.join(',') || '';
-        }
-    );
-
-    // Page load par selected state ko hidden fields me sync rakhein.
-    if (stateSelect.value) {
-        stateSelect.dispatchEvent(
-            new Event('change')
-        );
-    }
-
-    gstinInput.addEventListener(
-        'input',
-        function () {
-            const gstin =
-                gstinInput.value
-                    .toUpperCase()
-                    .replace(/\s/g, '')
-                    .slice(0, 15);
-
-            gstinInput.value = gstin;
-
-            gstEnabled.value =
-                gstin ? '1' : '0';
-
-            if (gstin.length < 2) {
-                return;
-            }
-
-            const gstStateCode =
-                gstin.substring(0, 2);
-
-            const matchingOption =
-                Array.from(
-                    stateSelect.options
-                ).find(function (option) {
-                    return option.value.startsWith(
-                        gstStateCode + ','
-                    );
-                });
-
-            if (matchingOption) {
-                stateSelect.value =
-                    matchingOption.value;
-
-                stateSelect.dispatchEvent(
-                    new Event('change')
+                showMessage(
+                    error.message
+                    || 'Registration complete nahi ho paya.',
+                    'error'
                 );
             }
         }
-    );
 
-    /*
-     * Session me phone pehle se verified ho.
-     */
-    if (phoneVerified.value === '1') {
-        ownerPhone.readOnly = true;
-        businessMobile.value =
-            ownerPhone.value;
+        submitBtn?.addEventListener(
+            'click',
+            async function () {
+                if (
+                    requestRunning ||
+                    finalSubmissionRunning
+                ) {
+                    return;
+                }
 
-        sendOtpBtn.classList.add('hidden');
-        otpSection.classList.remove('hidden');
-        phoneOtp.classList.add('hidden');
+                /*
+                * Step 2 par ye button next step kholega.
+                */
+                if (currentStep === 1) {
+                    requestRunning = true;
 
-        otpVerifyStatus.textContent =
-            'Mobile number already verified hai.';
+                    setButtonLoading(
+                        submitBtn,
+                        true,
+                        'Saving...'
+                    );
 
-        otpVerifyStatus.className =
-            'mt-2 text-xs font-bold text-green-600';
+                    businessSkipped.value = '0';
 
-        showStep(1);
-    } else {
-        showStep(0);
-    }
+                    const saved =
+                        await saveCurrentStep(2);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Show backend validation errors
-    |--------------------------------------------------------------------------
-    |
-    | Validation fail hone par Laravel isi page par redirect karta hai.
-    | Modal force open hoga, relevant step khulega aur complete error list
-    | popup ke top par dikhayi degi.
-    |
-    */
+                    requestRunning = false;
 
-    if (
-        Array.isArray(serverValidationErrors)
-        && serverValidationErrors.length > 0
-    ) {
-        registrationCompleted = false;
+                    setButtonLoading(
+                        submitBtn,
+                        false
+                    );
 
-        localStorage.removeItem(
-            REGISTRATION_COMPLETED_KEY
+                    if (saved) {
+                        showStep(2);
+                    }
+
+                    return;
+                }
+
+                /*
+                * Step 3 par final account create hoga.
+                */
+                if (currentStep === 2) {
+                    billingSkipped.value = '0';
+
+                    await submitFinalRegistration();
+                }
+            }
         );
 
-        const stepOneFields = [
-            'name',
-            'phone',
-        ];
+        skipBillingBtn?.addEventListener(
+            'click',
+            async function () {
+                if (
+                    requestRunning ||
+                    finalSubmissionRunning
+                ) {
+                    return;
+                }
 
-        const stepTwoFields = [
-            'business_name',
-            'business_email',
-            'mobile',
-            'business_type_id',
-            'gstin',
-            'address',
-            'state',
-            'state_code',
-        ];
+                billingSkipped.value = '1';
 
-        const hasStepOneError =
-            serverValidationFields.some(function (field) {
-                return stepOneFields.includes(field);
-            });
+                const gstField =
+                    form.querySelector(
+                        '[name="gst_enabled"]'
+                    );
 
-        const hasStepTwoError =
-            serverValidationFields.some(function (field) {
-                return stepTwoFields.includes(field);
-            });
+                const prefixField =
+                    form.querySelector(
+                        '[name="invoice_base_prefix"]'
+                    );
 
-        if (hasStepOneError) {
-            showStep(0);
-        } else if (hasStepTwoError) {
-            showStep(1);
-        } else {
-            showStep(2);
+                const roundingModeField =
+                    form.querySelector(
+                        '[name="rounding_mode"]'
+                    );
+
+                const roundingStepField =
+                    form.querySelector(
+                        '[name="rounding_step"]'
+                    );
+
+                if (gstField) {
+                    gstField.value = '0';
+                }
+
+                if (prefixField) {
+                    prefixField.value = 'RV/SL';
+                }
+
+                if (roundingModeField) {
+                    roundingModeField.value =
+                        'nearest';
+                }
+
+                if (roundingStepField) {
+                    roundingStepField.value =
+                        '1.00';
+                }
+
+                await submitFinalRegistration();
+            }
+        );
+
+        form.addEventListener(
+            'submit',
+            function (event) {
+                event.preventDefault();
+
+                if (
+                    currentStep === 2 &&
+                    !requestRunning &&
+                    !finalSubmissionRunning
+                ) {
+                    submitFinalRegistration();
+                }
+            }
+        );
+
+        stateSelect?.addEventListener(
+            'change',
+            syncStateFields
+        );
+
+        if (stateSelect?.value) {
+            syncStateFields();
         }
 
-        registrationModal.classList.add('show');
-        registrationModal.setAttribute(
-            'aria-hidden',
-            'false'
+        gstinInput?.addEventListener(
+            'input',
+            function () {
+                const gstin =
+                    gstinInput.value
+                        .toUpperCase()
+                        .replace(/\s/g, '')
+                        .slice(0, 15);
+
+                gstinInput.value = gstin;
+
+                if (gstEnabled) {
+                    gstEnabled.value =
+                        gstin ? '1' : '0';
+                }
+
+                if (gstin.length < 2) {
+                    return;
+                }
+
+                const gstStateCode =
+                    gstin.substring(0, 2);
+
+                const matchingOption =
+                    Array.from(
+                        stateSelect?.options || []
+                    ).find(function (option) {
+                        return option.value.startsWith(
+                            gstStateCode + ','
+                        );
+                    });
+
+                if (matchingOption && stateSelect) {
+                    stateSelect.value =
+                        matchingOption.value;
+
+                    syncStateFields();
+                }
+            }
         );
 
-        document.body.classList.add(
-            'registration-modal-open'
-        );
+        if (
+            phoneVerified &&
+            phoneVerified.value === '1'
+        ) {
+            if (ownerPhone) {
+                ownerPhone.readOnly = true;
+            }
 
-        messageBox.innerHTML =
-            '<div class="font-black mb-2">'
-            + 'Registration complete nahi hua:'
-            + '</div>'
-            + '<ul class="list-disc pl-5 space-y-1">'
-            + serverValidationErrors
-                .map(function (error) {
-                    return '<li>'
-                        + String(error)
-                            .replace(/&/g, '&amp;')
-                            .replace(/</g, '&lt;')
-                            .replace(/>/g, '&gt;')
-                            .replace(/"/g, '&quot;')
-                            .replace(/'/g, '&#039;')
-                        + '</li>';
-                })
-                .join('')
-            + '</ul>';
+            if (businessMobile) {
+                businessMobile.value =
+                    cleanPhone(ownerPhone?.value);
+            }
 
-        messageBox.className =
-            'registration-message show error';
+            sendOtpBtn?.classList.add(
+                'hidden'
+            );
 
-        setButtonLoading(
-            submitBtn,
-            false
-        );
+            otpSection?.classList.remove(
+                'hidden'
+            );
 
-        registrationModal
-            .querySelector(
-                '.registration-modal-dialog'
-            )
-            ?.scrollTo({
+            phoneOtp?.classList.add(
+                'hidden'
+            );
+
+            if (otpVerifyStatus) {
+                otpVerifyStatus.textContent =
+                    'Mobile number already verified hai.';
+
+                otpVerifyStatus.className =
+                    'mt-2 text-xs font-bold text-green-600';
+            }
+
+            showStep(1);
+
+        } else {
+            showStep(0);
+        }
+
+        if (
+            Array.isArray(
+                serverValidationErrors
+            ) &&
+            serverValidationErrors.length > 0
+        ) {
+            registrationCompleted = false;
+
+            localStorage.removeItem(
+                REGISTRATION_COMPLETED_KEY
+            );
+
+            const stepOneFields = [
+                'name',
+                'phone'
+            ];
+
+            const stepTwoFields = [
+                'business_name',
+                'business_email',
+                'mobile',
+                'business_type_id',
+                'gstin',
+                'address',
+                'state',
+                'state_code'
+            ];
+
+            const hasStepOneError =
+                serverValidationFields.some(
+                    function (field) {
+                        return stepOneFields.includes(
+                            field
+                        );
+                    }
+                );
+
+            const hasStepTwoError =
+                serverValidationFields.some(
+                    function (field) {
+                        return stepTwoFields.includes(
+                            field
+                        );
+                    }
+                );
+
+            if (hasStepOneError) {
+                showStep(0);
+            } else if (hasStepTwoError) {
+                showStep(1);
+            } else {
+                showStep(2);
+            }
+
+            registrationModal?.classList.add(
+                'show'
+            );
+
+            registrationModal?.setAttribute(
+                'aria-hidden',
+                'false'
+            );
+
+            document.body.classList.add(
+                'registration-modal-open'
+            );
+
+            if (messageBox) {
+                messageBox.innerHTML =
+                    '<div class="font-black mb-2">'
+                    + 'Registration complete nahi hua:'
+                    + '</div>'
+                    + '<ul class="list-disc pl-5 space-y-1">'
+                    + serverValidationErrors
+                        .map(function (error) {
+                            return '<li>'
+                                + String(error)
+                                    .replace(
+                                        /&/g,
+                                        '&amp;'
+                                    )
+                                    .replace(
+                                        /</g,
+                                        '&lt;'
+                                    )
+                                    .replace(
+                                        />/g,
+                                        '&gt;'
+                                    )
+                                    .replace(
+                                        /"/g,
+                                        '&quot;'
+                                    )
+                                    .replace(
+                                        /'/g,
+                                        '&#039;'
+                                    )
+                                + '</li>';
+                        })
+                        .join('')
+                    + '</ul>';
+
+                messageBox.className =
+                    'registration-message show error';
+            }
+
+            finalSubmissionRunning = false;
+            requestRunning = false;
+
+            setButtonLoading(
+                submitBtn,
+                false
+            );
+
+            if (skipBillingBtn) {
+                skipBillingBtn.disabled = false;
+            }
+
+            dialog?.scrollTo({
                 top: 0,
-                behavior: 'smooth',
+                behavior: 'smooth'
             });
-    }
-});
+        }
+    });
 </script>
-
 @endsection

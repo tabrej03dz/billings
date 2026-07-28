@@ -2,7 +2,6 @@
 
 <nav class=" text-black shadow-md">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-
       <!-- Logo -->
       <div class="text-2xl font-bold tracking-wide">
         Billing <span class="text-amber-800">GST</span>

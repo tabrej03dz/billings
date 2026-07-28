@@ -16,61 +16,144 @@
             </div>
         @endif
 
-        <div class="flex flex-wrap items-center justify-between gap-3  bg-[#BFE0E0] dark:bg-[#354A54] p-6">
-            <h1 class="text-2xl font-bold text-black dark:text-white">Items</h1>
+        {{-- Compact responsive page header --}}
+        <section class="overflow-hidden rounded-2xl border border-cyan-200 bg-[#DDF4F4] shadow-sm dark:border-slate-700 dark:bg-[#263A44]">
+            <div class="p-3 sm:p-5">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <h1 class="text-lg font-bold text-slate-900 dark:text-white sm:text-2xl">
+                            Items
+                        </h1>
 
-            <div class="flex items-center gap-2">
-                <form method="GET" class="flex flex-wrap items-center gap-2">
-                    <input type="text" name="q" value="{{ $q }}"
-                           placeholder="Search name / SKU / desc..."
-                           class="border border-black dark:border-white rounded px-3 py-2 text-sm w-56" />
+                        {{-- Description is hidden on mobile --}}
+                        <p class="mt-1 hidden text-sm text-slate-600 dark:text-slate-300 sm:block">
+                            Search, create and manage your products or services.
+                        </p>
+                    </div>
 
-                    <select name="category_id" class="border border-black dark:border-white rounded px-2 py-2 text-sm">
-                        <option value="">All Categories</option>
-                        @foreach($categories as $cat)
-                            <option value="{{ $cat->id }}" @selected($category_id==$cat->id)>{{ $cat->name }}</option>
-                        @endforeach
-                    </select>
+                    <div class="flex shrink-0 items-center gap-2">
+                        {{-- Mobile filter toggle --}}
+                        <button
+                            type="button"
+                            id="mobileFilterToggle"
+                            aria-expanded="false"
+                            aria-controls="itemFilterPanel"
+                            class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white sm:hidden"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M7 12h10m-7 7h4"/>
+                            </svg>
+                            Filter
+                        </button>
 
-                    <select name="active" class="border border-black dark:border-white rounded px-2 py-2 text-sm ">
-                        <option value="">Any Status</option>
-                        <option value="1" @selected($active==='1')>Active</option>
-                        <option value="0" @selected($active==='0')>Inactive</option>
-                    </select>
+                        <a
+                            href="{{ route('item.create') }}"
+                            class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 sm:h-11 sm:px-4 sm:text-sm"
+                        >
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            New Item
+                        </a>
+                    </div>
+                </div>
 
-                    <button class="px-3 py-2 text-sm rounded dark:bg-gray-500 dark:hover:bg-gray-400 border border-black dark:border-white">Filter</button>
-                    @if($q!=='' || $category_id || $active!=='')
-                        <a href="{{ route('items.index') }}" class="text-sm text-gray-900 dark:text-white border border-black dark:border-white p-2 hover:underline">Clear</a>
-                    @endif
-                </form>
+                {{-- Hidden by default on mobile; always visible from sm breakpoint --}}
+                <div
+                    id="itemFilterPanel"
+                    class="mt-3 hidden rounded-xl border border-cyan-200 bg-white/80 p-3 dark:border-slate-600 dark:bg-slate-900/30 sm:block sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent"
+                >
+                    <form method="GET" class="grid grid-cols-1 gap-2.5 sm:grid-cols-4 lg:grid-cols-12">
+                        <div class="sm:col-span-4 lg:col-span-4">
+                            <label for="item-search" class="sr-only">Search items</label>
+                            <div class="relative">
+                                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/>
+                                </svg>
 
-                <a href="{{ route('item.create') }}"
-                   class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
-                    + New Item
-                </a>
+                                <input
+                                    id="item-search"
+                                    type="text"
+                                    name="q"
+                                    value="{{ $q }}"
+                                    placeholder="Search name, SKU or description"
+                                    class="h-11 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                                />
+                            </div>
+                        </div>
 
+                        <div class="sm:col-span-2 lg:col-span-3">
+                            <label for="category-filter" class="sr-only">Category</label>
+                            <select
+                                id="category-filter"
+                                name="category_id"
+                                class="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                            >
+                                <option value="">All Categories</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}" @selected($category_id==$cat->id)>
+                                        {{ $cat->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="sm:col-span-2 lg:col-span-2">
+                            <label for="status-filter" class="sr-only">Status</label>
+                            <select
+                                id="status-filter"
+                                name="active"
+                                class="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                            >
+                                <option value="">Any Status</option>
+                                <option value="1" @selected($active==='1')>Active</option>
+                                <option value="0" @selected($active==='0')>Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 sm:col-span-4 lg:col-span-3">
+                            <button
+                                type="submit"
+                                class="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 dark:bg-slate-600 dark:hover:bg-slate-500"
+                            >
+                                Apply Filter
+                            </button>
+
+                            <a
+                                href="{{ route('items.index') }}"
+                                class="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                            >
+                                Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Extra actions: desktop/tablet only --}}
+            <div class="hidden flex-wrap gap-2 border-t border-cyan-200 bg-white/60 p-3 dark:border-slate-700 dark:bg-slate-900/20 sm:flex">
                 <form
                     method="POST"
                     action="{{ route('items.barcodes.generate-missing') }}"
                     onsubmit="return confirm('Generate barcodes for all items that do not have a barcode?')"
                 >
                     @csrf
-
                     <button
                         type="submit"
-                        class="rounded bg-blue-600 px-3 py-2 text-sm text-white hover:bg-blue-700"
+                        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
                     >
-                        Generate Missing Barcodes
+                        Generate Barcodes
                     </button>
                 </form>
 
-
-                <a href="{{ route('items.ai.create') }}"
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
-                    📷 AI Photo Entry
+                <a
+                    href="{{ route('items.ai.create') }}"
+                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700"
+                >
+                    AI Photo Entry
                 </a>
             </div>
-        </div>
+        </section>
 
         @php
             $itemGuideStorageKey =
@@ -84,16 +167,16 @@
             <div
                 id="itemSuggestionGuide"
                 data-storage-key="{{ $itemGuideStorageKey }}"
-                class="relative overflow-hidden rounded-2xl
+                class="relative hidden overflow-hidden rounded-2xl
                     border border-emerald-200
                     bg-gradient-to-br from-emerald-50
                     via-white to-cyan-50
-                    p-5 shadow-sm
+                    p-4 shadow-sm
                     dark:border-emerald-900/70
                     dark:from-emerald-950/50
                     dark:via-neutral-900
                     dark:to-cyan-950/30
-                    sm:p-6"
+                    sm:block sm:p-6"
             >
                 {{-- Decoration --}}
                 <div
@@ -142,7 +225,7 @@
                 </button>
 
                 <div class="relative z-10 pr-8">
-                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+                    <div class="flex flex-col gap-4 sm:gap-5 lg:flex-row lg:items-start">
 
                         {{-- Icon --}}
                         <div
@@ -169,7 +252,7 @@
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <h2
-                                    class="text-lg font-bold text-gray-900
+                                    class="text-base font-bold leading-6 text-gray-900
                                         dark:text-white sm:text-xl"
                                 >
                                     How to create and manage Items
@@ -197,7 +280,7 @@
                             </p>
 
                             {{-- Steps --}}
-                            <div class="mt-5 grid gap-3 md:grid-cols-3">
+                            <div class="mt-4 grid gap-3 md:mt-5 md:grid-cols-3">
 
                                 <div
                                     class="rounded-xl border border-emerald-100
@@ -387,7 +470,7 @@
             {{-- Reopen button --}}
             <div
                 id="itemSuggestionReopen"
-                class="hidden justify-end"
+                class="hidden justify-end sm:flex"
             >
                 <button
                     type="button"
@@ -406,7 +489,7 @@
             </div>
         @endif
 
-        <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
+        <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-neutral-900">
             <form
                 id="barcodeBulkForm"
                 method="POST"
@@ -415,137 +498,101 @@
             >
                 @csrf
 
-                <div class="flex flex-wrap items-center gap-3 border-b border-gray-200 bg-purple-50 p-4 dark:border-gray-700 dark:bg-gray-800">
-
-                    <div>
-                        <div class="text-sm font-bold text-gray-900 dark:text-white">
-                            Barcode Label Printing
+                <div class="hidden border-b border-slate-200 bg-purple-50 p-4 dark:border-slate-700 dark:bg-slate-800 md:block">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <div class="text-sm font-bold text-slate-900 dark:text-white">
+                                Barcode Label Printing
+                            </div>
+                            <div class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
+                                Select items below and print their barcode labels.
+                            </div>
                         </div>
 
-                        <div class="text-xs text-gray-600 dark:text-gray-300">
-                            Items select karein aur print button dabayein
+                        <div class="grid grid-cols-[100px_1fr] gap-2 sm:flex sm:items-end">
+                            <div>
+                                <label for="barcode-quantity" class="mb-1 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                    Copies
+                                </label>
+                                <input
+                                    id="barcode-quantity"
+                                    type="number"
+                                    name="quantity"
+                                    value="1"
+                                    min="1"
+                                    max="200"
+                                    class="h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white sm:w-24"
+                                >
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="mt-auto inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-purple-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-purple-700 sm:px-4 sm:text-sm"
+                            >
+                                🖨 Print Selected
+                            </button>
                         </div>
                     </div>
-
-                    <label class="ml-auto text-sm font-medium text-gray-900 dark:text-white">
-                        Copies per item
-                    </label>
-
-                    <input
-                        type="number"
-                        name="quantity"
-                        value="1"
-                        min="1"
-                        max="200"
-                        class="w-24 rounded border border-gray-400 bg-white px-3 py-2 text-gray-900"
-                    >
-
-                    <button
-                        type="submit"
-                        class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-purple-700"
-                    >
-                        🖨 Print Selected Barcodes
-                    </button>
-
                 </div>
             </form>
-            <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
-                <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
-                <tr>
-                    <th class="px-3 py-3">
-                        <input
-                            type="checkbox"
-                            id="selectAllBarcodeItems"
-                        >
-                    </th>
 
-                    <th class="px-6 py-3">Name</th>
-                    <th class="px-6 py-3">SKU</th>
-                    <th class="px-6 py-3">Barcode</th>
-                    <th class="px-6 py-3">Category</th>
-                    <th class="px-6 py-3">Price</th>
-                    <th class="px-6 py-3">Tax %</th>
-                    <th class="px-6 py-3">Stock</th>
-                    <th class="px-6 py-3">Status</th>
-                    <th class="px-6 py-3">Actions</th>
-                </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200 dark:bg-neutral-900 dark:divide-neutral-700">
+            {{-- Clean mobile item cards: only important information --}}
+            <div class="divide-y divide-slate-200 dark:divide-slate-700 md:hidden">
                 @forelse ($items as $it)
-                    <tr>
-                        <td class="px-3 py-3">
-                            <input
-                                class="barcode-item-checkbox"
-                                type="checkbox"
-                                form="barcodeBulkForm"
-                                name="item_ids[]"
-                                value="{{ $it->id }}"
-                            >
-                        </td>
-                        <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">{{ $it->name }}</td>
-                        <td class="px-6 py-3">{{ $it->sku ?? '—' }}</td>
-                        <td class="px-6 py-3">
-                            @if($it->barcode)
+                    <article class="p-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0 flex-1">
+                                <h3 class="break-words text-sm font-bold text-slate-900 dark:text-white">
+                                    {{ $it->name }}
+                                </h3>
 
-                                <div class="flex min-w-[170px] flex-col gap-2">
-                                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
-                                        {{ $it->barcode }}
-                                    </span>
+                                <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                    @if($it->sku)
+                                        <span>SKU: {{ $it->sku }}</span>
+                                    @endif
 
-                                    <a
-                                        href="{{ route('items.barcode.print', [
-                                            'item' => $it->id,
-                                            'quantity' => 1,
-                                            'print' => 1
-                                        ]) }}"
-                                        target="_blank"
-                                        class="inline-flex w-fit items-center rounded-md bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700"
-                                    >
-                                        🖨 Print Barcode
-                                    </a>
+                                    @if($it->category?->name)
+                                        <span>{{ $it->category->name }}</span>
+                                    @endif
                                 </div>
+                            </div>
 
-                            @else
-
-                                <div class="flex min-w-[170px] flex-col gap-2">
-                                    <span class="text-xs text-red-600">
-                                        Barcode not generated
-                                    </span>
-
-                                    <form
-                                        action="{{ route('items.barcode.generate', $it->id) }}"
-                                        method="POST"
-                                    >
-                                        @csrf
-
-                                        <button
-                                            type="submit"
-                                            class="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-                                        >
-                                            Generate Barcode
-                                        </button>
-                                    </form>
-                                </div>
-
-                            @endif
-                        </td>
-                        <td class="px-6 py-3">{{ $it->category?->name ?? '—' }}</td>
-                        <td class="px-6 py-3">{{ number_format($it->price,2) }}</td>
-                        <td class="px-6 py-3">{{ rtrim(rtrim(number_format($it->tax_rate,2), '0'), '.') }}</td>
-                        <td class="px-6 py-3">{{ $it->stock_qty }}</td>
-                        <td class="px-6 py-3">
                             @if($it->is_active)
-                                <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Active</span>
+                                <span class="shrink-0 rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">
+                                    Active
+                                </span>
                             @else
-                                <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">Inactive</span>
+                                <span class="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600">
+                                    Inactive
+                                </span>
                             @endif
-                        </td>
-                        <td class="px-6 py-3">
-                            <div class="flex min-w-[150px] items-center gap-2">
+                        </div>
 
+                        <div class="mt-3 flex items-end justify-between gap-3">
+                            <div class="flex gap-5">
+                                <div>
+                                    <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                        Price
+                                    </div>
+                                    <div class="mt-0.5 text-base font-bold text-slate-900 dark:text-white">
+                                        {{ number_format($it->price, 2) }}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                                        Stock
+                                    </div>
+                                    <div class="mt-0.5 text-base font-bold text-slate-900 dark:text-white">
+                                        {{ $it->stock_qty }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex shrink-0 items-center gap-2">
                                 <a
                                     href="{{ route('items.edit', $it->id) }}"
-                                    class="rounded bg-yellow-600 px-3 py-2 text-xs font-semibold text-white hover:bg-yellow-700"
+                                    class="inline-flex h-9 items-center justify-center rounded-lg bg-amber-500 px-3 text-xs font-bold text-white transition hover:bg-amber-600"
                                 >
                                     Edit
                                 </a>
@@ -560,21 +607,147 @@
 
                                     <button
                                         type="submit"
-                                        class="rounded bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                                        class="inline-flex h-9 items-center justify-center rounded-lg bg-red-600 px-3 text-xs font-bold text-white transition hover:bg-red-700"
                                     >
                                         Delete
                                     </button>
                                 </form>
-
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+                    </article>
                 @empty
-                    <tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">No items found.</td></tr>
+                    <div class="p-8 text-center">
+                        <div class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            No items found
+                        </div>
+
+                        <a
+                            href="{{ route('item.create') }}"
+                            class="mt-3 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white"
+                        >
+                            Create Item
+                        </a>
+                    </div>
                 @endforelse
-                </tbody>
-            </table>
-        </div>
+            </div>
+
+            {{-- Desktop table --}}
+            <div class="hidden overflow-x-auto md:block">
+                <table class="min-w-[1100px] w-full text-left text-sm text-slate-700 dark:text-slate-300">
+                    <thead class="bg-[#DDF4F4] text-xs font-semibold uppercase tracking-wider dark:bg-[#354A54]">
+                        <tr>
+                            <th class="px-3 py-3">
+                                <input
+                                    type="checkbox"
+                                    id="selectAllBarcodeItems"
+                                    class="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                                >
+                            </th>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3">SKU</th>
+                            <th class="px-4 py-3">Barcode</th>
+                            <th class="px-4 py-3">Category</th>
+                            <th class="px-4 py-3">Price</th>
+                            <th class="px-4 py-3">Tax %</th>
+                            <th class="px-4 py-3">Stock</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-neutral-900">
+                        @forelse ($items as $it)
+                            <tr class="transition hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                                <td class="px-3 py-3">
+                                    <input
+                                        class="barcode-item-checkbox h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                                        type="checkbox"
+                                        form="barcodeBulkForm"
+                                        name="item_ids[]"
+                                        value="{{ $it->id }}"
+                                    >
+                                </td>
+                                <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">{{ $it->name }}</td>
+                                <td class="px-4 py-3">{{ $it->sku ?? '—' }}</td>
+                                <td class="px-4 py-3">
+                                    @if($it->barcode)
+                                        <div class="flex min-w-[170px] flex-col gap-2">
+                                            <span class="font-mono text-xs">{{ $it->barcode }}</span>
+                                            <a
+                                                href="{{ route('items.barcode.print', [
+                                                    'item' => $it->id,
+                                                    'quantity' => 1,
+                                                    'print' => 1
+                                                ]) }}"
+                                                target="_blank"
+                                                class="inline-flex w-fit items-center rounded-lg bg-purple-600 px-3 py-2 text-xs font-semibold text-white hover:bg-purple-700"
+                                            >
+                                                🖨 Print
+                                            </a>
+                                        </div>
+                                    @else
+                                        <div class="flex min-w-[170px] flex-col gap-2">
+                                            <span class="text-xs text-red-600">Not generated</span>
+                                            <form action="{{ route('items.barcode.generate', $it->id) }}" method="POST">
+                                                @csrf
+                                                <button
+                                                    type="submit"
+                                                    class="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                                                >
+                                                    Generate
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">{{ $it->category?->name ?? '—' }}</td>
+                                <td class="px-4 py-3">{{ number_format($it->price,2) }}</td>
+                                <td class="px-4 py-3">{{ rtrim(rtrim(number_format($it->tax_rate,2), '0'), '.') }}</td>
+                                <td class="px-4 py-3">{{ $it->stock_qty }}</td>
+                                <td class="px-4 py-3">
+                                    @if($it->is_active)
+                                        <span class="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">Active</span>
+                                    @else
+                                        <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">Inactive</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex min-w-[150px] items-center gap-2">
+                                        <a
+                                            href="{{ route('items.edit', $it->id) }}"
+                                            class="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
+                                        >
+                                            Edit
+                                        </a>
+
+                                        <form
+                                            action="{{ route('items.destroy', $it->id) }}"
+                                            method="POST"
+                                            onsubmit="return confirm('Delete this item?');"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+                                            <button
+                                                type="submit"
+                                                class="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                                            >
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="10" class="px-6 py-10 text-center text-slate-500">
+                                    No items found.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
         <div class="mt-4">
             {{ $items->links() }}
@@ -585,19 +758,32 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const selectAll = document.getElementById('selectAllBarcodeItems');
+        const mobileFilterToggle = document.getElementById('mobileFilterToggle');
+        const itemFilterPanel = document.getElementById('itemFilterPanel');
 
-        if (!selectAll) {
-            return;
+        if (mobileFilterToggle && itemFilterPanel) {
+            mobileFilterToggle.addEventListener('click', function () {
+                const isHidden = itemFilterPanel.classList.contains('hidden');
+
+                itemFilterPanel.classList.toggle('hidden');
+                mobileFilterToggle.setAttribute(
+                    'aria-expanded',
+                    isHidden ? 'true' : 'false'
+                );
+            });
         }
 
-        selectAll.addEventListener('change', function () {
+        const selectAll = document.getElementById('selectAllBarcodeItems');
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
             document
                 .querySelectorAll('.barcode-item-checkbox')
                 .forEach(function (checkbox) {
                     checkbox.checked = selectAll.checked;
                 });
-        });
+            });
+        }
 
         const bulkForm = document.getElementById('barcodeBulkForm');
 

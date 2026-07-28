@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BillTemplate;
 use App\Models\Business;
 use App\Models\BusinessType;
+use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -55,6 +56,10 @@ class BusinessProfileController extends Controller
         */
 
         $missingFields = $business->missingProfileFields();
+        
+          $itemCount = Item::query()
+            ->where('business_id', $business->id)
+            ->count();
 
         return view(
             'business-profile.index',
@@ -62,7 +67,7 @@ class BusinessProfileController extends Controller
                 'business',
                 'businessTypes',
                 'billTemplates',
-                'missingFields'
+                'missingFields', 'itemCount'
             )
         );
     }

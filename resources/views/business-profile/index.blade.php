@@ -1,8 +1,83 @@
 <x-layouts.app :title="__('Business Profile Setup')">
+    @php
+        $businessItemCount = (int) ($itemCount ?? 0);
+
+        $addItemUrl = Route::has('items.create')
+            ? route('items.create')
+            : (Route::has('items.index')
+                ? route('items.index')
+                : url('/items/create'));
+    @endphp
+
+    <style>
+        @keyframes itemCtaPulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(79, 70, 229, .45);
+            }
+            50% {
+                transform: scale(1.025);
+                box-shadow: 0 0 0 12px rgba(79, 70, 229, 0);
+            }
+        }
+
+        .item-cta-blink {
+            animation: itemCtaPulse 1.35s ease-in-out infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .item-cta-blink {
+                animation: none;
+            }
+        }
+
+        @media (max-width: 639px) {
+            #businessProfileForm > section {
+                border-radius: 1rem !important;
+            }
+
+            #businessProfileForm > section > div:first-child {
+                padding: .9rem 1rem !important;
+            }
+
+            #businessProfileForm > section > div:first-child h2 {
+                font-size: 1rem !important;
+                line-height: 1.35rem !important;
+            }
+
+            #businessProfileForm > section > div:first-child p {
+                font-size: .75rem !important;
+                line-height: 1.15rem !important;
+            }
+
+            #businessProfileForm input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            #businessProfileForm select,
+            #businessProfileForm textarea {
+                min-height: 46px;
+                font-size: 16px !important;
+            }
+
+            #businessProfileForm textarea {
+                min-height: 100px;
+            }
+
+            #businessProfileForm .grid.p-6,
+            #businessProfileForm > section > .p-6 {
+                padding: 1rem !important;
+                gap: 1rem !important;
+            }
+
+            #template-selection .invoice-template-slide {
+                flex-basis: 88% !important;
+                width: 88% !important;
+                max-width: 88% !important;
+            }
+        }
+    </style>
     <div class="mb-5"><x-billing-setup-guide :step="2" /></div>
 
-    <div class="min-h-screen bg-zinc-50 py-6 dark:bg-zinc-950">
-        <div class="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-zinc-50 py-3 dark:bg-zinc-950 sm:py-6">
+        <div class="mx-auto max-w-7xl px-3 pb-28 sm:px-6 sm:pb-12 lg:px-8">
 
             {{-- Success Message --}}
             @if(session('success'))
@@ -39,9 +114,9 @@
 
             {{-- Header --}}
             <div
-                class="mb-6 overflow-hidden rounded-3xl
+                class="mb-5 overflow-hidden rounded-2xl sm:rounded-3xl
                        bg-gradient-to-r from-indigo-600 to-violet-600
-                       p-6 text-white shadow-xl"
+                       p-4 text-white shadow-xl sm:p-6"
             >
                 <div
                     class="flex flex-col justify-between gap-6
@@ -55,7 +130,7 @@
                             Business Setup
                         </p>
 
-                        <h1 class="mt-2 text-3xl font-black">
+                        <h1 class="mt-2 text-2xl font-black sm:text-3xl">
                             Complete your business profile
                         </h1>
 
@@ -129,6 +204,62 @@
                 </div>
             @endif
 
+            {{-- Mobile Quick Navigation --}}
+            <div class="mb-5 rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <p class="mb-2 px-1 text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    Complete setup step-by-step
+                </p>
+
+                <div class="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    <a href="#basic-information" class="shrink-0 rounded-full bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
+                        1. Business Details
+                    </a>
+                    <a href="#branding" class="shrink-0 rounded-full bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 dark:bg-violet-950/50 dark:text-violet-300">
+                        2. Branding
+                    </a>
+                    <a href="#template-selection" class="shrink-0 rounded-full bg-cyan-50 px-3 py-2 text-xs font-bold text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-300">
+                        3. Template
+                    </a>
+                    <a href="#invoice-settings" class="shrink-0 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">
+                        4. Invoice Settings
+                    </a>
+                </div>
+            </div>
+
+            {{-- Show only when this business has no items --}}
+            @if($businessItemCount === 0)
+                <div class="mb-6 overflow-hidden rounded-2xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-lg dark:border-indigo-800 dark:from-indigo-950/60 dark:via-zinc-900 dark:to-violet-950/50 sm:p-5">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                            </div>
+
+                            <div class="min-w-0">
+                                <h2 class="text-base font-black text-zinc-900 dark:text-white sm:text-lg">
+                                    Add your first item
+                                </h2>
+                                <p class="mt-1 text-sm leading-5 text-zinc-600 dark:text-zinc-300">
+                                    No item is available in this business yet. Add an item now so invoice creation is easy and error-free.
+                                </p>
+                            </div>
+                        </div>
+
+                        <a
+                            href="{{ $addItemUrl }}"
+                            class="item-cta-blink inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200 sm:w-auto dark:focus:ring-indigo-950"
+                        >
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Item Now
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             {{-- Main Form --}}
             <form
                 id="businessProfileForm"
@@ -151,11 +282,11 @@
 
                 {{-- Save Bar --}}
                 <div
-                    class="sticky bottom-4 z-40 flex flex-col gap-4
+                    class="fixed inset-x-3 bottom-3 z-40 flex flex-col gap-3
                            rounded-2xl border border-zinc-200
                            bg-white/95 p-4 shadow-xl backdrop-blur
-                           sm:flex-row sm:items-center
-                           sm:justify-between
+                           sm:sticky sm:inset-x-auto sm:bottom-4
+                           sm:flex-row sm:items-center sm:justify-between
                            dark:border-zinc-700 dark:bg-zinc-900/95"
                 >
                     <div>

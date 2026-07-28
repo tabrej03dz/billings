@@ -13,37 +13,6 @@ use Illuminate\Validation\Rule;
 
 class ItemController extends Controller
 {
-    // public function index(Request $request)
-    // {
-    //     $q           = trim($request->get('q', ''));
-    //     $category_id = $request->integer('category_id');
-    //     $active      = $request->get('active'); // '1' | '0' | null
-
-    //     $items = Item::query()
-    //         ->with('category:id,name') // eager-load for table
-    //         ->when($q !== '', function ($w) use ($q) {
-    //             $w->where(function ($s) use ($q) {
-    //                 // $s->where('name', 'like', "%{$q}%")
-    //                 //     ->orWhere('sku', 'like', "%{$q}%")
-    //                 //     ->orWhere('description', 'like', "%{$q}%");
-    //                 $s->where('name', 'like', "%{$q}%")
-    //                 ->orWhere('sku', 'like', "%{$q}%")
-    //                 ->orWhere('barcode', 'like', "%{$q}%")
-    //                 ->orWhere('description', 'like', "%{$q}%");
-    //             });
-    //         })
-    //         ->when($category_id, fn($w) => $w->where('category_id', $category_id))
-    //         ->when($active !== null && $active !== '', fn($w) => $w->where('is_active', (bool)$active))
-    //         ->latest()
-    //         ->paginate(15)
-    //         ->withQueryString();
-
-    //     // current business ki categories (BelongsToBusiness scope ke sath)
-    //     $categories = Category::orderBy('name')->get(['id','name']);
-
-    //     return view('items.index', compact('items', 'categories', 'q', 'category_id', 'active'));
-    // }
-
 
     public function index(Request $request)
     {
