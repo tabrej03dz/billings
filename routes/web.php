@@ -41,8 +41,6 @@ use App\Http\Controllers\OnboardingRegistrationController;
 
 // frontend web routes:::::
 
-
-
 Route::prefix('ad')
     ->name('ad.register.')
     ->group(function () {

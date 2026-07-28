@@ -646,14 +646,28 @@ class InvoiceController extends Controller
     |--------------------------------------------------------------------------
     */
     $metalRates = MetalRate::query()
-        ->where('business_id', $bid)
-        ->whereDate('rate_date', $today)
-        ->where('is_active', true)
-        ->get([
-            'metal_type',
-            'purity',
-            'rate_per_gram',
-        ]);
+    ->where('business_id', $bid)
+    ->whereDate('rate_date', $today)
+    ->where('is_active', true)
+    ->orderByDesc('id')
+    ->get([
+        'id',
+        'metal_type',
+        'purity',
+        'rate_per_gram',
+    ])
+    ->unique(function ($rate) {
+        return strtolower(trim((string) $rate->metal_type))
+            . '|'
+            . strtoupper(
+                preg_replace(
+                    '/[^A-Z0-9]/i',
+                    '',
+                    (string) $rate->purity
+                )
+            );
+    })
+    ->values();
 
     /*
     |--------------------------------------------------------------------------
@@ -850,14 +864,39 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
         ->orderBy('items.name')
         ->get();
 
-    $metalRates = \App\Models\MetalRate::where('business_id', $bid)
-        ->whereDate('rate_date', $today)
-        ->where('is_active', true)
-        ->get([
-            'metal_type',
-            'purity',
-            'rate_per_gram',
-        ]);
+    /*
+|--------------------------------------------------------------------------
+| Metal rates for edit invoice
+|--------------------------------------------------------------------------
+| पहले invoice date का exact rate मिलेगा.
+| Exact date पर नहीं मिला तो invoice date तक का latest active rate मिलेगा.
+*/
+$metalRates = \App\Models\MetalRate::query()
+    ->where('business_id', $bid)
+    ->where('is_active', true)
+    ->whereDate('rate_date', '<=', $today)
+    ->orderByDesc('rate_date')
+    ->orderByDesc('id')
+    ->get([
+        'id',
+        'rate_date',
+        'metal_type',
+        'purity',
+        'rate_per_gram',
+    ])
+    ->unique(function ($rate) {
+        return strtolower(trim((string) $rate->metal_type))
+            . '|'
+            . strtoupper(
+                preg_replace(
+                    '/[^A-Z0-9]/i',
+                    '',
+                    (string) $rate->purity
+                )
+            );
+    })
+    ->values();
+
 
     $banks = \App\Models\BankAccount::where('business_id', $bid)
         ->orderBy('bank_name')
@@ -1056,6 +1095,12 @@ public function edit(Request $request, \App\Models\Invoice $invoice)
 
                 'gold_rate' => (float) ($it->gold_rate ?? 0),
                 'silver_rate' => (float) ($it->silver_rate ?? 0),
+
+                'gold_rate_from_backend' => false,
+                'silver_rate_from_backend' => false,
+
+                'gold_rate_message' => '',
+                'silver_rate_message' => '',
 
                 'silver_wt' => (float) ($it->silver_wt ?? 0),
                 'gold_wt' => (float) ($it->gold_wt ?? 0),
