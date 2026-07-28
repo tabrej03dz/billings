@@ -109,6 +109,70 @@
             animation: none;
         }
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mobile Hamburger Guided Setup
+    |--------------------------------------------------------------------------
+    */
+
+    @keyframes mobileMenuGuidePulse {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+            transform: scale(1);
+        }
+
+        50% {
+            box-shadow: 0 0 0 7px rgba(79, 70, 229, 0.18);
+            transform: scale(1.06);
+        }
+    }
+
+    @keyframes mobileTooltipFloat {
+        0%, 100% { transform: translateY(-50%) translateX(0); }
+        50% { transform: translateY(-50%) translateX(4px); }
+    }
+
+    .mobile-menu-guide-button {
+        position: relative;
+        z-index: 2;
+        border-radius: 0.75rem !important;
+        background: #4f46e5 !important;
+        color: #ffffff !important;
+        animation: mobileMenuGuidePulse 1.35s ease-in-out infinite;
+    }
+
+    .mobile-menu-guide-tooltip {
+        position: absolute;
+        left: calc(100% + 10px);
+        top: 50%;
+        z-index: 50;
+        width: max-content;
+        max-width: min(210px, calc(100vw - 88px));
+        transform: translateY(-50%);
+        pointer-events: none;
+        animation: mobileTooltipFloat 1.35s ease-in-out infinite;
+    }
+
+    .mobile-menu-guide-tooltip::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 50%;
+        width: 12px;
+        height: 12px;
+        background: #111827;
+        transform: translateY(-50%) rotate(45deg);
+        border-radius: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .mobile-menu-guide-button,
+        .mobile-menu-guide-tooltip {
+            animation: none;
+        }
+    }
 </style>
 </head>
 
@@ -355,6 +419,24 @@
                     (bool) $business &&
                     $hasItems &&
                     !$hasInvoices;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Mobile Hamburger Guidance
+                |--------------------------------------------------------------------------
+                */
+
+                $mobileMenuAttention =
+                    (bool) $business &&
+                    (!$hasItems || !$hasInvoices);
+
+                $mobileNextStepTitle = !$hasItems
+                    ? 'Next Step: Create Item'
+                    : 'Next Step: Create Invoice';
+
+                $mobileNextStepText = !$hasItems
+                    ? 'Menu kholkar Items par tap karein'
+                    : 'Menu kholkar Create Invoice par tap karein';
     @endphp
 
     <flux:sidebar
@@ -2074,12 +2156,33 @@
     {{-- MOBILE HEADER --}}
     {{-- ============================================================= --}}
 
-    <flux:header class="lg:hidden">
-        <flux:sidebar.toggle
-            class="lg:hidden"
-            icon="bars-2"
-            inset="left"
-        />
+    <flux:header class="relative overflow-visible lg:hidden">
+        <div class="relative flex shrink-0 items-center">
+            <flux:sidebar.toggle
+                class="lg:hidden {{ $mobileMenuAttention ? 'mobile-menu-guide-button' : '' }}"
+                icon="bars-2"
+                inset="left"
+                aria-label="Open navigation menu"
+            />
+
+            @if($mobileMenuAttention)
+                <div
+                    class="mobile-menu-guide-tooltip rounded-xl bg-gray-900 px-3 py-2 text-white shadow-xl dark:bg-white dark:text-gray-900"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div class="relative z-10">
+                        <p class="text-[11px] font-extrabold leading-4">
+                            {{ $mobileNextStepTitle }}
+                        </p>
+
+                        <p class="mt-0.5 text-[10px] font-medium leading-4 opacity-80">
+                            {{ $mobileNextStepText }}
+                        </p>
+                    </div>
+                </div>
+            @endif
+        </div>
 
         <a
             href="{{ route('dashboard') }}"

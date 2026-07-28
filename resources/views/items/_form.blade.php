@@ -72,39 +72,89 @@
             @endif
             @if($showField('category_id'))
                 <div>
-                    <div class="flex items-center justify-between gap-3 mb-1">
-                        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <div class="mb-1 flex items-start justify-between gap-3">
+                        <label class="pt-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                             Category
                         </label>
 
-                        @if($categories->isEmpty())
-                            <button
-                                type="button"
-                                id="openCategoryModal"
-                                class="category-blink inline-flex items-center gap-1 px-3 py-1.5
-                                    rounded-lg bg-orange-500 text-white text-xs font-semibold
-                                    hover:bg-orange-600 shadow-lg"
-                            >
-                                <span class="text-base leading-none">+</span>
-                                Add Category
-                            </button>
-                        @else
-                            <button
-                                type="button"
-                                id="openCategoryModal"
-                                class="inline-flex items-center gap-1 px-3 py-1.5
-                                    rounded-lg bg-blue-600 text-white text-xs font-semibold
-                                    hover:bg-blue-700"
-                            >
-                                <span class="text-base leading-none">+</span>
-                                Add Category
-                            </button>
-                        @endif
+                        <div class="flex shrink-0 flex-col items-end">
+                            @if($categories->isEmpty())
+                                <button
+                                    type="button"
+                                    id="openCategoryModal"
+                                    class="category-blink inline-flex items-center gap-1
+                                        rounded-lg bg-orange-500 px-3 py-1.5
+                                        text-xs font-semibold text-white shadow-lg
+                                        hover:bg-orange-600"
+                                >
+                                    <span class="text-base leading-none">+</span>
+                                    Add Category
+                                </button>
+
+                                <div class="relative mt-2 w-[220px] max-w-[calc(100vw-3rem)]">
+                                    {{-- Arrow exactly Add Category button ke center ki taraf --}}
+                                    <span
+                                        class="absolute -top-2 right-[42px] z-10
+                                            h-0 w-0
+                                            border-l-[7px] border-r-[7px]
+                                            border-b-[8px]
+                                            border-l-transparent border-r-transparent
+                                            border-b-slate-900
+                                            dark:border-b-white"
+                                        aria-hidden="true"
+                                    ></span>
+
+                                    <div
+                                        class="relative z-20 rounded-xl
+                                            bg-slate-900 px-3 py-2
+                                            text-left text-[11px] font-semibold leading-4
+                                            text-white shadow-lg
+                                            dark:bg-white dark:text-slate-900"
+                                    >
+                                        <div class="flex items-start gap-2">
+                                            <svg
+                                                class="mt-0.5 h-3.5 w-3.5 shrink-0"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                                                />
+                                            </svg>
+
+                                            <span>
+                                                Next Step: Pehle category add karein
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <button
+                                    type="button"
+                                    id="openCategoryModal"
+                                    class="inline-flex items-center gap-1
+                                        rounded-lg bg-blue-600 px-3 py-1.5
+                                        text-xs font-semibold text-white
+                                        hover:bg-blue-700"
+                                >
+                                    <span class="text-base leading-none">+</span>
+                                    Add Category
+                                </button>
+                            @endif
+                        </div>
                     </div>
 
                     <select
                         name="category_id"
-                        class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
+                        class="rv-select mt-1 w-full rounded-xl border border-slate-300
+                            px-3.5 py-2.5 outline-none transition
+                            focus:border-teal-500 focus:ring-4 focus:ring-teal-100
+                            dark:border-slate-600 dark:focus:border-teal-400
+                            dark:focus:ring-teal-900/40"
                     >
                         <option value="">— None —</option>
 
@@ -130,7 +180,7 @@
                     @endif
 
                     @error('category_id')
-                        <p class="text-xs text-red-600 mt-1">
+                        <p class="mt-1 text-xs text-red-600">
                             {{ $message }}
                         </p>
                     @enderror

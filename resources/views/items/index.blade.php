@@ -46,15 +46,59 @@
                             Filter
                         </button>
 
-                        <a
-                            href="{{ route('item.create') }}"
-                            class="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 sm:h-11 sm:px-4 sm:text-sm"
-                        >
-                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            New Item
-                        </a>
+                        <div class="relative">
+                            @if($showItemSuggestion ?? false)
+                                <div
+                                    class="pointer-events-none absolute right-0 top-full z-30 mt-2 flex items-start sm:hidden"
+                                >
+                                    <div
+                                        class="relative whitespace-nowrap rounded-xl
+                                            bg-slate-900 px-3 py-2 text-[11px]
+                                            font-semibold text-white shadow-xl
+                                            dark:bg-white dark:text-slate-900"
+                                    >
+                                        <span
+                                            class="absolute -top-1.5 right-5 h-3 w-3
+                                                rotate-45 bg-slate-900
+                                                dark:bg-white"
+                                        ></span>
+
+                                        <span class="relative z-10">
+                                            Next Step: Apna pehla item add karein
+                                        </span>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <a
+                                href="{{ route('item.create') }}"
+                                class="inline-flex h-10 items-center justify-center
+                                    gap-1.5 rounded-xl bg-emerald-600 px-3
+                                    text-xs font-bold text-white shadow-sm
+                                    transition hover:bg-emerald-700
+                                    sm:h-11 sm:px-4 sm:text-sm
+                                    {{ ($showItemSuggestion ?? false)
+                                        ? 'animate-pulse ring-4 ring-emerald-300/60 dark:ring-emerald-800/70'
+                                        : ''
+                                    }}"
+                            >
+                                <svg
+                                    class="h-4 w-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M12 4v16m8-8H4"
+                                    />
+                                </svg>
+
+                                New Item
+                            </a>
+                        </div>
                     </div>
                 </div>
 
