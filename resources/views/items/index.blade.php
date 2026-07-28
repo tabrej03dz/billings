@@ -46,42 +46,71 @@
                             Filter
                         </button>
 
-                        <div class="relative">
+                       <div class="relative inline-flex flex-col items-end">
                             @if($showItemSuggestion ?? false)
                                 <div
-                                    class="pointer-events-none absolute right-0 top-full z-30 mt-2 flex items-start sm:hidden"
+                                    class="pointer-events-none relative z-50 mb-5
+                                        flex w-max max-w-[250px] justify-end sm:max-w-none"
                                 >
                                     <div
-                                        class="relative whitespace-nowrap rounded-xl
-                                            bg-slate-900 px-3 py-2 text-[11px]
-                                            font-semibold text-white shadow-xl
-                                            dark:bg-white dark:text-slate-900"
+                                        class="relative rounded-xl border border-emerald-400
+                                            bg-slate-900 px-3 py-2 text-center
+                                            text-[11px] font-semibold leading-5 text-white
+                                            shadow-2xl
+                                            dark:border-emerald-300
+                                            dark:bg-white dark:text-slate-900
+                                            sm:px-4 sm:text-xs"
                                     >
-                                        <span
-                                            class="absolute -top-1.5 right-5 h-3 w-3
-                                                rotate-45 bg-slate-900
-                                                dark:bg-white"
-                                        ></span>
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="flex h-5 w-5 shrink-0 items-center
+                                                    justify-center rounded-full
+                                                    bg-emerald-500 text-[10px] text-white"
+                                            >
+                                                1
+                                            </span>
 
-                                        <span class="relative z-10">
-                                            Next Step: Apna pehla item add karein
-                                        </span>
+                                            <span>
+                                                Yahan click karke apna pehla item add karein
+                                            </span>
+                                        </div>
+
+                                        {{-- Proper nukila arrow --}}
+                                        <span
+                                            class="item-tooltip-arrow"
+                                            aria-hidden="true"
+                                        ></span>
                                     </div>
                                 </div>
                             @endif
 
                             <a
                                 href="{{ route('item.create') }}"
-                                class="inline-flex h-10 items-center justify-center
+                                class="relative inline-flex h-10 items-center justify-center
                                     gap-1.5 rounded-xl bg-emerald-600 px-3
-                                    text-xs font-bold text-white shadow-sm
+                                    text-xs font-bold text-white shadow-md
                                     transition hover:bg-emerald-700
                                     sm:h-11 sm:px-4 sm:text-sm
                                     {{ ($showItemSuggestion ?? false)
-                                        ? 'animate-pulse ring-4 ring-emerald-300/60 dark:ring-emerald-800/70'
+                                        ? 'item-suggestion-blink ring-4 ring-emerald-300/70 dark:ring-emerald-700/70'
                                         : ''
                                     }}"
                             >
+                                @if($showItemSuggestion ?? false)
+                                    <span class="absolute -right-1 -top-1 flex h-3 w-3">
+                                        <span
+                                            class="absolute inline-flex h-full w-full
+                                                animate-ping rounded-full
+                                                bg-yellow-300 opacity-75"
+                                        ></span>
+
+                                        <span
+                                            class="relative inline-flex h-3 w-3
+                                                rounded-full bg-yellow-400"
+                                        ></span>
+                                    </span>
+                                @endif
+
                                 <svg
                                     class="h-4 w-4"
                                     fill="none"
@@ -96,7 +125,7 @@
                                     />
                                 </svg>
 
-                                New Item
+                                Add Item
                             </a>
                         </div>
                     </div>
@@ -799,6 +828,55 @@
     </div>
 
 
+    <style>
+        @keyframes itemSuggestionBlink {
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow:
+                    0 0 0 0 rgba(16, 185, 129, 0.65),
+                    0 8px 18px rgba(16, 185, 129, 0.25);
+            }
+
+            50% {
+                transform: scale(1.06);
+                box-shadow:
+                    0 0 0 10px rgba(16, 185, 129, 0),
+                    0 12px 25px rgba(16, 185, 129, 0.45);
+            }
+        }
+
+        .item-suggestion-blink {
+            animation: itemSuggestionBlink 1.25s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .item-suggestion-blink {
+                animation: none;
+            }
+        }
+
+
+
+
+        .item-tooltip-arrow {
+            position: absolute;
+            right: 32px;
+            bottom: -16px;
+            width: 0;
+            height: 0;
+            border-left: 11px solid transparent;
+            border-right: 11px solid transparent;
+            border-top: 17px solid #0f172a;
+            z-index: 60;
+            display: block;
+        }
+
+        .dark .item-tooltip-arrow {
+            border-top-color: #ffffff;
+        }
+    </style>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {

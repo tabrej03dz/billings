@@ -40,6 +40,36 @@
             box-shadow: 0 0 0 9px rgba(249, 115, 22, 0);
         }
     }
+
+
+    .category-tooltip-arrow {
+        position: absolute;
+        right: 38px;
+        bottom: -17px;
+        width: 0;
+        height: 0;
+        border-left: 11px solid transparent;
+        border-right: 11px solid transparent;
+        border-top: 18px solid #0f172a;
+        z-index: 50;
+        display: block;
+    }
+
+    .dark .category-tooltip-arrow {
+        border-top-color: #ffffff;
+    }
+
+    @media (max-width: 420px) {
+        .category-tooltip-arrow {
+            right: 32px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .category-blink {
+            animation: none;
+        }
+    }
 </style>
 
 <div class="space-y-6">
@@ -79,59 +109,62 @@
 
                         <div class="flex shrink-0 flex-col items-end">
                             @if($categories->isEmpty())
+                                <div
+                                    class="pointer-events-none relative z-40 mb-4
+                                        w-[220px] max-w-[calc(100vw-3rem)]"
+                                >
+                                    <div
+                                        class="relative rounded-xl border border-orange-400
+                                            bg-slate-900 px-3 py-2
+                                            text-left text-[11px] font-semibold leading-4
+                                            text-white shadow-xl
+                                            dark:border-orange-300
+                                            dark:bg-white dark:text-slate-900"
+                                    >
+                                        <div class="flex items-start gap-2">
+                                            <span
+                                                class="flex h-5 w-5 shrink-0 items-center
+                                                    justify-center rounded-full
+                                                    bg-orange-500 text-[10px] text-white"
+                                            >
+                                                1
+                                            </span>
+
+                                            <span>
+                                                Yahan click karke pehle category add karein
+                                            </span>
+                                        </div>
+
+                                        <span
+                                            class="category-tooltip-arrow"
+                                            aria-hidden="true"
+                                        ></span>
+                                    </div>
+                                </div>
+
                                 <button
                                     type="button"
                                     id="openCategoryModal"
-                                    class="category-blink inline-flex items-center gap-1
+                                    class="category-blink relative inline-flex items-center gap-1
                                         rounded-lg bg-orange-500 px-3 py-1.5
                                         text-xs font-semibold text-white shadow-lg
                                         hover:bg-orange-600"
                                 >
                                     <span class="text-base leading-none">+</span>
                                     Add Category
+
+                                    <span class="absolute -right-1 -top-1 flex h-3 w-3">
+                                        <span
+                                            class="absolute inline-flex h-full w-full
+                                                animate-ping rounded-full
+                                                bg-yellow-300 opacity-75"
+                                        ></span>
+                                        <span
+                                            class="relative inline-flex h-3 w-3
+                                                rounded-full bg-yellow-400"
+                                        ></span>
+                                    </span>
                                 </button>
-
-                                <div class="relative mt-2 w-[220px] max-w-[calc(100vw-3rem)]">
-                                    {{-- Arrow exactly Add Category button ke center ki taraf --}}
-                                    <span
-                                        class="absolute -top-2 right-[42px] z-10
-                                            h-0 w-0
-                                            border-l-[7px] border-r-[7px]
-                                            border-b-[8px]
-                                            border-l-transparent border-r-transparent
-                                            border-b-slate-900
-                                            dark:border-b-white"
-                                        aria-hidden="true"
-                                    ></span>
-
-                                    <div
-                                        class="relative z-20 rounded-xl
-                                            bg-slate-900 px-3 py-2
-                                            text-left text-[11px] font-semibold leading-4
-                                            text-white shadow-lg
-                                            dark:bg-white dark:text-slate-900"
-                                    >
-                                        <div class="flex items-start gap-2">
-                                            <svg
-                                                class="mt-0.5 h-3.5 w-3.5 shrink-0"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="2"
-                                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                                                />
-                                            </svg>
-
-                                            <span>
-                                                Next Step: Pehle category add karein
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
                             @else
                                 <button
                                     type="button"

@@ -1016,6 +1016,174 @@
 
 
 
+            /* =========================================================
+             * CLIENT FIRST SUGGESTION TOOLTIP
+             * ========================================================= */
+            .client-guide-wrap {
+                position: relative;
+                padding-right: 0;
+                padding-left: 188px;
+                min-height: 38px;
+                overflow: visible !important;
+                z-index: 999;
+            }
+
+            .client-guide-tooltip {
+                position: absolute;
+                right: calc(100% + 10px);
+                top: 50%;
+                z-index: 99999;
+                display: block;
+                width: 178px;
+                transform: translateY(-50%);
+                border-radius: 8px;
+                background: #111827;
+                padding: 7px 10px;
+                color: #ffffff;
+                font-size: 10px;
+                line-height: 1.2;
+                box-shadow: 0 8px 20px rgba(17, 24, 39, 0.28);
+                pointer-events: none;
+            }
+
+            .client-guide-arrow {
+                position: absolute;
+                right: -7px;
+                top: 50%;
+                width: 14px;
+                height: 14px;
+                transform: translateY(-50%) rotate(45deg);
+                border-radius: 2px;
+                background: #111827;
+            }
+
+            @keyframes clientGuidePulse {
+                0%, 100% {
+                    transform: scale(1);
+                    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.60);
+                }
+
+                50% {
+                    transform: scale(1.04);
+                    box-shadow: 0 0 0 8px rgba(234, 88, 12, 0);
+                }
+            }
+
+            .client-guide-button {
+                animation: clientGuidePulse 1.2s ease-in-out infinite;
+            }
+
+            @media (max-width: 640px) {
+                .client-guide-wrap {
+                    width: 100%;
+                    padding-left: 0;
+                    padding-top: 52px;
+                    justify-content: flex-end;
+                }
+
+                .client-guide-tooltip {
+                    right: 0;
+                    top: 0;
+                    width: 188px;
+                    transform: none;
+                }
+
+                .client-guide-arrow {
+                    right: 24px;
+                    top: auto;
+                    bottom: -7px;
+                    transform: rotate(45deg);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .client-guide-button {
+                    animation: none;
+                }
+            }
+
+
+
+            /* =========================================================
+             * BLUE + NEW ITEM BUTTON TOOLTIP
+             * Shows only when database item catalog is empty
+             * ========================================================= */
+            .new-item-guide-wrap {
+                position: relative;
+                overflow: visible !important;
+                z-index: 1000;
+            }
+
+            .new-item-guide-tooltip {
+                position: absolute;
+                right: calc(100% + 10px);
+                top: 50%;
+                z-index: 999999;
+                display: block;
+                width: 180px;
+                transform: translateY(-50%);
+                border-radius: 8px;
+                background: #111827;
+                padding: 7px 10px;
+                color: #ffffff;
+                font-size: 10px;
+                line-height: 1.2;
+                white-space: normal;
+                box-shadow: 0 8px 20px rgba(17, 24, 39, 0.30);
+                pointer-events: none;
+            }
+
+            .new-item-guide-arrow {
+                position: absolute;
+                right: -7px;
+                top: 50%;
+                width: 14px;
+                height: 14px;
+                transform: translateY(-50%) rotate(45deg);
+                border-radius: 2px;
+                background: #111827;
+            }
+
+            @keyframes newItemGuidePulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.65);
+                }
+
+                50% {
+                    transform: scale(1.06);
+                    box-shadow: 0 0 0 7px rgba(2, 132, 199, 0);
+                }
+            }
+
+            .new-item-guide-button {
+                animation: newItemGuidePulse 1.2s ease-in-out infinite;
+            }
+
+            @media (max-width: 640px) {
+                .new-item-guide-tooltip {
+                    right: 0;
+                    top: calc(100% + 10px);
+                    width: 185px;
+                    transform: none;
+                }
+
+                .new-item-guide-arrow {
+                    right: 18px;
+                    top: -7px;
+                    transform: rotate(45deg);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .new-item-guide-button {
+                    animation: none;
+                }
+            }
+
+
+
             @keyframes clientNewButtonAttention {
                 0%,
                 100% {
@@ -1071,7 +1239,7 @@
             @csrf
             {{-- TOP PANELS --}}
             {{-- TOP PANELS - COMPACT --}}
-            <div class="border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-[#1A1D23] p-3">
+            <div class="relative z-40 overflow-visible border rounded border-gray-200 dark:border-neutral-700 bg-white dark:bg-[#1A1D23] p-3">
 
                 <div class="grid lg:grid-cols-12 gap-3">
 
@@ -1087,7 +1255,7 @@
                             Party
                         </label> --}}
 
-                        <div class="flex items-center gap-2 w-full">
+                        <div class="relative z-50 flex flex-wrap items-center gap-2 w-full overflow-visible">
                             <div class="relative flex-1 min-w-0"
                                 @keydown.escape="clientDD.close()"
                                 @keydown.arrow-down.prevent="clientDD.down()"
@@ -1137,20 +1305,41 @@
                                 </div>
                             </div>
 
-                            <button
-                                type="button"
-                                @click="openClientModal()"
-                                :class="clients.length === 0
-                                    ? 'client-new-button-attention bg-orange-600 hover:bg-orange-700'
-                                    : 'bg-[#4C8DFF] hover:bg-[#6CA8FF]'"
-                                class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap
-                                    rounded-lg px-4 py-2 text-sm font-semibold text-white
-                                    transition"
-                            >
-                                <span class="text-base leading-none">+</span>
+                            {{-- Client button with first-step tooltip --}}
+                            <div class="client-guide-wrap relative flex shrink-0 items-center">
 
-                                <span x-text="clients.length === 0 ? 'Add Client' : 'New'"></span>
-                            </button>
+                                <div
+                                    x-show="Array.isArray(clients) && clients.length === 0"
+                                    x-transition.opacity.duration.250ms
+                                    class="client-guide-tooltip"
+                                    style="display: none;"
+                                >
+                                    <div class="font-bold leading-tight">
+                                        First Step: Create Client
+                                    </div>
+
+                                    <div class="mt-0.5 text-[9px] font-medium leading-tight text-white/85">
+                                        Invoice banane se pehle client add karein
+                                    </div>
+
+                                    <span class="client-guide-arrow" aria-hidden="true"></span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    @click="openClientModal()"
+                                    :class="clients.length === 0
+                                        ? 'client-guide-button bg-orange-600 hover:bg-orange-700'
+                                        : 'bg-[#4C8DFF] hover:bg-[#6CA8FF]'"
+                                    class="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap
+                                        rounded-lg px-4 py-2 text-sm font-semibold text-white
+                                        transition"
+                                >
+                                    <span class="text-base leading-none">+</span>
+
+                                    <span x-text="clients.length === 0 ? 'Add Client' : 'New'"></span>
+                                </button>
+                            </div>
                         </div>
 
                         {{-- Compact Party Details --}}
@@ -1265,8 +1454,8 @@
 
             {{-- ================= TABLE ================= --}}
             {{-- ================= ITEMS: HORIZONTAL TABULAR LAYOUT ================= --}}
-            <div class="my-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-[#1A1D23]">
-                <div class="flex flex-wrap items-center justify-between gap-3 bg-[#BFE0E0] px-3 py-2 dark:bg-[#354A54]">
+            <div class="my-2 overflow-visible rounded-lg border border-gray-200 bg-white shadow-sm dark:border-neutral-700 dark:bg-[#1A1D23]">
+                <div class="relative z-50 flex flex-wrap items-center justify-between gap-3 overflow-visible bg-[#BFE0E0] px-3 py-2 dark:bg-[#354A54]">
                     <div>
                         <h2 class="text-sm font-bold text-gray-900 dark:text-neutral-100">Invoice Items</h2>
                         <p class="mt-0.5 text-[11px] text-gray-600 dark:text-neutral-300">
@@ -1274,9 +1463,14 @@
                         </p>
                     </div>
 
-                    <button type="button"
+                    {{-- Normal Add Item button: no blink and no tooltip --}}
+                    <button
+                        type="button"
                         @click="add()"
-                        class="inline-flex items-center gap-2 rounded-md bg-green-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-green-700">
+                        class="inline-flex items-center gap-2 rounded-md bg-green-600
+                            px-3 py-1.5 text-sm font-semibold text-white
+                            transition hover:bg-green-700"
+                    >
                         <span class="text-base leading-none">+</span>
                         Add Item
                     </button>
@@ -1342,12 +1536,50 @@
                                                     @keydown.enter.prevent="itemDDEnter(i)"
                                                     class="min-w-0 flex-1 rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 dark:border-neutral-700 dark:bg-[#242833] dark:text-neutral-100">
 
-                                                <button type="button"
-                                                    @click="openItemModal(i)"
-                                                    title="Create new item"
-                                                    class="h-[28px] shrink-0 rounded-md bg-sky-600 px-2.5 text-xs font-bold text-white hover:bg-sky-700">
-                                                    + New
-                                                </button>
+                                                {{-- Create first database item guide --}}
+                                                <div class="new-item-guide-wrap relative shrink-0">
+                                                    <div
+                                                        x-show="
+                                                            i === 0 &&
+                                                            clients.length > 0 &&
+                                                            itemCatalogCount === 0
+                                                        "
+                                                        x-transition.opacity.duration.250ms
+                                                        class="new-item-guide-tooltip"
+                                                        style="display: none;"
+                                                    >
+                                                        <div class="font-bold leading-tight">
+                                                            Next Step: Create Item
+                                                        </div>
+
+                                                        <div class="mt-0.5 text-[9px] font-medium leading-tight text-white/85">
+                                                            Pehle apna product ya service create karein
+                                                        </div>
+
+                                                        <span
+                                                            class="new-item-guide-arrow"
+                                                            aria-hidden="true"
+                                                        ></span>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        @click="openItemModal(i)"
+                                                        title="Create new item"
+                                                        :class="
+                                                            i === 0 &&
+                                                            clients.length > 0 &&
+                                                            itemCatalogCount === 0
+                                                                ? 'new-item-guide-button'
+                                                                : ''
+                                                        "
+                                                        class="h-[28px] shrink-0 rounded-md bg-sky-600
+                                                            px-2.5 text-xs font-bold text-white
+                                                            transition hover:bg-sky-700"
+                                                    >
+                                                        + New
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <input type="hidden" :name="'items[' + i + '][item_id]'" :value="row.item_id">
@@ -2565,6 +2797,7 @@
             return {
                 // DATA
                 clients: CLIENTS,
+                itemCatalogCount: ITEMS.length,
                 itemsData: ITEMS,
                 categories: CATEGORIES,
 

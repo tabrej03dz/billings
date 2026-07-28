@@ -1058,7 +1058,7 @@
                                 </span>
                             </label>
 
-                            <select name="business_type_id"
+                            <select name="type"
                                     class="registration-field">
                                 <option value="">
                                     Select business type
@@ -1066,7 +1066,7 @@
 
                                 @foreach($businessTypes as $businessType)
                                     <option value="{{ $businessType->id }}"
-                                        @selected(old('business_type_id') == $businessType->id)>
+                                        @selected(old('type') == $businessType->id)>
                                         {{ $businessType->name }}
                                     </option>
                                 @endforeach
