@@ -610,7 +610,7 @@
             </form>
 
             {{-- Clean mobile item cards: only important information --}}
-            <div class="divide-y divide-slate-200 dark:divide-slate-700 md:hidden">
+            <div class="mobile-items-list divide-y divide-slate-200 dark:divide-slate-700 lg:hidden">
                 @forelse ($items as $it)
                     <article class="p-3">
                         <div class="flex items-start justify-between gap-3">
@@ -705,7 +705,7 @@
             </div>
 
             {{-- Desktop table --}}
-            <div class="hidden overflow-x-auto md:block">
+            <div class="desktop-items-table w-full overflow-x-auto">
                 <table class="min-w-[1100px] w-full text-left text-sm text-slate-700 dark:text-slate-300">
                     <thead class="bg-[#DDF4F4] text-xs font-semibold uppercase tracking-wider dark:bg-[#354A54]">
                         <tr>
@@ -876,6 +876,51 @@
         .dark .item-tooltip-arrow {
             border-top-color: #ffffff;
         }
+
+        /* Item list visibility fix:
+           - Mobile/tablet: cards visible
+           - Laptop/desktop (1024px+): table visible
+           Explicit CSS prevents items disappearing because of breakpoint/class conflicts. */
+        .desktop-items-table {
+            display: none;
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .mobile-items-list {
+            display: block;
+        }
+
+        @media (min-width: 1024px) {
+            .desktop-items-table {
+                display: block !important;
+            }
+
+            .mobile-items-list {
+                display: none !important;
+            }
+        }
+
+        .desktop-items-table table {
+            width: 100%;
+            min-width: 1100px;
+            border-collapse: collapse;
+        }
+
+        .desktop-items-table th,
+        .desktop-items-table td {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .desktop-items-table td:nth-child(2) {
+            min-width: 190px;
+            white-space: normal;
+            word-break: break-word;
+        }
+
     </style>
 
     <script>

@@ -26,50 +26,6 @@ class HomeController extends Controller
 {
 
     // SKIP OTP LOGIN FOR TESTING PURPOSES
-    // public function login(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'phone'       => ['required', 'digits:10'],
-    //         'device_name' => ['nullable', 'string', 'max:100'],
-    //     ]);
-
-    //     $user = User::where('phone', $data['phone'])->first();
-
-    //     if (!$user) {
-    //         throw ValidationException::withMessages([
-    //             'phone' => ['Mobile number not registered.'],
-    //         ]);
-    //     }
-
-    //     // Single-device login chahiye to is line ko uncomment karein
-    //     // $user->tokens()->delete();
-
-    //     $deviceName = $data['device_name'] ?? 'authToken';
-
-    //     // OTP ke bina direct login token
-    //     $token = $user->createToken($deviceName)->plainTextToken;
-
-    //     // Purana OTP pada ho to clear kar denge
-    //     $user->update([
-    //         'otp' => null,
-    //         'otp_expires_at' => null,
-    //     ]);
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Login successful',
-    //         'token_type' => 'Bearer',
-    //         'token' => $token,
-    //         'user' => [
-    //             'id' => $user->id,
-    //             'name' => $user->name,
-    //             'email' => $user->email,
-    //             'phone' => $user->phone,
-    //             'business' => $user->businesses,
-    //         ],
-    //     ], 200);
-    // }
-
     public function login(Request $request)
     {
         $data = $request->validate([
@@ -85,36 +41,80 @@ class HomeController extends Controller
             ]);
         }
 
-        $otp = $user->phone == '7753800444' || $user->phone == '8948467535'
-            ? 111111
-            : rand(100000, 999999);
+        // Single-device login chahiye to is line ko uncomment karein
+        // $user->tokens()->delete();
 
+        $deviceName = $data['device_name'] ?? 'authToken';
+
+        // OTP ke bina direct login token
+        $token = $user->createToken($deviceName)->plainTextToken;
+
+        // Purana OTP pada ho to clear kar denge
         $user->update([
-            'otp' => $otp,
-            'otp_expires_at' => now()->addMinutes(10),
-        ]);
-
-        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
-
-        $response = Http::get('https://kutility.org/app/smsapi/index.php', [
-            'key'         => '5620360CF8C9B4',
-            'campaign'    => '12754',
-            'routeid'     => '7',
-            'type'        => 'text',
-            'contacts'    => $user->phone,
-            'senderid'    => 'RVGRPS',
-            'msg'         => $msg,
-            'template_id' => '1707178057481157648',
-            'pe_id'       => '1701164032595209992',
+            'otp' => null,
+            'otp_expires_at' => null,
         ]);
 
         return response()->json([
             'status' => true,
-            'message' => 'OTP sent successfully on your mobile number.',
-            'phone' => $user->phone,
-            'sms_response' => $response->body(),
+            'message' => 'Login successful',
+            'token_type' => 'Bearer',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'business' => $user->businesses,
+            ],
         ], 200);
     }
+
+    // public function login(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'phone'       => ['required', 'digits:10'],
+    //         'device_name' => ['nullable', 'string', 'max:100'],
+    //     ]);
+
+    //     $user = User::where('phone', $data['phone'])->first();
+
+    //     if (!$user) {
+    //         throw ValidationException::withMessages([
+    //             'phone' => ['Mobile number not registered.'],
+    //         ]);
+    //     }
+
+    //     $otp = $user->phone == '7753800444' || $user->phone == '8948467535'
+    //         ? 111111
+    //         : rand(100000, 999999);
+
+    //     $user->update([
+    //         'otp' => $otp,
+    //         'otp_expires_at' => now()->addMinutes(10),
+    //     ]);
+
+    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+    //     $response = Http::get('https://kutility.org/app/smsapi/index.php', [
+    //         'key'         => '5620360CF8C9B4',
+    //         'campaign'    => '12754',
+    //         'routeid'     => '7',
+    //         'type'        => 'text',
+    //         'contacts'    => $user->phone,
+    //         'senderid'    => 'RVGRPS',
+    //         'msg'         => $msg,
+    //         'template_id' => '1707178057481157648',
+    //         'pe_id'       => '1701164032595209992',
+    //     ]);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'OTP sent successfully on your mobile number.',
+    //         'phone' => $user->phone,
+    //         'sms_response' => $response->body(),
+    //     ], 200);
+    // }
 
 
     // public function verifyLoginOtp(Request $request)

@@ -1200,6 +1200,176 @@
             .client-new-button-attention {
                 animation: clientNewButtonAttention 1.2s ease-in-out infinite;
             }
+
+
+            /* =========================================================
+             * MOBILE INVOICE ITEMS TABLE FIX
+             * All item fields remain accessible by horizontal swipe.
+             * Sticky item/action columns are disabled on small screens.
+             * ========================================================= */
+            @media (max-width: 640px) {
+                .invoice-create-page {
+                    overflow-x: visible !important;
+                }
+
+                .invoice-items-scroll {
+                    display: block !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: visible !important;
+                    -webkit-overflow-scrolling: touch;
+                    touch-action: pan-x pan-y;
+                    overscroll-behavior-x: contain;
+                    scrollbar-width: auto;
+                    scrollbar-color: #6b7280 #e5e7eb;
+                }
+
+                .invoice-items-scroll::-webkit-scrollbar {
+                    display: block !important;
+                    height: 9px !important;
+                }
+
+                .invoice-items-scroll::-webkit-scrollbar-track {
+                    background: #e5e7eb;
+                    border-radius: 999px;
+                }
+
+                .invoice-items-scroll::-webkit-scrollbar-thumb {
+                    background: #6b7280;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 999px;
+                }
+
+                .invoice-table {
+                    display: table !important;
+                    width: max-content !important;
+                    min-width: max-content !important;
+                    table-layout: auto !important;
+                }
+
+                /*
+                 * Mobile पर sticky columns overlap कर रहे थे.
+                 * इसलिए सभी headers/cells normal scrolling columns रहेंगे.
+                 */
+                .invoice-table thead,
+                .invoice-table th,
+                .invoice-table td {
+                    position: static !important;
+                    left: auto !important;
+                    right: auto !important;
+                }
+
+                .invoice-table th,
+                .invoice-table td {
+                    white-space: nowrap !important;
+                }
+
+                .invoice-table th:nth-child(1),
+                .invoice-table td:nth-child(1) {
+                    width: 38px !important;
+                    min-width: 38px !important;
+                    max-width: 38px !important;
+                }
+
+                .invoice-table th:nth-child(2),
+                .invoice-table td:nth-child(2) {
+                    width: 245px !important;
+                    min-width: 245px !important;
+                    max-width: 245px !important;
+                }
+
+                .invoice-table th:nth-child(3),
+                .invoice-table td:nth-child(3) {
+                    width: 95px !important;
+                    min-width: 95px !important;
+                }
+
+                .invoice-table th:nth-child(4),
+                .invoice-table td:nth-child(4) {
+                    width: 75px !important;
+                    min-width: 75px !important;
+                }
+
+                .invoice-table th:nth-child(5),
+                .invoice-table td:nth-child(5) {
+                    width: 110px !important;
+                    min-width: 110px !important;
+                }
+
+                .invoice-table th:nth-child(6),
+                .invoice-table td:nth-child(6) {
+                    width: 105px !important;
+                    min-width: 105px !important;
+                }
+
+                .invoice-table th:nth-child(7),
+                .invoice-table td:nth-child(7) {
+                    width: 135px !important;
+                    min-width: 135px !important;
+                }
+
+                .invoice-table th:nth-child(n+8):nth-child(-n+15),
+                .invoice-table td:nth-child(n+8):nth-child(-n+15) {
+                    width: 110px !important;
+                    min-width: 110px !important;
+                }
+
+                .invoice-table th:nth-child(16),
+                .invoice-table td:nth-child(16) {
+                    width: 80px !important;
+                    min-width: 80px !important;
+                }
+
+                .invoice-table th:nth-child(17),
+                .invoice-table td:nth-child(17) {
+                    width: 120px !important;
+                    min-width: 120px !important;
+                }
+
+                .invoice-table th:nth-child(18),
+                .invoice-table td:nth-child(18) {
+                    width: 58px !important;
+                    min-width: 58px !important;
+                    max-width: 58px !important;
+                }
+
+                .invoice-table input,
+                .invoice-table select {
+                    width: 100% !important;
+                    min-width: 0 !important;
+                    height: 34px !important;
+                    font-size: 11px !important;
+                }
+
+                .invoice-table textarea {
+                    width: 100% !important;
+                    min-width: 0 !important;
+                    min-height: 48px !important;
+                    white-space: normal !important;
+                    font-size: 11px !important;
+                }
+
+                .invoice-table td:nth-child(2) > div,
+                .invoice-table td:nth-child(2) textarea {
+                    max-width: 100% !important;
+                }
+
+                .new-item-guide-tooltip {
+                    right: 0 !important;
+                    left: auto !important;
+                    top: calc(100% + 10px) !important;
+                    width: 180px !important;
+                    transform: none !important;
+                }
+
+                .new-item-guide-arrow {
+                    top: -7px !important;
+                    right: 18px !important;
+                    left: auto !important;
+                    transform: rotate(45deg) !important;
+                }
+            }
         </style>
         {{-- errors --}}
         @if ($errors->any())
@@ -1474,6 +1644,16 @@
                         <span class="text-base leading-none">+</span>
                         Add Item
                     </button>
+                </div>
+
+                <div
+                    class="flex items-center justify-between border-t border-gray-200
+                        bg-blue-50 px-3 py-2 text-[10px] font-medium text-blue-700
+                        sm:hidden dark:border-neutral-700 dark:bg-blue-950/30
+                        dark:text-blue-300"
+                >
+                    <span>Qty, Rate, Tax aur Amount dekhne ke liye table ko swipe karein</span>
+                    <span class="ml-2 shrink-0 whitespace-nowrap text-sm">← Swipe →</span>
                 </div>
 
                 <div class="invoice-items-scroll bg-[#F3F4F6] dark:bg-[#1A1D23]">
