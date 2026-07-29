@@ -12,6 +12,7 @@
         ☰
       </button>
 
+
       <!-- Navigation Links -->
       <ul id="menu" class="hidden md:flex space-x-6 font-medium">
         <li><a class="hover:text-amber-800" href="#">Home</a></li>

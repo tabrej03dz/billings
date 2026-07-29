@@ -22,10 +22,11 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     public bool $otpSent = false;
 
-
-
-
-    // otp skip login
+    /*
+    |--------------------------------------------------------------------------
+    | OTP SKIP LOGIN
+    |--------------------------------------------------------------------------
+    */
 
     // public function sendOtp(): void
     // {
@@ -49,8 +50,11 @@ new #[Layout('components.layouts.auth')] class extends Component
     //     |--------------------------------------------------------------------------
     //     | TEMPORARY OTP DISABLED
     //     |--------------------------------------------------------------------------
+    //     |
     //     | Phone number valid hai to direct login kara rahe hain.
-    //     | Baad me OTP enable karna ho to ye block hata dena aur old OTP code wapas rakhna.
+    //     | Baad me OTP enable karna ho to ye block hata dena aur old OTP code
+    //     | wapas rakhna.
+    //     |
     //     */
 
     //     Auth::login($user, $this->remember);
@@ -59,10 +63,17 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     //     RateLimiter::clear($this->throttleKey());
 
-    //     $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+    //     $this->redirectIntended(
+    //         default: route('dashboard', absolute: false),
+    //         navigate: true
+    //     );
     // }
 
-
+    /*
+    |--------------------------------------------------------------------------
+    | ORIGINAL OTP SEND FUNCTION
+    |--------------------------------------------------------------------------
+    */
 
     public function sendOtp(): void
     {
@@ -134,7 +145,9 @@ new #[Layout('components.layouts.auth')] class extends Component
             ]);
         }
 
-        $user = \App\Models\User::find(session('login_otp_user_id'));
+        $user = \App\Models\User::find(
+            session('login_otp_user_id')
+        );
 
         if (! $user) {
             throw ValidationException::withMessages([
@@ -142,7 +155,10 @@ new #[Layout('components.layouts.auth')] class extends Component
             ]);
         }
 
-        Auth::login($user, session('login_otp_remember', true));
+        Auth::login(
+            $user,
+            session('login_otp_remember', true)
+        );
 
         Session::regenerate();
 
@@ -153,18 +169,26 @@ new #[Layout('components.layouts.auth')] class extends Component
             'login_otp_expires_at',
         ]);
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        $this->redirectIntended(
+            default: route('dashboard', absolute: false),
+            navigate: true
+        );
     }
 
     protected function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts(
+            $this->throttleKey(),
+            5
+        )) {
             return;
         }
 
         event(new Lockout(request()));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = RateLimiter::availableIn(
+            $this->throttleKey()
+        );
 
         throw ValidationException::withMessages([
             'phone' => __('auth.throttle', [
@@ -176,61 +200,142 @@ new #[Layout('components.layouts.auth')] class extends Component
 
     protected function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->phone).'|'.request()->ip());
+        return Str::transliterate(
+            Str::lower($this->phone)
+            .'|'.
+            request()->ip()
+        );
     }
-}; 
+};
+
 ?>
 
 <div class="flex flex-col gap-6">
-    <x-auth-header 
-        :title="__('Login with OTP')" 
-        :description="__('Enter your phone number to receive OTP')" 
+
+    {{-- Logo and heading --}}
+    <div class="flex flex-col items-center text-center">
+
+        <a
+            href="{{ url('/') }}"
+            class="mb-5 inline-flex items-center justify-center"
+        >
+            <img
+                src="{{ asset('asset/img/MY VICTORY LOGO 2.png') }}"
+                alt="MyVictory Billing Logo"
+                class="h-16 w-auto max-w-[240px] object-contain sm:h-20"
+            >
+        </a>
+
+        <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">
+            Login with OTP
+        </h1>
+
+        <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+            Enter your phone number to receive OTP
+        </p>
+    </div>
+
+    <x-auth-session-status
+        class="text-center"
+        :status="session('status')"
     />
 
-    <x-auth-session-status class="text-center" :status="session('status')" />
-
     @if (! $otpSent)
-        <form wire:submit="sendOtp" class="flex flex-col gap-6">
 
+        <form
+            wire:submit="sendOtp"
+            class="flex flex-col gap-6"
+        >
             <flux:input
                 wire:model="phone"
                 label="Phone Number"
                 type="text"
+                inputmode="numeric"
                 required
                 autofocus
                 maxlength="10"
                 placeholder="Enter 10 digit mobile number"
             />
 
-            <flux:checkbox wire:model="remember" label="Remember me" />
+            <flux:checkbox
+                wire:model="remember"
+                label="Remember me"
+            />
 
             <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full">
-                    Send OTP
+                <flux:button
+                    variant="primary"
+                    type="submit"
+                    class="w-full"
+                    wire:loading.attr="disabled"
+                    wire:target="sendOtp"
+                >
+                    <span
+                        wire:loading.remove
+                        wire:target="sendOtp"
+                    >
+                        Send OTP
+                    </span>
+
+                    <span
+                        wire:loading
+                        wire:target="sendOtp"
+                    >
+                        Please wait...
+                    </span>
                 </flux:button>
             </div>
         </form>
-    @else
-        <form wire:submit="verifyOtp" class="flex flex-col gap-6">
 
+    @else
+
+        <form
+            wire:submit="verifyOtp"
+            class="flex flex-col gap-6"
+        >
             <flux:input
                 wire:model="otp"
                 label="Enter OTP"
                 type="text"
+                inputmode="numeric"
                 required
+                autofocus
                 maxlength="6"
                 placeholder="Enter 6 digit OTP"
             />
 
             <div class="flex items-center justify-end">
-                <flux:button variant="primary" type="submit" class="w-full">
-                    Verify OTP & Login
+                <flux:button
+                    variant="primary"
+                    type="submit"
+                    class="w-full"
+                    wire:loading.attr="disabled"
+                    wire:target="verifyOtp"
+                >
+                    <span
+                        wire:loading.remove
+                        wire:target="verifyOtp"
+                    >
+                        Verify OTP & Login
+                    </span>
+
+                    <span
+                        wire:loading
+                        wire:target="verifyOtp"
+                    >
+                        Verifying...
+                    </span>
                 </flux:button>
             </div>
 
-            <button type="button" wire:click="sendOtp" class="text-sm text-blue-600">
+            <button
+                type="button"
+                wire:click="sendOtp"
+                class="text-sm font-medium text-blue-600 hover:underline"
+            >
                 Resend OTP
             </button>
         </form>
+
     @endif
 </div>

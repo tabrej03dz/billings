@@ -49,7 +49,6 @@
                 </flux:tooltip>
 
 
-
             </flux:navbar>
 
             <!-- Desktop User Menu -->
