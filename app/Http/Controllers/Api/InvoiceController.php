@@ -1555,68 +1555,117 @@ class InvoiceController extends Controller
     //     return response($pdf->output(), 200, ['Content-Type'=>'application/pdf']);
     // }
 
+    // public function pdf(Request $request, $invoice)
+    // {
+    //     $invoice = $this->findInvoiceForUser($request, $invoice);
+
+    //     try {
+    //         $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
+    //         $disk = Storage::disk('public');
+
+    //         if (!empty($invoice->pdf_url)) {
+    //             $path = $this->normalizePdfPath($invoice->pdf_url);
+
+    //             if ($path && $disk->exists($path)) {
+    //                 return response($disk->get($path), 200, [
+    //                     'Content-Type'        => 'application/pdf',
+    //                     'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+    //                 ]);
+    //             }
+
+    //             Invoice::withoutGlobalScopes()
+    //                 ->where('id', $invoice->id)
+    //                 ->update(['pdf_url' => null]);
+
+    //             $invoice->pdf_url = null;
+    //         }
+
+    //         // $pdf = $this->simplePdfBuild($invoice);
+    //         // $output = $pdf->output();
+
+    //         $output = $this->simplePdfBuild($invoice);
+
+    //         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
+
+    //         if (!$disk->exists('invoices')) {
+    //             $disk->makeDirectory('invoices');
+    //         }
+
+    //         $disk->put($fileName, $output);
+
+    //         Invoice::withoutGlobalScopes()
+    //             ->where('id', $invoice->id)
+    //             ->update(['pdf_url' => $fileName]);
+
+    //         return response($output, 200, [
+    //             'Content-Type'        => 'application/pdf',
+    //             'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+    //         ]);
+
+    //     } catch (\Throwable $e) {
+    //         Log::error('API Invoice PDF failed', [
+    //             'invoice_id' => $invoice->id ?? null,
+    //             'error'      => $e->getMessage(),
+    //             'line'       => $e->getLine(),
+    //             'file'       => $e->getFile(),
+    //         ]);
+
+    //         return response()->json([
+    //             'ok'      => false,
+    //             'message' => 'PDF generate failed',
+    //             'error'   => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+
     public function pdf(Request $request, $invoice)
-    {
-        $invoice = $this->findInvoiceForUser($request, $invoice);
+{
+    $invoice = $this->findInvoiceForUser($request, $invoice);
 
-        try {
-            $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
-            $disk = Storage::disk('public');
+    $invoice = Invoice::withoutGlobalScopes()
+        ->with([
+            'client',
+            'items.item',
+            'business',
+            'payments',
+        ])
+        ->where('id', $invoice->id)
+        ->firstOrFail();
 
-            if (!empty($invoice->pdf_url)) {
-                $path = $this->normalizePdfPath($invoice->pdf_url);
+    $safeNumber = str_replace(
+        ['/', '\\'],
+        '-',
+        (string) ($invoice->invoice_number ?? 'INV')
+    );
 
-                if ($path && $disk->exists($path)) {
-                    return response($disk->get($path), 200, [
-                        'Content-Type'        => 'application/pdf',
-                        'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
-                    ]);
-                }
+    try {
+        $output = $this->simplePdfBuild($invoice);
 
-                Invoice::withoutGlobalScopes()
-                    ->where('id', $invoice->id)
-                    ->update(['pdf_url' => null]);
+        return response($output, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+            'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
+        ]);
 
-                $invoice->pdf_url = null;
-            }
+    } catch (\Throwable $e) {
+        Log::error('API Invoice PDF failed', [
+            'invoice_id'  => $invoice->id ?? null,
+            'business_id' => $invoice->business_id ?? null,
+            'error'       => $e->getMessage(),
+            'line'        => $e->getLine(),
+            'file'        => $e->getFile(),
+        ]);
 
-            // $pdf = $this->simplePdfBuild($invoice);
-            // $output = $pdf->output();
-
-            $output = $this->simplePdfBuild($invoice);
-
-            $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
-
-            if (!$disk->exists('invoices')) {
-                $disk->makeDirectory('invoices');
-            }
-
-            $disk->put($fileName, $output);
-
-            Invoice::withoutGlobalScopes()
-                ->where('id', $invoice->id)
-                ->update(['pdf_url' => $fileName]);
-
-            return response($output, 200, [
-                'Content-Type'        => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
-            ]);
-
-        } catch (\Throwable $e) {
-            Log::error('API Invoice PDF failed', [
-                'invoice_id' => $invoice->id ?? null,
-                'error'      => $e->getMessage(),
-                'line'       => $e->getLine(),
-                'file'       => $e->getFile(),
-            ]);
-
-            return response()->json([
-                'ok'      => false,
-                'message' => 'PDF generate failed',
-                'error'   => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'ok'      => false,
+            'message' => 'PDF generate failed',
+            'error'   => $e->getMessage(),
+        ], 500);
     }
+}
 
     // ------------------------------------------------------------
     // GET /api/invoices/{invoice}/pdf-url
@@ -1726,130 +1775,115 @@ class InvoiceController extends Controller
     }
 
 
-
-
-// public function show(Request $request, Invoice $invoice)
+// public function show(Request $request, $invoice)
 // {
-   
-//     // $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
-//     // $disk = Storage::disk('public');
+//     $invoice = $this->findInvoiceForUser($request, $invoice);
 
-//     // // Always use fresh relations for PDF
-//     // $invoice = $invoice->fresh(['client', 'items', 'business']);
-
-//      $bid = $this->ensureInvoiceAccess($request, $invoice);
-
-//     $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
+//     $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
 //     $disk = Storage::disk('public');
 
-//     $invoice = $invoice->fresh(['client', 'items', 'business']);
-
 //     try {
-//         // ✅ 1) If DB has pdf_url and file exists => return file content
 //         if (!empty($invoice->pdf_url)) {
 //             $path = $this->normalizePdfPath($invoice->pdf_url);
 
 //             if ($path && $disk->exists($path)) {
-//                 $content = $disk->get($path);
-
-//                 return response($content, 200, [
+//                 return response($disk->get($path), 200, [
 //                     'Content-Type'        => 'application/pdf',
 //                     'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
 //                 ]);
 //             }
 
-//             // file missing but db has path -> reset
-//             $invoice->update(['pdf_url' => null]);
+//             Invoice::withoutGlobalScopes()
+//                 ->where('id', $invoice->id)
+//                 ->update(['pdf_url' => null]);
+
+//             $invoice->pdf_url = null;
 //         }
 
-//         // ✅ 2) Generate fresh pdf
-//         $pdf = $this->simplePdfBuild($invoice);
+//         // $pdf = $this->simplePdfBuild($invoice);
+//         // $output = $pdf->output();
+//         $output = $this->simplePdfBuild($invoice);
 
 //         $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
 
-//         // ensure folder exists
 //         if (!$disk->exists('invoices')) {
 //             $disk->makeDirectory('invoices');
 //         }
 
-//         // save
-//         $disk->put($fileName, $pdf->output());
+//         $disk->put($fileName, $output);
 
-//         // update db
-//         $invoice->update(['pdf_url' => $fileName]);
+//         Invoice::withoutGlobalScopes()
+//             ->where('id', $invoice->id)
+//             ->update(['pdf_url' => $fileName]);
 
-//         // return inline
-//         return response($pdf->output(), 200, [
+//         return response($output, 200, [
 //             'Content-Type'        => 'application/pdf',
 //             'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
 //         ]);
+
 //     } catch (\Throwable $e) {
 //         Log::error('API Invoice PDF failed', [
 //             'invoice_id' => $invoice->id ?? null,
 //             'error'      => $e->getMessage(),
+//             'line'       => $e->getLine(),
+//             'file'       => $e->getFile(),
 //         ]);
 
 //         return response()->json([
-//             'status'  => false,
+//             'ok'      => false,
 //             'message' => 'PDF generate failed',
-//             'error'   => $e->getMessage(), // production me remove
+//             'error'   => $e->getMessage(),
 //         ], 500);
 //     }
 // }
-
 
 public function show(Request $request, $invoice)
 {
     $invoice = $this->findInvoiceForUser($request, $invoice);
 
-    $safeNumber = str_replace(['/', '\\'], '-', (string) ($invoice->invoice_number ?? 'INV'));
-    $disk = Storage::disk('public');
+    // हर request पर fresh invoice data और relations load होंगी
+    $invoice = Invoice::withoutGlobalScopes()
+        ->with([
+            'client',
+            'items.item',
+            'business',
+            'payments',
+        ])
+        ->where('id', $invoice->id)
+        ->firstOrFail();
+
+    $safeNumber = str_replace(
+        ['/', '\\'],
+        '-',
+        (string) ($invoice->invoice_number ?? 'INV')
+    );
 
     try {
-        if (!empty($invoice->pdf_url)) {
-            $path = $this->normalizePdfPath($invoice->pdf_url);
-
-            if ($path && $disk->exists($path)) {
-                return response($disk->get($path), 200, [
-                    'Content-Type'        => 'application/pdf',
-                    'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
-                ]);
-            }
-
-            Invoice::withoutGlobalScopes()
-                ->where('id', $invoice->id)
-                ->update(['pdf_url' => null]);
-
-            $invoice->pdf_url = null;
-        }
-
-        // $pdf = $this->simplePdfBuild($invoice);
-        // $output = $pdf->output();
+        /*
+        |--------------------------------------------------------------------------
+        | हमेशा fresh PDF generate करें
+        |--------------------------------------------------------------------------
+        | pdf_url check नहीं होगा
+        | पुरानी PDF storage से return नहीं होगी
+        | selected business template से नई PDF बनेगी
+        */
         $output = $this->simplePdfBuild($invoice);
-
-        $fileName = 'invoices/Invoice-' . $safeNumber . '.pdf';
-
-        if (!$disk->exists('invoices')) {
-            $disk->makeDirectory('invoices');
-        }
-
-        $disk->put($fileName, $output);
-
-        Invoice::withoutGlobalScopes()
-            ->where('id', $invoice->id)
-            ->update(['pdf_url' => $fileName]);
 
         return response($output, 200, [
             'Content-Type'        => 'application/pdf',
             'Content-Disposition' => 'inline; filename="Invoice-' . $safeNumber . '.pdf"',
+            'Cache-Control'       => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma'              => 'no-cache',
+            'Expires'             => '0',
         ]);
 
     } catch (\Throwable $e) {
-        Log::error('API Invoice PDF failed', [
-            'invoice_id' => $invoice->id ?? null,
-            'error'      => $e->getMessage(),
-            'line'       => $e->getLine(),
-            'file'       => $e->getFile(),
+        Log::error('API Invoice PDF generation failed', [
+            'invoice_id'  => $invoice->id ?? null,
+            'business_id' => $invoice->business_id ?? null,
+            'error'       => $e->getMessage(),
+            'line'        => $e->getLine(),
+            'file'        => $e->getFile(),
         ]);
 
         return response()->json([
