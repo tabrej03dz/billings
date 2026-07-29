@@ -441,7 +441,92 @@
                     max-width: 260px !important;
                 }
             }
-</style>
+
+
+            /* =========================================================
+             * MOBILE SIDEBAR OVERLAP FIX
+             * Edit invoice content stays below the mobile sidebar.
+             * Desktop layout and invoice logic remain unchanged.
+             * ========================================================= */
+            @media (max-width: 1023px) {
+                .invoice-create-page {
+                    position: relative !important;
+                    z-index: 0 !important;
+                    isolation: isolate !important;
+                }
+            }
+
+            /* =========================================================
+             * MOBILE INVOICE TABLE FIX
+             * Disable sticky table cells on small screens so item/action
+             * columns do not appear over the opened sidebar.
+             * ========================================================= */
+            @media (max-width: 640px) {
+                .invoice-create-page {
+                    overflow-x: visible !important;
+                }
+
+                .invoice-items-scroll {
+                    display: block !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: visible !important;
+                    -webkit-overflow-scrolling: touch;
+                    touch-action: pan-x pan-y;
+                    overscroll-behavior-x: contain;
+                }
+
+                .invoice-table {
+                    display: table !important;
+                    width: max-content !important;
+                    min-width: max-content !important;
+                    table-layout: auto !important;
+                }
+
+                .invoice-table thead,
+                .invoice-table th,
+                .invoice-table td {
+                    position: static !important;
+                    left: auto !important;
+                    right: auto !important;
+                    top: auto !important;
+                    z-index: auto !important;
+                }
+
+                .invoice-table th,
+                .invoice-table td {
+                    white-space: nowrap !important;
+                }
+
+                .invoice-table th:nth-child(1),
+                .invoice-table td:nth-child(1) {
+                    width: 38px !important;
+                    min-width: 38px !important;
+                    max-width: 38px !important;
+                }
+
+                .invoice-table th:nth-child(2),
+                .invoice-table td:nth-child(2) {
+                    width: 245px !important;
+                    min-width: 245px !important;
+                    max-width: 245px !important;
+                }
+
+                .invoice-table input,
+                .invoice-table select {
+                    width: 100% !important;
+                    min-width: 0 !important;
+                }
+
+                .invoice-table textarea {
+                    width: 100% !important;
+                    min-width: 0 !important;
+                    white-space: normal !important;
+                }
+            }
+
+        </style>
         {{-- errors --}}
         @if ($errors->any())
             <div class="p-3 rounded border border-red-300 bg-red-50 text-red-700">

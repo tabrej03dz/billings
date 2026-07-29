@@ -173,6 +173,58 @@
             animation: none;
         }
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mobile Sidebar Full Height + Safe Scrolling
+    |--------------------------------------------------------------------------
+    | Sidebar ka background poori mobile screen tak rahega.
+    | Menu lamba hone par sidebar ke andar hi vertical scroll hoga.
+    */
+
+    @media (max-width: 1023px) {
+        .mobile-full-height-sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+
+            height: 100vh !important;
+            min-height: 100vh !important;
+            max-height: 100vh !important;
+
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            max-height: 100dvh !important;
+
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+
+            background-color: rgb(250 250 250) !important;
+            z-index: 999999 !important;
+        }
+
+        .dark .mobile-full-height-sidebar {
+            background-color: rgb(24 24 27) !important;
+        }
+
+        /*
+         * Flux sidebar ke andar agar internal wrapper height auto rakhta ho,
+         * to use bhi viewport tak stretch aur scroll-safe rakhein.
+         */
+        /* .mobile-full-height-sidebar > div {
+            min-height: 100% !important;
+        } */
+
+        body:has(.mobile-full-height-sidebar[data-flux-sidebar-open]),
+        body:has(.mobile-full-height-sidebar[open]) {
+            overflow: hidden;
+        }
+    }
+
 </style>
 </head>
 
@@ -442,7 +494,7 @@
     <flux:sidebar
         sticky
         stashable
-        class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900"
+        class="mobile-full-height-sidebar border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900"
     >
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
