@@ -411,13 +411,104 @@
                             </div>
                         @endif
 
-                        @if($showField('unit'))
+                        {{-- @if($showField('unit'))
                             <div>
                                 <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Unit</label>
                                 <input id="unitField" type="text" name="unit"
                                        value="{{ old('unit', $item->unit ?? '') }}"
                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
                                        placeholder="pcs / gm / ml ...">
+                            </div>
+                        @endif --}}
+
+
+                        @if($showField('unit'))
+                            <div>
+                                <div class="mb-1.5 flex items-center justify-between gap-3">
+                                    <label
+                                        for="unitSelect"
+                                        class="block text-sm font-semibold
+                                            text-slate-700 dark:text-slate-200"
+                                    >
+                                        Unit
+                                    </label>
+
+                                    <button
+                                        type="button"
+                                        id="openUnitModal"
+                                        class="inline-flex shrink-0 items-center gap-1
+                                            rounded-lg bg-teal-600 px-3 py-1.5
+                                            text-xs font-semibold text-white
+                                            hover:bg-teal-700"
+                                    >
+                                        <span class="text-base leading-none">+</span>
+                                        Add Unit
+                                    </button>
+                                </div>
+
+                                <select
+                                    id="unitSelect"
+                                    name="unit"
+                                    class="rv-select mt-1 w-full rounded-xl
+                                        border border-slate-300 px-3.5 py-2.5
+                                        outline-none transition focus:border-teal-500
+                                        focus:ring-4 focus:ring-teal-100
+                                        dark:border-slate-600
+                                        dark:focus:border-teal-400
+                                        dark:focus:ring-teal-900/40"
+                                >
+                                    <option value="">— Select Unit —</option>
+
+                                    @php
+                                        $selectedUnit = old('unit', $item->unit ?? '');
+                                    @endphp
+
+                                    @foreach($units as $unit)
+                                        <option
+                                            value="{{ $unit->name }}"
+                                            data-unit-id="{{ $unit->id }}"
+                                            @selected(
+                                                strtolower((string) $selectedUnit) ===
+                                                strtolower((string) $unit->name)
+                                            )
+                                        >
+                                            {{ $unit->name }}
+                                        </option>
+                                    @endforeach
+
+                                    {{--
+                                        Purana item kisi aisi unit ko use kar raha ho jo ab
+                                        units table me available nahi hai, to value lose nahi hogi.
+                                    --}}
+                                    @if(
+                                        filled($selectedUnit) &&
+                                        !$units->contains(
+                                            fn ($unit) =>
+                                                strtolower($unit->name) ===
+                                                strtolower($selectedUnit)
+                                        )
+                                    )
+                                        <option value="{{ $selectedUnit }}" selected>
+                                            {{ $selectedUnit }}
+                                        </option>
+                                    @endif
+                                </select>
+
+                                <p
+                                    id="emptyUnitMessage"
+                                    @class([
+                                        'mt-2 text-xs font-medium text-orange-600',
+                                        'hidden' => $units->isNotEmpty(),
+                                    ])
+                                >
+                                    Abhi koi unit available nahi hai. Add Unit button se unit banayein.
+                                </p>
+
+                                @error('unit')
+                                    <p class="mt-1 text-xs text-red-600">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
                             </div>
                         @endif
                     </div>
@@ -562,6 +653,171 @@
 </div>
 
 
+{{-- Create Unit Modal --}}
+<div
+    id="unitModal"
+    class="fixed inset-0 z-[9999] hidden items-center justify-center p-4"
+>
+    <div
+        id="unitModalOverlay"
+        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+    ></div>
+
+    <div
+        class="relative z-10 w-full max-w-md overflow-hidden rounded-2xl
+               bg-white shadow-2xl dark:bg-[#1A1D23]"
+    >
+        <div
+            class="flex items-center justify-between border-b
+                   border-gray-200 px-5 py-4 dark:border-gray-700"
+        >
+            <div>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">
+                    Create Unit
+                </h2>
+
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Nayi item unit add karein
+                </p>
+            </div>
+
+            <button
+                type="button"
+                id="closeUnitModal"
+                class="flex h-9 w-9 items-center justify-center rounded-full
+                       bg-gray-100 text-gray-600 hover:bg-red-100
+                       hover:text-red-600 dark:bg-gray-800 dark:text-gray-300"
+            >
+                <span class="text-2xl leading-none">&times;</span>
+            </button>
+        </div>
+
+        <div id="unitCreateForm" class="space-y-4 p-5">
+            @csrf
+
+            <div
+                id="unitSuccessMessage"
+                class="hidden rounded-lg bg-green-100 px-4 py-3
+                       text-sm font-medium text-green-700"
+            ></div>
+
+            <div
+                id="unitGeneralError"
+                class="hidden rounded-lg bg-red-100 px-4 py-3
+                       text-sm font-medium text-red-700"
+            ></div>
+
+            <div>
+                <label
+                    for="unitName"
+                    class="mb-1 block text-sm font-medium
+                           text-gray-700 dark:text-gray-200"
+                >
+                    Unit Name
+                    <span class="text-red-600">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="unitName"
+                    name="name"
+                    autocomplete="off"
+                    placeholder="Example: Piece, Kg, Gram, Box"
+                    class="w-full rounded-lg border border-gray-300
+                           bg-slate-100 px-3 py-2.5 text-gray-900
+                           outline-none focus:border-teal-500
+                           focus:ring-2 focus:ring-teal-200
+                           dark:border-gray-600 dark:bg-gray-800
+                           dark:text-white"
+                >
+
+                <p
+                    id="unitNameError"
+                    class="mt-1 hidden text-xs font-medium text-red-600"
+                ></p>
+            </div>
+
+            <div>
+                <label
+                    for="unitDescription"
+                    class="mb-1 block text-sm font-medium
+                           text-gray-700 dark:text-gray-200"
+                >
+                    Description
+                </label>
+
+                <textarea
+                    id="unitDescription"
+                    name="description"
+                    rows="3"
+                    placeholder="Optional unit description"
+                    class="w-full rounded-lg border border-gray-300
+                           bg-slate-100 px-3 py-2.5 text-gray-900
+                           outline-none focus:border-teal-500
+                           focus:ring-2 focus:ring-teal-200
+                           dark:border-gray-600 dark:bg-gray-800
+                           dark:text-white"
+                ></textarea>
+
+                <p
+                    id="unitDescriptionError"
+                    class="mt-1 hidden text-xs font-medium text-red-600"
+                ></p>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button
+                    type="button"
+                    id="cancelUnitModal"
+                    class="rounded-lg bg-gray-200 px-4 py-2
+                           text-sm font-semibold text-gray-700
+                           hover:bg-gray-300 dark:bg-gray-700
+                           dark:text-white dark:hover:bg-gray-600"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    id="unitSubmitButton"
+                    class="inline-flex items-center justify-center gap-2
+                           rounded-lg bg-teal-600 px-5 py-2
+                           text-sm font-semibold text-white
+                           hover:bg-teal-700 disabled:cursor-not-allowed
+                           disabled:opacity-60"
+                >
+                    <svg
+                        id="unitLoader"
+                        class="hidden h-4 w-4 animate-spin"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        ></circle>
+
+                        <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                    </svg>
+
+                    <span id="unitSubmitText">
+                        Create Unit
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 
@@ -673,4 +929,283 @@
 
     makingChargeType?.addEventListener('change', updateMakingChargeUI);
     updateMakingChargeUI();
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const unitModal = document.getElementById('unitModal');
+    const openUnitModal = document.getElementById('openUnitModal');
+    const closeUnitModal = document.getElementById('closeUnitModal');
+    const cancelUnitModal = document.getElementById('cancelUnitModal');
+    const unitModalOverlay = document.getElementById('unitModalOverlay');
+
+    const unitContainer = document.getElementById('unitCreateForm');
+    const unitName = document.getElementById('unitName');
+    const unitDescription = document.getElementById('unitDescription');
+
+    const unitNameError = document.getElementById('unitNameError');
+    const unitDescriptionError = document.getElementById(
+        'unitDescriptionError'
+    );
+
+    const unitGeneralError = document.getElementById('unitGeneralError');
+    const unitSuccessMessage = document.getElementById(
+        'unitSuccessMessage'
+    );
+
+    const unitSubmitButton = document.getElementById('unitSubmitButton');
+    const unitSubmitText = document.getElementById('unitSubmitText');
+    const unitLoader = document.getElementById('unitLoader');
+
+    const unitSelect = document.getElementById('unitSelect');
+    const emptyUnitMessage = document.getElementById('emptyUnitMessage');
+
+    function showUnitModal() {
+        if (!unitModal) {
+            return;
+        }
+
+        clearUnitMessages();
+
+        unitModal.classList.remove('hidden');
+        unitModal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+
+        setTimeout(function () {
+            unitName?.focus();
+        }, 100);
+    }
+
+    function hideUnitModal() {
+        if (!unitModal) {
+            return;
+        }
+
+        unitModal.classList.add('hidden');
+        unitModal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+
+        clearUnitMessages();
+
+        if (unitName) {
+            unitName.value = '';
+        }
+
+        if (unitDescription) {
+            unitDescription.value = '';
+        }
+    }
+
+    function clearUnitMessages() {
+        [
+            unitNameError,
+            unitDescriptionError,
+            unitGeneralError,
+            unitSuccessMessage
+        ].forEach(function (element) {
+            if (!element) {
+                return;
+            }
+
+            element.textContent = '';
+            element.classList.add('hidden');
+        });
+    }
+
+    function setUnitLoading(loading) {
+        if (!unitSubmitButton) {
+            return;
+        }
+
+        unitSubmitButton.disabled = loading;
+
+        if (loading) {
+            unitLoader?.classList.remove('hidden');
+
+            if (unitSubmitText) {
+                unitSubmitText.textContent = 'Creating...';
+            }
+        } else {
+            unitLoader?.classList.add('hidden');
+
+            if (unitSubmitText) {
+                unitSubmitText.textContent = 'Create Unit';
+            }
+        }
+    }
+
+    openUnitModal?.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        showUnitModal();
+    });
+
+    closeUnitModal?.addEventListener('click', function (event) {
+        event.preventDefault();
+        hideUnitModal();
+    });
+
+    cancelUnitModal?.addEventListener('click', function (event) {
+        event.preventDefault();
+        hideUnitModal();
+    });
+
+    unitModalOverlay?.addEventListener('click', function () {
+        hideUnitModal();
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (
+            event.key === 'Escape' &&
+            unitModal &&
+            !unitModal.classList.contains('hidden')
+        ) {
+            hideUnitModal();
+        }
+    });
+
+    unitSubmitButton?.addEventListener('click', async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        clearUnitMessages();
+
+        const name = unitName?.value.trim() || '';
+        const description = unitDescription?.value.trim() || '';
+
+        if (!name) {
+            if (unitNameError) {
+                unitNameError.textContent = 'Unit name is required.';
+                unitNameError.classList.remove('hidden');
+            }
+
+            unitName?.focus();
+            return;
+        }
+
+        setUnitLoading(true);
+
+        try {
+            const formData = new FormData();
+
+            formData.append('name', name);
+            formData.append('description', description);
+
+            const csrfToken = document.querySelector(
+                'meta[name="csrf-token"]'
+            )?.getAttribute('content');
+
+            const response = await fetch(
+                "{{ route('units.quick-store') }}",
+                {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': csrfToken || ''
+                    },
+                    body: formData
+                }
+            );
+
+            let result;
+
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                throw new Error(
+                    'Server se valid response nahi mila.'
+                );
+            }
+
+            if (!response.ok) {
+                if (response.status === 422 && result.errors) {
+                    if (result.errors.name?.length) {
+                        unitNameError.textContent =
+                            result.errors.name[0];
+
+                        unitNameError.classList.remove('hidden');
+                    }
+
+                    if (result.errors.description?.length) {
+                        unitDescriptionError.textContent =
+                            result.errors.description[0];
+
+                        unitDescriptionError.classList.remove('hidden');
+                    }
+
+                    return;
+                }
+
+                throw new Error(
+                    result.message || 'Unit create nahi ho saki.'
+                );
+            }
+
+            if (!result.unit?.name) {
+                throw new Error(
+                    'Unit create hui lekin valid details nahi mili.'
+                );
+            }
+
+            if (unitSelect) {
+                let option = Array.from(unitSelect.options).find(
+                    function (existingOption) {
+                        return existingOption.value
+                            .trim()
+                            .toLowerCase() ===
+                            result.unit.name.trim().toLowerCase();
+                    }
+                );
+
+                if (!option) {
+                    option = new Option(
+                        result.unit.name,
+                        result.unit.name,
+                        true,
+                        true
+                    );
+
+                    option.dataset.unitId = result.unit.id || '';
+
+                    unitSelect.add(option);
+                }
+
+                unitSelect.value = result.unit.name;
+
+                unitSelect.dispatchEvent(
+                    new Event('change', {
+                        bubbles: true
+                    })
+                );
+            }
+
+            emptyUnitMessage?.classList.add('hidden');
+
+            if (unitSuccessMessage) {
+                unitSuccessMessage.textContent =
+                    result.message || 'Unit successfully created.';
+
+                unitSuccessMessage.classList.remove('hidden');
+            }
+
+            setTimeout(function () {
+                hideUnitModal();
+            }, 600);
+
+        } catch (error) {
+            if (unitGeneralError) {
+                unitGeneralError.textContent =
+                    error.message ||
+                    'Something went wrong. Please try again.';
+
+                unitGeneralError.classList.remove('hidden');
+            }
+        } finally {
+            setUnitLoading(false);
+        }
+    });
+});
 </script>

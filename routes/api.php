@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\PlanPaymentController;
 use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\MetalRateController;
+use App\Http\Controllers\Api\UnitController;
 
 Route::get('items1/', [ItemController::class, 'index1']);
 //Route::post('items/store', [\App\Http\Controllers\Api\ItemController::class, 'store']);
@@ -299,9 +300,16 @@ Route::middleware('auth:sanctum', 'active.business')->group(function () {
     Route::get('/banner-sliders', [BannerSliderController::class, 'index']);
 
     
-
     Route::get('/my-active-plan', [PlanPaymentController::class, 'myActivePlan']);
 
+    Route::get('/units', [UnitController::class, 'index']);
+    Route::post('/units', [UnitController::class, 'store']);
+    Route::post('/units/quick-store', [UnitController::class, 'quickStore']);
+
+    Route::get('/units/{id}', [UnitController::class, 'show']);
+    Route::put('/units/{id}', [UnitController::class, 'update']);
+    Route::patch('/units/{id}', [UnitController::class, 'update']);
+    Route::delete('/units/{id}', [UnitController::class, 'destroy']);
 
 
 });

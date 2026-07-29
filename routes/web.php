@@ -37,7 +37,7 @@ use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\AdRegistrationController;
 use App\Http\Controllers\OnboardingRegistrationController;
-
+use App\Http\Controllers\UnitController;
 
 // frontend web routes:::::
 
@@ -92,6 +92,25 @@ Route::middleware('auth')->group(function () {
         '/choose-plan/save',
         [PlanController::class, 'choosenSave']
     )->name('plan.choosen-save');
+
+
+     Route::get('/units', [UnitController::class, 'index'])
+        ->name('units.index');
+
+    Route::post('/units', [UnitController::class, 'store'])
+        ->name('units.store');
+
+    Route::get('/units/{unit}', [UnitController::class, 'show'])
+        ->name('units.show');
+
+    Route::put('/units/{unit}', [UnitController::class, 'update'])
+        ->name('units.update');
+
+    Route::delete('/units/{unit}', [UnitController::class, 'destroy'])
+        ->name('units.destroy');
+
+    Route::post('/units-quick-store', [UnitController::class, 'quickStore'])
+        ->name('units.quick-store');
 });
 
 

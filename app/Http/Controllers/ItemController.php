@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Business;
 use App\Models\Category;
 use App\Models\Item;
+use App\Models\Unit;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -125,23 +127,76 @@ class ItemController extends Controller
     }
 
 
-    public function create()
+    // public function create()
+    // {
+    //     $categories = Category::orderBy('name')->get(['id', 'name']);
+
+    //     $businessId = session('active_business_id');
+
+    //     $business = \App\Models\Business::with('businessType.itemFields')
+    //         ->find($businessId);
+
+    //     $allowedFields = [];
+
+    //     if ($business && $business->businessType) {
+    //         $allowedFields = $business->businessType->itemFields
+    //             ->pluck('field_name')
+    //             ->toArray();
+    //     }
+    //     return view('items.create', compact('categories', 'allowedFields'));
+    // }
+
+    public function create(Request $request)
     {
-        $categories = Category::orderBy('name')->get(['id', 'name']);
+        $businessId = session('active_business_id')
+            ?? $request->user()?->business_id;
 
-        $businessId = session('active_business_id');
+        $categories = Category::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        $business = \App\Models\Business::with('businessType.itemFields')
+        /*
+        * Business global scope ko remove karke:
+        *
+        * business_id = null       → sabhi businesses me
+        * business_id = current ID → sirf current business me
+        */
+        $units = Unit::query()
+            ->withoutGlobalScope('business')
+            ->where(function ($query) use ($businessId) {
+                $query->whereNull('business_id');
+
+                if ($businessId !== null) {
+                    $query->orWhere(
+                        'business_id',
+                        (int) $businessId
+                    );
+                }
+            })
+            ->orderBy('name')
+            ->get([
+                'id',
+                'business_id',
+                'name',
+                'description',
+            ]);
+
+        $business = Business::with('businessType.itemFields')
             ->find($businessId);
 
         $allowedFields = [];
 
-        if ($business && $business->businessType) {
+        if ($business?->businessType) {
             $allowedFields = $business->businessType->itemFields
                 ->pluck('field_name')
                 ->toArray();
         }
-        return view('items.create', compact('categories', 'allowedFields'));
+
+        return view('items.create', compact(
+            'categories',
+            'units',
+            'allowedFields'
+        ));
     }
 
 
