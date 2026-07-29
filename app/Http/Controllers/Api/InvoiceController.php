@@ -2323,68 +2323,41 @@ protected function findInvoiceForUser(Request $request, $invoiceId): Invoice
 
 
 
-    protected function renderMpdfOutput(string $view, array $vm): string
-    {
-        $fontDir = storage_path('fonts');
+protected function renderMpdfOutput(string $view, array $vm): string
+{
+    $tempDir = storage_path('app/mpdf-temp');
 
-        $regularFont = $fontDir . DIRECTORY_SEPARATOR
-            . 'NotoSansDevanagari-Regular.ttf';
-
-        $boldFont = $fontDir . DIRECTORY_SEPARATOR
-            . 'NotoSansDevanagari-Bold.ttf';
-
-        if (!is_readable($regularFont) || !is_readable($boldFont)) {
-            throw new \RuntimeException(
-                'NotoSansDevanagari font files storage/fonts में नहीं मिलीं या readable नहीं हैं.'
-            );
-        }
-
-        $tempDir = storage_path('app/mpdf-temp');
-
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0775, true);
-        }
-
-        $defaultConfig = (new ConfigVariables())->getDefaults();
-        $fontDirs = $defaultConfig['fontDir'];
-
-        $defaultFontConfig = (new FontVariables())->getDefaults();
-        $fontData = $defaultFontConfig['fontdata'];
-
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-
-            'margin_left' => 8,
-            'margin_right' => 8,
-            'margin_top' => 8,
-            'margin_bottom' => 8,
-
-            'tempDir' => $tempDir,
-
-            'fontDir' => array_merge($fontDirs, [
-                $fontDir,
-            ]),
-
-            'fontdata' => $fontData + [
-                'notosansdevanagari' => [
-                    'R' => 'NotoSansDevanagari-Regular.ttf',
-                    'B' => 'NotoSansDevanagari-Bold.ttf',
-                    'useOTL' => 0xFF,
-                ],
-            ],
-
-            'default_font' => 'notosansdevanagari',
-
-            'autoScriptToLang' => true,
-            'autoLangToFont' => true,
-        ]);
-
-        $html = view($view, $vm)->render();
-
-        $mpdf->WriteHTML($html);
-
-        return $mpdf->Output('', 'S');
+    if (!is_dir($tempDir)) {
+        mkdir($tempDir, 0775, true);
     }
+
+    if (!is_writable($tempDir)) {
+        @chmod($tempDir, 0775);
+    }
+
+    $mpdf = new Mpdf([
+        'mode'   => 'utf-8',
+        'format' => 'A4',
+
+        'margin_left'   => 8,
+        'margin_right'  => 8,
+        'margin_top'    => 8,
+        'margin_bottom' => 8,
+
+        'tempDir' => $tempDir,
+
+        // Custom NotoSansDevanagari font remove किया गया
+        'default_font' => 'freeserif',
+
+        'autoScriptToLang' => true,
+        'autoLangToFont'   => true,
+    ]);
+
+    $html = view($view, $vm)->render();
+
+    $mpdf->WriteHTML($html);
+
+    return $mpdf->Output('', 'S');
+}
 
 }
