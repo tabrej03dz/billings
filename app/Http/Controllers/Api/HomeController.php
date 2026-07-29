@@ -117,19 +117,95 @@ class HomeController extends Controller
     // }
 
 
+    // SKIP VERIFY
+    public function verifyLoginOtp(Request $request)
+    {
+        $data = $request->validate([
+            'phone'       => ['required', 'digits:10'],
+            'otp'         => ['nullable', 'digits:6'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $user = User::where('phone', $data['phone'])->first();
+
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'phone' => ['User not found.'],
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | OTP Verification
+        |--------------------------------------------------------------------------
+        | Local और testing environment में OTP check bypass रहेगा।
+        | Production में OTP और expiry दोनों check होंगे।
+        */
+
+        if (!app()->environment(['local', 'testing'])) {
+            if (!$user->otp || $user->otp != $data['otp']) {
+                throw ValidationException::withMessages([
+                    'otp' => ['Invalid OTP.'],
+                ]);
+            }
+
+            if (
+                !$user->otp_expires_at ||
+                now()->greaterThan($user->otp_expires_at)
+            ) {
+                throw ValidationException::withMessages([
+                    'otp' => ['OTP expired. Please login again.'],
+                ]);
+            }
+        }
+
+        // Single device login चाहिए तो uncomment करें
+        // $user->tokens()->delete();
+
+        $deviceName = $data['device_name'] ?? 'authToken';
+
+        $token = $user->createToken($deviceName)->plainTextToken;
+
+        $user->update([
+            'otp'            => null,
+            'otp_expires_at' => null,
+        ]);
+
+        $user->load('businesses');
+
+        return response()->json([
+            'status'     => true,
+            'message'    => 'Login successful',
+            'token_type' => 'Bearer',
+            'token'      => $token,
+            'user'       => [
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'email'    => $user->email,
+                'phone'    => $user->phone,
+                'business' => $user->businesses,
+            ],
+        ], 200);
+    }
+
+
     // public function verifyLoginOtp(Request $request)
     // {
     //     $data = $request->validate([
-    //         'email'       => ['required', 'email'],
+    //         'phone'       => ['required', 'digits:10'],
     //         'otp'         => ['required', 'digits:6'],
     //         'device_name' => ['nullable', 'string', 'max:100'],
     //     ]);
 
-    //     $user = User::where('email', $data['email'])->first();
+      
+
+    //     $user = User::where('phone', $data['phone'])->first();
+
+
 
     //     if (!$user) {
     //         throw ValidationException::withMessages([
-    //             'email' => ['User not found.'],
+    //             'phone' => ['User not found.'],
     //         ]);
     //     }
 
@@ -145,7 +221,7 @@ class HomeController extends Controller
     //         ]);
     //     }
 
-    //     // Single device login chahiye to ye line uncomment kar dena
+    //     // Single device login chahiye to uncomment
     //     // $user->tokens()->delete();
 
     //     $deviceName = $data['device_name'] ?? 'authToken';
@@ -166,70 +242,11 @@ class HomeController extends Controller
     //             'id' => $user->id,
     //             'name' => $user->name,
     //             'email' => $user->email,
+    //             'phone' => $user->phone,
     //             'business' => $user->businesses,
     //         ],
     //     ], 200);
     // }
-
-
-    public function verifyLoginOtp(Request $request)
-    {
-        $data = $request->validate([
-            'phone'       => ['required', 'digits:10'],
-            'otp'         => ['required', 'digits:6'],
-            'device_name' => ['nullable', 'string', 'max:100'],
-        ]);
-
-      
-
-        $user = User::where('phone', $data['phone'])->first();
-
-
-
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'phone' => ['User not found.'],
-            ]);
-        }
-
-        if (!$user->otp || $user->otp != $data['otp']) {
-            throw ValidationException::withMessages([
-                'otp' => ['Invalid OTP.'],
-            ]);
-        }
-
-        if (!$user->otp_expires_at || now()->greaterThan($user->otp_expires_at)) {
-            throw ValidationException::withMessages([
-                'otp' => ['OTP expired. Please login again.'],
-            ]);
-        }
-
-        // Single device login chahiye to uncomment
-        // $user->tokens()->delete();
-
-        $deviceName = $data['device_name'] ?? 'authToken';
-
-        $token = $user->createToken($deviceName)->plainTextToken;
-
-        $user->update([
-            'otp' => null,
-            'otp_expires_at' => null,
-        ]);
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Login successful',
-            'token_type' => 'Bearer',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'business' => $user->businesses,
-            ],
-        ], 200);
-    }
 
 
     public function logout(Request $request)
