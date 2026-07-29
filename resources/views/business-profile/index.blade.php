@@ -282,34 +282,43 @@
 
                 {{-- Save Bar --}}
                 <div
-                    class="fixed inset-x-3 bottom-3 z-40 flex flex-col gap-3
-                           rounded-2xl border border-zinc-200
-                           bg-white/95 p-4 shadow-xl backdrop-blur
-                           sm:sticky sm:inset-x-auto sm:bottom-4
-                           sm:flex-row sm:items-center sm:justify-between
-                           dark:border-zinc-700 dark:bg-zinc-900/95"
+                    id="businessProfileSaveBar"
+                    class="fixed left-3 right-3 z-[9999]
+                        flex flex-col gap-3 rounded-2xl
+                        border border-zinc-200 bg-white
+                        p-4 shadow-2xl
+                        sm:left-auto sm:right-6 sm:w-[420px]
+                        dark:border-zinc-700 dark:bg-zinc-900"
+                    style="bottom: max(12px, env(safe-area-inset-bottom)); z-index: 9999;"
                 >
                     <div>
-                        <p
-                            class="text-sm font-bold
-                                   text-zinc-800 dark:text-white"
-                        >
+                        <p class="text-sm font-bold text-zinc-800 dark:text-white">
                             Save your business setup
                         </p>
 
                         <p class="mt-1 text-xs text-zinc-500">
-                            Complete the required fields and save your profile.
+                            Complete the details and save your business profile.
                         </p>
                     </div>
 
-                    <div class="relative min-w-[220px]">
-                        {{-- Spinner --}}
+                    <button
+                        id="businessProfileSubmitButton"
+                        type="submit"
+                        name="action"
+                        value="save"
+                        class="relative inline-flex min-h-12 w-full
+                            cursor-pointer items-center justify-center
+                            gap-2 rounded-xl bg-indigo-600
+                            px-6 py-3 font-bold text-white
+                            shadow-lg transition
+                            hover:bg-indigo-700
+                            active:scale-[0.98]
+                            disabled:cursor-not-allowed
+                            disabled:opacity-60"
+                    >
                         <svg
                             id="businessProfileSubmitSpinner"
-                            class="pointer-events-none absolute
-                                   left-5 top-1/2 hidden h-5 w-5
-                                   -translate-y-1/2 animate-spin
-                                   text-white"
+                            class="hidden h-5 w-5 animate-spin"
                             xmlns="http://www.w3.org/2000/svg"
                             fill="none"
                             viewBox="0 0 24 24"
@@ -327,28 +336,14 @@
                                 class="opacity-75"
                                 fill="currentColor"
                                 d="M4 12a8 8 0 018-8V0
-                                   C5.373 0 0 5.373 0 12h4z"
+                                C5.373 0 0 5.373 0 12h4z"
                             ></path>
                         </svg>
 
-                        <input
-                            id="businessProfileSubmitButton"
-                            type="submit"
-                            name="action"
-                            value="Save Business Profile"
-                            class="w-full cursor-pointer rounded-xl
-                                   bg-indigo-600 px-6 py-3
-                                   text-center font-bold text-white
-                                   shadow-sm transition
-                                   hover:bg-indigo-700
-                                   active:scale-[0.98]
-                                   focus:outline-none focus:ring-4
-                                   focus:ring-indigo-200
-                                   disabled:cursor-not-allowed
-                                   disabled:opacity-60
-                                   dark:focus:ring-indigo-950"
-                        >
-                    </div>
+                        <span id="businessProfileSubmitText">
+                            Save Business Profile
+                        </span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -548,6 +543,90 @@
                 submitButton.value = 'Saving...';
                 submitButton.classList.add('pl-12');
                 spinner?.classList.remove('hidden');
+            });
+        }
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            initialiseBusinessProfileForm
+        );
+
+        document.addEventListener(
+            'livewire:navigated',
+            initialiseBusinessProfileForm
+        );
+
+        window.addEventListener(
+            'pageshow',
+            initialiseBusinessProfileForm
+        );
+
+        initialiseBusinessProfileForm();
+    })();
+</script>
+
+<script>
+    (() => {
+        function initialiseBusinessProfileForm() {
+            const form = document.getElementById('businessProfileForm');
+            const button = document.getElementById(
+                'businessProfileSubmitButton'
+            );
+            const buttonText = document.getElementById(
+                'businessProfileSubmitText'
+            );
+            const spinner = document.getElementById(
+                'businessProfileSubmitSpinner'
+            );
+
+            if (!form || !button) {
+                return;
+            }
+
+            button.disabled = false;
+            spinner?.classList.add('hidden');
+
+            if (buttonText) {
+                buttonText.textContent = 'Save Business Profile';
+            }
+
+            form.dataset.isSubmitting = 'false';
+
+            if (form.dataset.submitInitialised === 'true') {
+                return;
+            }
+
+            form.dataset.submitInitialised = 'true';
+
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    form.reportValidity();
+
+                    const invalidField = form.querySelector(':invalid');
+
+                    invalidField?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    invalidField?.focus();
+                    return;
+                }
+
+                if (form.dataset.isSubmitting === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+
+                form.dataset.isSubmitting = 'true';
+                button.disabled = true;
+
+                spinner?.classList.remove('hidden');
+
+                if (buttonText) {
+                    buttonText.textContent = 'Saving...';
+                }
             });
         }
 

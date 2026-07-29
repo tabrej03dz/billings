@@ -254,32 +254,44 @@
                                 <td class="whitespace-nowrap px-6 py-4">
                                     <div class="flex items-center justify-center gap-2">
 
-                                        @can('edit unit')
-                                            <button
-                                                type="button"
-                                                @click="editUnit(unit)"
-                                                class="rounded-lg bg-yellow-500 px-3 py-2 text-xs font-medium text-white hover:bg-yellow-600"
-                                            >
-                                                Edit
-                                            </button>
-                                        @endcan
+                                        <template x-if="unit.business_id !== null">
+                                            <div class="flex items-center justify-center gap-2">
 
-                                        @can('delete unit')
-                                            <button
-                                                type="button"
-                                                @click="deleteUnit(unit.id)"
-                                                :disabled="deletingId === unit.id"
-                                                class="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                            >
-                                                <span
-                                                    x-text="
-                                                        deletingId === unit.id
-                                                            ? 'Deleting...'
-                                                            : 'Delete'
-                                                    "
-                                                ></span>
-                                            </button>
-                                        @endcan
+                                                @can('edit unit')
+                                                    <button
+                                                        type="button"
+                                                        @click="editUnit(unit)"
+                                                        class="rounded-lg bg-yellow-500 px-3 py-2 text-xs font-medium text-white hover:bg-yellow-600"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                @endcan
+
+                                                @can('delete unit')
+                                                    <button
+                                                        type="button"
+                                                        @click="deleteUnit(unit.id)"
+                                                        :disabled="deletingId === unit.id"
+                                                        class="rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                                    >
+                                                        <span
+                                                            x-text="
+                                                                deletingId === unit.id
+                                                                    ? 'Deleting...'
+                                                                    : 'Delete'
+                                                            "
+                                                        ></span>
+                                                    </button>
+                                                @endcan
+
+                                            </div>
+                                        </template>
+
+                                        <template x-if="unit.business_id === null">
+                                            <span class="text-xs font-medium text-gray-400">
+                                                Default Unit
+                                            </span>
+                                        </template>
 
                                     </div>
                                 </td>
