@@ -1370,6 +1370,19 @@
                     transform: rotate(45deg) !important;
                 }
             }
+
+            /* =========================================================
+             * MOBILE SIDEBAR OVERLAP FIX
+             * Creates one low-level stacking context for this page only.
+             * Existing desktop/table/dropdown behavior remains unchanged.
+             * ========================================================= */
+            @media (max-width: 1023px) {
+                .invoice-create-page {
+                    position: relative !important;
+                    z-index: 0 !important;
+                    isolation: isolate !important;
+                }
+            }
         </style>
         {{-- errors --}}
         @if ($errors->any())
@@ -1391,10 +1404,9 @@
         <script type="application/json" id="allowed-fields-json">
             {!! json_encode($allowedFields ?? []) !!}
         </script>
-        <div class="flex items-center justify-between rounded-lg bg-[#BFE0E0] dark:bg-[#354A54] px-4 py-3">
-            <h1 class="text-base font-semibold text-gray-900 dark:text-neutral-100">Create Sales Invoice</h1>
+        <div class="flex items-center gap-3 rounded-lg bg-[#BFE0E0] dark:bg-[#354A54] px-4 py-3">
             <button type="button" @click="submitForm()" :disabled="saving"
-                class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2 shrink-0">
                 <svg x-show="saving" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
                         stroke-width="4"></circle>
@@ -1402,6 +1414,10 @@
                 </svg>
                 <span x-text="saving ? 'Saving...' : 'Save'"></span>
             </button>
+
+            <h1 class="min-w-0 text-base font-semibold text-gray-900 dark:text-neutral-100">
+                Create Sales Invoice
+            </h1>
         </div>
 
         <form x-ref="form" method="POST" action="{{ route('invoices.store', $docType) }}"
@@ -2281,7 +2297,7 @@
             {{-- Hidden JSON --}}
             <input type="hidden" id="items_json" name="items_json">
 
-            <div class="text-right">
+            <div class="text-left">
                 <button type="button" @click="submitForm()" :disabled="saving"
                     class="px-4 py-2 rounded bg-green-800 text-white hover:bg-green-900 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
                     <svg x-show="saving" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
