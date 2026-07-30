@@ -1,4 +1,17 @@
 <x-layouts.app :title="__('Items')">
+    @php
+        /*
+         * Suggestion sirf tab dikhana hai jab active business me ek bhi item na ho.
+         *
+         * Controller se $currentItemCount me UNFILTERED business item count bhejein.
+         * Filter/search ke baad $items empty hone par bhi suggestion dobara nahi aayega.
+         */
+        $currentItemCount = (int) ($currentItemCount ?? 0);
+
+        $shouldShowItemSuggestion =
+            (bool) ($showItemSuggestion ?? true)
+            && $currentItemCount === 0;
+    @endphp
     <div class="flex flex-col gap-4">
         @if(session('success'))
             <div class="rounded-lg border border-green-200 bg-green-50 p-3 text-green-700">
@@ -47,7 +60,7 @@
                         </button>
 
                        <div class="relative inline-flex flex-col items-end">
-                            @if($showItemSuggestion ?? false)
+                            @if($shouldShowItemSuggestion)
                                 <div
                                     class="pointer-events-none relative z-50 mb-5
                                         flex w-max max-w-[250px] justify-end sm:max-w-none"
@@ -91,12 +104,12 @@
                                     text-xs font-bold text-white shadow-md
                                     transition hover:bg-emerald-700
                                     sm:h-11 sm:px-4 sm:text-sm
-                                    {{ ($showItemSuggestion ?? false)
+                                    {{ ($shouldShowItemSuggestion)
                                         ? 'item-suggestion-blink ring-4 ring-emerald-300/70 dark:ring-emerald-700/70'
                                         : ''
                                     }}"
                             >
-                                @if($showItemSuggestion ?? false)
+                                @if($shouldShowItemSuggestion)
                                     <span class="absolute -right-1 -top-1 flex h-3 w-3">
                                         <span
                                             class="absolute inline-flex h-full w-full
@@ -236,7 +249,7 @@
                 . ($activeBusinessId ?? 'default');
         @endphp
 
-        @if($showItemSuggestion ?? false)
+        @if($shouldShowItemSuggestion)
             <div
                 id="itemSuggestionGuide"
                 data-storage-key="{{ $itemGuideStorageKey }}"
@@ -532,7 +545,7 @@
                                     class="text-xs text-gray-500
                                         dark:text-neutral-400"
                                 >
-                                    Current items: {{ $currentItemCount ?? 0 }}
+                                    Current items: {{ $currentItemCount }}
                                 </span>
                             </div>
                         </div>
@@ -969,7 +982,7 @@
 
 
 
-@if($showItemSuggestion ?? false)
+@if($shouldShowItemSuggestion)
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         initializeItemGuide();
