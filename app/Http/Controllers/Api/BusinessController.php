@@ -585,44 +585,66 @@ public function update(Request $request, Business $business)
 
     /*
     |--------------------------------------------------------------------------
-    | Strict business ownership/membership verification
+    | Check business access
     |--------------------------------------------------------------------------
     |
-    | Logged-in user ki requested business ke saath business_user pivot table
-    | me entry hona compulsory hai.
+    | User ko access tab milega jab:
     |
-    | Koi super admin ya permission bypass nahi rakha gaya hai.
+    | 1. business_user pivot table me membership ho
+    | OR
+    | 2. users.business_id requested business ke equal ho
+    | OR
+    | 3. users.current_business_id requested business ke equal ho
     |
     */
 
-    $membership = DB::table('business_user')
+    $pivotMembership = DB::table('business_user')
         ->where('business_id', $business->id)
         ->where('user_id', $user->id)
         ->first();
 
-    if (!$membership) {
+    $belongsThroughBusinessId =
+        isset($user->business_id)
+        && (int) $user->business_id === (int) $business->id;
+
+    $belongsThroughCurrentBusiness =
+        isset($user->current_business_id)
+        && (int) $user->current_business_id === (int) $business->id;
+
+    $belongsToBusiness =
+        $pivotMembership
+        || $belongsThroughBusinessId
+        || $belongsThroughCurrentBusiness;
+
+    if (!$belongsToBusiness) {
         return response()->json([
             'status' => false,
             'message' => 'Aap is business se belong nahi karte hain.',
-            'requested_business_id' => $business->id,
-            'logged_in_user_id' => $user->id,
+            'requested_business_id' => (int) $business->id,
+            'logged_in_user_id' => (int) $user->id,
+            'user_business_id' => $user->business_id ?? null,
+            'current_business_id' => $user->current_business_id ?? null,
         ], 403);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Optional: only owner/admin can update
+    | Pivot role check
     |--------------------------------------------------------------------------
     |
-    | Staff ko business profile update nahi karne dena hai.
+    | Agar pivot membership available hai to staff ko update se rokna hai.
+    | Direct business_id/current_business_id wala user owner maana jayega.
     |
     */
 
-    if (!in_array($membership->role, ['owner', 'admin'], true)) {
+    if (
+        $pivotMembership
+        && !in_array($pivotMembership->role, ['owner', 'admin'], true)
+    ) {
         return response()->json([
             'status' => false,
             'message' => 'Sirf business owner ya admin business update kar sakta hai.',
-            'your_business_role' => $membership->role,
+            'your_business_role' => $pivotMembership->role,
         ], 403);
     }
 
@@ -761,7 +783,7 @@ public function update(Request $request, Business $business)
 
     /*
     |--------------------------------------------------------------------------
-    | Generate unique slug
+    | Generate slug when business name changes
     |--------------------------------------------------------------------------
     */
 
@@ -791,12 +813,6 @@ public function update(Request $request, Business $business)
     } else {
         unset($data['slug']);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Normalize billing values
-    |--------------------------------------------------------------------------
-    */
 
     if (array_key_exists('invoice_base_prefix', $data)) {
         $data['invoice_base_prefix'] = filled($data['invoice_base_prefix'])
@@ -939,13 +955,26 @@ public function update(Request $request, Business $business)
 
     abort_unless($user, 401, 'Unauthenticated.');
 
-    $membershipExists = DB::table('business_user')
+    $pivotMembershipExists = DB::table('business_user')
         ->where('business_id', $business->id)
         ->where('user_id', $user->id)
         ->exists();
 
+    $belongsThroughBusinessId =
+        isset($user->business_id)
+        && (int) $user->business_id === (int) $business->id;
+
+    $belongsThroughCurrentBusiness =
+        isset($user->current_business_id)
+        && (int) $user->current_business_id === (int) $business->id;
+
+    $hasAccess =
+        $pivotMembershipExists
+        || $belongsThroughBusinessId
+        || $belongsThroughCurrentBusiness;
+
     abort_unless(
-        $membershipExists,
+        $hasAccess,
         403,
         'Aap is business se belong nahi karte hain.'
     );
