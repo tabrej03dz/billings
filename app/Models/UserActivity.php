@@ -15,26 +15,58 @@ class UserActivity extends Model
     ];
 
     protected $casts = [
+        /*
+        |--------------------------------------------------------------------------
+        | Numeric fields
+        |--------------------------------------------------------------------------
+        */
+
         'duration_seconds' => 'integer',
         'heartbeat_count' => 'integer',
+        'error_count' => 'integer',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Error details
+        |--------------------------------------------------------------------------
+        |
+        | Database ke JSON data ko automatically PHP array mein convert karega.
+        |
+        */
+
+        'errors' => 'array',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date fields
+        |--------------------------------------------------------------------------
+        */
+
         'started_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'ended_at' => 'datetime',
         'last_error_at' => 'datetime',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | User Relationship
+    |--------------------------------------------------------------------------
+    */
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Business Relationship
+    |--------------------------------------------------------------------------
+    */
+
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
-    }
-
-    public function activities()
-    {
-        return $this->hasMany(UserActivity::class);
     }
 }

@@ -318,6 +318,11 @@ Route::middleware(['auth'])->group(function () {
                 '/users/{user}',
                 [UserActivityController::class, 'show']
             )->name('show');
+
+            Route::delete(
+                '/users/{user}/clear',
+                [UserActivityController::class, 'clearUserActivity']
+            )->name('clear-user');
         });
 
 

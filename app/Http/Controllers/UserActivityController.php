@@ -657,169 +657,327 @@ public function index(Request $request): View
     |--------------------------------------------------------------------------
     */
 
+    // public function show(
+    //     Request $request,
+    //     User $user
+    // ): View {
+    //     $this->ensureSuperAdmin($request);
+
+    //     [$from, $to] = $this->dateRange($request);
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | User activities
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $activities = UserActivity::query()
+    //         ->where('user_id', $user->id)
+
+    //         ->whereBetween('started_at', [
+    //             $from,
+    //             $to,
+    //         ])
+
+    //         ->latest('started_at')
+    //         ->paginate(30)
+    //         ->withQueryString();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Page-wise stats
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $pageStats = UserActivity::query()
+    //         ->select([
+    //             'route_name',
+    //             'path',
+    //         ])
+
+    //         ->selectRaw(
+    //             'SUM(duration_seconds) as total_seconds'
+    //         )
+
+    //         ->selectRaw(
+    //             'COUNT(*) as page_views'
+    //         )
+
+    //         ->selectRaw(
+    //             'AVG(duration_seconds) as average_seconds'
+    //         )
+
+    //         ->where('user_id', $user->id)
+
+    //         ->whereBetween('started_at', [
+    //             $from,
+    //             $to,
+    //         ])
+
+    //         ->groupBy([
+    //             'route_name',
+    //             'path',
+    //         ])
+
+    //         ->orderByDesc('total_seconds')
+    //         ->get();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Device stats
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $deviceStats = UserActivity::query()
+    //         ->select('device_type')
+
+    //         ->selectRaw(
+    //             'SUM(duration_seconds) as total_seconds'
+    //         )
+
+    //         ->selectRaw(
+    //             'COUNT(*) as page_views'
+    //         )
+
+    //         ->where('user_id', $user->id)
+
+    //         ->whereBetween('started_at', [
+    //             $from,
+    //             $to,
+    //         ])
+
+    //         ->groupBy('device_type')
+    //         ->orderByDesc('total_seconds')
+    //         ->get();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Browser stats
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $browserStats = UserActivity::query()
+    //         ->select('browser')
+
+    //         ->selectRaw(
+    //             'SUM(duration_seconds) as total_seconds'
+    //         )
+
+    //         ->selectRaw(
+    //             'COUNT(*) as page_views'
+    //         )
+
+    //         ->where('user_id', $user->id)
+
+    //         ->whereBetween('started_at', [
+    //             $from,
+    //             $to,
+    //         ])
+
+    //         ->groupBy('browser')
+    //         ->orderByDesc('total_seconds')
+    //         ->get();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Totals
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $totalQuery = UserActivity::query()
+    //         ->where('user_id', $user->id)
+    //         ->whereBetween('started_at', [
+    //             $from,
+    //             $to,
+    //         ]);
+
+    //     $totals = [
+    //         'total_seconds' => (clone $totalQuery)
+    //             ->sum('duration_seconds'),
+
+    //         'page_views' => (clone $totalQuery)
+    //             ->count(),
+
+    //         'active_days' => (clone $totalQuery)
+    //             ->distinct()
+    //             ->count(DB::raw('DATE(started_at)')),
+
+    //         'last_seen' => (clone $totalQuery)
+    //             ->max('last_seen_at'),
+    //     ];
+
+    //     return view(
+    //         'super_admin.user_activity.show',
+    //         compact(
+    //             'user',
+    //             'activities',
+    //             'pageStats',
+    //             'deviceStats',
+    //             'browserStats',
+    //             'totals',
+    //             'from',
+    //             'to'
+    //         )
+    //     );
+    // }
+
+
     public function show(
-        Request $request,
-        User $user
-    ): View {
-        $this->ensureSuperAdmin($request);
+    Request $request,
+    User $user
+): View {
+    $this->ensureSuperAdmin($request);
 
-        [$from, $to] = $this->dateRange($request);
+    [$from, $to] = $this->dateRange($request);
 
-        /*
-        |--------------------------------------------------------------------------
-        | User activities
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | User activities
+    |--------------------------------------------------------------------------
+    */
 
-        $activities = UserActivity::query()
-            ->where('user_id', $user->id)
+    $activities = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->where('user_id', $user->id)
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+        ->latest('started_at')
+        ->paginate(30)
+        ->withQueryString();
 
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
+    /*
+    |--------------------------------------------------------------------------
+    | Page-wise stats
+    |--------------------------------------------------------------------------
+    */
 
-            ->latest('started_at')
-            ->paginate(30)
-            ->withQueryString();
+    $pageStats = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->select([
+            'route_name',
+            'path',
+        ])
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+        ->selectRaw(
+            'COALESCE(AVG(duration_seconds), 0) AS average_seconds'
+        )
+        ->selectRaw(
+            'COALESCE(SUM(error_count), 0) AS total_errors'
+        )
+        ->where('user_id', $user->id)
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+        ->groupBy([
+            'route_name',
+            'path',
+        ])
+        ->orderByDesc('total_errors')
+        ->orderByDesc('total_seconds')
+        ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Page-wise stats
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Device stats
+    |--------------------------------------------------------------------------
+    */
 
-        $pageStats = UserActivity::query()
-            ->select([
-                'route_name',
-                'path',
-            ])
+    $deviceStats = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->select('device_type')
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+        ->where('user_id', $user->id)
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+        ->groupBy('device_type')
+        ->orderByDesc('total_seconds')
+        ->get();
 
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
+    /*
+    |--------------------------------------------------------------------------
+    | Browser stats
+    |--------------------------------------------------------------------------
+    */
 
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
+    $browserStats = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->select('browser')
+        ->selectRaw(
+            'COALESCE(SUM(duration_seconds), 0) AS total_seconds'
+        )
+        ->selectRaw(
+            'COUNT(*) AS page_views'
+        )
+        ->where('user_id', $user->id)
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+        ->groupBy('browser')
+        ->orderByDesc('total_seconds')
+        ->get();
 
-            ->selectRaw(
-                'AVG(duration_seconds) as average_seconds'
-            )
+    /*
+    |--------------------------------------------------------------------------
+    | Totals
+    |--------------------------------------------------------------------------
+    */
 
-            ->where('user_id', $user->id)
+    $totalQuery = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->where('user_id', $user->id)
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ]);
 
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
+    $totals = [
+        'total_seconds' => (int) (clone $totalQuery)
+            ->sum('duration_seconds'),
 
-            ->groupBy([
-                'route_name',
-                'path',
-            ])
+        'page_views' => (int) (clone $totalQuery)
+            ->count(),
 
-            ->orderByDesc('total_seconds')
-            ->get();
+        'active_days' => (int) (clone $totalQuery)
+            ->selectRaw('COUNT(DISTINCT DATE(started_at)) AS active_days')
+            ->value('active_days'),
 
-        /*
-        |--------------------------------------------------------------------------
-        | Device stats
-        |--------------------------------------------------------------------------
-        */
+        'total_errors' => (int) (clone $totalQuery)
+            ->sum('error_count'),
 
-        $deviceStats = UserActivity::query()
-            ->select('device_type')
+        'last_seen' => (clone $totalQuery)
+            ->max('last_seen_at'),
+    ];
 
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
-
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
-
-            ->where('user_id', $user->id)
-
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
-
-            ->groupBy('device_type')
-            ->orderByDesc('total_seconds')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Browser stats
-        |--------------------------------------------------------------------------
-        */
-
-        $browserStats = UserActivity::query()
-            ->select('browser')
-
-            ->selectRaw(
-                'SUM(duration_seconds) as total_seconds'
-            )
-
-            ->selectRaw(
-                'COUNT(*) as page_views'
-            )
-
-            ->where('user_id', $user->id)
-
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ])
-
-            ->groupBy('browser')
-            ->orderByDesc('total_seconds')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Totals
-        |--------------------------------------------------------------------------
-        */
-
-        $totalQuery = UserActivity::query()
-            ->where('user_id', $user->id)
-            ->whereBetween('started_at', [
-                $from,
-                $to,
-            ]);
-
-        $totals = [
-            'total_seconds' => (clone $totalQuery)
-                ->sum('duration_seconds'),
-
-            'page_views' => (clone $totalQuery)
-                ->count(),
-
-            'active_days' => (clone $totalQuery)
-                ->distinct()
-                ->count(DB::raw('DATE(started_at)')),
-
-            'last_seen' => (clone $totalQuery)
-                ->max('last_seen_at'),
-        ];
-
-        return view(
-            'super_admin.user_activity.show',
-            compact(
-                'user',
-                'activities',
-                'pageStats',
-                'deviceStats',
-                'browserStats',
-                'totals',
-                'from',
-                'to'
-            )
-        );
-    }
+    return view(
+        'super_admin.user_activity.show',
+        compact(
+            'user',
+            'activities',
+            'pageStats',
+            'deviceStats',
+            'browserStats',
+            'totals',
+            'from',
+            'to'
+        )
+    );
+}
 
     /*
     |--------------------------------------------------------------------------
@@ -1065,4 +1223,73 @@ public function index(Request $request): View
             'error_count' => $activity->error_count,
         ]);
     }
+
+
+    /*
+|--------------------------------------------------------------------------
+| Clear selected user activity
+|--------------------------------------------------------------------------
+*/
+
+public function clearUserActivity(
+    Request $request,
+    User $user
+) {
+    $this->ensureSuperAdmin($request);
+
+    [$from, $to] = $this->dateRange($request);
+
+    $deletedCount = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->where('user_id', $user->id)
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+        ->delete();
+
+    return redirect()
+        ->route('super-admin.user-activity.show', [
+            'user' => $user->id,
+            'from' => $from->format('Y-m-d'),
+            'to' => $to->format('Y-m-d'),
+        ])
+        ->with(
+            'success',
+            number_format($deletedCount)
+            . ' activity records successfully clear kar diye gaye.'
+        );
+}
+
+/*
+|--------------------------------------------------------------------------
+| Clear all users activity
+|--------------------------------------------------------------------------
+*/
+
+public function clearAllActivity(Request $request)
+{
+    $this->ensureSuperAdmin($request);
+
+    [$from, $to] = $this->dateRange($request);
+
+    $deletedCount = UserActivity::query()
+        ->withoutGlobalScopes()
+        ->whereBetween('started_at', [
+            $from,
+            $to,
+        ])
+        ->delete();
+
+    return redirect()
+        ->route('super-admin.user-activity.index', [
+            'from' => $from->format('Y-m-d'),
+            'to' => $to->format('Y-m-d'),
+        ])
+        ->with(
+            'success',
+            number_format($deletedCount)
+            . ' activity records successfully clear kar diye gaye.'
+        );
+}
 }

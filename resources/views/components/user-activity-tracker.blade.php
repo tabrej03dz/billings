@@ -234,7 +234,9 @@
                 'error',
                 (event) => {
                     /*
-                    | Image, CSS, script ya resource load error.
+                    |--------------------------------------------------------------------------
+                    | Resource Load Error
+                    |--------------------------------------------------------------------------
                     */
 
                     if (
@@ -243,30 +245,74 @@
                     ) {
                         const element = event.target;
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Manually ignored resources
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            element instanceof HTMLElement &&
+                            element.dataset?.ignoreResourceError === 'true'
+                        ) {
+                            return;
+                        }
+
+                        const resourceUrl =
+                            element.currentSrc
+                            || element.src
+                            || element.href
+                            || null;
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Loaded image ko false error na maanein
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (
+                            element instanceof HTMLImageElement &&
+                            element.complete &&
+                            element.naturalWidth > 0
+                        ) {
+                            return;
+                        }
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Empty ya invalid resource ignore karein
+                        |--------------------------------------------------------------------------
+                        */
+
+                        if (!resourceUrl) {
+                            return;
+                        }
+
                         saveActivityError({
                             error_type:
                                 'resource_error',
 
                             message:
                                 'Resource failed to load: '
-                                + (
-                                    element.src
-                                    || element.href
-                                    || element.tagName
-                                    || 'Unknown resource'
-                                ),
+                                + resourceUrl,
 
                             source_file:
-                                element.src
-                                || element.href
-                                || null,
+                                resourceUrl,
+
+                            request_url:
+                                window.location.href,
+
+                            request_method:
+                                'GET',
                         });
 
                         return;
                     }
 
                     /*
-                    | Normal JavaScript error.
+                    |--------------------------------------------------------------------------
+                    | Normal JavaScript Error
+                    |--------------------------------------------------------------------------
                     */
 
                     saveActivityError({
@@ -292,6 +338,9 @@
                         stack_trace:
                             event.error?.stack
                             || null,
+
+                        request_url:
+                            window.location.href,
                     });
                 },
                 true

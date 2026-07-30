@@ -283,15 +283,18 @@
         |--------------------------------------------------------------------------
         | Business Logo
         |--------------------------------------------------------------------------
-        |
-        | businesses table me logo column ka naam "logo" maana gaya hai.
-        |
         */
 
         $businessLogo = null;
 
         if ($business && filled($business->logo)) {
             $storedLogo = trim((string) $business->logo);
+
+            /*
+            |--------------------------------------------------------------------------
+            | External URL
+            |--------------------------------------------------------------------------
+            */
 
             if (
                 \Illuminate\Support\Str::startsWith(
@@ -300,26 +303,65 @@
                 )
             ) {
                 $businessLogo = $storedLogo;
-            } elseif (
-                \Illuminate\Support\Str::startsWith(
-                    $storedLogo,
-                    ['/storage/', 'storage/']
-                )
-            ) {
-                $businessLogo = asset(ltrim($storedLogo, '/'));
-            } elseif (
-                \Illuminate\Support\Str::startsWith(
-                    $storedLogo,
-                    ['/uploads/', 'uploads/', '/images/', 'images/']
-                )
-            ) {
-                $businessLogo = asset(ltrim($storedLogo, '/'));
             } else {
-                $businessLogo = \Illuminate\Support\Facades\Storage::disk('public')
-                    ->url($storedLogo);
+                /*
+                |--------------------------------------------------------------------------
+                | Database path normalize karein
+                |--------------------------------------------------------------------------
+                |
+                | Supported values:
+                | business_logos/logo.webp
+                | storage/business_logos/logo.webp
+                | /storage/business_logos/logo.webp
+                |
+                */
+
+                $relativeLogoPath = ltrim($storedLogo, '/');
+
+                if (
+                    \Illuminate\Support\Str::startsWith(
+                        $relativeLogoPath,
+                        'storage/'
+                    )
+                ) {
+                    $relativeLogoPath = \Illuminate\Support\Str::after(
+                        $relativeLogoPath,
+                        'storage/'
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Public disk file check
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    \Illuminate\Support\Facades\Storage::disk('public')
+                        ->exists($relativeLogoPath)
+                ) {
+                    /*
+                    | request based URL banega:
+                    | http://127.0.0.1:8000/storage/...
+                    */
+
+                    $businessLogo = url(
+                        '/storage/' . ltrim($relativeLogoPath, '/')
+                    );
+                } elseif (
+                    \Illuminate\Support\Str::startsWith(
+                        $storedLogo,
+                        ['/uploads/', 'uploads/', '/images/', 'images/']
+                    )
+                ) {
+                    $publicPath = ltrim($storedLogo, '/');
+
+                    if (file_exists(public_path($publicPath))) {
+                        $businessLogo = url('/' . $publicPath);
+                    }
+                }
             }
         }
-
 
 
 
@@ -559,9 +601,16 @@
                         alt="{{ $businessName }} Logo"
                         class="h-full w-full object-contain p-1"
                         loading="eager"
+                        data-ignore-resource-error="true"
                         onerror="
-                            this.style.display='none';
-                            this.nextElementSibling.style.display='flex';
+                            this.onerror = null;
+                            this.style.display = 'none';
+
+                            const fallback = this.nextElementSibling;
+
+                            if (fallback) {
+                                fallback.style.display = 'flex';
+                            }
                         "
                     >
 

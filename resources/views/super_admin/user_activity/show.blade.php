@@ -49,6 +49,14 @@
 
     <div class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
 
+        @if(session('success'))
+            <div
+                class="rounded-2xl border border-emerald-300 bg-emerald-50 p-4 font-semibold text-emerald-700 shadow-sm dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300"
+            >
+                {{ session('success') }}
+            </div>
+        @endif
+
         {{-- Header --}}
         <div class="rounded-3xl bg-slate-950 p-6 text-white shadow-xl">
 
@@ -119,6 +127,29 @@
                         class="rounded-xl bg-blue-600 px-5 py-2 font-bold text-white hover:bg-blue-700"
                     >
                         Apply
+                    </button>
+                </form>
+
+
+                <form
+                    method="POST"
+                    action="{{ route('super-admin.user-activity.clear-user', [
+                        'user' => $user->id,
+                        'from' => request('from', $from->format('Y-m-d')),
+                        'to' => request('to', $to->format('Y-m-d')),
+                    ]) }}"
+                    onsubmit="return confirm(
+                        'Kya aap selected date range ki is user ki saari activity aur error logs permanently clear karna chahte hain?'
+                    )"
+                >
+                    @csrf
+                    @method('DELETE')
+
+                    <button
+                        type="submit"
+                        class="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-2 font-bold text-white shadow-sm transition hover:bg-red-700"
+                    >
+                        🗑 Clear Activity
                     </button>
                 </form>
 
@@ -523,9 +554,22 @@
                                 $activityErrorCount = (int) ($activity->error_count ?? 0);
                                 $activityHasErrors = $activityErrorCount > 0;
 
-                                $activityErrors = is_array($activity->errors)
-                                    ? $activity->errors
+                                $rawActivityErrors = $activity->errors;
+
+                                if (is_string($rawActivityErrors)) {
+                                    $rawActivityErrors = json_decode(
+                                        $rawActivityErrors,
+                                        true
+                                    );
+                                }
+
+                                $activityErrors = is_array($rawActivityErrors)
+                                    ? array_reverse($rawActivityErrors)
                                     : [];
+
+                                $activityHasErrors =
+                                    $activityErrorCount > 0
+                                    || count($activityErrors) > 0;
 
                                 $activityErrors = array_reverse($activityErrors);
                             @endphp
