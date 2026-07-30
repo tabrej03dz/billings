@@ -85,7 +85,7 @@
                             @endif
 
                             <a
-                                href="{{ route('item.create') }}"
+                                href="{{ route('items.create') }}"
                                 class="relative inline-flex h-10 items-center justify-center
                                     gap-1.5 rounded-xl bg-emerald-600 px-3
                                     text-xs font-bold text-white shadow-md
@@ -488,7 +488,7 @@
                                     sm:flex-row sm:items-center"
                             >
                                 <a
-                                    href="{{ route('item.create') }}"
+                                    href="{{ route('items.create') }}"
                                     class="inline-flex items-center justify-center
                                         gap-2 rounded-xl bg-emerald-600
                                         px-4 py-2.5 text-sm font-semibold
@@ -695,7 +695,7 @@
                         </div>
 
                         <a
-                            href="{{ route('item.create') }}"
+                            href="{{ route('items.create') }}"
                             class="mt-3 inline-flex rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white"
                         >
                             Create Item

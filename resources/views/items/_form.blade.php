@@ -298,103 +298,109 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
                 <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Metal & Weights</h3>
 
-                <div class="grid md:grid-cols-3 gap-4">
-
-                    @if($showField('gross_weight'))
-                        <div>
-                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gross Weight (gm)</label>
-                            <input type="number" step="0.001" name="gross_weight"
-                                   value="{{ old('gross_weight', $item->gross_weight ?? '') }}"
-                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
-                        </div>
-                    @endif
-
-                    @if($showField('stone_weight'))
-                        <div>
-                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gemstone Weight (gm)</label>
-                            <input type="number" step="0.001" name="stone_weight"
-                                   value="{{ old('stone_weight', $item->stone_weight ?? '') }}"
-                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
-                        </div>
-                    @endif
-
-                    @if($showField('stone_charges'))
-                        <div>
-                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gemstone Charges (₹)</label>
-                            <input type="number" step="0.01" name="stone_charges"
-                                   value="{{ old('stone_charges', $item->stone_charges ?? '') }}"
-                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
-                        </div>
-                    @endif
+                <div class="grid gap-4 md:grid-cols-3">
 
                     @if($showField('gold_weight'))
                         <div>
                             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gold Weight (gm)</label>
-                            <input type="number" step="0.001" name="gold_weight"
+                            <input type="number" step="0.001" min="0" name="gold_weight"
                                    value="{{ old('gold_weight', $item->gold_weight ?? '') }}"
                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('gold_weight') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     @endif
 
                     @if($showField('gold_purity'))
-                    <div>
-                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                            Gold Purity
-                        </label>
-
-                        <select name="gold_purity"
-                                class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
-                            <option value="">Select Gold Purity</option>
-                            <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
-                            <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
-                            <option value="20K (833)" @selected(old('gold_purity', $item->gold_purity ?? '') == '20K (833)')>20K (833)</option>
-                            <option value="18K (750)" @selected(old('gold_purity', $item->gold_purity ?? '') == '18K (750)')>18K (750)</option>
-                            <option value="16K (667)" @selected(old('gold_purity', $item->gold_purity ?? '') == '16K (667)')>16K (667)</option>
-                            <option value="14K (585)" @selected(old('gold_purity', $item->gold_purity ?? '') == '14K (585)')>14K (585)</option>
-                        </select>
-                    </div>
-                @endif
+                        <div>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gold Purity</label>
+                            <select name="gold_purity"
+                                    class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                                <option value="">Select Gold Purity</option>
+                                <option value="24K (999)" @selected(old('gold_purity', $item->gold_purity ?? '') == '24K (999)')>24K (999)</option>
+                                <option value="22K (916)" @selected(old('gold_purity', $item->gold_purity ?? '') == '22K (916)')>22K (916)</option>
+                                <option value="20K (833)" @selected(old('gold_purity', $item->gold_purity ?? '') == '20K (833)')>20K (833)</option>
+                                <option value="18K (750)" @selected(old('gold_purity', $item->gold_purity ?? '') == '18K (750)')>18K (750)</option>
+                                <option value="16K (667)" @selected(old('gold_purity', $item->gold_purity ?? '') == '16K (667)')>16K (667)</option>
+                                <option value="14K (585)" @selected(old('gold_purity', $item->gold_purity ?? '') == '14K (585)')>14K (585)</option>
+                            </select>
+                            @error('gold_purity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
 
                     @if($showField('silver_weight'))
                         <div>
                             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Silver Weight (gm)</label>
-                            <input type="number" step="0.001" name="silver_weight"
+                            <input type="number" step="0.001" min="0" name="silver_weight"
                                    value="{{ old('silver_weight', $item->silver_weight ?? '') }}"
                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('silver_weight') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     @endif
 
                     @if($showField('silver_purity'))
                         <div>
                             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Silver Purity</label>
-                            <select name="silver_purity" class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            <select name="silver_purity"
+                                    class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                                 <option value="">Select Silver Purity</option>
                                 <option value="999" @selected(old('silver_purity', $item->silver_purity ?? '') == '999')>Silver 999</option>
                                 <option value="925" @selected(old('silver_purity', $item->silver_purity ?? '') == '925')>Silver 925</option>
                             </select>
+                            @error('silver_purity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
+
+                    @if($showField('gross_weight'))
+                        <div>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gross Weight (gm)</label>
+                            <input type="number" step="0.001" min="0" name="gross_weight"
+                                   value="{{ old('gross_weight', $item->gross_weight ?? '') }}"
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('gross_weight') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
+
+                    @if($showField('stone_weight'))
+                        <div>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gemstone Weight (gm)</label>
+                            <input type="number" step="0.001" min="0" name="stone_weight"
+                                   value="{{ old('stone_weight', $item->stone_weight ?? '') }}"
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('stone_weight') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
+
+                    @if($showField('stone_charges'))
+                        <div>
+                            <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Gemstone Charges (₹)</label>
+                            <input type="number" step="0.01" min="0" name="stone_charges"
+                                   value="{{ old('stone_charges', $item->stone_charges ?? '') }}"
+                                   class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('stone_charges') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     @endif
 
                     @if($showField('diamond_weight'))
                         <div>
                             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Diamond Weight (ct)</label>
-                            <input type="number" step="0.001" name="diamond_weight"
+                            <input type="number" step="0.001" min="0" name="diamond_weight"
                                    value="{{ old('diamond_weight', $item->diamond_weight ?? '') }}"
                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('diamond_weight') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     @endif
 
                     @if($showField('diamond_charges'))
                         <div>
                             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Diamond Charges (₹)</label>
-                            <input type="number" step="0.01" name="diamond_charges"
+                            <input type="number" step="0.01" min="0" name="diamond_charges"
                                    value="{{ old('diamond_charges', $item->diamond_charges ?? '') }}"
                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                            @error('diamond_charges') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     @endif
                 </div>
             </div>
-
             @if($showField('stock_qty') || $showField('unit'))
                 <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]" id="stockBlock">
                     <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Stock Details</h3>
@@ -521,14 +527,14 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
             <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Pricing</h3>
 
-            <div class="grid md:grid-cols-2 gap-4">
-
+            <div class="grid gap-4 md:grid-cols-2">
                 @if($showField('price'))
                     <div>
                         <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Price (₹)</label>
                         <input type="number" step="0.01" min="0" name="price"
                                value="{{ old('price', $item->price ?? 0) }}"
                                class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                        @error('price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endif
 
@@ -538,60 +544,34 @@
                         <input type="number" step="0.01" min="0" name="cost_price"
                                value="{{ old('cost_price', $item->cost_price ?? '') }}"
                                class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                        @error('cost_price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endif
 
-                {{-- @if($showField('making_charge'))
-                    <div id="makingChargeBlock" class="hidden">
-                        <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Making Charge (%)</label>
-                        <input id="makingChargeField" type="number" step="0.01" min="0" max="100" name="making_charge"
-                               value="{{ old('making_charge', $item->making_charge ?? '') }}"
-                               class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
-                               placeholder="Example: 10">
-                    </div>
-                @endif --}}
-
                 @if($showField('making_charge'))
                     <div id="makingChargeBlock" class="hidden md:col-span-2">
-                        <div class="grid md:grid-cols-2 gap-4">
-                            
+                        <div class="grid gap-4 md:grid-cols-2">
                             <div>
                                 <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Making Charge Type</label>
                                 <select id="makingChargeType" name="making_charge_type"
                                         class="rv-select mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
-                                    <option value="percentage"
-                                        @selected(old('making_charge_type', $item->making_charge_type ?? 'percentage') === 'percentage')>
-                                        Percent (%)
-                                    </option>
-
-                                    <option value="fixed"
-                                        @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'fixed')>
-                                        Fixed Amount (₹)
-                                    </option>
-
-                                    <option value="per_gram"
-                                        @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'per_gram')>
-                                        Per Gram Making Charge
-                                    </option>
-
-                                    <option value="per_product"
-                                        @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'per_product')>
-                                        Whole Product Making Charge
-                                    </option>
+                                    <option value="percentage" @selected(old('making_charge_type', $item->making_charge_type ?? 'percentage') === 'percentage')>Percent (%)</option>
+                                    <option value="fixed" @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'fixed')>Fixed Amount (₹)</option>
+                                    <option value="per_gram" @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'per_gram')>Per Gram Making Charge</option>
+                                    <option value="per_product" @selected(old('making_charge_type', $item->making_charge_type ?? '') === 'per_product')>Whole Product Making Charge</option>
                                 </select>
+                                @error('making_charge_type') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
 
                             <div>
-                                <label id="makingChargeLabel" class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
-                                    Making Charge (%)
-                                </label>
+                                <label id="makingChargeLabel" class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Making Charge (%)</label>
                                 <input id="makingChargeField" type="number" step="0.01" min="0"
-                                    name="making_charge"
-                                    value="{{ old('making_charge', $item->making_charge ?? '') }}"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
-                                    placeholder="Example: 10">
+                                       name="making_charge"
+                                       value="{{ old('making_charge', $item->making_charge ?? '') }}"
+                                       class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40"
+                                       placeholder="Example: 10">
+                                @error('making_charge') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                             </div>
-
                         </div>
                     </div>
                 @endif
@@ -604,6 +584,7 @@
                         <input type="number" step="0.01" min="0" max="100" name="tax_rate" required
                                value="{{ old('tax_rate', $item->tax_rate ?? 0) }}"
                                class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
+                        @error('tax_rate') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endif
             </div>

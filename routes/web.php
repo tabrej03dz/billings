@@ -505,6 +505,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::prefix('items')->name('items.')->controller(\App\Http\Controllers\ItemController::class)->group(function(){
         Route::get('/', 'index')->name('index');
+        // Route::get('create', 'create')->name('create');
         Route::get('edit/{item}', 'edit')->name('edit');
         Route::post('store', 'store')->name('store');
         Route::put('update/{item}', 'update')->name('update');
@@ -544,7 +545,7 @@ Route::middleware(['auth'])->group(function () {
         )->name('barcode.print');
     });
 
-    Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('item.create');
+    Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('items.create');
 
     Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
 

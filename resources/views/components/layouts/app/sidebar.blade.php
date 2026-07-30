@@ -472,23 +472,66 @@
                     $hasItems &&
                     !$hasInvoices;
 
+                // /*
+                // |--------------------------------------------------------------------------
+                // | Mobile Hamburger Guidance
+                // |--------------------------------------------------------------------------
+                // */
+
+                // $mobileMenuAttention =
+                //     (bool) $business &&
+                //     (!$hasItems || !$hasInvoices);
+
+                // $mobileNextStepTitle = !$hasItems
+                //     ? 'Next Step: Create Item'
+                //     : 'Next Step: Create Invoice';
+
+                // $mobileNextStepText = !$hasItems
+                //     ? 'Menu kholkar Items par tap karein'
+                //     : 'Menu kholkar Create Invoice par tap karein';
+
+
                 /*
                 |--------------------------------------------------------------------------
                 | Mobile Hamburger Guidance
                 |--------------------------------------------------------------------------
+                |
+                | Items page par Create Item tooltip nahi dikhega.
+                | Item banne ke baad Create Invoice tooltip dikhega.
+                | Invoice create page par invoice tooltip nahi dikhega.
+                |
                 */
 
-                $mobileMenuAttention =
+                $isItemsRoute = request()->routeIs('items.*');
+
+                $isInvoiceCreateRoute =
+                    request()->routeIs('invoices.create');
+
+                $showCreateItemMobileSuggestion =
                     (bool) $business &&
-                    (!$hasItems || !$hasInvoices);
+                    !$hasItems &&
+                    !$isItemsRoute;
 
-                $mobileNextStepTitle = !$hasItems
-                    ? 'Next Step: Create Item'
-                    : 'Next Step: Create Invoice';
+                $showCreateInvoiceMobileSuggestion =
+                    (bool) $business &&
+                    $hasItems &&
+                    !$hasInvoices &&
+                    !$isInvoiceCreateRoute;
 
-                $mobileNextStepText = !$hasItems
-                    ? 'Menu kholkar Items par tap karein'
-                    : 'Menu kholkar Create Invoice par tap karein';
+                $mobileMenuAttention =
+                    $showCreateItemMobileSuggestion ||
+                    $showCreateInvoiceMobileSuggestion;
+
+                if ($showCreateItemMobileSuggestion) {
+                    $mobileNextStepTitle = 'Next Step: Create Item';
+                    $mobileNextStepText = 'Menu kholkar Items par tap karein';
+                } elseif ($showCreateInvoiceMobileSuggestion) {
+                    $mobileNextStepTitle = 'Next Step: Create Invoice';
+                    $mobileNextStepText = 'Menu kholkar Create Invoice par tap karein';
+                } else {
+                    $mobileNextStepTitle = null;
+                    $mobileNextStepText = null;
+                }
     @endphp
 
     <flux:sidebar

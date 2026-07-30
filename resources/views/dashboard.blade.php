@@ -314,7 +314,7 @@
                                                     </span>
                                                 @else
                                                     @can('create item')
-                                                        <a href="{{ route('item.create') }}"
+                                                        <a href="{{ route('items.create') }}"
                                                            class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
                                                                   text-xs font-semibold text-white hover:bg-indigo-700">
                                                             + Add Item
@@ -420,7 +420,7 @@
                             <div class="mt-4 flex flex-wrap items-center gap-3">
                                 @if(!$itemSetupDone)
                                     @can('create item')
-                                        <a href="{{ route('item.create') }}"
+                                        <a href="{{ route('items.create') }}"
                                            class="inline-flex items-center justify-center rounded-xl bg-indigo-600
                                                   px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
                                             Start with Item
