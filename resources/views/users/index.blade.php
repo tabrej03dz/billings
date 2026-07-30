@@ -36,7 +36,7 @@
                         type="text"
                         name="search"
                         value="{{ request('search') }}"
-                        placeholder="Name or Email"
+                        placeholder="Name, Email or Phone"
                         class="border rounded px-3 py-2 w-64 dark:bg-neutral-800"
                     >
                 </div>

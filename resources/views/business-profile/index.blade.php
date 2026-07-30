@@ -77,7 +77,7 @@
     <div class="mb-5"><x-billing-setup-guide :step="2" /></div>
 
     <div class="min-h-screen bg-zinc-50 py-3 dark:bg-zinc-950 sm:py-6">
-        <div class="mx-auto max-w-7xl px-3 pb-28 sm:px-6 sm:pb-12 lg:px-8">
+        <div class="mx-auto max-w-7xl px-3 pb-10 sm:px-6 sm:pb-12 lg:px-8">
 
             {{-- Success Message --}}
             @if(session('success'))
@@ -151,7 +151,7 @@
                             </span>
 
                             <span class="text-2xl font-black">
-                                {{ (int) $business->profile_completion }}%
+                                {{ (int) ($business->profile_completion ?? 0) }}%
                             </span>
                         </div>
 
@@ -166,7 +166,7 @@
                                     100,
                                     max(
                                         0,
-                                        (int) $business->profile_completion
+                                        (int) ($business->profile_completion ?? 0)
                                     )
                                 ) }}%"
                             ></div>
@@ -227,7 +227,7 @@
             </div>
 
             {{-- Show only when this business has no items --}}
-            @if($businessItemCount === 0)
+            @if($business->exists && $businessItemCount === 0)
                 <div class="mb-6 overflow-hidden rounded-2xl border-2 border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 shadow-lg dark:border-indigo-800 dark:from-indigo-950/60 dark:via-zinc-900 dark:to-violet-950/50 sm:p-5">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
@@ -280,71 +280,83 @@
 
                 @include('business-profile.partials.invoice-settings')
 
-                {{-- Save Bar --}}
-                <div
+                {{-- Save Section --}}
+                <section
                     id="businessProfileSaveBar"
-                    class="fixed left-3 right-3 z-[9999]
-                        flex flex-col gap-3 rounded-2xl
-                        border border-zinc-200 bg-white
-                        p-4 shadow-2xl
-                        sm:left-auto sm:right-6 sm:w-[420px]
-                        dark:border-zinc-700 dark:bg-zinc-900"
-                    style="bottom: max(12px, env(safe-area-inset-bottom)); z-index: 9999;"
+                    class="overflow-hidden rounded-2xl border
+                           border-zinc-200 bg-white shadow-sm
+                           dark:border-zinc-800 dark:bg-zinc-900"
                 >
-                    <div>
-                        <p class="text-sm font-bold text-zinc-800 dark:text-white">
-                            Save your business setup
-                        </p>
-
-                        <p class="mt-1 text-xs text-zinc-500">
-                            Complete the details and save your business profile.
-                        </p>
-                    </div>
-
-                    <button
-                        id="businessProfileSubmitButton"
-                        type="submit"
-                        name="action"
-                        value="save"
-                        class="relative inline-flex min-h-12 w-full
-                            cursor-pointer items-center justify-center
-                            gap-2 rounded-xl bg-indigo-600
-                            px-6 py-3 font-bold text-white
-                            shadow-lg transition
-                            hover:bg-indigo-700
-                            active:scale-[0.98]
-                            disabled:cursor-not-allowed
-                            disabled:opacity-60"
+                    <div
+                        class="flex flex-col gap-4 p-4 sm:p-6
+                               md:flex-row md:items-center
+                               md:justify-between"
                     >
-                        <svg
-                            id="businessProfileSubmitSpinner"
-                            class="hidden h-5 w-5 animate-spin"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
+                        <div class="min-w-0">
+                            <h2
+                                class="text-base font-black text-zinc-900
+                                       dark:text-white sm:text-lg"
+                            >
+                                Save your business setup
+                            </h2>
+
+                            <p
+                                class="mt-1 text-sm leading-6 text-zinc-500
+                                       dark:text-zinc-400"
+                            >
+                                Review the details above and save your business profile.
+                            </p>
+                        </div>
+
+                        <button
+                            id="businessProfileSubmitButton"
+                            type="submit"
+                            name="action"
+                            value="save"
+                            class="relative inline-flex min-h-12 w-full
+                                   shrink-0 cursor-pointer items-center
+                                   justify-center gap-2 rounded-xl
+                                   bg-indigo-600 px-6 py-3
+                                   text-sm font-black text-white
+                                   shadow-lg transition
+                                   hover:bg-indigo-700
+                                   active:scale-[0.98]
+                                   disabled:cursor-not-allowed
+                                   disabled:opacity-60
+                                   md:w-auto md:min-w-[240px]"
                         >
-                            <circle
-                                class="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                stroke-width="4"
-                            ></circle>
+                            <svg
+                                id="businessProfileSubmitSpinner"
+                                class="hidden h-5 w-5 animate-spin"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
 
-                            <path
-                                class="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0
-                                C5.373 0 0 5.373 0 12h4z"
-                            ></path>
-                        </svg>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0
+                                    C5.373 0 0 5.373 0 12h4z"
+                                ></path>
+                            </svg>
 
-                        <span id="businessProfileSubmitText">
-                            Save Business Profile
-                        </span>
-                    </button>
-                </div>
+                            <span id="businessProfileSubmitText">
+                                {{ $business->exists
+                                    ? 'Save Business Profile'
+                                    : 'Create Business Profile' }}
+                            </span>
+                        </button>
+                    </div>
+                </section>
             </form>
         </div>
     </div>

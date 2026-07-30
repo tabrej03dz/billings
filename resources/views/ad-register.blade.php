@@ -1,7 +1,6 @@
 @extends('frontend.layout')
 
 @section('content')
-
 <style>
     #typingText::after {
         content: "|";
@@ -697,6 +696,7 @@
 
                             <button type="button"
                                     data-plan-id="{{ $plan->id }}"
+                                    data-trial="1"
                                     class="open-registration-modal mt-8 block w-full text-center rounded-full py-4 font-black
                                     {{ $isPopular
                                         ? 'bg-white text-mvBlue'
@@ -912,6 +912,11 @@
                        name="plan_id"
                        id="popupPlanId"
                        value="{{ request('plan_id') }}">
+
+                <input type="hidden"
+                       name="trial"
+                       id="popupTrial"
+                       value="{{ request('trial', 1) }}">
 
                 {{-- STEP 1 --}}
                 <div class="registration-step active space-y-5"
@@ -1190,7 +1195,7 @@
                     <button type="button"
                             id="popupSkipBusinessBtn"
                             class="registration-skip-button">
-                        Skip business details for now
+                        Skip Business Details
                     </button>
                 </div>
 
@@ -1395,6 +1400,21 @@
         const popupPlanId =
             document.getElementById('popupPlanId');
 
+        const popupTrial =
+            document.getElementById('popupTrial');
+
+        const registrationUrlParams =
+            new URLSearchParams(window.location.search);
+
+        const shouldOpenRegistrationFromUrl =
+            registrationUrlParams.get('open_register') === '1';
+
+        const initialRegistrationPlanId =
+            registrationUrlParams.get('plan_id') || '';
+
+        const initialRegistrationTrial =
+            registrationUrlParams.get('trial') ?? '1';
+
         const INITIAL_POPUP_DELAY = 800;
         const REOPEN_POPUP_DELAY = 10000;
 
@@ -1428,7 +1448,11 @@
             return !registrationModal.classList.contains('show');
         }
 
-        function openRegistrationModal(planId = '', forceOpen = false) {
+        function openRegistrationModal(
+            planId = '',
+            trial = '1',
+            forceOpen = false
+        ) {
             clearRegistrationPopupTimer();
 
             if (!canOpenRegistrationModal(forceOpen)) {
@@ -1437,6 +1461,11 @@
 
             if (popupPlanId) {
                 popupPlanId.value = planId || '';
+            }
+
+            if (popupTrial) {
+                popupTrial.value =
+                    String(trial) === '0' ? '0' : '1';
             }
 
             registrationModal.classList.add('show');
@@ -1464,7 +1493,7 @@
             clearRegistrationPopupTimer();
 
             registrationPopupTimer = setTimeout(function () {
-                openRegistrationModal('', false);
+                openRegistrationModal('', '1', false);
             }, delay);
         }
 
@@ -1512,13 +1541,26 @@
                 const planId =
                     button.getAttribute('data-plan-id') || '';
 
+                const trial =
+                    button.getAttribute('data-trial') ?? '1';
+
                 /*
                 * Manual click par completed localStorage flag popup ko
                 * block nahi karega.
                 */
-                openRegistrationModal(planId, true);
+                openRegistrationModal(planId, trial, true);
             });
         });
+
+        if (shouldOpenRegistrationFromUrl) {
+            setTimeout(function () {
+                openRegistrationModal(
+                    initialRegistrationPlanId,
+                    initialRegistrationTrial,
+                    true
+                );
+            }, 150);
+        }
 
         closeRegistrationButtons.forEach(
             function (button) {
@@ -1834,6 +1876,27 @@
             }
         }
 
+        function hasAnyBusinessDetails() {
+            const businessFieldNames = [
+                'business_name',
+                'business_email',
+                'type',
+                'gstin',
+                'address',
+                'state',
+                'state_code'
+            ];
+
+            return businessFieldNames.some(function (fieldName) {
+                const field = form.querySelector(
+                    '[name="' + fieldName + '"]'
+                );
+
+                return field &&
+                    String(field.value || '').trim() !== '';
+            });
+        }
+
         function syncStateFields() {
             if (
                 !stateSelect ||
@@ -1929,30 +1992,27 @@
             }
 
             /*
-            * Step 1 par button hidden rahega.
-            * OTP verify hone par automatic Step 2 khulega.
-            *
-            * Step 2 par button Business Continue hoga.
-            * Step 3 par button final Continue hoga.
+            * Step 1 par mobile verified ho to Continue button dikhega.
+            * Pehli OTP verification ke baad Step 2 automatic khulta hai.
+            * Back karke Step 1 par aane par user Continue se dobara
+            * Step 2 me ja sakta hai, OTP repeat nahi karna padega.
             */
             if (submitBtn) {
+                const isPhoneAlreadyVerified =
+                    phoneVerified &&
+                    phoneVerified.value === '1';
+
+                const shouldHideSubmit =
+                    index === 0 && !isPhoneAlreadyVerified;
+
                 submitBtn.classList.toggle(
                     'hidden',
-                    index === 0
+                    shouldHideSubmit
                 );
 
                 submitBtn.disabled = false;
-
-                if (index === 1) {
-                    submitBtn.textContent = 'Continue';
-                }
-
-                if (index === 2) {
-                    submitBtn.textContent = 'Continue';
-                }
-
-                submitBtn.dataset.originalText =
-                    'Continue';
+                submitBtn.textContent = 'Continue';
+                submitBtn.dataset.originalText = 'Continue';
             }
 
             hideMessage();
@@ -2545,7 +2605,7 @@
                 [
                     'business_name',
                     'business_email',
-                    'business_type_id',
+                    'type',
                     'gstin',
                     'address',
                     'state',
@@ -2623,20 +2683,12 @@
             try {
                 syncStateFields();
 
-                const businessNameField =
-                    form.querySelector(
-                        '[name="business_name"]'
-                    );
-
-                const businessTypeField =
-                    form.querySelector(
-                        '[name="business_type_id"]'
-                    );
-
-                if (
-                    !businessNameField?.value.trim() ||
-                    !businessTypeField?.value
-                ) {
+                /*
+                * Business ki saari fields optional hain.
+                * User ne koi bhi business detail nahi bhari ho to
+                * business step automatically skipped maana jayega.
+                */
+                if (!hasAnyBusinessDetails()) {
                     businessSkipped.value = '1';
                 }
 
@@ -2691,6 +2743,32 @@
                 }
 
                 /*
+                * User Back karke verified Step 1 par aaya ho to
+                * OTP dobara verify karaye bina Step 2 khol do.
+                */
+                if (currentStep === 0) {
+                    if (
+                        phoneVerified &&
+                        phoneVerified.value === '1'
+                    ) {
+                        if (businessMobile && ownerPhone) {
+                            businessMobile.value =
+                                cleanPhone(ownerPhone.value);
+                        }
+
+                        showStep(1);
+                        return;
+                    }
+
+                    showMessage(
+                        'Pehle mobile number verify kijiye.',
+                        'error'
+                    );
+
+                    return;
+                }
+
+                /*
                 * Step 2 par ye button next step kholega.
                 */
                 if (currentStep === 1) {
@@ -2702,7 +2780,12 @@
                         'Saving...'
                     );
 
-                    businessSkipped.value = '0';
+                    /*
+                    * Business details optional hain. Blank form ko
+                    * skipped maana jayega; partial details bhi allowed hain.
+                    */
+                    businessSkipped.value =
+                        hasAnyBusinessDetails() ? '0' : '1';
 
                     const saved =
                         await saveCurrentStep(2);

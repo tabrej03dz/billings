@@ -6,10 +6,15 @@ use App\Models\BillTemplate;
 use App\Models\Business;
 use App\Models\BusinessType;
 use App\Models\Item;
+use App\Models\Plan;
+use App\Models\UserPlan;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\PermissionRegistrar;
 
 class BusinessProfileController extends Controller
 {
@@ -18,48 +23,50 @@ class BusinessProfileController extends Controller
      */
     public function index(Request $request)
     {
-        $business = $this->resolveBusiness($request);
+        $business = $this->resolveBusiness($request, false);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Profile completion refresh
-        |--------------------------------------------------------------------------
-        */
+        if ($business) {
+            $business->refreshProfileCompletion();
+            $business->refresh();
 
-        $business->refreshProfileCompletion();
-        $business->refresh();
+            $missingFields =
+                $business->missingProfileFields();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Business types
-        |--------------------------------------------------------------------------
-        */
+            $itemCount = Item::query()
+                ->where('business_id', $business->id)
+                ->count();
+        } else {
+            $business = new Business([
+                'name' => null,
+                'email' => null,
+                'mobile' => $request->user()?->phone,
+                'gst_enabled' => false,
+                'invoice_base_prefix' => 'RV/SL',
+                'rounding_mode' => 'nearest',
+                'rounding_step' => 1,
+                'profile_completion' => 0,
+            ]);
+
+            $business->id = null;
+            $business->profile_completion = 0;
+
+            $missingFields = [
+                'Business Name',
+                'Business Type',
+                'Mobile Number',
+                'Business Address',
+            ];
+
+            $itemCount = 0;
+        }
 
         $businessTypes = BusinessType::query()
             ->orderBy('name')
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Invoice templates
-        |--------------------------------------------------------------------------
-        */
-
         $billTemplates = BillTemplate::query()
             ->orderBy('name')
             ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Missing profile fields
-        |--------------------------------------------------------------------------
-        */
-
-        $missingFields = $business->missingProfileFields();
-        
-          $itemCount = Item::query()
-            ->where('business_id', $business->id)
-            ->count();
 
         return view(
             'business-profile.index',
@@ -67,7 +74,8 @@ class BusinessProfileController extends Controller
                 'business',
                 'businessTypes',
                 'billTemplates',
-                'missingFields', 'itemCount'
+                'missingFields',
+                'itemCount'
             )
         );
     }
@@ -79,7 +87,24 @@ class BusinessProfileController extends Controller
      */
     public function update(Request $request)
     {
-        $business = $this->resolveBusiness($request);
+        $user = $request->user();
+
+        abort_unless(
+            $user,
+            401,
+            'Please login to continue.'
+        );
+
+        $business = $this->resolveBusiness(
+            $request,
+            false
+        );
+
+        $isCreating = !$business;
+
+        if ($isCreating) {
+            $business = new Business();
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -112,7 +137,11 @@ class BusinessProfileController extends Controller
                     'email',
                     'max:255',
                     Rule::unique('businesses', 'email')
-                        ->ignore($business->id),
+                        ->when(
+                            $business->exists,
+                            fn ($rule) =>
+                                $rule->ignore($business->id)
+                        ),
                 ],
 
                 'mobile' => [
@@ -120,7 +149,11 @@ class BusinessProfileController extends Controller
                     'string',
                     'max:20',
                     Rule::unique('businesses', 'mobile')
-                        ->ignore($business->id),
+                        ->when(
+                            $business->exists,
+                            fn ($rule) =>
+                                $rule->ignore($business->id)
+                        ),
                 ],
 
                 'gst_enabled' => [
@@ -440,7 +473,9 @@ class BusinessProfileController extends Controller
             $baseSlug = Str::slug($data['name']);
 
             if ($baseSlug === '') {
-                $baseSlug = 'business-' . $business->id;
+                $baseSlug =
+                    'business-' .
+                    ($business->id ?: Str::lower(Str::random(8)));
             }
 
             $slug = $baseSlug;
@@ -449,7 +484,15 @@ class BusinessProfileController extends Controller
             while (
                 Business::query()
                     ->where('slug', $slug)
-                    ->where('id', '!=', $business->id)
+                    ->when(
+                        $business->exists,
+                        fn ($query) =>
+                            $query->where(
+                                'id',
+                                '!=',
+                                $business->id
+                            )
+                    )
                     ->exists()
             ) {
                 $slug = $baseSlug . '-' . $counter;
@@ -628,40 +671,89 @@ class BusinessProfileController extends Controller
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Business update
-        |--------------------------------------------------------------------------
-        |
-        | Bilkul BusinessController ki tarah direct update.
-        | Kisi BusinessType relation ki zarurat nahi hai.
-        |
-        */
+        if ($isCreating) {
+            if (!filled($data['name'] ?? null)) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'name' =>
+                            'Business create karne ke liye business name enter kijiye.',
+                    ]);
+            }
 
-        $business->update($data);
+            if (!filled($data['mobile'] ?? null)) {
+                $data['mobile'] =
+                    $user->phone ?: null;
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Fresh business data
-        |--------------------------------------------------------------------------
-        */
+            if (empty($data['type'])) {
+                $data['type'] =
+                    BusinessType::query()
+                        ->orderBy('id')
+                        ->value('id');
+            }
+
+            if (empty($data['type'])) {
+                return back()
+                    ->withInput()
+                    ->withErrors([
+                        'type' =>
+                            'Admin panel se kam se kam ek business type create kijiye.',
+                    ]);
+            }
+
+            if (empty($data['slug'])) {
+                $baseSlug = Str::slug($data['name']);
+
+                if ($baseSlug === '') {
+                    $baseSlug =
+                        'business-' .
+                        Str::lower(Str::random(8));
+                }
+
+                $slug = $baseSlug;
+                $counter = 1;
+
+                while (
+                    Business::query()
+                        ->where('slug', $slug)
+                        ->exists()
+                ) {
+                    $slug =
+                        $baseSlug . '-' . $counter;
+
+                    $counter++;
+                }
+
+                $data['slug'] = $slug;
+            }
+
+            $business = Business::query()
+                ->create($data);
+
+            DB::table('business_user')->updateOrInsert(
+                [
+                    'business_id' => $business->id,
+                    'user_id' => $user->id,
+                ],
+                [
+                    'role' => 'owner',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+
+            $user->current_business_id =
+                $business->id;
+
+            $user->save();
+        } else {
+            $business->update($data);
+        }
 
         $business->refresh();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Profile completion refresh
-        |--------------------------------------------------------------------------
-        */
-
         $business->refreshProfileCompletion();
         $business->refresh();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Active business session update
-        |--------------------------------------------------------------------------
-        */
 
         session([
             'active_business_id' => $business->id,
@@ -669,11 +761,88 @@ class BusinessProfileController extends Controller
                 $business->name ?? 'Business',
         ]);
 
+        $pendingPlanId = session(
+            'pending_registration_plan_id'
+        );
+
+        $pendingTrial =
+            (int) session(
+                'pending_registration_trial',
+                0
+            ) === 1;
+
+        $pendingPaymentDone =
+            (int) session(
+                'pending_registration_payment_done',
+                0
+            ) === 1;
+
+        if (
+            $pendingPlanId &&
+            ($pendingTrial || $pendingPaymentDone)
+        ) {
+            $plan = Plan::query()
+                ->with('permissions')
+                ->find($pendingPlanId);
+
+            if ($plan) {
+                UserPlan::query()
+                    ->where(
+                        'business_id',
+                        $business->id
+                    )
+                    ->where('status', 1)
+                    ->update([
+                        'status' => 0,
+                    ]);
+
+                UserPlan::query()->create([
+                    'business_id' =>
+                        $business->id,
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id,
+                    'start_date' => Carbon::today(),
+                    'expiry_date' =>
+                        Carbon::today()->addDays(
+                            (int) (
+                                $plan->duration_days
+                                ?? 30
+                            )
+                        ),
+                    'status' => 1,
+                ]);
+
+                app(PermissionRegistrar::class)
+                    ->forgetCachedPermissions();
+
+                $permissions = $plan
+                    ->permissions()
+                    ->where('guard_name', 'web')
+                    ->pluck('name')
+                    ->toArray();
+
+                if (!empty($permissions)) {
+                    $user->syncPermissions(
+                        $permissions
+                    );
+                }
+            }
+        }
+
+        session()->forget([
+            'pending_registration_plan_id',
+            'pending_registration_trial',
+            'pending_registration_payment_done',
+            'pending_registration_billing_data',
+        ]);
+
         return redirect()
             ->route('dashboard')
             ->with(
                 'success',
-                'Business profile updated successfully.'
+                $isCreating
+                    ? 'Business profile created successfully.'
+                    : 'Business profile updated successfully.'
             );
     }
 
@@ -684,7 +853,10 @@ class BusinessProfileController extends Controller
         Request $request,
         BillTemplate $billTemplate
     ) {
-        $business = $this->resolveBusiness($request);
+        $business = $this->resolveBusiness(
+            $request,
+            true
+        );
 
         $business->update([
             'pdf_template_id' => $billTemplate->id,
@@ -708,7 +880,10 @@ class BusinessProfileController extends Controller
      */
     public function dismissSuggestion(Request $request)
     {
-        $business = $this->resolveBusiness($request);
+        $business = $this->resolveBusiness(
+            $request,
+            true
+        );
 
         $business->update([
             'profile_suggestion_dismissed_at' => now(),
@@ -723,8 +898,9 @@ class BusinessProfileController extends Controller
      * Current active business nikalega.
      */
     private function resolveBusiness(
-        Request $request
-    ): Business {
+        Request $request,
+        bool $required = true
+    ): ?Business {
         $user = $request->user();
 
         abort_unless(
@@ -739,17 +915,16 @@ class BusinessProfileController extends Controller
             ?? $user->businesses()
                 ->value('businesses.id');
 
-        abort_if(
-            !$activeBusinessId,
-            404,
-            'No business is attached to your account.'
-        );
+        if (!$activeBusinessId) {
+            if ($required) {
+                abort(
+                    404,
+                    'No business is attached to your account.'
+                );
+            }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Super admin access
-        |--------------------------------------------------------------------------
-        */
+            return null;
+        }
 
         $isSuperAdmin =
             $user->hasRole('super_admin') ||
@@ -770,14 +945,43 @@ class BusinessProfileController extends Controller
                 )
                 ->exists();
 
-            abort_unless(
-                $hasAccess,
-                403,
-                'You are not allowed to access this business.'
+            if (!$hasAccess) {
+                if (!$required) {
+                    session()->forget([
+                        'active_business_id',
+                        'active_business_name',
+                    ]);
+
+                    if (
+                        (int) $user->current_business_id
+                        === (int) $activeBusinessId
+                    ) {
+                        $user->current_business_id =
+                            null;
+
+                        $user->save();
+                    }
+
+                    return null;
+                }
+
+                abort(
+                    403,
+                    'You are not allowed to access this business.'
+                );
+            }
+        }
+
+        $business = Business::query()
+            ->find($activeBusinessId);
+
+        if (!$business && $required) {
+            abort(
+                404,
+                'Business not found.'
             );
         }
 
-        return Business::query()
-            ->findOrFail($activeBusinessId);
+        return $business;
     }
 }

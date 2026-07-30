@@ -388,13 +388,13 @@
                             </ul>
 
                             <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <a href="{{ route('user.register', ['plan_id' => $plan->id, 'trial' => 1]) }}"
+                                <a href="{{ url('/ad') }}?open_register=1&amp;plan_id={{ $plan->id }}&amp;trial=1"
                                     class="block text-center rounded-full py-4 font-black border
                                     {{ $isPopular ? 'bg-white/10 text-white border-white/40' : 'bg-white text-mvBlue border-mvBlue' }}">
                                     Start Free Trial
                                 </a>
 
-                                <a href="{{ route('plan.payment', ['plan' => $plan->id, 'trial' => 0]) }}"
+                                <a href="{{ url('/ad') }}?open_register=1&amp;plan_id={{ $plan->id }}&amp;trial=0"
                                     class="block text-center rounded-full py-4 font-black
                                     {{ $isPopular ? 'bg-white text-mvBlue' : 'bg-mvDark text-white' }}">
                                     Start Plan

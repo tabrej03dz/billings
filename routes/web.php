@@ -156,7 +156,7 @@ Route::get('/', function () {
         ->orderBy('price', 'asc')
         ->get();
 
-    return view('ads', compact('plans'));
+    return view('welcome', compact('plans'));
 })->name('index');
 
 Route::get('/welcome', function () {

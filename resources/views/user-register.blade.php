@@ -2,6 +2,213 @@
 
 @section('content')
 
+<style>
+    .inline-registration-card {
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        background: #ffffff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+    }
+
+    .inline-registration-header {
+        padding: 22px 24px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #6c63ff);
+    }
+
+    .registration-field {
+        width: 100%;
+        padding: 14px 15px;
+        border: 1px solid #d8dce8;
+        border-radius: 15px;
+        color: #1e293b;
+        background: #ffffff;
+        outline: none;
+        transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    .registration-field:focus {
+        border-color: #2624cc;
+        box-shadow: 0 0 0 4px rgba(38, 36, 204, .10);
+    }
+
+    .registration-field[readonly],
+    .registration-field:disabled {
+        background: #f1f5f9;
+        cursor: not-allowed;
+    }
+
+    .step-pill {
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        background: #ffffff;
+    }
+
+    .step-pill.active {
+        border-color: #2624cc !important;
+        color: #ffffff !important;
+        background: linear-gradient(90deg, #2624cc, #6c63ff) !important;
+        box-shadow: 0 10px 24px rgba(38, 36, 204, .18);
+    }
+
+    .step-pill.active > div,
+    .step-pill.active * {
+        color: #ffffff !important;
+    }
+
+    .step-pill.done {
+        border-color: rgba(38, 36, 204, .25) !important;
+        color: #2624cc !important;
+        background: #f0efff !important;
+    }
+
+    .step-pill.done > div,
+    .step-pill.done * {
+        color: #2624cc !important;
+    }
+
+    .registration-primary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 12px 24px;
+        border-radius: 15px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #514ff0);
+        font-size: 14px;
+        font-weight: 900;
+        transition: .2s ease;
+    }
+
+    .registration-primary-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(38, 36, 204, .22);
+    }
+
+    .registration-primary-button:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .registration-secondary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 11px 22px;
+        border: 1px solid #d8dce8;
+        border-radius: 15px;
+        color: #475569;
+        background: #ffffff;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .registration-skip-button {
+        width: 100%;
+        padding: 13px 18px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 15px;
+        color: #64748b;
+        background: #f8fafc;
+        font-size: 13px;
+        font-weight: 800;
+        transition: .2s ease;
+    }
+
+    .registration-skip-button:hover {
+        border-color: #2624cc;
+        color: #2624cc;
+        background: #f5f4ff;
+    }
+
+    .registration-otp-loader {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        color: #2624cc;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .registration-otp-loader.show { display: flex; }
+
+    .registration-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #d9d8ff;
+        border-top-color: #2624cc;
+        border-radius: 50%;
+        animation: registrationSpin .7s linear infinite;
+    }
+
+    @keyframes registrationSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+        .inline-registration-card { border-radius: 22px; }
+        .inline-registration-header { padding: 20px 18px; }
+    }
+    .plan-select-card {
+        position: relative;
+        overflow: hidden;
+        border: 2px solid #e2e8f0;
+        border-radius: 24px;
+        background: #ffffff;
+        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .plan-select-card:hover {
+        transform: translateY(-3px);
+        border-color: #a5b4fc;
+        box-shadow: 0 18px 45px rgba(38, 36, 204, .12);
+    }
+
+    .plan-select-card.selected {
+        border-color: #2624cc;
+        box-shadow: 0 20px 50px rgba(38, 36, 204, .20);
+    }
+
+    .plan-select-card.selected::after {
+        content: "Selected";
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #6c63ff);
+        font-size: 11px;
+        font-weight: 900;
+    }
+
+    .plan-select-button {
+        display: inline-flex;
+        width: 100%;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #514ff0);
+        font-size: 14px;
+        font-weight: 900;
+        transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .plan-select-button:hover {
+        opacity: .92;
+        transform: translateY(-1px);
+    }
+
+</style>
+
 <main class="hero-bg relative overflow-hidden">
     <div class="absolute inset-0 pointer-events-none">
         <div class="absolute top-20 left-10 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl"></div>
@@ -9,6 +216,113 @@
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 lg:px-8 py-10 lg:py-16">
+
+        {{-- PLAN SELECTION --}}
+        <section id="pricing" class="mb-10 lg:mb-14">
+            <div class="text-center max-w-3xl mx-auto mb-8">
+                <p class="text-[#2624cc] font-black uppercase tracking-widest text-sm">
+                    Choose Your Plan
+                </p>
+
+                <h2 class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950">
+                    Select a plan before registration
+                </h2>
+
+                <p class="mt-3 text-slate-600">
+                    Apne business ke according plan select karein. Selected plan registration form ke saath submit hoga.
+                </p>
+            </div>
+
+            @php
+                $availablePlans = isset($plans) ? $plans : collect();
+                $selectedPlanId = (string) old('plan_id', request('plan_id', optional($selectedPlan ?? null)->id));
+            @endphp
+
+            @if($availablePlans->count())
+                <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    @foreach($availablePlans as $plan)
+                        @php
+                            $isRecommended = (bool) ($plan->is_recommended ?? false);
+                            $isSelected = $selectedPlanId === (string) $plan->id;
+                        @endphp
+
+                        <article
+                            class="plan-select-card {{ $isSelected ? 'selected' : '' }} p-6 sm:p-7"
+                            data-plan-card="{{ $plan->id }}"
+                        >
+                            @if($isRecommended)
+                                <div class="mb-4 inline-flex rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black text-[#2624cc]">
+                                    Most Recommended
+                                </div>
+                            @endif
+
+                            <h3 class="text-2xl font-black uppercase text-slate-950">
+                                {{ $plan->name }}
+                            </h3>
+
+                            <p class="mt-2 min-h-[42px] text-sm leading-6 text-slate-500">
+                                {{ $plan->subtitle ?: ($plan->description ?: 'Perfect for growing businesses') }}
+                            </p>
+
+                            <div class="mt-5 flex items-end gap-2">
+                                <span class="text-4xl font-black text-[#2624cc]">
+                                    ₹{{ number_format($plan->price, 0) }}
+                                </span>
+
+                                <span class="pb-1 text-sm font-bold text-slate-500">
+                                    /
+                                    {{ ($plan->duration_days ?? 365) >= 365
+                                        ? 'Year'
+                                        : ($plan->duration_days ?? 0) . ' Days' }}
+                                </span>
+                            </div>
+
+                            <ul class="mt-6 space-y-2.5 text-sm text-slate-600">
+                                @forelse($plan->planFeatures ?? [] as $feature)
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>{{ $feature->title }}</span>
+                                    </li>
+                                @empty
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>GST Billing</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>Stock Management</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>Invoice Print and Share</span>
+                                    </li>
+                                @endforelse
+                            </ul>
+
+                            <button
+                                type="button"
+                                class="plan-select-button mt-7"
+                                data-select-plan="{{ $plan->id }}"
+                                data-plan-name="{{ $plan->name }}"
+                                data-plan-price="{{ number_format($plan->price, 0) }}"
+                            >
+                                {{ $isSelected ? 'Selected Plan' : 'Select This Plan' }}
+                            </button>
+                        </article>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
+                    <h3 class="text-xl font-black text-slate-900">
+                        Plans are not available
+                    </h3>
+                    <p class="mt-2 text-sm text-slate-600">
+                        Controller se <code class="font-bold">$plans</code> variable pass hona chahiye.
+                    </p>
+                </div>
+            @endif
+        </section>
+
         <div class="grid lg:grid-cols-12 gap-10 items-start">
 
             <div class="lg:col-span-5 lg:sticky lg:top-28">
@@ -60,25 +374,25 @@
             </div>
 
             <div class="lg:col-span-7">
-                <section class="rounded-[2.5rem] border border-white/70 main-card overflow-hidden">
-                    <div class="px-5 sm:px-8 pt-6 sm:pt-8 pb-6 bg-gradient-to-b from-white to-blue-50/50">
+                <section id="registrationFormCard" class="inline-registration-card">
+                    <div class="inline-registration-header">
                         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                             <div>
-                                <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                                    Register your account
+                                <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                                    Start MyVictory Billing
                                 </h2>
-                                <p class="mt-2 text-sm text-slate-500">
+                                <p class="mt-2 text-sm text-blue-100">
                                     Complete 3 simple steps to start using MyVictory Billing.
                                 </p>
                             </div>
 
-                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-700 shadow-sm">
+                            <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold text-white shadow-sm">
                                 <span class="h-2 w-2 rounded-full bg-green-500"></span>
                                 Secure Onboarding
                             </div>
                         </div>
 
-                        <div class="mt-6 soft-divider"></div>
+                        <div class="mt-6 border-t border-white/20"></div>
 
                         <div class="mt-6 grid grid-cols-3 gap-2">
                             <div id="pillStep1" class="step-pill active rounded-2xl border border-slate-200 bg-white px-3 py-3 text-center transition">
@@ -99,13 +413,13 @@
 
                         <div class="mt-6">
                             <div class="flex items-center justify-between text-xs mb-2">
-                                <span class="text-slate-500">Step <span id="currentStepText">1</span> of 3</span>
-                                <span class="text-blue-600 font-black" id="currentStepLabel">User Details</span>
+                                <span class="text-blue-100">Step <span id="currentStepText">1</span> of 3</span>
+                                <span class="text-white font-black" id="currentStepLabel">User Details</span>
                             </div>
 
-                            <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                            <div class="h-2 w-full rounded-full bg-white/25 overflow-hidden">
                                 <div id="progressBar"
-                                     class="h-full rounded-full bg-blue-600 transition-all duration-300"
+                                     class="h-full rounded-full bg-white transition-all duration-300"
                                      style="width: 33.33%;"></div>
                             </div>
                         </div>
@@ -151,11 +465,19 @@
                             }
                         @endphp
 
+                        <div id="selectedPlanSummary"
+                             class="{{ $selectedPlanId ? '' : 'hidden' }} mb-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                            Selected Plan:
+                            <strong id="selectedPlanName">
+                                {{ optional($availablePlans->firstWhere('id', (int) $selectedPlanId))->name }}
+                            </strong>
+                        </div>
+
                         <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6" novalidate>
                             @csrf
 
                             <input type="hidden" name="payment_done" value="{{ request('payment_done', 0) }}">
-                            <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
+                            <input type="hidden" name="plan_id" id="selectedPlanInput" value="{{ old('plan_id', request('plan_id', optional($selectedPlan ?? null)->id)) }}">
                             <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
                             <input type="hidden" name="current_step" id="current_step" value="{{ $initialStep }}">
                             <input type="hidden" name="business_skipped" id="business_skipped" value="{{ old('business_skipped', 0) }}">
@@ -163,7 +485,7 @@
 
                             {{-- STEP 1 --}}
                             <div class="form-step space-y-5" data-step="1">
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Owner account details</div>
                                     <div class="mt-1 text-xs text-slate-500">
                                         Owner name aur phone OTP se account create karein.
@@ -175,7 +497,7 @@
                                     <input type="text" name="name"
                                            value="{{ old('name', session('paid_name')) }}"
                                            required
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                           class="registration-field text-sm placeholder:text-slate-400"
                                            placeholder="Enter your full name">
                                 </div>
 
@@ -188,12 +510,12 @@
                                                required
                                                maxlength="10"
                                                inputmode="numeric"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm placeholder:text-slate-400"
                                                placeholder="Enter owner phone number">
 
                                         @if(!session('register_phone_verified'))
                                             <button type="button" id="sendOtpBtn"
-                                                    class="shrink-0 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-yellow-300 transition">
+                                                    class="registration-primary-button shrink-0">
                                                 Send OTP
                                             </button>
                                         @else
@@ -213,13 +535,10 @@
                                         <input type="text" id="phoneOtp"
                                                maxlength="6"
                                                inputmode="numeric"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Enter 6 digit OTP">
+                                               class="registration-field text-center text-xl font-black tracking-[0.35em]"
+                                               placeholder="••••••">
 
-                                        <div id="otpAutoBadge"
-                                             class="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600">
-                                            Auto Verify
-                                        </div>
+                                        
 
                                         <button type="button" id="verifyOtpBtn" class="hidden">Verify OTP</button>
                                     </div>
@@ -231,14 +550,14 @@
                                     <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-500"></p>
                                 </div>
 
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-700">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs text-blue-700">
                                     Phone OTP verification is required before moving to the next step.
                                 </div>
                             </div>
 
                             {{-- STEP 2 --}}
                             <div class="form-step hidden space-y-5" data-step="2">
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Business information</div>
                                     <div class="mt-1 text-xs text-slate-500">
                                         Business mobile verified owner phone se auto fill hoga.
@@ -252,15 +571,15 @@
                                     </div>
 
                                     <button type="button" id="skipBusinessBtn"
-                                            class="shrink-0 rounded-full border border-amber-300 bg-white px-5 py-3 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                            class="registration-secondary-button shrink-0">
                                         Skip for now
                                     </button>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Business / Showroom Name</label>
-                                    <input type="text" name="business_name" value="{{ old('business_name') }}" required
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Business / Showroom Name <span class="text-xs font-normal text-slate-400">(Optional)</span></label>
+                                    <input type="text" name="business_name" value="{{ old('business_name') }}"
+                                           class="registration-field text-sm placeholder:text-slate-400"
                                            placeholder="Enter showroom name">
                                 </div>
 
@@ -271,7 +590,7 @@
 
                                     <input type="email" name="business_email"
                                         value="{{ old('business_email') }}"
-                                        class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                        class="registration-field text-sm placeholder:text-slate-400"
                                         placeholder="Enter business email address">
                                 </div>
 
@@ -283,7 +602,7 @@
                                            maxlength="10"
                                            inputmode="numeric"
                                            readonly
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-slate-100 px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500 cursor-not-allowed"
+                                           class="registration-field text-sm placeholder:text-slate-400"
                                            placeholder="Verified phone number auto fill hoga">
 
                                     <p class="mt-2 text-xs text-slate-500">
@@ -295,15 +614,15 @@
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">GSTIN</label>
                                         <input type="text" name="gstin" id="gstin" value="{{ old('gstin') }}"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm uppercase outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm uppercase placeholder:text-slate-400"
                                                placeholder="Optional GSTIN">
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Business Type</label>
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">Business Type <span class="text-xs font-normal text-slate-400">(Optional)</span></label>
 
-                                        <select name="business_type_id" required
-                                                class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500">
+                                        <select name="business_type_id"
+                                                class="registration-field text-sm text-slate-700">
                                             <option value="">-- Select Business Type --</option>
 
                                             @foreach($businessTypes as $businessType)
@@ -319,7 +638,7 @@
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Address</label>
                                     <textarea name="address" rows="4"
-                                              class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                              class="registration-field text-sm placeholder:text-slate-400"
                                               placeholder="Enter business address">{{ old('address') }}</textarea>
                                 </div>
 
@@ -377,7 +696,7 @@
                                     </label>
 
                                     <select id="state_select"
-                                            class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500">
+                                            class="registration-field text-sm text-slate-700">
                                         <option value="">-- Select State --</option>
 
                                         @foreach($states as $st)
@@ -394,7 +713,7 @@
 
                                 <div class="pt-2">
                                     <button type="button" id="skipBusinessBottomBtn"
-                                            class="w-full rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                            class="registration-skip-button">
                                         Skip Business Details for Now
                                     </button>
                                 </div>
@@ -402,7 +721,7 @@
 
                             {{-- STEP 3 --}}
                             <div class="form-step hidden space-y-5" data-step="3">
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Billing preferences</div>
                                     <div class="mt-1 text-xs text-slate-500">
                                         Choose your default invoice and rounding settings.
@@ -418,7 +737,7 @@
                                     </div>
 
                                     <button type="button" id="skipBillingBtn"
-                                            class="shrink-0 rounded-full border border-amber-300 bg-white px-5 py-3 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                            class="registration-secondary-button shrink-0">
                                         Skip & Create Account
                                     </button>
                                 </div>
@@ -449,7 +768,7 @@
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Invoice Base Prefix</label>
                                         <input type="text" name="invoice_base_prefix"
                                                value="{{ old('invoice_base_prefix', 'RV/SL') }}"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm placeholder:text-slate-400"
                                                placeholder="RV/SL">
                                     </div>
                                 </div>
@@ -470,7 +789,7 @@
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Rounding Step</label>
                                         <input type="number" step="0.01" name="rounding_step"
                                                value="{{ old('rounding_step', '1.00') }}"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm placeholder:text-slate-400"
                                                placeholder="1.00">
                                     </div>
                                 </div>
@@ -486,7 +805,7 @@
 
                                 <div class="pt-1">
                                     <button type="button" id="skipBillingBottomBtn"
-                                            class="w-full rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm font-black text-amber-700 hover:bg-amber-100 transition">
+                                            class="registration-skip-button">
                                         Skip Billing Preferences & Create Account
                                     </button>
                                 </div>
@@ -508,18 +827,18 @@
                             <div class="pt-2">
                                 <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <button type="button" id="prevBtn"
-                                            class="hidden rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-blue-500 transition">
+                                            class="registration-secondary-button hidden">
                                         Back
                                     </button>
 
                                     <div class="sm:ml-auto flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <button type="button" id="nextBtn"
-                                                class="w-full sm:w-auto rounded-full bg-blue-600 px-8 py-4 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition">
+                                                class="registration-primary-button w-full sm:w-auto">
                                             Continue
                                         </button>
 
                                         <button type="submit" id="submitBtn"
-                                                class="hidden w-full sm:w-auto rounded-full bg-slate-950 px-8 py-4 text-sm font-black text-white hover:bg-slate-800 transition">
+                                                class="registration-primary-button hidden w-full sm:w-auto">
                                             Create Account
                                         </button>
                                     </div>
@@ -563,7 +882,6 @@
 
     const sendOtpBtn = document.getElementById('sendOtpBtn');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-    const otpAutoBadge = document.getElementById('otpAutoBadge');
     const skipBusinessBtn = document.getElementById('skipBusinessBtn');
     const skipBusinessBottomBtn = document.getElementById('skipBusinessBottomBtn');
     const businessSkippedInput = document.getElementById('business_skipped');
@@ -784,7 +1102,7 @@
         updateStepMeta(index);
 
         if (shouldScroll) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('registrationFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
@@ -1151,10 +1469,6 @@
             verifyOtpBtn.textContent = 'Verifying...';
         }
 
-        if (otpAutoBadge) {
-            otpAutoBadge.textContent = 'Verifying...';
-            otpAutoBadge.className = 'shrink-0 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-bold text-blue-700';
-        }
 
         try {
             const response = await fetch("{{ route('register.verifyOtp') }}", {
@@ -1207,14 +1521,7 @@
                 verifyOtpBtn.textContent = 'Verify OTP';
             }
 
-            if (otpAutoBadge) {
-                const verified = phoneVerifiedInput?.value === '1';
-                otpAutoBadge.textContent = verified ? 'Verified' : 'Auto Verify';
-                otpAutoBadge.className = verified
-                    ? 'shrink-0 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-bold text-green-700'
-                    : 'shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600';
-            }
-
+           
             isVerifyingOtp = false;
         }
     }
@@ -1270,10 +1577,7 @@
                     phoneVerifiedInput.value = '0';
                 }
 
-                if (otpAutoBadge) {
-                    otpAutoBadge.textContent = 'Auto Verify';
-                    otpAutoBadge.className = 'shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600';
-                }
+               
 
                 return;
             }
@@ -1301,10 +1605,7 @@
             lastAutoVerifiedOtp = '';
 
             if (phoneOtpInput) phoneOtpInput.value = '';
-            if (otpAutoBadge) {
-                otpAutoBadge.textContent = 'Auto Verify';
-                otpAutoBadge.className = 'shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-600';
-            }
+          
 
             setFieldErrorState(ownerPhoneInput, false);
             setFieldErrorState(phoneOtpInput, false);
@@ -1384,6 +1685,53 @@
         applyDefaultBillingValues();
         setBillingFieldsDisabled(true);
     }
+
+    const selectedPlanInput = document.getElementById('selectedPlanInput');
+    const selectedPlanSummary = document.getElementById('selectedPlanSummary');
+    const selectedPlanName = document.getElementById('selectedPlanName');
+    const registrationFormCard = document.getElementById('registrationFormCard');
+    const planCards = document.querySelectorAll('[data-plan-card]');
+    const planButtons = document.querySelectorAll('[data-select-plan]');
+
+    function selectPlan(button) {
+        const planId = button.dataset.selectPlan || '';
+        const planName = button.dataset.planName || 'Selected Plan';
+
+        if (selectedPlanInput) {
+            selectedPlanInput.value = planId;
+        }
+
+        planCards.forEach(card => {
+            const isSelected = card.dataset.planCard === planId;
+            card.classList.toggle('selected', isSelected);
+
+            const cardButton = card.querySelector('[data-select-plan]');
+            if (cardButton) {
+                cardButton.textContent = isSelected
+                    ? 'Selected Plan'
+                    : 'Select This Plan';
+            }
+        });
+
+        if (selectedPlanName) {
+            selectedPlanName.textContent = planName;
+        }
+
+        if (selectedPlanSummary) {
+            selectedPlanSummary.classList.remove('hidden');
+        }
+
+        registrationFormCard?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+    planButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            selectPlan(this);
+        });
+    });
 
     currentStep = getInitialStep();
     showStep(currentStep, false);

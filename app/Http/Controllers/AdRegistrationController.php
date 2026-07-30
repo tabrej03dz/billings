@@ -20,6 +20,11 @@ use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 use Throwable;
 use App\Models\OnboardingRegistration;
+use App\Models\UserPlan;
+use Carbon\Carbon;
+use Spatie\Permission\PermissionRegistrar;
+
+
 
 class AdRegistrationController extends Controller
 {
@@ -615,186 +620,1398 @@ class AdRegistrationController extends Controller
     // }
 
 
+    // public function complete(Request $request): RedirectResponse
+    // {
+    //     $businessSkipped = $request->boolean('business_skipped');
+    //     $billingSkipped = $request->boolean('billing_skipped');
+
+    //     if ($businessSkipped) {
+    //         $request->merge([
+    //             'business_name' => null,
+    //             'business_email' => null,
+    //             'type' => null,
+    //             'gstin' => null,
+    //             'address' => null,
+    //             'state' => null,
+    //             'state_code' => null,
+    //         ]);
+    //     }
+
+    //     if ($billingSkipped) {
+    //         $request->merge([
+    //             'gst_enabled' => 0,
+    //             'invoice_base_prefix' => 'RV/SL',
+    //             'rounding_mode' => 'nearest',
+    //             'rounding_step' => 1.00,
+    //         ]);
+    //     }
+
+    //     $validated = $request->validate([
+    //         'name' => [
+    //             'required',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'phone' => [
+    //             'required',
+    //             'digits:10',
+    //             'regex:/^[6-9][0-9]{9}$/',
+    //         ],
+
+    //         'business_name' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'business_email' => [
+    //             'nullable',
+    //             'email',
+    //             'max:255',
+    //         ],
+
+    //         'mobile' => [
+    //             'nullable',
+    //             'digits:10',
+    //         ],
+
+    //         'gstin' => [
+    //             'nullable',
+    //             'string',
+    //             'max:15',
+    //             Rule::unique('businesses', 'gstin'),
+    //         ],
+
+    //         'type' => [
+    //             'nullable',
+    //             'exists:business_types,id',
+    //         ],
+
+    //         'address' => [
+    //             'nullable',
+    //             'string',
+    //             'max:1000',
+    //         ],
+
+    //         'state' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'state_code' => [
+    //             'nullable',
+    //             'string',
+    //             'max:10',
+    //         ],
+
+    //         'gst_enabled' => [
+    //             'nullable',
+    //             Rule::in(['0', '1', 0, 1]),
+    //         ],
+
+    //         'invoice_base_prefix' => [
+    //             'nullable',
+    //             'string',
+    //             'max:100',
+    //         ],
+
+    //         'rounding_mode' => [
+    //             'nullable',
+    //             Rule::in([
+    //                 'none',
+    //                 'nearest',
+    //                 'up',
+    //                 'down',
+    //             ]),
+    //         ],
+
+    //         'rounding_step' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'plan_id' => [
+    //             'nullable',
+    //             'exists:plans,id',
+    //         ],
+    //     ]);
+
+    //     $verifiedPhone = preg_replace(
+    //         '/\D/',
+    //         '',
+    //         (string) session('register_phone_verified')
+    //     );
+
+    //     $submittedPhone = preg_replace(
+    //         '/\D/',
+    //         '',
+    //         (string) $validated['phone']
+    //     );
+
+    //     if (
+    //         strlen($verifiedPhone) !== 10 ||
+    //         $verifiedPhone !== $submittedPhone
+    //     ) {
+    //         return back()
+    //             ->withInput()
+    //             ->withErrors([
+    //                 'phone' => 'Pehle mobile number OTP se verify kijiye.',
+    //             ]);
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $name = trim($validated['name']);
+
+    //         $user = User::query()
+    //             ->where('phone', $submittedPhone)
+    //             ->first();
+
+    //         if (!$user) {
+    //             $user = new User();
+    //             $user->phone = $submittedPhone;
+    //             $user->email =
+    //                 $submittedPhone . '@noemail.local';
+    //             $user->password = Hash::make(
+    //                 Str::random(40)
+    //             );
+    //         }
+
+    //         $user->name = $name;
+
+    //         if (empty($user->email)) {
+    //             $user->email =
+    //                 $submittedPhone . '@noemail.local';
+    //         }
+
+    //         if (empty($user->password)) {
+    //             $user->password = Hash::make(
+    //                 Str::random(40)
+    //             );
+    //         }
+
+    //         if (empty($user->phone_verified_at)) {
+    //             $user->phone_verified_at = now();
+    //         }
+
+    //         $user->save();
+
+    //         $defaultBusinessTypeId =
+    //             BusinessType::query()
+    //                 ->orderBy('id')
+    //                 ->value('id');
+
+    //         $businessTypeId =
+    //             $validated['type']
+    //             ?? $defaultBusinessTypeId;
+
+    //         if (!$businessTypeId) {
+    //             throw new \RuntimeException(
+    //                 'Admin panel se kam se kam ek business type create kijiye.'
+    //             );
+    //         }
+
+    //         $businessName = filled(
+    //             $validated['business_name'] ?? null
+    //         )
+    //             ? trim($validated['business_name'])
+    //             : $name . "'s Business";
+
+    //         $businessEmail = filled(
+    //             $validated['business_email'] ?? null
+    //         )
+    //             ? strtolower(
+    //                 trim($validated['business_email'])
+    //             )
+    //             : null;
+
+    //         $businessGstin = filled(
+    //             $validated['gstin'] ?? null
+    //         )
+    //             ? strtoupper(trim($validated['gstin']))
+    //             : null;
+
+    //         $businessAddress = filled(
+    //             $validated['address'] ?? null
+    //         )
+    //             ? trim($validated['address'])
+    //             : null;
+
+    //         $businessState = filled(
+    //             $validated['state'] ?? null
+    //         )
+    //             ? trim($validated['state'])
+    //             : null;
+
+    //         $businessStateCode = filled(
+    //             $validated['state_code'] ?? null
+    //         )
+    //             ? trim($validated['state_code'])
+    //             : null;
+
+    //         $gstEnabled = (int) (
+    //             $validated['gst_enabled'] ?? 0
+    //         );
+
+    //         $invoicePrefix = filled(
+    //             $validated['invoice_base_prefix'] ?? null
+    //         )
+    //             ? strtoupper(
+    //                 trim($validated['invoice_base_prefix'])
+    //             )
+    //             : 'RV/SL';
+
+    //         $roundingMode =
+    //             $validated['rounding_mode']
+    //             ?? 'nearest';
+
+    //         $roundingStep = (float) (
+    //             $validated['rounding_step']
+    //             ?? 1.00
+    //         );
+
+    //         $existingBusinessId = DB::table(
+    //             'business_user'
+    //         )
+    //             ->where('user_id', $user->id)
+    //             ->value('business_id');
+
+    //         $business = $existingBusinessId
+    //             ? Business::query()->find(
+    //                 $existingBusinessId
+    //             )
+    //             : null;
+
+    //         if (!$business) {
+    //             $baseSlug = Str::slug($businessName);
+
+    //             if ($baseSlug === '') {
+    //                 $baseSlug =
+    //                     'business-' . $submittedPhone;
+    //             }
+
+    //             $slug = $baseSlug;
+    //             $suffix = 1;
+
+    //             while (
+    //                 Business::query()
+    //                     ->where('slug', $slug)
+    //                     ->exists()
+    //             ) {
+    //                 $slug =
+    //                     $baseSlug . '-' . $suffix;
+
+    //                 $suffix++;
+    //             }
+
+    //             $business = Business::query()->create([
+    //                 'name' => $businessName,
+    //                 'slug' => $slug,
+    //                 'email' => $businessEmail,
+    //                 'mobile' => $submittedPhone,
+    //                 'gstin' => $businessGstin,
+    //                 'gst_enabled' => $gstEnabled,
+    //                 'address' => $businessAddress,
+    //                 'state' => $businessState,
+    //                 'state_code' => $businessStateCode,
+    //                 'type' =>
+    //                     $businessTypeId,
+    //                 'invoice_base_prefix' =>
+    //                     $invoicePrefix,
+    //                 'rounding_mode' => $roundingMode,
+    //                 'rounding_step' => $roundingStep,
+    //             ]);
+
+    //             DB::table('business_user')->insert([
+    //                 'business_id' => $business->id,
+    //                 'user_id' => $user->id,
+    //                 'role' => 'owner',
+    //                 'created_at' => now(),
+    //                 'updated_at' => now(),
+    //             ]);
+    //         } else {
+    //             /*
+    //             * Existing business ho to form ki latest
+    //             * details update kar do.
+    //             */
+    //             $business->update([
+    //                 'name' => $businessName,
+    //                 'email' => $businessEmail,
+    //                 'mobile' => $submittedPhone,
+    //                 'gstin' => $businessGstin,
+    //                 'gst_enabled' => $gstEnabled,
+    //                 'address' => $businessAddress,
+    //                 'state' => $businessState,
+    //                 'state_code' => $businessStateCode,
+    //                 'type' =>
+    //                     $businessTypeId,
+    //                 'invoice_base_prefix' =>
+    //                     $invoicePrefix,
+    //                 'rounding_mode' => $roundingMode,
+    //                 'rounding_step' => $roundingStep,
+    //             ]);
+    //         }
+
+    //         $user->current_business_id =
+    //             $business->id;
+
+    //         $user->save();
+
+    //         /*
+    //         * Onboarding record ko actual User ke
+    //         * saath link karna.
+    //         */
+    //         $onboardingRegistrationId = session(
+    //             'onboarding_registration_id'
+    //         );
+
+    //         $onboardingRegistration =
+    //             $onboardingRegistrationId
+    //                 ? OnboardingRegistration::query()
+    //                     ->find($onboardingRegistrationId)
+    //                 : null;
+
+    //         /*
+    //         * Session ID se record na mile to phone
+    //         * number ke through record find karo.
+    //         */
+    //         if (!$onboardingRegistration) {
+    //             $onboardingRegistration =
+    //                 OnboardingRegistration::query()
+    //                     ->where(
+    //                         'phone',
+    //                         $submittedPhone
+    //                     )
+    //                     ->latest('id')
+    //                     ->first();
+    //         }
+
+    //         /*
+    //         * Record bilkul na ho to create kar do.
+    //         */
+    //         if (!$onboardingRegistration) {
+    //             $onboardingRegistration =
+    //                 new OnboardingRegistration();
+
+    //             $onboardingRegistration->phone =
+    //                 $submittedPhone;
+    //         }
+
+    //         $onboardingRegistration->user_id =
+    //             $user->id;
+
+    //         $onboardingRegistration->name =
+    //             $user->name;
+
+    //         $onboardingRegistration->phone =
+    //             $submittedPhone;
+
+    //         $onboardingRegistration->phone_verified_at =
+    //             $onboardingRegistration->phone_verified_at
+    //             ?: now();
+
+    //         /*
+    //         * Aapke onboarding listing/controller me
+    //         * ye columns use ho rahe hain.
+    //         */
+    //         $onboardingRegistration->last_completed_step =
+    //             3;
+
+    //         $onboardingRegistration->registration_status =
+    //             'completed';
+
+    //         $onboardingRegistration->completed_at =
+    //             now();
+
+    //         /*
+    //         * Business aur billing details JSON me
+    //         * preserve karna.
+    //         */
+    //         $onboardingRegistration->business_data = [
+    //             'business_id' => $business->id,
+    //             'business_name' => $business->name,
+    //             'business_email' => $business->email,
+    //             'mobile' => $business->mobile,
+    //             'gstin' => $business->gstin,
+    //             'type' =>
+    //                 $business->type,
+    //             'address' => $business->address,
+    //             'state' => $business->state,
+    //             'state_code' => $business->state_code,
+    //         ];
+
+    //         $onboardingRegistration->billing_data = [
+    //             'gst_enabled' =>
+    //                 (bool) $business->gst_enabled,
+    //             'invoice_base_prefix' =>
+    //                 $business->invoice_base_prefix,
+    //             'rounding_mode' =>
+    //                 $business->rounding_mode,
+    //             'rounding_step' =>
+    //                 $business->rounding_step,
+    //         ];
+
+    //         $onboardingRegistration->save();
+
+    //         if (
+    //             method_exists($user, 'assignRole') &&
+    //             Role::query()
+    //                 ->where('name', 'owner')
+    //                 ->where('guard_name', 'web')
+    //                 ->exists() &&
+    //             !$user->hasRole('owner')
+    //         ) {
+    //             $user->assignRole('owner');
+    //         }
+
+    //         DB::commit();
+
+    //         event(new Registered($user));
+
+    //         Auth::login($user, true);
+
+    //         $request->session()->regenerate();
+
+    //         session([
+    //             'active_business_id' => $business->id,
+    //             'active_business_name' =>
+    //                 $business->name,
+    //         ]);
+
+    //         if (!empty($validated['plan_id'])) {
+    //             session([
+    //                 'suggested_plan_id' =>
+    //                     (int) $validated['plan_id'],
+    //             ]);
+    //         }
+
+    //         $request->session()->forget([
+    //             'register_phone_verified',
+    //             'register_phone_otp',
+    //             'register_phone_otp_expires_at',
+    //             'ad_registration_data',
+    //             'ad_registration_step',
+    //             'onboarding_registration_id',
+    //         ]);
+
+    //         return redirect()
+    //             ->route('plan.choose')
+    //             ->with(
+    //                 'success',
+    //                 'Registration successful. Ab apna plan choose kijiye.'
+    //             );
+
+    //     } catch (Throwable $exception) {
+    //         DB::rollBack();
+
+    //         report($exception);
+
+    //         return back()
+    //             ->withInput()
+    //             ->withErrors([
+    //                 'registration' =>
+    //                     app()->environment('local')
+    //                         ? $exception->getMessage()
+    //                         : 'Registration complete nahi ho paya. Dobara try kijiye.',
+    //             ]);
+    //     }
+    // }
+
+
+    // public function complete(Request $request): RedirectResponse
+    // {
+    //     $planId = $request->integer('plan_id') ?: null;
+
+    //     $isTrial =
+    //         (int) $request->input('trial', 0) === 1;
+
+    //     $paymentDone =
+    //         session('payment_done') === true ||
+    //         (int) $request->input('payment_done', 0) === 1;
+
+    //     $businessSkipped = $request->boolean('business_skipped');
+    //     $billingSkipped = $request->boolean('billing_skipped');
+
+    //     if ($businessSkipped) {
+    //         $request->merge([
+    //             'business_name' => null,
+    //             'business_email' => null,
+    //             'type' => null,
+    //             'gstin' => null,
+    //             'address' => null,
+    //             'state' => null,
+    //             'state_code' => null,
+    //         ]);
+    //     }
+
+    //     if ($billingSkipped) {
+    //         $request->merge([
+    //             'gst_enabled' => 0,
+    //             'invoice_base_prefix' => 'RV/SL',
+    //             'rounding_mode' => 'nearest',
+    //             'rounding_step' => 1.00,
+    //         ]);
+    //     }
+
+    //     $validated = $request->validate([
+    //         'name' => [
+    //             'required',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'phone' => [
+    //             'required',
+    //             'digits:10',
+    //             'regex:/^[6-9][0-9]{9}$/',
+    //         ],
+
+    //         'business_name' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'business_email' => [
+    //             'nullable',
+    //             'email',
+    //             'max:255',
+    //         ],
+
+    //         'mobile' => [
+    //             'nullable',
+    //             'digits:10',
+    //         ],
+
+    //         'gstin' => [
+    //             'nullable',
+    //             'string',
+    //             'max:15',
+    //             Rule::unique('businesses', 'gstin'),
+    //         ],
+
+    //         'type' => [
+    //             'nullable',
+    //             'exists:business_types,id',
+    //         ],
+
+    //         'address' => [
+    //             'nullable',
+    //             'string',
+    //             'max:1000',
+    //         ],
+
+    //         'state' => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //         ],
+
+    //         'state_code' => [
+    //             'nullable',
+    //             'string',
+    //             'max:10',
+    //         ],
+
+    //         'gst_enabled' => [
+    //             'nullable',
+    //             Rule::in(['0', '1', 0, 1]),
+    //         ],
+
+    //         'invoice_base_prefix' => [
+    //             'nullable',
+    //             'string',
+    //             'max:100',
+    //         ],
+
+    //         'rounding_mode' => [
+    //             'nullable',
+    //             Rule::in([
+    //                 'none',
+    //                 'nearest',
+    //                 'up',
+    //                 'down',
+    //             ]),
+    //         ],
+
+    //         'rounding_step' => [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ],
+
+    //         'plan_id' => [
+    //             'nullable',
+    //             'exists:plans,id',
+    //         ],
+
+    //         'trial' => [
+    //             'nullable',
+    //             Rule::in(['0', '1', 0, 1]),
+    //         ],
+
+    //         'payment_done' => [
+    //             'nullable',
+    //             Rule::in(['0', '1', 0, 1]),
+    //         ],
+    //     ]);
+
+    //     $planId = !empty($validated['plan_id'])
+    //         ? (int) $validated['plan_id']
+    //         : null;
+
+    //     $verifiedPhone = preg_replace(
+    //         '/\D/',
+    //         '',
+    //         (string) session('register_phone_verified')
+    //     );
+
+    //     $submittedPhone = preg_replace(
+    //         '/\D/',
+    //         '',
+    //         (string) $validated['phone']
+    //     );
+
+    //     if (
+    //         strlen($verifiedPhone) !== 10 ||
+    //         $verifiedPhone !== $submittedPhone
+    //     ) {
+    //         return back()
+    //             ->withInput()
+    //             ->withErrors([
+    //                 'phone' => 'Pehle mobile number OTP se verify kijiye.',
+    //             ]);
+    //     }
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $name = trim($validated['name']);
+
+    //         $user = User::query()
+    //             ->where('phone', $submittedPhone)
+    //             ->first();
+
+    //         if (!$user) {
+    //             $user = new User();
+    //             $user->phone = $submittedPhone;
+    //             $user->email =
+    //                 $submittedPhone . '@noemail.local';
+    //             $user->password = Hash::make(
+    //                 Str::random(40)
+    //             );
+    //         }
+
+    //         $user->name = $name;
+
+    //         if (empty($user->email)) {
+    //             $user->email =
+    //                 $submittedPhone . '@noemail.local';
+    //         }
+
+    //         if (empty($user->password)) {
+    //             $user->password = Hash::make(
+    //                 Str::random(40)
+    //             );
+    //         }
+
+    //         if (empty($user->phone_verified_at)) {
+    //             $user->phone_verified_at = now();
+    //         }
+
+    //         $user->save();
+
+    //         $defaultBusinessTypeId =
+    //             BusinessType::query()
+    //                 ->orderBy('id')
+    //                 ->value('id');
+
+    //         $businessTypeId =
+    //             $validated['type']
+    //             ?? $defaultBusinessTypeId;
+
+    //         if (!$businessTypeId) {
+    //             throw new \RuntimeException(
+    //                 'Admin panel se kam se kam ek business type create kijiye.'
+    //             );
+    //         }
+
+    //         $businessName = filled(
+    //             $validated['business_name'] ?? null
+    //         )
+    //             ? trim($validated['business_name'])
+    //             : $name . "'s Business";
+
+    //         $businessEmail = filled(
+    //             $validated['business_email'] ?? null
+    //         )
+    //             ? strtolower(
+    //                 trim($validated['business_email'])
+    //             )
+    //             : null;
+
+    //         $businessGstin = filled(
+    //             $validated['gstin'] ?? null
+    //         )
+    //             ? strtoupper(trim($validated['gstin']))
+    //             : null;
+
+    //         $businessAddress = filled(
+    //             $validated['address'] ?? null
+    //         )
+    //             ? trim($validated['address'])
+    //             : null;
+
+    //         $businessState = filled(
+    //             $validated['state'] ?? null
+    //         )
+    //             ? trim($validated['state'])
+    //             : null;
+
+    //         $businessStateCode = filled(
+    //             $validated['state_code'] ?? null
+    //         )
+    //             ? trim($validated['state_code'])
+    //             : null;
+
+    //         $gstEnabled = (int) (
+    //             $validated['gst_enabled'] ?? 0
+    //         );
+
+    //         $invoicePrefix = filled(
+    //             $validated['invoice_base_prefix'] ?? null
+    //         )
+    //             ? strtoupper(
+    //                 trim($validated['invoice_base_prefix'])
+    //             )
+    //             : 'RV/SL';
+
+    //         $roundingMode =
+    //             $validated['rounding_mode']
+    //             ?? 'nearest';
+
+    //         $roundingStep = (float) (
+    //             $validated['rounding_step']
+    //             ?? 1.00
+    //         );
+
+    //         $existingBusinessId = DB::table(
+    //             'business_user'
+    //         )
+    //             ->where('user_id', $user->id)
+    //             ->value('business_id');
+
+    //         $business = $existingBusinessId
+    //             ? Business::query()->find(
+    //                 $existingBusinessId
+    //             )
+    //             : null;
+
+    //         if (!$business) {
+    //             $baseSlug = Str::slug($businessName);
+
+    //             if ($baseSlug === '') {
+    //                 $baseSlug =
+    //                     'business-' . $submittedPhone;
+    //             }
+
+    //             $slug = $baseSlug;
+    //             $suffix = 1;
+
+    //             while (
+    //                 Business::query()
+    //                     ->where('slug', $slug)
+    //                     ->exists()
+    //             ) {
+    //                 $slug =
+    //                     $baseSlug . '-' . $suffix;
+
+    //                 $suffix++;
+    //             }
+
+    //             $business = Business::query()->create([
+    //                 'name' => $businessName,
+    //                 'slug' => $slug,
+    //                 'email' => $businessEmail,
+    //                 'mobile' => $submittedPhone,
+    //                 'gstin' => $businessGstin,
+    //                 'gst_enabled' => $gstEnabled,
+    //                 'address' => $businessAddress,
+    //                 'state' => $businessState,
+    //                 'state_code' => $businessStateCode,
+    //                 'type' =>
+    //                     $businessTypeId,
+    //                 'invoice_base_prefix' =>
+    //                     $invoicePrefix,
+    //                 'rounding_mode' => $roundingMode,
+    //                 'rounding_step' => $roundingStep,
+    //             ]);
+
+    //             DB::table('business_user')->insert([
+    //                 'business_id' => $business->id,
+    //                 'user_id' => $user->id,
+    //                 'role' => 'owner',
+    //                 'created_at' => now(),
+    //                 'updated_at' => now(),
+    //             ]);
+    //         } else {
+    //             /*
+    //             * Existing business ho to form ki latest
+    //             * details update kar do.
+    //             */
+    //             $business->update([
+    //                 'name' => $businessName,
+    //                 'email' => $businessEmail,
+    //                 'mobile' => $submittedPhone,
+    //                 'gstin' => $businessGstin,
+    //                 'gst_enabled' => $gstEnabled,
+    //                 'address' => $businessAddress,
+    //                 'state' => $businessState,
+    //                 'state_code' => $businessStateCode,
+    //                 'type' =>
+    //                     $businessTypeId,
+    //                 'invoice_base_prefix' =>
+    //                     $invoicePrefix,
+    //                 'rounding_mode' => $roundingMode,
+    //                 'rounding_step' => $roundingStep,
+    //             ]);
+    //         }
+
+    //         $user->current_business_id =
+    //             $business->id;
+
+    //         $user->save();
+
+    //         /*
+    //         * Onboarding record ko actual User ke
+    //         * saath link karna.
+    //         */
+    //         $onboardingRegistrationId = session(
+    //             'onboarding_registration_id'
+    //         );
+
+    //         $onboardingRegistration =
+    //             $onboardingRegistrationId
+    //                 ? OnboardingRegistration::query()
+    //                     ->find($onboardingRegistrationId)
+    //                 : null;
+
+    //         /*
+    //         * Session ID se record na mile to phone
+    //         * number ke through record find karo.
+    //         */
+    //         if (!$onboardingRegistration) {
+    //             $onboardingRegistration =
+    //                 OnboardingRegistration::query()
+    //                     ->where(
+    //                         'phone',
+    //                         $submittedPhone
+    //                     )
+    //                     ->latest('id')
+    //                     ->first();
+    //         }
+
+    //         /*
+    //         * Record bilkul na ho to create kar do.
+    //         */
+    //         if (!$onboardingRegistration) {
+    //             $onboardingRegistration =
+    //                 new OnboardingRegistration();
+
+    //             $onboardingRegistration->phone =
+    //                 $submittedPhone;
+    //         }
+
+    //         $onboardingRegistration->user_id =
+    //             $user->id;
+
+    //         $onboardingRegistration->name =
+    //             $user->name;
+
+    //         $onboardingRegistration->phone =
+    //             $submittedPhone;
+
+    //         $onboardingRegistration->phone_verified_at =
+    //             $onboardingRegistration->phone_verified_at
+    //             ?: now();
+
+    //         /*
+    //         * Aapke onboarding listing/controller me
+    //         * ye columns use ho rahe hain.
+    //         */
+    //         $onboardingRegistration->last_completed_step =
+    //             3;
+
+    //         $onboardingRegistration->registration_status =
+    //             'completed';
+
+    //         $onboardingRegistration->completed_at =
+    //             now();
+
+    //         /*
+    //         * Business aur billing details JSON me
+    //         * preserve karna.
+    //         */
+    //         $onboardingRegistration->business_data = [
+    //             'business_id' => $business->id,
+    //             'business_name' => $business->name,
+    //             'business_email' => $business->email,
+    //             'mobile' => $business->mobile,
+    //             'gstin' => $business->gstin,
+    //             'type' =>
+    //                 $business->type,
+    //             'address' => $business->address,
+    //             'state' => $business->state,
+    //             'state_code' => $business->state_code,
+    //         ];
+
+    //         $onboardingRegistration->billing_data = [
+    //             'gst_enabled' =>
+    //                 (bool) $business->gst_enabled,
+    //             'invoice_base_prefix' =>
+    //                 $business->invoice_base_prefix,
+    //             'rounding_mode' =>
+    //                 $business->rounding_mode,
+    //             'rounding_step' =>
+    //                 $business->rounding_step,
+    //         ];
+
+    //         $onboardingRegistration->save();
+
+    //         if (
+    //             method_exists($user, 'assignRole') &&
+    //             Role::query()
+    //                 ->where('name', 'owner')
+    //                 ->where('guard_name', 'web')
+    //                 ->exists() &&
+    //             !$user->hasRole('owner')
+    //         ) {
+    //             $user->assignRole('owner');
+    //         }
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Selected plan activation
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Trial ya completed payment ke case me wahi selected plan
+    //         | registration ke saath activate hoga.
+    //         |
+    //         */
+
+    //         if ($planId && ($paymentDone || $isTrial)) {
+    //             $plan = Plan::query()
+    //                 ->with('permissions')
+    //                 ->findOrFail($planId);
+
+    //             UserPlan::query()
+    //                 ->where('business_id', $business->id)
+    //                 ->where('status', 1)
+    //                 ->update([
+    //                     'status' => 0,
+    //                 ]);
+
+    //             UserPlan::query()->create([
+    //                 'business_id' => $business->id,
+    //                 'user_id' => $user->id,
+    //                 'plan_id' => $plan->id,
+    //                 'start_date' => Carbon::today(),
+    //                 'expiry_date' => Carbon::today()->addDays(
+    //                     (int) ($plan->duration_days ?? 30)
+    //                 ),
+    //                 'status' => 1,
+    //             ]);
+
+    //             app(PermissionRegistrar::class)
+    //                 ->forgetCachedPermissions();
+
+    //             $permissions = $plan->permissions()
+    //                 ->where('guard_name', 'web')
+    //                 ->pluck('name')
+    //                 ->toArray();
+
+    //             if (!empty($permissions)) {
+    //                 $user->syncPermissions($permissions);
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         event(new Registered($user));
+
+    //         Auth::login($user, true);
+
+    //         $request->session()->regenerate();
+
+    //         session([
+    //             'active_business_id' => $business->id,
+    //             'active_business_name' =>
+    //                 $business->name,
+    //         ]);
+
+    //         $request->session()->forget([
+    //             'register_phone_verified',
+    //             'register_phone_otp',
+    //             'register_phone_otp_expires_at',
+    //             'ad_registration_data',
+    //             'ad_registration_step',
+    //             'onboarding_registration_id',
+    //         ]);
+
+    //         $registrationMessage =
+    //             'Registration successful.';
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Paid selected plan
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($planId && $paymentDone) {
+    //             $request->session()->forget([
+    //                 'paid_plan_id',
+    //                 'paid_razorpay_order_id',
+    //                 'paid_razorpay_payment_id',
+    //                 'paid_razorpay_signature',
+    //                 'payment_done',
+    //                 'paid_name',
+    //                 'paid_email',
+    //             ]);
+
+    //             return redirect()
+    //                 ->route('business-profile.index')
+    //                 ->with(
+    //                     'success',
+    //                     $registrationMessage .
+    //                     ' Selected plan activate ho gaya hai. Ab bill template choose kijiye.'
+    //                 );
+    //         }
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Trial selected plan
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($planId && $isTrial) {
+    //             return redirect()
+    //                 ->route('business-profile.index')
+    //                 ->with(
+    //                     'success',
+    //                     $registrationMessage .
+    //                     ' Free trial plan activate ho gaya hai. Ab bill template choose kijiye.'
+    //                 );
+    //         }
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Selected plan without payment
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         if ($planId) {
+    //             return redirect()
+    //                 ->route('plan.payment', [
+    //                     'plan' => $planId,
+    //                     'trial' => 0,
+    //                 ])
+    //                 ->with(
+    //                     'success',
+    //                     $registrationMessage .
+    //                     ' Selected plan ka payment complete kijiye.'
+    //                 );
+    //         }
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | No selected plan
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         return redirect()
+    //             ->route('plan.choose')
+    //             ->with(
+    //                 'success',
+    //                 $registrationMessage .
+    //                 ' Ab apna plan choose kijiye.'
+    //             );
+
+    //     } catch (Throwable $exception) {
+    //         DB::rollBack();
+
+    //         report($exception);
+
+    //         return back()
+    //             ->withInput()
+    //             ->withErrors([
+    //                 'registration' =>
+    //                     app()->environment('local')
+    //                         ? $exception->getMessage()
+    //                         : 'Registration complete nahi ho paya. Dobara try kijiye.',
+    //             ]);
+    //     }
+    // }
+
     public function complete(Request $request): RedirectResponse
-    {
-        $businessSkipped = $request->boolean('business_skipped');
-        $billingSkipped = $request->boolean('billing_skipped');
+{
+    $planId = $request->integer('plan_id') ?: null;
 
-        if ($businessSkipped) {
-            $request->merge([
-                'business_name' => null,
-                'business_email' => null,
-                'type' => null,
-                'gstin' => null,
-                'address' => null,
-                'state' => null,
-                'state_code' => null,
-            ]);
-        }
+    $isTrial =
+        (int) $request->input('trial', 0) === 1;
 
-        if ($billingSkipped) {
-            $request->merge([
-                'gst_enabled' => 0,
-                'invoice_base_prefix' => 'RV/SL',
-                'rounding_mode' => 'nearest',
-                'rounding_step' => 1.00,
-            ]);
-        }
+    $paymentDone =
+        session('payment_done') === true ||
+        (int) $request->input('payment_done', 0) === 1;
 
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+    $businessSkipped =
+        $request->boolean('business_skipped');
 
-            'phone' => [
-                'required',
-                'digits:10',
-                'regex:/^[6-9][0-9]{9}$/',
-            ],
+    $billingSkipped =
+        $request->boolean('billing_skipped');
 
-            'business_name' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
+    /*
+    |--------------------------------------------------------------------------
+    | Business details check
+    |--------------------------------------------------------------------------
+    |
+    | Business skip kiya ho ya saari business fields blank hon,
+    | to abhi business create nahi hoga.
+    |
+    */
 
-            'business_email' => [
-                'nullable',
-                'email',
-                'max:255',
-            ],
+    $hasBusinessDetails =
+        filled($request->input('business_name')) ||
+        filled($request->input('business_email')) ||
+        filled($request->input('type')) ||
+        filled($request->input('gstin')) ||
+        filled($request->input('address')) ||
+        filled($request->input('state')) ||
+        filled($request->input('state_code'));
 
-            'mobile' => [
-                'nullable',
-                'digits:10',
-            ],
+    $shouldCreateBusiness =
+        !$businessSkipped && $hasBusinessDetails;
 
-            'gstin' => [
-                'nullable',
-                'string',
-                'max:15',
-                Rule::unique('businesses', 'gstin'),
-            ],
+    if (!$shouldCreateBusiness) {
+        $businessSkipped = true;
 
-            'type' => [
-                'nullable',
-                'exists:business_types,id',
-            ],
-
-            'address' => [
-                'nullable',
-                'string',
-                'max:1000',
-            ],
-
-            'state' => [
-                'nullable',
-                'string',
-                'max:255',
-            ],
-
-            'state_code' => [
-                'nullable',
-                'string',
-                'max:10',
-            ],
-
-            'gst_enabled' => [
-                'nullable',
-                Rule::in(['0', '1', 0, 1]),
-            ],
-
-            'invoice_base_prefix' => [
-                'nullable',
-                'string',
-                'max:100',
-            ],
-
-            'rounding_mode' => [
-                'nullable',
-                Rule::in([
-                    'none',
-                    'nearest',
-                    'up',
-                    'down',
-                ]),
-            ],
-
-            'rounding_step' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'plan_id' => [
-                'nullable',
-                'exists:plans,id',
-            ],
+        $request->merge([
+            'business_skipped' => 1,
+            'business_name' => null,
+            'business_email' => null,
+            'mobile' => null,
+            'type' => null,
+            'gstin' => null,
+            'address' => null,
+            'state' => null,
+            'state_code' => null,
         ]);
+    }
 
-        $verifiedPhone = preg_replace(
-            '/\D/',
-            '',
-            (string) session('register_phone_verified')
-        );
+    if ($billingSkipped) {
+        $request->merge([
+            'gst_enabled' => 0,
+            'invoice_base_prefix' => 'RV/SL',
+            'rounding_mode' => 'nearest',
+            'rounding_step' => 1.00,
+        ]);
+    }
 
-        $submittedPhone = preg_replace(
-            '/\D/',
-            '',
-            (string) $validated['phone']
-        );
+    $validated = $request->validate([
+        'name' => [
+            'required',
+            'string',
+            'max:255',
+        ],
 
-        if (
-            strlen($verifiedPhone) !== 10 ||
-            $verifiedPhone !== $submittedPhone
-        ) {
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'phone' => 'Pehle mobile number OTP se verify kijiye.',
-                ]);
+        'phone' => [
+            'required',
+            'digits:10',
+            'regex:/^[6-9][0-9]{9}$/',
+        ],
+
+        'business_skipped' => [
+            'nullable',
+            'boolean',
+        ],
+
+        'billing_skipped' => [
+            'nullable',
+            'boolean',
+        ],
+
+        'business_name' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'business_email' => [
+            'nullable',
+            'email',
+            'max:255',
+        ],
+
+        'mobile' => [
+            'nullable',
+            'digits:10',
+        ],
+
+        'gstin' => [
+            'nullable',
+            'string',
+            'max:15',
+            Rule::unique('businesses', 'gstin'),
+        ],
+
+        'type' => [
+            'nullable',
+            'exists:business_types,id',
+        ],
+
+        'address' => [
+            'nullable',
+            'string',
+            'max:1000',
+        ],
+
+        'state' => [
+            'nullable',
+            'string',
+            'max:255',
+        ],
+
+        'state_code' => [
+            'nullable',
+            'string',
+            'max:10',
+        ],
+
+        'gst_enabled' => [
+            'nullable',
+            Rule::in(['0', '1', 0, 1]),
+        ],
+
+        'invoice_base_prefix' => [
+            'nullable',
+            'string',
+            'max:100',
+        ],
+
+        'rounding_mode' => [
+            'nullable',
+            Rule::in([
+                'none',
+                'nearest',
+                'up',
+                'down',
+            ]),
+        ],
+
+        'rounding_step' => [
+            'nullable',
+            'numeric',
+            'min:0',
+        ],
+
+        'plan_id' => [
+            'nullable',
+            'exists:plans,id',
+        ],
+
+        'trial' => [
+            'nullable',
+            Rule::in(['0', '1', 0, 1]),
+        ],
+
+        'payment_done' => [
+            'nullable',
+            Rule::in(['0', '1', 0, 1]),
+        ],
+    ]);
+
+    $planId = !empty($validated['plan_id'])
+        ? (int) $validated['plan_id']
+        : null;
+
+    $verifiedPhone = preg_replace(
+        '/\D/',
+        '',
+        (string) session('register_phone_verified')
+    );
+
+    $submittedPhone = preg_replace(
+        '/\D/',
+        '',
+        (string) $validated['phone']
+    );
+
+    if (
+        strlen($verifiedPhone) !== 10 ||
+        $verifiedPhone !== $submittedPhone
+    ) {
+        return back()
+            ->withInput()
+            ->withErrors([
+                'phone' =>
+                    'Pehle mobile number OTP se verify kijiye.',
+            ]);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $name = trim($validated['name']);
+
+        $user = User::query()
+            ->where('phone', $submittedPhone)
+            ->first();
+
+        if (!$user) {
+            $user = new User();
+            $user->phone = $submittedPhone;
+            $user->email =
+                $submittedPhone . '@noemail.local';
+            $user->password = Hash::make(
+                Str::random(40)
+            );
         }
 
-        DB::beginTransaction();
+        $user->name = $name;
 
-        try {
-            $name = trim($validated['name']);
+        if (empty($user->email)) {
+            $user->email =
+                $submittedPhone . '@noemail.local';
+        }
 
-            $user = User::query()
-                ->where('phone', $submittedPhone)
-                ->first();
+        if (empty($user->password)) {
+            $user->password = Hash::make(
+                Str::random(40)
+            );
+        }
 
-            if (!$user) {
-                $user = new User();
-                $user->phone = $submittedPhone;
-                $user->email =
-                    $submittedPhone . '@noemail.local';
-                $user->password = Hash::make(
-                    Str::random(40)
-                );
-            }
+        if (empty($user->phone_verified_at)) {
+            $user->phone_verified_at = now();
+        }
 
-            $user->name = $name;
+        $user->save();
 
-            if (empty($user->email)) {
-                $user->email =
-                    $submittedPhone . '@noemail.local';
-            }
+        $business = null;
 
-            if (empty($user->password)) {
-                $user->password = Hash::make(
-                    Str::random(40)
-                );
-            }
+        /*
+        |--------------------------------------------------------------------------
+        | Business create/update
+        |--------------------------------------------------------------------------
+        |
+        | Sirf tab chalega jab user ne business skip nahi kiya aur
+        | kam se kam ek business detail bhari hai.
+        |
+        */
 
-            if (empty($user->phone_verified_at)) {
-                $user->phone_verified_at = now();
-            }
-
-            $user->save();
-
+        if ($shouldCreateBusiness) {
             $defaultBusinessTypeId =
                 BusinessType::query()
                     ->orderBy('id')
@@ -827,7 +2044,9 @@ class AdRegistrationController extends Controller
             $businessGstin = filled(
                 $validated['gstin'] ?? null
             )
-                ? strtoupper(trim($validated['gstin']))
+                ? strtoupper(
+                    trim($validated['gstin'])
+                )
                 : null;
 
             $businessAddress = filled(
@@ -913,8 +2132,7 @@ class AdRegistrationController extends Controller
                     'address' => $businessAddress,
                     'state' => $businessState,
                     'state_code' => $businessStateCode,
-                    'type' =>
-                        $businessTypeId,
+                    'type' => $businessTypeId,
                     'invoice_base_prefix' =>
                         $invoicePrefix,
                     'rounding_mode' => $roundingMode,
@@ -929,10 +2147,6 @@ class AdRegistrationController extends Controller
                     'updated_at' => now(),
                 ]);
             } else {
-                /*
-                * Existing business ho to form ki latest
-                * details update kar do.
-                */
                 $business->update([
                     'name' => $businessName,
                     'email' => $businessEmail,
@@ -942,8 +2156,7 @@ class AdRegistrationController extends Controller
                     'address' => $businessAddress,
                     'state' => $businessState,
                     'state_code' => $businessStateCode,
-                    'type' =>
-                        $businessTypeId,
+                    'type' => $businessTypeId,
                     'invoice_base_prefix' =>
                         $invoicePrefix,
                     'rounding_mode' => $roundingMode,
@@ -955,164 +2168,336 @@ class AdRegistrationController extends Controller
                 $business->id;
 
             $user->save();
-
+        } else {
             /*
-            * Onboarding record ko actual User ke
-            * saath link karna.
+            * Business skip hua hai, isliye kisi purane/temporary
+            * business ko current business mat banao.
             */
-            $onboardingRegistrationId = session(
-                'onboarding_registration_id'
-            );
+            $user->current_business_id = null;
+            $user->save();
+        }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Onboarding registration
+        |--------------------------------------------------------------------------
+        */
+
+        $onboardingRegistrationId = session(
+            'onboarding_registration_id'
+        );
+
+        $onboardingRegistration =
+            $onboardingRegistrationId
+                ? OnboardingRegistration::query()
+                    ->find($onboardingRegistrationId)
+                : null;
+
+        if (!$onboardingRegistration) {
             $onboardingRegistration =
-                $onboardingRegistrationId
-                    ? OnboardingRegistration::query()
-                        ->find($onboardingRegistrationId)
-                    : null;
+                OnboardingRegistration::query()
+                    ->where('phone', $submittedPhone)
+                    ->latest('id')
+                    ->first();
+        }
 
-            /*
-            * Session ID se record na mile to phone
-            * number ke through record find karo.
-            */
-            if (!$onboardingRegistration) {
-                $onboardingRegistration =
-                    OnboardingRegistration::query()
-                        ->where(
-                            'phone',
-                            $submittedPhone
-                        )
-                        ->latest('id')
-                        ->first();
-            }
-
-            /*
-            * Record bilkul na ho to create kar do.
-            */
-            if (!$onboardingRegistration) {
-                $onboardingRegistration =
-                    new OnboardingRegistration();
-
-                $onboardingRegistration->phone =
-                    $submittedPhone;
-            }
-
-            $onboardingRegistration->user_id =
-                $user->id;
-
-            $onboardingRegistration->name =
-                $user->name;
+        if (!$onboardingRegistration) {
+            $onboardingRegistration =
+                new OnboardingRegistration();
 
             $onboardingRegistration->phone =
                 $submittedPhone;
+        }
 
-            $onboardingRegistration->phone_verified_at =
-                $onboardingRegistration->phone_verified_at
-                ?: now();
+        $onboardingRegistration->user_id =
+            $user->id;
 
-            /*
-            * Aapke onboarding listing/controller me
-            * ye columns use ho rahe hain.
-            */
-            $onboardingRegistration->last_completed_step =
-                3;
+        $onboardingRegistration->name =
+            $user->name;
 
-            $onboardingRegistration->registration_status =
-                'completed';
+        $onboardingRegistration->phone =
+            $submittedPhone;
 
-            $onboardingRegistration->completed_at =
-                now();
+        $onboardingRegistration->phone_verified_at =
+            $onboardingRegistration->phone_verified_at
+            ?: now();
 
-            /*
-            * Business aur billing details JSON me
-            * preserve karna.
-            */
-            $onboardingRegistration->business_data = [
+        /*
+        * Business pending hone par registration ko fully completed
+        * mark nahi kar rahe. Business profile submit hone ke baad
+        * aap ise completed kar sakte hain.
+        */
+        $onboardingRegistration->last_completed_step =
+            $business ? 3 : 1;
+
+        $onboardingRegistration->registration_status =
+            $business
+                ? 'completed'
+                : 'business_pending';
+
+        $onboardingRegistration->completed_at =
+            $business ? now() : null;
+
+        $onboardingRegistration->business_data =
+            $business
+                ? [
+                    'business_id' => $business->id,
+                    'business_name' => $business->name,
+                    'business_email' => $business->email,
+                    'mobile' => $business->mobile,
+                    'gstin' => $business->gstin,
+                    'type' => $business->type,
+                    'address' => $business->address,
+                    'state' => $business->state,
+                    'state_code' => $business->state_code,
+                ]
+                : null;
+
+        $onboardingRegistration->billing_data = [
+            'gst_enabled' => (bool) (
+                $validated['gst_enabled'] ?? 0
+            ),
+            'invoice_base_prefix' =>
+                $validated['invoice_base_prefix']
+                ?? 'RV/SL',
+            'rounding_mode' =>
+                $validated['rounding_mode']
+                ?? 'nearest',
+            'rounding_step' => (float) (
+                $validated['rounding_step']
+                ?? 1.00
+            ),
+        ];
+
+        $onboardingRegistration->save();
+
+        if (
+            method_exists($user, 'assignRole') &&
+            Role::query()
+                ->where('name', 'owner')
+                ->where('guard_name', 'web')
+                ->exists() &&
+            !$user->hasRole('owner')
+        ) {
+            $user->assignRole('owner');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Plan activation
+        |--------------------------------------------------------------------------
+        |
+        | UserPlan ko business_id chahiye, isliye business create hone ke
+        | baad hi plan activate hoga. Business pending ho to selected plan
+        | session me preserve rahega.
+        |
+        */
+
+        if (
+            $business &&
+            $planId &&
+            ($paymentDone || $isTrial)
+        ) {
+            $plan = Plan::query()
+                ->with('permissions')
+                ->findOrFail($planId);
+
+            UserPlan::query()
+                ->where('business_id', $business->id)
+                ->where('status', 1)
+                ->update([
+                    'status' => 0,
+                ]);
+
+            UserPlan::query()->create([
                 'business_id' => $business->id,
-                'business_name' => $business->name,
-                'business_email' => $business->email,
-                'mobile' => $business->mobile,
-                'gstin' => $business->gstin,
-                'type' =>
-                    $business->type,
-                'address' => $business->address,
-                'state' => $business->state,
-                'state_code' => $business->state_code,
-            ];
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'start_date' => Carbon::today(),
+                'expiry_date' =>
+                    Carbon::today()->addDays(
+                        (int) (
+                            $plan->duration_days ?? 30
+                        )
+                    ),
+                'status' => 1,
+            ]);
 
-            $onboardingRegistration->billing_data = [
-                'gst_enabled' =>
-                    (bool) $business->gst_enabled,
-                'invoice_base_prefix' =>
-                    $business->invoice_base_prefix,
-                'rounding_mode' =>
-                    $business->rounding_mode,
-                'rounding_step' =>
-                    $business->rounding_step,
-            ];
+            app(PermissionRegistrar::class)
+                ->forgetCachedPermissions();
 
-            $onboardingRegistration->save();
+            $permissions = $plan->permissions()
+                ->where('guard_name', 'web')
+                ->pluck('name')
+                ->toArray();
 
-            if (
-                method_exists($user, 'assignRole') &&
-                Role::query()
-                    ->where('name', 'owner')
-                    ->where('guard_name', 'web')
-                    ->exists() &&
-                !$user->hasRole('owner')
-            ) {
-                $user->assignRole('owner');
+            if (!empty($permissions)) {
+                $user->syncPermissions($permissions);
             }
+        }
 
-            DB::commit();
+        DB::commit();
 
-            event(new Registered($user));
+        event(new Registered($user));
 
-            Auth::login($user, true);
+        Auth::login($user, true);
 
-            $request->session()->regenerate();
+        $request->session()->regenerate();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business skipped/pending
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$business) {
+            $request->session()->forget([
+                'active_business_id',
+                'active_business_name',
+            ]);
 
             session([
-                'active_business_id' => $business->id,
+                'pending_registration_plan_id' =>
+                    $planId,
+                'pending_registration_trial' =>
+                    $isTrial ? 1 : 0,
+                'pending_registration_payment_done' =>
+                    $paymentDone ? 1 : 0,
+                'pending_registration_billing_data' => [
+                    'gst_enabled' => (int) (
+                        $validated['gst_enabled'] ?? 0
+                    ),
+                    'invoice_base_prefix' =>
+                        $validated['invoice_base_prefix']
+                        ?? 'RV/SL',
+                    'rounding_mode' =>
+                        $validated['rounding_mode']
+                        ?? 'nearest',
+                    'rounding_step' => (float) (
+                        $validated['rounding_step']
+                        ?? 1.00
+                    ),
+                ],
+            ]);
+        } else {
+            session([
+                'active_business_id' =>
+                    $business->id,
                 'active_business_name' =>
                     $business->name,
             ]);
+        }
 
-            if (!empty($validated['plan_id'])) {
-                session([
-                    'suggested_plan_id' =>
-                        (int) $validated['plan_id'],
-                ]);
-            }
+        $request->session()->forget([
+            'register_phone_verified',
+            'register_phone_otp',
+            'register_phone_otp_expires_at',
+            'ad_registration_data',
+            'ad_registration_step',
+            'onboarding_registration_id',
+        ]);
 
+        $registrationMessage =
+            'Registration successful.';
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business nahi bana
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$business) {
+            return redirect()
+                ->route('business-profile.index')
+                ->with(
+                    'success',
+                    $registrationMessage .
+                    ' Pehle apni business profile complete kijiye. Selected plan safe rakha gaya hai.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Paid selected plan
+        |--------------------------------------------------------------------------
+        */
+
+        if ($planId && $paymentDone) {
             $request->session()->forget([
-                'register_phone_verified',
-                'register_phone_otp',
-                'register_phone_otp_expires_at',
-                'ad_registration_data',
-                'ad_registration_step',
-                'onboarding_registration_id',
+                'paid_plan_id',
+                'paid_razorpay_order_id',
+                'paid_razorpay_payment_id',
+                'paid_razorpay_signature',
+                'payment_done',
+                'paid_name',
+                'paid_email',
             ]);
 
             return redirect()
-                ->route('plan.choose')
+                ->route('business-profile.index')
                 ->with(
                     'success',
-                    'Registration successful. Ab apna plan choose kijiye.'
+                    $registrationMessage .
+                    ' Selected plan activate ho gaya hai.'
                 );
-
-        } catch (Throwable $exception) {
-            DB::rollBack();
-
-            report($exception);
-
-            return back()
-                ->withInput()
-                ->withErrors([
-                    'registration' =>
-                        app()->environment('local')
-                            ? $exception->getMessage()
-                            : 'Registration complete nahi ho paya. Dobara try kijiye.',
-                ]);
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Trial selected plan
+        |--------------------------------------------------------------------------
+        */
+
+        if ($planId && $isTrial) {
+            return redirect()
+                ->route('business-profile.index')
+                ->with(
+                    'success',
+                    $registrationMessage .
+                    ' Free trial plan activate ho gaya hai.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Selected plan without payment
+        |--------------------------------------------------------------------------
+        */
+
+        if ($planId) {
+            return redirect()
+                ->route('plan.payment', [
+                    'plan' => $planId,
+                    'trial' => 0,
+                ])
+                ->with(
+                    'success',
+                    $registrationMessage .
+                    ' Selected plan ka payment complete kijiye.'
+                );
+        }
+
+        return redirect()
+            ->route('plan.choose')
+            ->with(
+                'success',
+                $registrationMessage .
+                ' Ab apna plan choose kijiye.'
+            );
+
+    } catch (Throwable $exception) {
+        DB::rollBack();
+
+        report($exception);
+
+        return back()
+            ->withInput()
+            ->withErrors([
+                'registration' =>
+                    app()->environment('local')
+                        ? $exception->getMessage()
+                        : 'Registration complete nahi ho paya. Dobara try kijiye.',
+            ]);
     }
+}
 }
