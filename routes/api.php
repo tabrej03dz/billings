@@ -397,11 +397,9 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
         Route::get('/index', [BusinessController::class, 'index'])
             ->middleware('permission:show businesses|view all businesses');
 
-        Route::post('/store', [BusinessController::class, 'store'])
-            ->middleware('permission:create business');
+        Route::post('/store', [BusinessController::class, 'store']);
 
-        Route::post('/update/{business}', [BusinessController::class, 'update'])
-            ->middleware('permission:edit business');
+        Route::post('/update/{business}', [BusinessController::class, 'update']);
 
         Route::delete('/delete/{business}', [BusinessController::class, 'destroy'])
             ->middleware('permission:delete business');

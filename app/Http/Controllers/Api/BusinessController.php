@@ -574,79 +574,23 @@ class BusinessController extends Controller
 
 public function update(Request $request, Business $business)
 {
-    $user = $request->user();
-
-    if (!$user) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Unauthenticated.',
-        ], 401);
-    }
-
     /*
     |--------------------------------------------------------------------------
-    | Check business access
+    | Authorization
     |--------------------------------------------------------------------------
     |
-    | User ko access tab milega jab:
-    |
-    | 1. business_user pivot table me membership ho
-    | OR
-    | 2. users.business_id requested business ke equal ho
-    | OR
-    | 3. users.current_business_id requested business ke equal ho
+    | Pivot role check nahi hoga.
+    | User sirf requested business se linked hona chahiye.
     |
     */
 
-    $pivotMembership = DB::table('business_user')
-        ->where('business_id', $business->id)
-        ->where('user_id', $user->id)
-        ->first();
-
-    $belongsThroughBusinessId =
-        isset($user->business_id)
-        && (int) $user->business_id === (int) $business->id;
-
-    $belongsThroughCurrentBusiness =
-        isset($user->current_business_id)
-        && (int) $user->current_business_id === (int) $business->id;
-
-    $belongsToBusiness =
-        $pivotMembership
-        || $belongsThroughBusinessId
-        || $belongsThroughCurrentBusiness;
-
-    if (!$belongsToBusiness) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Aap is business se belong nahi karte hain.',
-            'requested_business_id' => (int) $business->id,
-            'logged_in_user_id' => (int) $user->id,
-            'user_business_id' => $user->business_id ?? null,
-            'current_business_id' => $user->current_business_id ?? null,
-        ], 403);
-    }
+    $this->authorizeBusinessAccess($request, $business);
 
     /*
     |--------------------------------------------------------------------------
-    | Pivot role check
+    | Normalize boolean values
     |--------------------------------------------------------------------------
-    |
-    | Agar pivot membership available hai to staff ko update se rokna hai.
-    | Direct business_id/current_business_id wala user owner maana jayega.
-    |
     */
-
-    if (
-        $pivotMembership
-        && !in_array($pivotMembership->role, ['owner', 'admin'], true)
-    ) {
-        return response()->json([
-            'status' => false,
-            'message' => 'Sirf business owner ya admin business update kar sakta hai.',
-            'your_business_role' => $pivotMembership->role,
-        ], 403);
-    }
 
     if ($request->has('gst_enabled')) {
         $request->merge([
@@ -654,14 +598,25 @@ public function update(Request $request, Business $business)
         ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Validation
+    |--------------------------------------------------------------------------
+    |
+    | "sometimes" use kiya gaya hai, isliye partial update bhi chalega.
+    |
+    */
+
     $data = $request->validate([
         'name' => [
+            'sometimes',
             'required',
             'string',
             'max:255',
         ],
 
         'slug' => [
+            'sometimes',
             'nullable',
             'string',
             'alpha_dash',
@@ -670,6 +625,7 @@ public function update(Request $request, Business $business)
         ],
 
         'email' => [
+            'sometimes',
             'required',
             'email',
             'max:255',
@@ -677,6 +633,7 @@ public function update(Request $request, Business $business)
         ],
 
         'mobile' => [
+            'sometimes',
             'nullable',
             'string',
             'max:20',
@@ -684,12 +641,14 @@ public function update(Request $request, Business $business)
         ],
 
         'gstin' => [
+            'sometimes',
             'nullable',
             'string',
             'max:50',
         ],
 
         'address' => [
+            'sometimes',
             'nullable',
             'string',
             'max:1000',
@@ -701,12 +660,14 @@ public function update(Request $request, Business $business)
         ],
 
         'invoice_base_prefix' => [
+            'sometimes',
             'nullable',
             'string',
             'max:50',
         ],
 
         'rounding_mode' => [
+            'sometimes',
             'nullable',
             Rule::in([
                 'none',
@@ -717,6 +678,7 @@ public function update(Request $request, Business $business)
         ],
 
         'rounding_step' => [
+            'sometimes',
             'nullable',
             'numeric',
             'min:0.01',
@@ -724,42 +686,49 @@ public function update(Request $request, Business $business)
         ],
 
         'terms' => [
+            'sometimes',
             'nullable',
             'string',
             'max:5000',
         ],
 
         'pdf_template_id' => [
+            'sometimes',
             'nullable',
             'integer',
             'exists:bill_templates,id',
         ],
 
         'type' => [
+            'sometimes',
             'nullable',
             'string',
             'max:100',
         ],
 
         'business_type_id' => [
+            'sometimes',
             'nullable',
             'integer',
             'exists:business_types,id',
         ],
 
         'state' => [
+            'sometimes',
             'nullable',
             'string',
             'max:100',
         ],
 
         'state_code' => [
+            'sometimes',
             'nullable',
             'string',
             'max:10',
         ],
 
         'logo' => [
+            'sometimes',
             'nullable',
             'image',
             'mimes:jpg,jpeg,png,webp',
@@ -767,6 +736,7 @@ public function update(Request $request, Business $business)
         ],
 
         'signature' => [
+            'sometimes',
             'nullable',
             'image',
             'mimes:jpg,jpeg,png,webp',
@@ -774,6 +744,7 @@ public function update(Request $request, Business $business)
         ],
 
         'letter_head' => [
+            'sometimes',
             'nullable',
             'image',
             'mimes:jpg,jpeg,png,webp',
@@ -783,13 +754,13 @@ public function update(Request $request, Business $business)
 
     /*
     |--------------------------------------------------------------------------
-    | Generate slug when business name changes
+    | Generate unique slug when name changes
     |--------------------------------------------------------------------------
     */
 
     if (
         array_key_exists('name', $data)
-        && $data['name'] !== $business->name
+        && trim((string) $data['name']) !== trim((string) $business->name)
     ) {
         $baseSlug = Str::slug($data['name']);
 
@@ -810,9 +781,21 @@ public function update(Request $request, Business $business)
         }
 
         $data['slug'] = $slug;
-    } else {
+    } elseif (!$request->filled('slug')) {
+        /*
+         * Name same hai aur slug request me nahi aaya,
+         * to existing slug change nahi hoga.
+         */
         unset($data['slug']);
+    } elseif (array_key_exists('slug', $data)) {
+        $data['slug'] = Str::slug($data['slug']);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normalize billing values
+    |--------------------------------------------------------------------------
+    */
 
     if (array_key_exists('invoice_base_prefix', $data)) {
         $data['invoice_base_prefix'] = filled($data['invoice_base_prefix'])
@@ -821,18 +804,30 @@ public function update(Request $request, Business $business)
     }
 
     if (
-        isset($data['rounding_mode'])
+        array_key_exists('rounding_mode', $data)
         && $data['rounding_mode'] === 'none'
     ) {
         $data['rounding_step'] = 1.00;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | GST disabled handling
+    |--------------------------------------------------------------------------
+    */
+
     if (
         array_key_exists('gst_enabled', $data)
-        && !$data['gst_enabled']
+        && $data['gst_enabled'] === false
     ) {
         $data['gstin'] = null;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save existing file paths
+    |--------------------------------------------------------------------------
+    */
 
     $oldFiles = [
         'logo' => $business->logo,
@@ -845,6 +840,12 @@ public function update(Request $request, Business $business)
     DB::beginTransaction();
 
     try {
+        /*
+        |--------------------------------------------------------------------------
+        | Upload new files
+        |--------------------------------------------------------------------------
+        */
+
         if ($request->hasFile('logo')) {
             $data['logo'] = $request
                 ->file('logo')
@@ -869,16 +870,34 @@ public function update(Request $request, Business $business)
             $newUploadedFiles[] = $data['letter_head'];
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Update business
+        |--------------------------------------------------------------------------
+        */
+
         $business->update($data);
 
+        /*
+         * Profile completion methods Business model me available hain.
+         */
         $business->refreshProfileCompletion();
 
         DB::commit();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Delete replaced old files
+        |--------------------------------------------------------------------------
+        |
+        | Database update successful hone ke baad hi old files delete hongi.
+        |
+        */
+
         foreach (['logo', 'signature', 'letter_head'] as $field) {
             if (
                 $request->hasFile($field)
-                && !empty($oldFiles[$field])
+                && filled($oldFiles[$field])
                 && Storage::disk('public')->exists($oldFiles[$field])
             ) {
                 Storage::disk('public')->delete($oldFiles[$field]);
@@ -896,9 +915,15 @@ public function update(Request $request, Business $business)
     } catch (\Throwable $exception) {
         DB::rollBack();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Remove newly uploaded files when update fails
+        |--------------------------------------------------------------------------
+        */
+
         foreach ($newUploadedFiles as $uploadedFile) {
             if (
-                $uploadedFile
+                filled($uploadedFile)
                 && Storage::disk('public')->exists($uploadedFile)
             ) {
                 Storage::disk('public')->delete($uploadedFile);
@@ -953,25 +978,56 @@ public function update(Request $request, Business $business)
 ): void {
     $user = $request->user();
 
-    abort_unless($user, 401, 'Unauthenticated.');
+    abort_unless(
+        $user,
+        401,
+        'Unauthenticated.'
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pivot membership
+    |--------------------------------------------------------------------------
+    |
+    | Sirf entry check hogi. Pivot role check bilkul nahi hoga.
+    |
+    */
 
     $pivotMembershipExists = DB::table('business_user')
         ->where('business_id', $business->id)
         ->where('user_id', $user->id)
         ->exists();
 
-    $belongsThroughBusinessId =
-        isset($user->business_id)
+    /*
+    |--------------------------------------------------------------------------
+    | Direct business assignment
+    |--------------------------------------------------------------------------
+    */
+
+    $matchesBusinessId =
+        !is_null($user->business_id)
         && (int) $user->business_id === (int) $business->id;
 
-    $belongsThroughCurrentBusiness =
-        isset($user->current_business_id)
+    /*
+    |--------------------------------------------------------------------------
+    | Current selected business
+    |--------------------------------------------------------------------------
+    */
+
+    $matchesCurrentBusinessId =
+        !is_null($user->current_business_id)
         && (int) $user->current_business_id === (int) $business->id;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Final access
+    |--------------------------------------------------------------------------
+    */
 
     $hasAccess =
         $pivotMembershipExists
-        || $belongsThroughBusinessId
-        || $belongsThroughCurrentBusiness;
+        || $matchesBusinessId
+        || $matchesCurrentBusinessId;
 
     abort_unless(
         $hasAccess,
