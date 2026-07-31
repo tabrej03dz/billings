@@ -1466,12 +1466,16 @@
         </script>
     @endif
 
-    {{-- CHART.JS: wire:navigate compatible --}}
-    <script data-navigate-once src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-
+    {{-- CHART.JS: normal load + wire:navigate compatible --}}
     <script>
         (() => {
-            const chartData = {
+            /*
+            |--------------------------------------------------------------------------
+            | Current page chart data
+            |--------------------------------------------------------------------------
+            | Har dashboard navigation par latest Blade data overwrite hogi.
+            */
+            window.dashboardChartData = {
                 labels: @json($chartLabels ?? []),
                 sales: @json($salesChartData ?? []),
                 purchases: @json($purchaseChartData ?? []),
@@ -1479,7 +1483,85 @@
                 stock: @json($stockChartData ?? [0, 0, 0]),
             };
 
-            function destroyDashboardCharts() {
+            /*
+            |--------------------------------------------------------------------------
+            | Load Chart.js only once
+            |--------------------------------------------------------------------------
+            | Pehli visit par CDN load hone ka wait kiya jayega.
+            | Isi race condition ki wajah se pehle click par charts blank the.
+            */
+            window.loadDashboardChartJs = window.loadDashboardChartJs || function () {
+                if (typeof window.Chart !== 'undefined') {
+                    return Promise.resolve(window.Chart);
+                }
+
+                if (window.dashboardChartJsPromise) {
+                    return window.dashboardChartJsPromise;
+                }
+
+                window.dashboardChartJsPromise = new Promise((resolve, reject) => {
+                    const existingScript = document.querySelector(
+                        'script[data-dashboard-chartjs="1"]'
+                    );
+
+                    if (existingScript) {
+                        existingScript.addEventListener('load', () => {
+                            if (typeof window.Chart !== 'undefined') {
+                                resolve(window.Chart);
+                            } else {
+                                reject(new Error('Chart.js loaded but Chart is unavailable.'));
+                            }
+                        }, { once: true });
+
+                        existingScript.addEventListener('error', () => {
+                            reject(new Error('Chart.js could not be loaded.'));
+                        }, { once: true });
+
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+
+                    script.src =
+                        'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
+
+                    script.async = true;
+                    script.dataset.dashboardChartjs = '1';
+
+                    script.onload = () => {
+                        if (typeof window.Chart !== 'undefined') {
+                            resolve(window.Chart);
+                        } else {
+                            reject(new Error('Chart.js loaded but Chart is unavailable.'));
+                        }
+                    };
+
+                    script.onerror = () => {
+                        /*
+                        | Failed promise ko reset kar dein, taaki next navigation
+                        | ya retry par library dobara load ho sake.
+                        */
+                        window.dashboardChartJsPromise = null;
+
+                        reject(new Error('Chart.js could not be loaded.'));
+                    };
+
+                    document.head.appendChild(script);
+                });
+
+                return window.dashboardChartJsPromise;
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Destroy old chart instances
+            |--------------------------------------------------------------------------
+            */
+            window.destroyDashboardCharts = function () {
+                if (typeof window.Chart === 'undefined') {
+                    return;
+                }
+
                 [
                     'salesPurchaseTrendChart',
                     'paymentCollectionChart',
@@ -1487,42 +1569,72 @@
                 ].forEach((canvasId) => {
                     const canvas = document.getElementById(canvasId);
 
-                    if (!canvas || typeof Chart === 'undefined') {
+                    if (!canvas) {
                         return;
                     }
 
-                    const existingChart = Chart.getChart(canvas);
+                    const existingChart = window.Chart.getChart(canvas);
 
                     if (existingChart) {
                         existingChart.destroy();
                     }
                 });
-            }
+            };
 
-            function initializeDashboardCharts() {
-                if (typeof Chart === 'undefined') {
+            /*
+            |--------------------------------------------------------------------------
+            | Initialize charts
+            |--------------------------------------------------------------------------
+            */
+            window.initializeDashboardCharts = function () {
+                if (typeof window.Chart === 'undefined') {
                     return;
                 }
 
-                const trendCanvas = document.getElementById('salesPurchaseTrendChart');
-                const paymentCanvas = document.getElementById('paymentCollectionChart');
-                const stockCanvas = document.getElementById('stockStatusChart');
+                const trendCanvas = document.getElementById(
+                    'salesPurchaseTrendChart'
+                );
 
-                // Dashboard DOM abhi page par nahi hai.
+                const paymentCanvas = document.getElementById(
+                    'paymentCollectionChart'
+                );
+
+                const stockCanvas = document.getElementById(
+                    'stockStatusChart'
+                );
+
+                /*
+                | User dashboard page par nahi hai.
+                */
                 if (!trendCanvas && !paymentCanvas && !stockCanvas) {
                     return;
                 }
 
-                destroyDashboardCharts();
+                window.destroyDashboardCharts();
 
-                const isDarkMode = document.documentElement.classList.contains('dark');
-                const textColor = isDarkMode ? '#d4d4d8' : '#4b5563';
+                const chartData = window.dashboardChartData || {
+                    labels: [],
+                    sales: [],
+                    purchases: [],
+                    payments: [0, 0],
+                    stock: [0, 0, 0],
+                };
+
+                const isDarkMode =
+                    document.documentElement.classList.contains('dark');
+
+                const textColor = isDarkMode
+                    ? '#d4d4d8'
+                    : '#4b5563';
+
                 const gridColor = isDarkMode
                     ? 'rgba(115, 115, 115, 0.22)'
                     : 'rgba(209, 213, 219, 0.55)';
 
-                Chart.defaults.color = textColor;
-                Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, sans-serif';
+                window.Chart.defaults.color = textColor;
+
+                window.Chart.defaults.font.family =
+                    'Inter, ui-sans-serif, system-ui, sans-serif';
 
                 const currencyFormatter = (value) => {
                     return '₹ ' + new Intl.NumberFormat('en-IN', {
@@ -1531,18 +1643,27 @@
                 };
 
                 const commonTooltip = {
-                    backgroundColor: isDarkMode ? '#171717' : '#111827',
+                    backgroundColor: isDarkMode
+                        ? '#171717'
+                        : '#111827',
                     padding: 12,
                     cornerRadius: 10,
                     titleSpacing: 6,
                     bodySpacing: 6
                 };
 
+                /*
+                |--------------------------------------------------------------------------
+                | Sales and purchase trend
+                |--------------------------------------------------------------------------
+                */
                 if (trendCanvas) {
-                    new Chart(trendCanvas, {
+                    new window.Chart(trendCanvas, {
                         type: 'line',
+
                         data: {
                             labels: chartData.labels,
+
                             datasets: [
                                 {
                                     label: 'Sales',
@@ -1568,44 +1689,61 @@
                                 }
                             ]
                         },
+
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+
                             interaction: {
                                 mode: 'index',
                                 intersect: false
                             },
+
                             plugins: {
                                 legend: {
                                     position: 'top',
                                     align: 'end',
+
                                     labels: {
                                         usePointStyle: true,
                                         boxWidth: 8,
                                         padding: 18
                                     }
                                 },
+
                                 tooltip: {
                                     ...commonTooltip,
+
                                     callbacks: {
                                         label(context) {
-                                            return context.dataset.label + ': ' + currencyFormatter(context.raw);
+                                            return context.dataset.label
+                                                + ': '
+                                                + currencyFormatter(context.raw);
                                         }
                                     }
                                 }
                             },
+
                             scales: {
                                 x: {
-                                    grid: { display: false },
+                                    grid: {
+                                        display: false
+                                    },
+
                                     ticks: {
                                         maxRotation: 0,
                                         autoSkip: true,
                                         maxTicksLimit: 10
                                     }
                                 },
+
                                 y: {
                                     beginAtZero: true,
-                                    grid: { color: gridColor },
+
+                                    grid: {
+                                        color: gridColor
+                                    },
+
                                     ticks: {
                                         callback(value) {
                                             return currencyFormatter(value);
@@ -1617,46 +1755,71 @@
                     });
                 }
 
+                /*
+                |--------------------------------------------------------------------------
+                | Payment collection
+                |--------------------------------------------------------------------------
+                */
                 if (paymentCanvas) {
-                    const paymentValues = chartData.payments.map(Number);
-                    const hasPaymentData = paymentValues.some((value) => value > 0);
+                    const paymentValues = (
+                        chartData.payments || [0, 0]
+                    ).map(Number);
 
-                    new Chart(paymentCanvas, {
+                    const hasPaymentData = paymentValues.some(
+                        (value) => value > 0
+                    );
+
+                    new window.Chart(paymentCanvas, {
                         type: 'doughnut',
+
                         data: {
                             labels: hasPaymentData
                                 ? ['Collected', 'Pending']
                                 : ['No data'],
-                            datasets: [{
-                                data: hasPaymentData ? paymentValues : [1],
-                                backgroundColor: hasPaymentData
-                                    ? ['#10b981', '#f43f5e']
-                                    : ['#d1d5db'],
-                                borderWidth: 0,
-                                hoverOffset: 7
-                            }]
+
+                            datasets: [
+                                {
+                                    data: hasPaymentData
+                                        ? paymentValues
+                                        : [1],
+
+                                    backgroundColor: hasPaymentData
+                                        ? ['#10b981', '#f43f5e']
+                                        : ['#d1d5db'],
+
+                                    borderWidth: 0,
+                                    hoverOffset: 7
+                                }
+                            ]
                         },
+
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
                             cutout: '68%',
+
                             plugins: {
                                 legend: {
                                     position: 'bottom',
+
                                     labels: {
                                         usePointStyle: true,
                                         padding: 18
                                     }
                                 },
+
                                 tooltip: {
                                     ...commonTooltip,
+
                                     callbacks: {
                                         label(context) {
                                             if (!hasPaymentData) {
                                                 return 'No payment data';
                                             }
 
-                                            return context.label + ': ' + currencyFormatter(context.raw);
+                                            return context.label
+                                                + ': '
+                                                + currencyFormatter(context.raw);
                                         }
                                     }
                                 }
@@ -1665,27 +1828,50 @@
                     });
                 }
 
+                /*
+                |--------------------------------------------------------------------------
+                | Stock status
+                |--------------------------------------------------------------------------
+                */
                 if (stockCanvas) {
-                    new Chart(stockCanvas, {
+                    new window.Chart(stockCanvas, {
                         type: 'bar',
+
                         data: {
-                            labels: ['Healthy Stock', 'Low Stock', 'Out of Stock'],
-                            datasets: [{
-                                label: 'Items',
-                                data: chartData.stock,
-                                backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
-                                borderRadius: 10,
-                                borderSkipped: false,
-                                maxBarThickness: 72
-                            }]
+                            labels: [
+                                'Healthy Stock',
+                                'Low Stock',
+                                'Out of Stock'
+                            ],
+
+                            datasets: [
+                                {
+                                    label: 'Items',
+                                    data: chartData.stock || [0, 0, 0],
+                                    backgroundColor: [
+                                        '#22c55e',
+                                        '#f59e0b',
+                                        '#ef4444'
+                                    ],
+                                    borderRadius: 10,
+                                    borderSkipped: false,
+                                    maxBarThickness: 72
+                                }
+                            ]
                         },
+
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+
                             plugins: {
-                                legend: { display: false },
+                                legend: {
+                                    display: false
+                                },
+
                                 tooltip: {
                                     ...commonTooltip,
+
                                     callbacks: {
                                         label(context) {
                                             return context.raw + ' item(s)';
@@ -1693,40 +1879,117 @@
                                     }
                                 }
                             },
+
                             scales: {
                                 x: {
-                                    grid: { display: false }
+                                    grid: {
+                                        display: false
+                                    }
                                 },
+
                                 y: {
                                     beginAtZero: true,
-                                    ticks: { precision: 0 },
-                                    grid: { color: gridColor }
+
+                                    ticks: {
+                                        precision: 0
+                                    },
+
+                                    grid: {
+                                        color: gridColor
+                                    }
                                 }
                             }
                         }
                     });
                 }
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Safe boot with retry after DOM replacement
+            |--------------------------------------------------------------------------
+            */
+            window.bootDashboardCharts = function () {
+                const dashboardCanvasExists =
+                    document.getElementById('salesPurchaseTrendChart')
+                    || document.getElementById('paymentCollectionChart')
+                    || document.getElementById('stockStatusChart');
+
+                if (!dashboardCanvasExists) {
+                    return;
+                }
+
+                window.loadDashboardChartJs()
+                    .then(() => {
+                        /*
+                        | Livewire/Flux ko DOM paint aur layout complete karne dein.
+                        */
+                        window.requestAnimationFrame(() => {
+                            window.requestAnimationFrame(() => {
+                                window.initializeDashboardCharts();
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error(
+                            'Dashboard chart initialization failed:',
+                            error
+                        );
+                    });
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Remove previously registered global listeners
+            |--------------------------------------------------------------------------
+            | Page script wire:navigate par dobara evaluate ho sakti hai.
+            */
+            if (window.dashboardNavigatedHandler) {
+                document.removeEventListener(
+                    'livewire:navigated',
+                    window.dashboardNavigatedHandler
+                );
             }
 
-            function bootDashboardCharts() {
-                // wire:navigate ke DOM replacement ko complete hone dein.
-                window.requestAnimationFrame(() => {
-                    window.requestAnimationFrame(initializeDashboardCharts);
-                });
+            if (window.dashboardNavigatingHandler) {
+                document.removeEventListener(
+                    'livewire:navigating',
+                    window.dashboardNavigatingHandler
+                );
             }
 
-            // Normal refresh.
+            window.dashboardNavigatedHandler = () => {
+                window.bootDashboardCharts();
+            };
+
+            window.dashboardNavigatingHandler = () => {
+                window.destroyDashboardCharts();
+            };
+
+            document.addEventListener(
+                'livewire:navigated',
+                window.dashboardNavigatedHandler
+            );
+
+            document.addEventListener(
+                'livewire:navigating',
+                window.dashboardNavigatingHandler
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | First normal page load and first wire:navigate visit
+            |--------------------------------------------------------------------------
+            */
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', bootDashboardCharts, { once: true });
+                document.addEventListener(
+                    'DOMContentLoaded',
+                    window.bootDashboardCharts,
+                    { once: true }
+                );
             } else {
-                bootDashboardCharts();
+                window.bootDashboardCharts();
             }
-
-            // Flux/Livewire wire:navigate ke baad.
-            document.addEventListener('livewire:navigated', bootDashboardCharts);
-
-            // Page leave hone se pehle old Chart instances clear karein.
-            document.addEventListener('livewire:navigating', destroyDashboardCharts);
         })();
     </script>
 
