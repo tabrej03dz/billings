@@ -250,7 +250,7 @@ class BusinessController extends Controller
             ],
 
             'rounding_mode' => [
-                'required',
+                'nullable',
                 Rule::in([
                     'none',
                     'nearest',
