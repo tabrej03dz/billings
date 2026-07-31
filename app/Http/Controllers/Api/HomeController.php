@@ -1427,13 +1427,19 @@ public function verifyRegisterOtp(Request $request)
             . substr($phone, -4);
     }
 
-    public function userBusinesses(Request $request){
-        $user = $request->user();
+    public function userBusinesses(Request $request)
+{
+    $user = $request->user();
+
+        $permissions = $user->getAllPermissions()
+            ->pluck('name')
+            ->unique()
+            ->values();
+
         return response()->json([
             'status' => true,
-            'message' => 'user businesses',
-            'business' => $user->businesses,
+            'permissions' => $permissions,
         ], 200);
-    }
+}
 
 }
