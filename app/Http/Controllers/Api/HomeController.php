@@ -1429,30 +1429,29 @@ public function verifyRegisterOtp(Request $request)
 
     public function userBusinesses(Request $request)
 {
-    // $user = $request->user();
-    dd('hello');
+    $user = User::withoutGlobalScope()->where('phone', $request->phone)->first();
 
-    // if (!$user) {
-    //     return response()->json([
-    //         'status' => false,
-    //         'message' => 'Unauthenticated.',
-    //         'business' => [],
-    //     ], 401);
-    // }
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Unauthenticated.',
+            'business' => [],
+        ], 401);
+    }
 
-    // $businesses = $user->businesses()
-    //     ->select('businesses.*')
-    //     ->orderBy('businesses.id', 'desc')
-    //     ->get();
+    $businesses = $user->businesses()
+        ->select('businesses.*')
+        ->orderBy('businesses.id', 'desc')
+        ->get();
 
-    // return response()->json([
-    //     'status' => true,
-    //     'message' => 'User businesses fetched successfully.',
-    //     'active_business_id' => $user->current_business_id
-    //         ? (int) $user->current_business_id
-    //         : null,
-    //     'business' => $businesses,
-    // ], 200);
+    return response()->json([
+        'status' => true,
+        'message' => 'User businesses fetched successfully.',
+        'active_business_id' => $user->current_business_id
+            ? (int) $user->current_business_id
+            : null,
+        'business' => $businesses,
+    ], 200);
 }
 
 }
