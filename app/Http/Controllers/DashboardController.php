@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+public function index(Request $request)
     {
         $user = $request->user();
 
@@ -444,18 +444,30 @@ class DashboardController extends Controller
         | Item and stock totals
         |--------------------------------------------------------------------------
         */
+        $lowStockLimit = 5;
 
         $totalItems = (clone $itemQ)->count();
 
         $totalStockQty = 0;
+        $healthyStockCount = 0;
         $lowStockCount = 0;
+        $outOfStockCount = 0;
 
         if (!$isServiceBusiness) {
             $totalStockQty = (clone $itemQ)
                 ->sum('stock_qty');
 
+            $healthyStockCount = (clone $itemQ)
+                ->where('stock_qty', '>', $lowStockLimit)
+                ->count();
+
             $lowStockCount = (clone $itemQ)
-                ->where('stock_qty', '<=', 2)
+                ->where('stock_qty', '>', 0)
+                ->where('stock_qty', '<=', $lowStockLimit)
+                ->count();
+
+            $outOfStockCount = (clone $itemQ)
+                ->where('stock_qty', '<=', 0)
                 ->count();
         }
 
@@ -556,14 +568,15 @@ class DashboardController extends Controller
         | Low stock items
         |--------------------------------------------------------------------------
         */
-
         $lowStockItems = collect();
 
         if (!$isServiceBusiness) {
             $lowStockItems = (clone $itemQ)
                 ->with('category')
-                ->where('stock_qty', '<=', 5)
+                ->where('stock_qty', '>', 0)
+                ->where('stock_qty', '<=', $lowStockLimit)
                 ->orderBy('stock_qty')
+                ->orderBy('name')
                 ->limit(5)
                 ->get();
         }
@@ -645,30 +658,11 @@ class DashboardController extends Controller
         ];
 
         /* Stock overview chart */
-        $outOfStockCount = 0;
-        $healthyStockCount = 0;
-        $chartLowStockCount = 0;
-        $stockChartData = [0, 0, 0];
-
-        if (!$isServiceBusiness) {
-            $outOfStockCount = (clone $itemQ)
-                ->where('stock_qty', '<=', 0)
-                ->count();
-
-            $healthyStockCount = (clone $itemQ)
-                ->where('stock_qty', '>', 5)
-                ->count();
-
-            $chartLowStockCount = (clone $itemQ)
-                ->whereBetween('stock_qty', [1, 5])
-                ->count();
-
-            $stockChartData = [
-                $healthyStockCount,
-                $chartLowStockCount,
-                $outOfStockCount,
-            ];
-        }
+        $stockChartData = [
+            $healthyStockCount,
+            $lowStockCount,
+            $outOfStockCount,
+        ];
 
         /*
         |--------------------------------------------------------------------------
@@ -724,7 +718,10 @@ class DashboardController extends Controller
 
             'totalItems',
             'totalStockQty',
+            'lowStockLimit',
+            'healthyStockCount',
             'lowStockCount',
+            'outOfStockCount',
 
             'todayMetalRates',
             'goldPurities',
@@ -751,9 +748,6 @@ class DashboardController extends Controller
             'stockChartData',
             'filteredCollectedAmount',
             'filteredPendingAmount',
-            'healthyStockCount',
-            'chartLowStockCount',
-            'outOfStockCount'
         ));
     }
 }

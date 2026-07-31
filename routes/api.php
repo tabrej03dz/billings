@@ -691,17 +691,13 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
             ->middleware('permission:show plan');
     });
 
-    Route::get('/my-plans', [PlanController::class, 'myPlans'])
-        ->middleware('permission:show user plan');
+    Route::get('/my-plans', [PlanController::class, 'myPlans']);
 
-    Route::get('/choose-plans', [PlanController::class, 'choose'])
-        ->middleware('permission:show user plan');
+    Route::get('/choose-plans', [PlanController::class, 'choose']);
 
-    Route::post('/choose-plan-save', [PlanController::class, 'choosenSave'])
-        ->middleware('permission:show user plan');
+    Route::post('/choose-plan-save', [PlanController::class, 'choosenSave']);
 
-    Route::get('/my-active-plan', [PlanPaymentController::class, 'myActivePlan'])
-        ->middleware('permission:show user plan');
+    Route::get('/my-active-plan', [PlanPaymentController::class, 'myActivePlan']);
 
     Route::get('/banner-sliders', [BannerSliderController::class, 'index']);
 

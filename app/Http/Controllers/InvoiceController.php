@@ -216,18 +216,35 @@ class InvoiceController extends Controller
     |--------------------------------------------------------------------------
     */
     if (!empty($status)) {
-        if ($status === 'paid') {
-            $query->where('balance', '<=', 0);
-        } elseif ($status === 'unpaid') {
-            $query->where(
-                'received_amount',
-                '<=',
-                0
-            );
-        } elseif ($status === 'partial') {
-            $query
-                ->where('received_amount', '>', 0)
-                ->where('balance', '>', 0);
+        switch ($status) {
+            case 'paid':
+                // Fully paid invoices
+                $query->where('balance', '<=', 0);
+                break;
+
+            case 'pending':
+                // All invoices having pending balance:
+                // includes unpaid + partially paid invoices
+                $query->where('balance', '>', 0);
+                break;
+
+            case 'unpaid':
+                // No payment received yet and balance is pending
+                $query
+                    ->where(function ($paymentQuery) {
+                        $paymentQuery
+                            ->whereNull('received_amount')
+                            ->orWhere('received_amount', '<=', 0);
+                    })
+                    ->where('balance', '>', 0);
+                break;
+
+            case 'partial':
+                // Some payment received, but balance is still pending
+                $query
+                    ->where('received_amount', '>', 0)
+                    ->where('balance', '>', 0);
+                break;
         }
     }
 
@@ -295,146 +312,6 @@ class InvoiceController extends Controller
 }
 
 
-    // public function create(Request $request, $type = 'proforma')
-    // {
-    //     $today = now()->toDateString();
-
-    //     // ✅ detect doc type from route OR query
-    //     $docType = strtolower(trim((string)$type));
-    //     if (!in_array($docType, ['tax','proforma','quotation'], true)) {
-    //         $docType = 'proforma';
-    //     }
-
-    //     // Active business resolve
-    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
-    //     if (!$bid) {
-    //         $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-    //     }
-
-    //     // $business = Business::findOrFail($bid);
-
-    //     $business = Business::with('businessType.itemFields')->findOrFail($bid);
-
-    //     $allowedFields = [];
-
-    //     if ($business && $business->businessType) {
-    //         $allowedFields = $business->businessType->itemFields
-    //             ->pluck('field_name')
-    //             ->toArray();
-    //     }
-
-    //     // ✅ base prefix (tax => business setting, proforma => PF, quotation => QT)
-    //     $taxBase = optional(
-    //             $request->user()->businesses()->where('businesses.id', $bid)->first()
-    //         )->invoice_base_prefix ?? 'RV/SL';
-
-    //     if ($docType === 'proforma') {
-    //         $base = 'PF';
-    //     } elseif ($docType === 'quotation') {
-    //         $base = 'QT';
-    //     } else {
-    //         $base = $taxBase;
-    //     }
-
-    //     $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix($today, $base);
-
-    //     // ✅ Clients
-    //     $clients = Client::where('business_id', $bid)->where('is_save', true)
-    //         ->orderBy('name')
-    //         ->get(['id','name','mobile','address','state','state_code','gstin']);
-
-    //     // ✅ Items
-
-    //     $items = Item::where('items.business_id', $bid)
-    //     ->where('items.is_active', true)
-    //     ->leftJoin('invoice_items', 'items.id', '=', 'invoice_items.item_id')
-    //     ->select(
-    //         'items.id',
-    //         'items.name',
-    //         'items.type',
-    //         'items.sku',
-    //         'items.barcode',
-    //         'items.description',
-    //         'items.tax_rate',
-    //         'items.making_charge',
-    //         'items.sac',
-    //         'items.gold_weight',
-    //         'items.gold_purity',
-    //         'items.silver_weight',
-    //         'items.silver_purity',
-    //         'items.stone_weight',
-    //         'items.stone_charges',
-    //         'items.diamond_weight',
-    //         'items.making_charge_type',
-    //         'items.making_charge',
-    //         'items.price',
-    //         DB::raw('COALESCE(SUM(invoice_items.quantity),0) as total_sold')
-    //     )
-    //     ->groupBy(
-    //         'items.id',
-    //         'items.name',
-    //         'items.type',
-    //         'items.sku',
-    //         'items.barcode',
-    //         'items.description',
-    //         'items.tax_rate',
-    //         'items.making_charge',
-    //         'items.sac',
-    //         'items.gold_weight',
-    //         'items.gold_purity',
-    //         'items.silver_weight',
-    //         'items.silver_purity',
-    //         'items.stone_weight',
-    //         'items.stone_charges',
-    //         'items.diamond_weight',
-    //         'items.diamond_charges',
-    //         'items.price',
-    //         'items.making_charge_type',
-    //         'items.making_charge',
-    //     )
-    //     ->orderByDesc('total_sold') // 🔥 Most sold first
-    //     ->get();
-
-    //     $categories = Category::where('business_id', $bid)
-    //         ->orderBy('name')
-    //         ->get(['id', 'name']);
-    //     // ✅ Metal rates
-    //     $metalRates = MetalRate::where('business_id', $bid)
-    //         ->whereDate('rate_date', $today)
-    //         ->where('is_active', true)
-    //         ->get(['metal_type','purity','rate_per_gram']);
-
-    //     // ✅ preview number (tax/proforma/quotation different sequence)
-    //     $preview = \App\Services\InvoiceNumber::peek($bid, $today, $suggestedPrefix, 3, $docType);
-
-    //     $banks = BankAccount::where('business_id', $bid)
-    //         ->orderBy('bank_name')
-    //         ->get(['id','bank_name','account_holder','account_no','ifsc']);
-
-    //     return view('invoices.create_kapoor_style', [
-    //         'today'              => $today,
-    //         'clientsJson'        => $clients->values()->toJson(),
-    //         'itemsJson'          => $items->values()->toJson(),
-    //         'categoriesJson' => $categories->values()->toJson(),
-    //         'metalRatesJson'     => $metalRates->values()->toJson(),
-    //         'banksJson'          => $banks->values()->toJson(),
-
-    //         'suggestedPrefix'    => $suggestedPrefix,
-    //         'basePrefix'         => $base,
-    //         'initialInvoiceNo'   => $preview['full'] ?? 'Auto',
-    //         'defaultTerms'       => $business->terms,
-
-    //         'businessState'      => $business->state,
-    //         'businessStateCode'  => $business->state_code,
-    //         'businessGstin'      => $business->gstin,
-    //         'businessName'      => $business->name,
-    //         'businessSignature'  => $business->signature,
-
-    //         // ✅ NEW
-    //         'docType'            => $docType,
-    //         'allowedFields' => $allowedFields,
-    //     ]);
-    // }
 
     public function create(Request $request, $type = 'proforma')
 {

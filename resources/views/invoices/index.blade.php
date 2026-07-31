@@ -493,17 +493,49 @@
                    class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
 
-        {{-- Status --}}
         <div>
             <label class="block text-xs font-medium text-gray-600 dark:text-neutral-300 mb-1">
                 Status
             </label>
-            <select name="status"
-                    class="block w-full rounded-md border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
-                <option value="">All</option>
-                <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Paid</option>
-                <option value="partial" {{ request('status') === 'partial' ? 'selected' : '' }}>Partially Paid</option>
-                <option value="unpaid" {{ request('status') === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
+
+            <select
+                name="status"
+                class="block w-full rounded-md border-gray-300
+                    dark:border-neutral-700 dark:bg-neutral-800
+                    dark:text-neutral-100 text-sm
+                    focus:ring-blue-500 focus:border-blue-500"
+            >
+                <option value="">
+                    All Payment Status
+                </option>
+
+                <option
+                    value="pending"
+                    {{ request('status') === 'pending' ? 'selected' : '' }}
+                >
+                    All Pending
+                </option>
+
+                <option
+                    value="paid"
+                    {{ request('status') === 'paid' ? 'selected' : '' }}
+                >
+                    Paid
+                </option>
+
+                <option
+                    value="partial"
+                    {{ request('status') === 'partial' ? 'selected' : '' }}
+                >
+                    Partially Paid
+                </option>
+
+                <option
+                    value="unpaid"
+                    {{ request('status') === 'unpaid' ? 'selected' : '' }}
+                >
+                    Unpaid
+                </option>
             </select>
         </div>
 

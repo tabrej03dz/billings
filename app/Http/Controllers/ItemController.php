@@ -16,115 +16,193 @@ use Illuminate\Validation\Rule;
 class ItemController extends Controller
 {
 
-    public function index(Request $request)
-    {
-        $user = $request->user();
+public function index(Request $request)
+{
+    $user = $request->user();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Active business resolve
-        |--------------------------------------------------------------------------
-        */
-        $businessId = $user->current_business_id
-            ?? session('active_business_id');
+    /*
+    |--------------------------------------------------------------------------
+    | Active business resolve
+    |--------------------------------------------------------------------------
+    */
+    $businessId = $user->current_business_id
+        ?? session('active_business_id');
 
-        if (!$businessId) {
-            $businessId = $user->businesses()
-                ->pluck('businesses.id')
-                ->first();
-        }
+    if (!$businessId) {
+        $businessId = $user->businesses()
+            ->pluck('businesses.id')
+            ->first();
+    }
 
-        if (!$businessId) {
-            return back()->withErrors([
-                'business' => 'Active business select/attach नहीं है.',
-            ]);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Filters
-        |--------------------------------------------------------------------------
-        */
-        $q = trim((string) $request->get('q', ''));
-
-        $categoryId = $request->integer('category_id');
-
-        $active = $request->get('active');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Items query
-        |--------------------------------------------------------------------------
-        */
-        $itemsQuery = Item::query()
-            ->where('business_id', $businessId)
-            ->with('category:id,name')
-            ->when($q !== '', function ($query) use ($q) {
-                $query->where(function ($searchQuery) use ($q) {
-                    $searchQuery
-                        ->where('name', 'like', "%{$q}%")
-                        ->orWhere('sku', 'like', "%{$q}%")
-                        ->orWhere('barcode', 'like', "%{$q}%")
-                        ->orWhere('description', 'like', "%{$q}%");
-                });
-            })
-            ->when(
-                $categoryId,
-                fn ($query) => $query->where(
-                    'category_id',
-                    $categoryId
-                )
-            )
-            ->when(
-                $active !== null && $active !== '',
-                fn ($query) => $query->where(
-                    'is_active',
-                    (int) $active
-                )
-            );
-
-        $items = $itemsQuery
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Categories
-        |--------------------------------------------------------------------------
-        */
-        $categories = Category::query()
-            ->where('business_id', $businessId)
-            ->orderBy('name')
-            ->get([
-                'id',
-                'name',
-            ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Suggestion visibility
-        |--------------------------------------------------------------------------
-        | Current business me 5 se kam items hone tak guide dikhega.
-        */
-        $currentItemCount = Item::query()
-            ->where('business_id', $businessId)
-            ->count();
-
-        $showItemSuggestion = $currentItemCount < 5;
-
-        return view('items.index', [
-            'items'              => $items,
-            'categories'         => $categories,
-            'q'                  => $q,
-            'category_id'        => $categoryId,
-            'active'             => $active,
-
-            'currentItemCount'   => $currentItemCount,
-            'showItemSuggestion' => $showItemSuggestion,
-            'activeBusinessId'   => $businessId,
+    if (!$businessId) {
+        return back()->withErrors([
+            'business' => 'Active business select/attach नहीं है.',
         ]);
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filters
+    |--------------------------------------------------------------------------
+    */
+    $q = trim((string) $request->query('q', ''));
+
+    $categoryId = $request->integer('category_id');
+
+    $active = $request->query('active');
+
+    $stockStatus = strtolower(
+        trim((string) $request->query('stock_status', ''))
+    );
+
+    $allowedStockStatuses = [
+        'in_stock',
+        'low_stock',
+        'out_of_stock',
+    ];
+
+    if (!in_array($stockStatus, $allowedStockStatuses, true)) {
+        $stockStatus = '';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Common low-stock limit
+    |--------------------------------------------------------------------------
+    */
+    $lowStockLimit = 5;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Items query
+    |--------------------------------------------------------------------------
+    */
+    $itemsQuery = Item::query()
+        ->where('business_id', $businessId)
+        ->with('category:id,name')
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+        ->when($q !== '', function ($query) use ($q) {
+            $query->where(function ($searchQuery) use ($q) {
+                $searchQuery
+                    ->where('name', 'like', "%{$q}%")
+                    ->orWhere('sku', 'like', "%{$q}%")
+                    ->orWhere('barcode', 'like', "%{$q}%")
+                    ->orWhere('description', 'like', "%{$q}%");
+            });
+        })
+
+        /*
+        |--------------------------------------------------------------------------
+        | Category
+        |--------------------------------------------------------------------------
+        */
+        ->when(
+            $categoryId > 0,
+            fn ($query) => $query->where(
+                'category_id',
+                $categoryId
+            )
+        )
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active status
+        |--------------------------------------------------------------------------
+        */
+        ->when(
+            $active !== null && $active !== '',
+            fn ($query) => $query->where(
+                'is_active',
+                (int) $active
+            )
+        )
+
+        /*
+        |--------------------------------------------------------------------------
+        | Healthy stock
+        |--------------------------------------------------------------------------
+        */
+        ->when(
+            $stockStatus === 'in_stock',
+            fn ($query) => $query
+                ->where('stock_qty', '>', $lowStockLimit)
+        )
+
+        /*
+        |--------------------------------------------------------------------------
+        | Low stock
+        |--------------------------------------------------------------------------
+        */
+        ->when(
+            $stockStatus === 'low_stock',
+            fn ($query) => $query
+                ->where('stock_qty', '>', 0)
+                ->where('stock_qty', '<=', $lowStockLimit)
+        )
+
+        /*
+        |--------------------------------------------------------------------------
+        | Out of stock
+        |--------------------------------------------------------------------------
+        */
+        ->when(
+            $stockStatus === 'out_of_stock',
+            fn ($query) => $query
+                ->where('stock_qty', '<=', 0)
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    */
+    $items = $itemsQuery
+        ->orderByDesc('id')
+        ->paginate(15)
+        ->withQueryString();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Categories
+    |--------------------------------------------------------------------------
+    */
+    $categories = Category::query()
+        ->where('business_id', $businessId)
+        ->orderBy('name')
+        ->get([
+            'id',
+            'name',
+        ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Suggestion visibility
+    |--------------------------------------------------------------------------
+    */
+    $currentItemCount = Item::query()
+        ->where('business_id', $businessId)
+        ->count();
+
+    $showItemSuggestion = $currentItemCount < 5;
+
+    return view('items.index', [
+        'items'              => $items,
+        'categories'         => $categories,
+        'q'                  => $q,
+        'category_id'        => $categoryId,
+        'active'             => $active,
+        'stockStatus'        => $stockStatus,
+        'lowStockLimit'      => $lowStockLimit,
+        'currentItemCount'   => $currentItemCount,
+        'showItemSuggestion' => $showItemSuggestion,
+        'activeBusinessId'   => $businessId,
+    ]);
+}
 
 
     // public function create()

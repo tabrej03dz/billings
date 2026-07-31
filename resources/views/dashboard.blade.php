@@ -593,32 +593,165 @@
             </div>
 
             {{-- Pending Amount --}}
-            <div class="bg-[#bc5b6a] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-red-50 dark:text-red-50 uppercase tracking-wider">
-                    Pending Amount
-                </p>
-                <p class="mt-1 text-lg font-bold text-red-50 dark:text-red-50 leading-none">
-                    ₹ {{ number_format($totalPendingAmount ?? 0, 2) }}
-                </p>
-                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
-                    Today: ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
-                </p>
+            <div
+                class="overflow-hidden rounded-lg border border-gray-200
+                    bg-[#bc5b6a] shadow-sm
+                    dark:border-neutral-700 dark:bg-[#3C3433]"
+            >
+                {{-- All Pending Invoices --}}
+                <a
+                    href="{{ route('invoices.index', [
+                        'type'   => 'tax',
+                        'status' => 'pending',
+                    ]) }}"
+                    class="group block p-3 transition
+                        hover:bg-black/10
+                        focus:outline-none focus:ring-2
+                        focus:ring-inset focus:ring-white/70"
+                    title="View all pending invoices"
+                >
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p
+                                class="text-[10px] font-semibold uppercase
+                                    tracking-wider text-red-50"
+                            >
+                                Pending Amount
+                            </p>
+
+                            <p
+                                class="mt-1 text-lg font-bold leading-none
+                                    text-red-50"
+                            >
+                                ₹ {{ number_format($totalPendingAmount ?? 0, 2) }}
+                            </p>
+                        </div>
+
+                        <svg
+                            class="h-5 w-5 text-white/70 transition
+                                group-hover:translate-x-1
+                                group-hover:text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+                    </div>
+
+                    <p class="mt-2 text-[10px] font-medium text-white/80">
+                        Click to view all pending invoices
+                    </p>
+                </a>
+
+                {{-- Today's Pending Invoices --}}
+                <a
+                    href="{{ route('invoices.index', [
+                        'type'      => 'tax',
+                        'status'    => 'pending',
+                        'from_date' => now()->toDateString(),
+                        'to_date'   => now()->toDateString(),
+                    ]) }}"
+                    class="flex items-center justify-between border-t
+                        border-white/20 px-3 py-2
+                        text-[11px] text-gray-50 transition
+                        hover:bg-black/10"
+                    title="View today's pending invoices"
+                >
+                    <span>Today Pending</span>
+
+                    <span class="font-bold">
+                        ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
+                    </span>
+                </a>
             </div>
             @unless($isServiceBusiness ?? false)
                 {{-- Items / Stock --}}
-                <div class="bg-[#ffd055] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border p-3 shadow-sm">
-                    <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-50 uppercase tracking-wider">
-                        Items / Stock
-                    </p>
-                    <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
-                        {{ number_format($totalItems ?? 0) }} items
-                    </p>
-                    <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
-                        Stock: {{ number_format($totalStockQty ?? 0) }} • Low:
-                        <span class="p-2 font-semibold text-red-50 dark:text-[#E5533D]">
-                            {{ $lowStockCount ?? 0 }}
-                        </span>
-                    </p>
+                <div
+                    class="overflow-hidden rounded-lg border border-gray-200
+                           bg-[#ffd055] shadow-sm
+                           dark:border-neutral-700 dark:bg-[#3C3433]"
+                >
+                    {{-- All Items --}}
+                    <a
+                        href="{{ route('items.index') }}"
+                        class="group block p-3 transition hover:bg-black/10"
+                        title="View all items"
+                    >
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-white">
+                                    Items / Stock
+                                </p>
+
+                                <p class="mt-1 text-lg font-bold leading-none text-white">
+                                    {{ number_format($totalItems ?? 0) }} items
+                                </p>
+                            </div>
+
+                            <svg
+                                class="h-5 w-5 text-white/70 transition
+                                       group-hover:translate-x-1 group-hover:text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+                        </div>
+
+                        <p class="mt-2 text-[10px] text-white/80">
+                            Total quantity:
+                            <strong>{{ number_format($totalStockQty ?? 0) }}</strong>
+                        </p>
+                    </a>
+
+                    <div class="grid grid-cols-3 border-t border-white/20 text-center">
+                        <a
+                            href="{{ route('items.index', ['stock_status' => 'in_stock']) }}"
+                            class="border-r border-white/20 px-2 py-2
+                                   text-white transition hover:bg-black/10"
+                            title="View healthy-stock items"
+                        >
+                            <span class="block text-[10px] text-white/75">Healthy</span>
+                            <span class="mt-1 block text-sm font-bold">
+                                {{ number_format($healthyStockCount ?? 0) }}
+                            </span>
+                        </a>
+
+                        <a
+                            href="{{ route('items.index', ['stock_status' => 'low_stock']) }}"
+                            class="border-r border-white/20 px-2 py-2
+                                   text-white transition hover:bg-black/10"
+                            title="View low-stock items"
+                        >
+                            <span class="block text-[10px] text-white/75">Low</span>
+                            <span class="mt-1 block text-sm font-bold text-red-100">
+                                {{ number_format($lowStockCount ?? 0) }}
+                            </span>
+                        </a>
+
+                        <a
+                            href="{{ route('items.index', ['stock_status' => 'out_of_stock']) }}"
+                            class="px-2 py-2 text-white transition hover:bg-black/10"
+                            title="View out-of-stock items"
+                        >
+                            <span class="block text-[10px] text-white/75">Out</span>
+                            <span class="mt-1 block text-sm font-bold text-red-100">
+                                {{ number_format($outOfStockCount ?? 0) }}
+                            </span>
+                        </a>
+                    </div>
                 </div>
             @endunless
 
@@ -678,41 +811,146 @@
                         </p>
                     </div>
 
-                    <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/30">
+                    {{-- <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/30">
                         <p class="text-[11px] font-semibold uppercase text-rose-700 dark:text-rose-300">
                             Pending
                         </p>
                         <p class="mt-1 text-sm font-bold text-rose-800 dark:text-rose-200">
                             ₹ {{ number_format($filteredPendingAmount ?? 0, 2) }}
                         </p>
-                    </div>
+                    </div> --}}
+
+                    <a
+                        href="{{ route('invoices.index', [
+                            'type'      => 'tax',
+                            'status'    => 'pending',
+                            'from_date' => isset($from)
+                                ? \Carbon\Carbon::parse($from)->toDateString()
+                                : null,
+                            'to_date'   => isset($to)
+                                ? \Carbon\Carbon::parse($to)->toDateString()
+                                : null,
+                        ]) }}"
+                        class="group rounded-xl bg-rose-50 p-3
+                            text-center transition
+                            hover:bg-rose-100 hover:shadow-sm
+                            dark:bg-rose-950/30
+                            dark:hover:bg-rose-950/50"
+                        title="View pending invoices for selected date range"
+                    >
+                        <div class="flex items-center justify-center gap-1">
+                            <p
+                                class="text-[11px] font-semibold uppercase
+                                    text-rose-700 dark:text-rose-300"
+                            >
+                                Pending
+                            </p>
+
+                            <svg
+                                class="h-3.5 w-3.5 text-rose-600 transition
+                                    group-hover:translate-x-0.5
+                                    dark:text-rose-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+                        </div>
+
+                        <p
+                            class="mt-1 text-sm font-bold
+                                text-rose-800 dark:text-rose-200"
+                        >
+                            ₹ {{ number_format($filteredPendingAmount ?? 0, 2) }}
+                        </p>
+                    </a>
                 </div>
             </div>
         </section>
 
         @unless($isServiceBusiness ?? false)
-        {{-- STOCK STATUS CHART --}}
-        <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
-            <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-gray-900 dark:text-white">
-                        Stock Status Overview
-                    </h2>
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
-                        Healthy, low-stock aur out-of-stock items
-                    </p>
+            {{-- STOCK STATUS CHART --}}
+            <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm
+                            dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+                <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                            Stock Status Overview
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Healthy, low-stock aur out-of-stock items
+                        </p>
+                    </div>
+
+                    <a
+                        href="{{ route('items.index') }}"
+                        class="mt-2 text-xs font-semibold text-indigo-600
+                               hover:underline dark:text-indigo-400 sm:mt-0"
+                    >
+                        Manage stock
+                    </a>
                 </div>
 
-                <a href="{{ route('items.index') }}"
-                   class="mt-2 text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400 sm:mt-0">
-                    Manage stock
-                </a>
-            </div>
+                <div class="relative h-[240px] w-full sm:h-[280px]">
+                    <canvas id="stockStatusChart"></canvas>
+                </div>
 
-            <div class="relative h-[240px] w-full sm:h-[280px]">
-                <canvas id="stockStatusChart"></canvas>
-            </div>
-        </section>
+                <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                    <a
+                        href="{{ route('items.index', ['stock_status' => 'in_stock']) }}"
+                        class="rounded-xl bg-emerald-50 p-3 transition
+                               hover:bg-emerald-100 hover:shadow-sm
+                               dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50"
+                    >
+                        <p class="text-[11px] font-semibold uppercase
+                                  text-emerald-700 dark:text-emerald-300">
+                            Healthy
+                        </p>
+                        <p class="mt-1 text-sm font-bold
+                                  text-emerald-800 dark:text-emerald-200">
+                            {{ number_format($healthyStockCount ?? 0) }}
+                        </p>
+                    </a>
+
+                    <a
+                        href="{{ route('items.index', ['stock_status' => 'low_stock']) }}"
+                        class="rounded-xl bg-amber-50 p-3 transition
+                               hover:bg-amber-100 hover:shadow-sm
+                               dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+                    >
+                        <p class="text-[11px] font-semibold uppercase
+                                  text-amber-700 dark:text-amber-300">
+                            Low Stock
+                        </p>
+                        <p class="mt-1 text-sm font-bold
+                                  text-amber-800 dark:text-amber-200">
+                            {{ number_format($lowStockCount ?? 0) }}
+                        </p>
+                    </a>
+
+                    <a
+                        href="{{ route('items.index', ['stock_status' => 'out_of_stock']) }}"
+                        class="rounded-xl bg-rose-50 p-3 transition
+                               hover:bg-rose-100 hover:shadow-sm
+                               dark:bg-rose-950/30 dark:hover:bg-rose-950/50"
+                    >
+                        <p class="text-[11px] font-semibold uppercase
+                                  text-rose-700 dark:text-rose-300">
+                            Out of Stock
+                        </p>
+                        <p class="mt-1 text-sm font-bold
+                                  text-rose-800 dark:text-rose-200">
+                            {{ number_format($outOfStockCount ?? 0) }}
+                        </p>
+                    </a>
+                </div>
+            </section>
         @endunless
 
         {{-- SECOND ROW: TOTALS + RATES + FORM BUTTON --}}
@@ -1086,9 +1324,9 @@
                 <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
                     Low Stock Items
                 </h2>
-                <a href="{{ route('items.index') }}"
+                <a href="{{ route('items.index', ['stock_status' => 'low_stock']) }}"
                    class="text-xs text-[#FA5252] dark:text-red-700 hover:underline">
-                    Manage items
+                    Manage low stock
                 </a>
             </div>
 
@@ -1132,6 +1370,7 @@
         @endunless
 
     </div>
+
 
 
     @if($showDashboardSuggestion ?? false)
