@@ -1429,83 +1429,29 @@ public function verifyRegisterOtp(Request $request)
 
     public function userBusinesses(Request $request)
 {
-    try {
-        $user = $request->user();
+    $user = $request->user();
 
-        if (!$user) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthenticated.',
-                'businesses' => [],
-                'active_business_id' => null,
-            ], 401);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | User ke saare businesses
-        |--------------------------------------------------------------------------
-        | Property `$user->businesses` ke badle relation query use kar rahe hain,
-        | taaki fresh database data mile.
-        */
-        $businesses = $user->businesses()
-            ->orderBy('businesses.id', 'asc')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Active business resolve
-        |--------------------------------------------------------------------------
-        */
-        $activeBusinessId = null;
-
-        if (
-            Schema::hasColumn('users', 'current_business_id') &&
-            !empty($user->current_business_id)
-        ) {
-            $candidateBusinessId = (int) $user->current_business_id;
-
-            $hasAccess = $businesses->contains(
-                fn ($business) => (int) $business->id === $candidateBusinessId
-            );
-
-            if ($hasAccess) {
-                $activeBusinessId = $candidateBusinessId;
-            }
-        }
-
-        /*
-        | current_business_id invalid/null ho to pehla owned business use hoga.
-        | Ye hardcoded business_id = 1 fallback nahi hai.
-        */
-        if (!$activeBusinessId && $businesses->isNotEmpty()) {
-            $activeBusinessId = (int) $businesses->first()->id;
-        }
-
-        return response()->json([
-            'status' => true,
-            'message' => $businesses->isEmpty()
-                ? 'No business found for this user.'
-                : 'User businesses fetched successfully.',
-
-            'active_business_id' => $activeBusinessId,
-            'total' => $businesses->count(),
-            'businesses' => $businesses,
-
-            // Purane mobile app response ko break hone se bachane ke liye
-            'business' => $businesses,
-        ], 200);
-
-    } catch (\Throwable $exception) {
-        report($exception);
-
+    if (!$user) {
         return response()->json([
             'status' => false,
-            'message' => 'Unable to fetch user businesses.',
-            'businesses' => [],
-            'active_business_id' => null,
-        ], 500);
+            'message' => 'Unauthenticated.',
+            'business' => [],
+        ], 401);
     }
+
+    $businesses = $user->businesses()
+        ->select('businesses.*')
+        ->orderBy('businesses.id', 'desc')
+        ->get();
+
+    return response()->json([
+        'status' => true,
+        'message' => 'User businesses fetched successfully.',
+        'active_business_id' => $user->current_business_id
+            ? (int) $user->current_business_id
+            : null,
+        'business' => $businesses,
+    ], 200);
 }
 
 }
