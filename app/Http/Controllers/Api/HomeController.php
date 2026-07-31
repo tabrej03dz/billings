@@ -1432,9 +1432,7 @@ public function verifyRegisterOtp(Request $request)
         return response()->json([
             'status' => true,
             'message' => 'user businesses',
-
-            'business' => $user->businesses,
-            
+            'business' => $user
         ], 200);
     }
 
