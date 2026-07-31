@@ -10,6 +10,7 @@ use App\Models\Purchase;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardController extends Controller
 {
@@ -165,6 +166,31 @@ class DashboardController extends Controller
                     'Selected business database mein available nahi hai.'
                 );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Resolve active business type
+        |--------------------------------------------------------------------------
+        |
+        | Service business ke dashboard par stock-related cards, charts aur tables
+        | nahi dikhaye jayenge. business_type_id aur old type column dono support
+        | kiye gaye hain.
+        |
+        */
+
+        $businessTypeName = '';
+
+        if (!empty($business->type)) {
+            $businessTypeName = (string) DB::table('business_types')
+                ->where('id', $business->type)
+                ->value('name');
+        }
+
+        if ($businessTypeName === '') {
+            $businessTypeName = (string) ($business->type ?? '');
+        }
+
+        $isServiceBusiness = Str::slug($businessTypeName) === 'service';
 
         /*
         |--------------------------------------------------------------------------
@@ -421,12 +447,17 @@ class DashboardController extends Controller
 
         $totalItems = (clone $itemQ)->count();
 
-        $totalStockQty = (clone $itemQ)
-            ->sum('stock_qty');
+        $totalStockQty = 0;
+        $lowStockCount = 0;
 
-        $lowStockCount = (clone $itemQ)
-            ->where('stock_qty', '<=', 2)
-            ->count();
+        if (!$isServiceBusiness) {
+            $totalStockQty = (clone $itemQ)
+                ->sum('stock_qty');
+
+            $lowStockCount = (clone $itemQ)
+                ->where('stock_qty', '<=', 2)
+                ->count();
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -526,12 +557,16 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $lowStockItems = (clone $itemQ)
-            ->with('category')
-            ->where('stock_qty', '<=', 5)
-            ->orderBy('stock_qty')
-            ->limit(5)
-            ->get();
+        $lowStockItems = collect();
+
+        if (!$isServiceBusiness) {
+            $lowStockItems = (clone $itemQ)
+                ->with('category')
+                ->where('stock_qty', '<=', 5)
+                ->orderBy('stock_qty')
+                ->limit(5)
+                ->get();
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -610,23 +645,30 @@ class DashboardController extends Controller
         ];
 
         /* Stock overview chart */
-        $outOfStockCount = (clone $itemQ)
-            ->where('stock_qty', '<=', 0)
-            ->count();
+        $outOfStockCount = 0;
+        $healthyStockCount = 0;
+        $chartLowStockCount = 0;
+        $stockChartData = [0, 0, 0];
 
-        $healthyStockCount = (clone $itemQ)
-            ->where('stock_qty', '>', 5)
-            ->count();
+        if (!$isServiceBusiness) {
+            $outOfStockCount = (clone $itemQ)
+                ->where('stock_qty', '<=', 0)
+                ->count();
 
-        $chartLowStockCount = (clone $itemQ)
-            ->whereBetween('stock_qty', [1, 5])
-            ->count();
+            $healthyStockCount = (clone $itemQ)
+                ->where('stock_qty', '>', 5)
+                ->count();
 
-        $stockChartData = [
-            $healthyStockCount,
-            $chartLowStockCount,
-            $outOfStockCount,
-        ];
+            $chartLowStockCount = (clone $itemQ)
+                ->whereBetween('stock_qty', [1, 5])
+                ->count();
+
+            $stockChartData = [
+                $healthyStockCount,
+                $chartLowStockCount,
+                $outOfStockCount,
+            ];
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -664,6 +706,8 @@ class DashboardController extends Controller
             'today',
             'business',
             'bid',
+            'businessTypeName',
+            'isServiceBusiness',
 
             'from',
             'to',

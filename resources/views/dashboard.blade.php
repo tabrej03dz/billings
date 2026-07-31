@@ -302,7 +302,11 @@
                                         <div class="min-w-0 flex-1">
                                             <h3 class="text-sm font-bold text-gray-900 dark:text-white">Add Item</h3>
                                             <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
-                                                Product ya service ka naam, rate, tax, barcode aur stock add karein.
+                                                @if($isServiceBusiness ?? false)
+                                                    Service ka naam, rate aur tax details add karein.
+                                                @else
+                                                    Product ya service ka naam, rate, tax, barcode aur stock add karein.
+                                                @endif
                                             </p>
 
                                             <div class="mt-3">
@@ -600,22 +604,23 @@
                     Today: ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
                 </p>
             </div>
-            {{-- Items / Stock --}}
-            <div class="bg-[#ffd055] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border  p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-50 uppercase tracking-wider">
-                    Items / Stock
-                </p>
-                <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
-                    {{ number_format($totalItems ?? 0) }} items
-                </p>
-                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
-                    Stock: {{ number_format($totalStockQty ?? 0) }} •
-                    Low:
-                    <span class="font-semibold text-red-50 dark:text-[#E5533D] p-2">
-                {{ $lowStockCount ?? 0 }}
-            </span>
-                </p>
-            </div>
+            @unless($isServiceBusiness ?? false)
+                {{-- Items / Stock --}}
+                <div class="bg-[#ffd055] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border p-3 shadow-sm">
+                    <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-50 uppercase tracking-wider">
+                        Items / Stock
+                    </p>
+                    <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
+                        {{ number_format($totalItems ?? 0) }} items
+                    </p>
+                    <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
+                        Stock: {{ number_format($totalStockQty ?? 0) }} • Low:
+                        <span class="p-2 font-semibold text-red-50 dark:text-[#E5533D]">
+                            {{ $lowStockCount ?? 0 }}
+                        </span>
+                    </p>
+                </div>
+            @endunless
 
 
 
@@ -685,6 +690,7 @@
             </div>
         </section>
 
+        @unless($isServiceBusiness ?? false)
         {{-- STOCK STATUS CHART --}}
         <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
             <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -707,6 +713,7 @@
                 <canvas id="stockStatusChart"></canvas>
             </div>
         </section>
+        @endunless
 
         {{-- SECOND ROW: TOTALS + RATES + FORM BUTTON --}}
         <div class="flex flex-wrap gap-4">
@@ -1072,6 +1079,7 @@
             </div>
         </div>
 
+        @unless($isServiceBusiness ?? false)
         {{-- LOW STOCK ITEMS --}}
         <div class="bg-[#BFE0E0] dark:bg-[#354A54] rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
             <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-neutral-700">
@@ -1121,6 +1129,7 @@
                 </table>
             </div>
         </div>
+        @endunless
 
     </div>
 
