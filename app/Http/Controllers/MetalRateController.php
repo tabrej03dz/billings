@@ -38,94 +38,194 @@ class MetalRateController extends Controller
     /**
      * Metal rates listing.
      */
+    // public function index(Request $request): View|RedirectResponse
+    // {
+    //     $businessId = $this->activeBusinessId();
+
+    //     if (!$businessId) {
+    //         return redirect()
+    //             ->back()
+    //             ->withErrors([
+    //                 'business' => 'Please select an active business first.',
+    //             ]);
+    //     }
+
+    //     $query = MetalRate::query()
+    //         ->where('business_id', $businessId)
+    //         ->orderByDesc('rate_date')
+    //         ->orderBy('metal_type')
+    //         ->orderBy('purity');
+
+    //     /*
+    //      * Metal type filter.
+    //      */
+    //     if ($request->filled('metal_type')) {
+    //         $query->where(
+    //             'metal_type',
+    //             $request->string('metal_type')->toString()
+    //         );
+    //     }
+
+    //     /*
+    //      * Purity filter.
+    //      */
+    //     if ($request->filled('purity')) {
+    //         $query->where(
+    //             'purity',
+    //             $this->normalizePurity($request->purity)
+    //         );
+    //     }
+
+    //     /*
+    //      * From date filter.
+    //      */
+    //     if ($request->filled('from_date')) {
+    //         $query->whereDate(
+    //             'rate_date',
+    //             '>=',
+    //             $request->from_date
+    //         );
+    //     }
+
+    //     /*
+    //      * To date filter.
+    //      */
+    //     if ($request->filled('to_date')) {
+    //         $query->whereDate(
+    //             'rate_date',
+    //             '<=',
+    //             $request->to_date
+    //         );
+    //     }
+
+    //     /*
+    //      * Active status filter.
+    //      */
+    //     if (
+    //         $request->has('active')
+    //         && $request->active !== ''
+    //         && $request->active !== null
+    //     ) {
+    //         $query->where(
+    //             'is_active',
+    //             $request->boolean('active')
+    //         );
+    //     }
+
+    //     $rates = $query
+    //         ->paginate(20)
+    //         ->withQueryString();
+
+    //     return view('metal_rates.index', [
+    //         'rates'      => $rates,
+    //         'from_date'  => $request->input('from_date', ''),
+    //         'to_date'    => $request->input('to_date', ''),
+    //         'metal_type' => $request->input('metal_type', ''),
+    //         'purity'     => $request->input('purity', ''),
+    //         'active'     => $request->input('active', ''),
+    //     ]);
+    // }
+
+
+
     public function index(Request $request): View|RedirectResponse
-    {
-        $businessId = $this->activeBusinessId();
+{
+    $businessId = $this->activeBusinessId();
 
-        if (!$businessId) {
-            return redirect()
-                ->back()
-                ->withErrors([
-                    'business' => 'Please select an active business first.',
-                ]);
-        }
-
-        $query = MetalRate::query()
-            ->where('business_id', $businessId)
-            ->orderByDesc('rate_date')
-            ->orderBy('metal_type')
-            ->orderBy('purity');
-
-        /*
-         * Metal type filter.
-         */
-        if ($request->filled('metal_type')) {
-            $query->where(
-                'metal_type',
-                $request->string('metal_type')->toString()
-            );
-        }
-
-        /*
-         * Purity filter.
-         */
-        if ($request->filled('purity')) {
-            $query->where(
-                'purity',
-                $this->normalizePurity($request->purity)
-            );
-        }
-
-        /*
-         * From date filter.
-         */
-        if ($request->filled('from_date')) {
-            $query->whereDate(
-                'rate_date',
-                '>=',
-                $request->from_date
-            );
-        }
-
-        /*
-         * To date filter.
-         */
-        if ($request->filled('to_date')) {
-            $query->whereDate(
-                'rate_date',
-                '<=',
-                $request->to_date
-            );
-        }
-
-        /*
-         * Active status filter.
-         */
-        if (
-            $request->has('active')
-            && $request->active !== ''
-            && $request->active !== null
-        ) {
-            $query->where(
-                'is_active',
-                $request->boolean('active')
-            );
-        }
-
-        $rates = $query
-            ->paginate(20)
-            ->withQueryString();
-
-        return view('metal_rates.index', [
-            'rates'      => $rates,
-            'from_date'  => $request->input('from_date', ''),
-            'to_date'    => $request->input('to_date', ''),
-            'metal_type' => $request->input('metal_type', ''),
-            'purity'     => $request->input('purity', ''),
-            'active'     => $request->input('active', ''),
-        ]);
+    if (!$businessId) {
+        return redirect()
+            ->back()
+            ->withErrors([
+                'business' => 'Please select an active business first.',
+            ]);
     }
 
+    $query = MetalRate::query()
+        ->where('business_id', $businessId)
+        ->orderByDesc('rate_date')
+        ->orderBy('metal_type')
+        ->orderBy('purity');
+
+    /*
+     * Exact date filter.
+     */
+    if ($request->filled('date')) {
+        $query->whereDate(
+            'rate_date',
+            $request->input('date')
+        );
+    }
+
+    /*
+     * Metal type filter.
+     */
+    if ($request->filled('metal_type')) {
+        $query->where(
+            'metal_type',
+            $request->string('metal_type')->toString()
+        );
+    }
+
+    /*
+     * Purity filter.
+     */
+    if ($request->filled('purity')) {
+        $query->where(
+            'purity',
+            $this->normalizePurity($request->input('purity'))
+        );
+    }
+
+    /*
+     * From date filter.
+     */
+    if ($request->filled('from_date')) {
+        $query->whereDate(
+            'rate_date',
+            '>=',
+            $request->input('from_date')
+        );
+    }
+
+    /*
+     * To date filter.
+     */
+    if ($request->filled('to_date')) {
+        $query->whereDate(
+            'rate_date',
+            '<=',
+            $request->input('to_date')
+        );
+    }
+
+    /*
+     * Active status filter.
+     */
+    if (
+        $request->has('active')
+        && $request->input('active') !== ''
+        && $request->input('active') !== null
+    ) {
+        $query->where(
+            'is_active',
+            $request->boolean('active')
+        );
+    }
+
+    $rates = $query
+        ->paginate(20)
+        ->withQueryString();
+
+    return view('metal_rates.index', [
+        'rates'      => $rates,
+        'date'       => $request->input('date', ''),
+        'from_date'  => $request->input('from_date', ''),
+        'to_date'    => $request->input('to_date', ''),
+        'metal_type' => $request->input('metal_type', ''),
+        'purity'     => $request->input('purity', ''),
+        'active'     => $request->input('active', ''),
+    ]);
+}
     /**
      * Show create form.
      */

@@ -338,7 +338,7 @@ use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\InvoiceSendController;
 use App\Http\Controllers\Api\ItemBarcodeController;
 use App\Http\Controllers\Api\ItemController;
-use App\Http\Controllers\Api\MetalRateController;
+
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\PlanPaymentController;
 use App\Http\Controllers\Api\PurchaseController;
@@ -502,7 +502,7 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
 
     /* Metal rates - database currently has only "show metal rates" permission */
     Route::prefix('metal-rates')
-        ->controller(MetalRateController::class)
+        ->controller(App\Http\Controllers\Api\MetalRateController::class)
         ->middleware('permission:show metal rates')
         ->group(function () {
             Route::get('/', 'index');

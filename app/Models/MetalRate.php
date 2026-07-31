@@ -22,10 +22,11 @@ class MetalRate extends Model
      */
     protected $casts = [
         'business_id'   => 'integer',
-        'rate_date'     => 'date',
+        'rate_date'     => 'date:Y-m-d',
         'rate_per_gram' => 'decimal:2',
         'is_active'     => 'boolean',
     ];
+
 
     /**
      * Metal rate का business.

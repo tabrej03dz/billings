@@ -29,78 +29,229 @@ class MetalRateController extends Controller
      * is_active
      * per_page
      */
-    public function index(Request $request): JsonResponse
-    {
-        try {
-            $businessId = $this->resolveBusinessId($request);
+    // public function index(Request $request): JsonResponse
+    // {
+    //     try {
+    //         $businessId = $this->resolveBusinessId($request);
 
-            $validated = $request->validate([
-                'metal_type' => [
-                    'nullable',
-                    Rule::in(['gold', 'silver']),
-                ],
-                'purity' => [
-                    'nullable',
-                    'string',
-                    'max:50',
-                ],
-                'rate_date' => [
-                    'nullable',
-                    'date',
-                ],
-                'from_date' => [
-                    'nullable',
-                    'date',
-                ],
-                'to_date' => [
-                    'nullable',
-                    'date',
-                    'after_or_equal:from_date',
-                ],
-                'is_active' => [
-                    'nullable',
-                    'boolean',
-                ],
-                'per_page' => [
-                    'nullable',
-                    'integer',
-                    'min:1',
-                    'max:100',
-                ],
-            ]);
+    //         $validated = $request->validate([
+    //             'metal_type' => [
+    //                 'nullable',
+    //                 Rule::in(['gold', 'silver']),
+    //             ],
+    //             'purity' => [
+    //                 'nullable',
+    //                 'string',
+    //                 'max:50',
+    //             ],
+    //             'rate_date' => [
+    //                 'nullable',
+    //                 'date',
+    //             ],
+    //             'from_date' => [
+    //                 'nullable',
+    //                 'date',
+    //             ],
+    //             'to_date' => [
+    //                 'nullable',
+    //                 'date',
+    //                 'after_or_equal:from_date',
+    //             ],
+    //             'is_active' => [
+    //                 'nullable',
+    //                 'boolean',
+    //             ],
+    //             'per_page' => [
+    //                 'nullable',
+    //                 'integer',
+    //                 'min:1',
+    //                 'max:100',
+    //             ],
+    //         ]);
 
-            $perPage = (int) ($validated['per_page'] ?? 20);
+    //         $perPage = (int) ($validated['per_page'] ?? 20);
 
-            $query = MetalRate::withoutGlobalScope('business')
-                ->where('business_id', $businessId);
+    //         $query = MetalRate::withoutGlobalScope('business')
+    //             ->where('business_id', $businessId);
 
-            if (!empty($validated['metal_type'])) {
-                $query->where(
-                    'metal_type',
-                    $validated['metal_type']
-                );
-            }
+    //         if (!empty($validated['metal_type'])) {
+    //             $query->where(
+    //                 'metal_type',
+    //                 $validated['metal_type']
+    //             );
+    //         }
 
-            if (
-                array_key_exists('purity', $validated)
-                && $validated['purity'] !== null
-                && $validated['purity'] !== ''
-            ) {
-                $query->where(
-                    'purity',
-                    $this->normalizePurity(
-                        $validated['purity']
-                    )
-                );
-            }
+    //         if (
+    //             array_key_exists('purity', $validated)
+    //             && $validated['purity'] !== null
+    //             && $validated['purity'] !== ''
+    //         ) {
+    //             $query->where(
+    //                 'purity',
+    //                 $this->normalizePurity(
+    //                     $validated['purity']
+    //                 )
+    //             );
+    //         }
 
-            if (!empty($validated['rate_date'])) {
-                $query->whereDate(
-                    'rate_date',
-                    $validated['rate_date']
-                );
-            }
+    //         if (!empty($validated['rate_date'])) {
+    //             $query->whereDate(
+    //                 'rate_date',
+    //                 $validated['rate_date']
+    //             );
+    //         }
 
+    //         if (!empty($validated['from_date'])) {
+    //             $query->whereDate(
+    //                 'rate_date',
+    //                 '>=',
+    //                 $validated['from_date']
+    //             );
+    //         }
+
+    //         if (!empty($validated['to_date'])) {
+    //             $query->whereDate(
+    //                 'rate_date',
+    //                 '<=',
+    //                 $validated['to_date']
+    //             );
+    //         }
+
+    //         if (array_key_exists('is_active', $validated)) {
+    //             $query->where(
+    //                 'is_active',
+    //                 $request->boolean('is_active')
+    //             );
+    //         }
+
+    //         $rates = $query
+    //             ->orderByDesc('rate_date')
+    //             ->orderBy('metal_type')
+    //             ->orderBy('purity')
+    //             ->orderByDesc('id')
+    //             ->paginate($perPage);
+
+    //         return response()->json([
+    //             'ok' => true,
+    //             'msg' => 'Metal rates fetched successfully.',
+    //             'data' => $rates,
+    //         ]);
+    //     } catch (ValidationException $exception) {
+    //         return $this->validationError($exception);
+    //     } catch (Throwable $exception) {
+    //         Log::error('Metal rates list API failed', [
+    //             'business_id' => $request->input('business_id'),
+    //             'user_id' => $request->user()?->id,
+    //             'message' => $exception->getMessage(),
+    //             'file' => $exception->getFile(),
+    //             'line' => $exception->getLine(),
+    //         ]);
+
+    //         return $this->serverError(
+    //             $exception,
+    //             'Unable to fetch metal rates.'
+    //         );
+    //     }
+    // }
+
+
+
+public function index(Request $request): JsonResponse
+{
+    try {
+        $businessId = $this->resolveBusinessId($request);
+
+        $validated = $request->validate([
+            'metal_type' => [
+                'nullable',
+                Rule::in(['gold', 'silver']),
+            ],
+            'purity' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            /*
+             * Exact date filter.
+             */
+            'date' => [
+                'nullable',
+                'date',
+            ],
+
+            'from_date' => [
+                'nullable',
+                'date',
+            ],
+            'to_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:from_date',
+            ],
+            'is_active' => [
+                'nullable',
+                'boolean',
+            ],
+            'per_page' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:100',
+            ],
+        ]);
+
+        $perPage = (int) ($validated['per_page'] ?? 20);
+
+        $query = MetalRate::withoutGlobalScope('business')
+            ->where('business_id', $businessId);
+
+        /*
+         * Metal type filter.
+         */
+        if (!empty($validated['metal_type'])) {
+            $query->where(
+                'metal_type',
+                $validated['metal_type']
+            );
+        }
+
+        /*
+         * Purity filter.
+         */
+        if (
+            array_key_exists('purity', $validated)
+            && $validated['purity'] !== null
+            && $validated['purity'] !== ''
+        ) {
+            $query->where(
+                'purity',
+                $this->normalizePurity(
+                    $validated['purity']
+                )
+            );
+        }
+
+        /*
+         * Exact date filter.
+         *
+         * Example:
+         * /api/metal-rates?date=2026-07-31
+         */
+        if (!empty($validated['date'])) {
+            $query->whereDate(
+                'rate_date',
+                $validated['date']
+            );
+        }
+
+        /*
+         * Date range filter.
+         *
+         * Exact date diya gaya ho to from_date aur to_date
+         * filters apply nahi honge.
+         */
+        if (empty($validated['date'])) {
             if (!empty($validated['from_date'])) {
                 $query->whereDate(
                     'rate_date',
@@ -116,43 +267,62 @@ class MetalRateController extends Controller
                     $validated['to_date']
                 );
             }
+        }
 
-            if (array_key_exists('is_active', $validated)) {
-                $query->where(
-                    'is_active',
-                    $request->boolean('is_active')
-                );
-            }
-
-            $rates = $query
-                ->orderByDesc('rate_date')
-                ->orderBy('metal_type')
-                ->orderBy('purity')
-                ->orderByDesc('id')
-                ->paginate($perPage);
-
-            return response()->json([
-                'ok' => true,
-                'msg' => 'Metal rates fetched successfully.',
-                'data' => $rates,
-            ]);
-        } catch (ValidationException $exception) {
-            return $this->validationError($exception);
-        } catch (Throwable $exception) {
-            Log::error('Metal rates list API failed', [
-                'business_id' => $request->input('business_id'),
-                'user_id' => $request->user()?->id,
-                'message' => $exception->getMessage(),
-                'file' => $exception->getFile(),
-                'line' => $exception->getLine(),
-            ]);
-
-            return $this->serverError(
-                $exception,
-                'Unable to fetch metal rates.'
+        /*
+         * Active status filter.
+         */
+        if (
+            array_key_exists('is_active', $validated)
+            && $validated['is_active'] !== null
+        ) {
+            $query->where(
+                'is_active',
+                (bool) $validated['is_active']
             );
         }
+
+        $rates = $query
+            ->orderByDesc('rate_date')
+            ->orderBy('metal_type')
+            ->orderBy('purity')
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return response()->json([
+            'ok' => true,
+            'msg' => 'Metal rates fetched successfully.',
+            'filters' => [
+                'date' => $validated['date'] ?? null,
+                'from_date' => $validated['from_date'] ?? null,
+                'to_date' => $validated['to_date'] ?? null,
+                'metal_type' => $validated['metal_type'] ?? null,
+                'purity' => $validated['purity'] ?? null,
+                'is_active' => $validated['is_active'] ?? null,
+            ],
+            'data' => $rates,
+        ]);
+    } catch (ValidationException $exception) {
+        return $this->validationError($exception);
+    } catch (Throwable $exception) {
+        Log::error('Metal rates list API failed', [
+            'business_id' => $request->input('business_id'),
+            'user_id' => $request->user()?->id,
+            'message' => $exception->getMessage(),
+            'file' => $exception->getFile(),
+            'line' => $exception->getLine(),
+        ]);
+
+        return $this->serverError(
+            $exception,
+            'Unable to fetch metal rates.'
+        );
     }
+}
+
+
+
 
     /**
      * GET /api/metal-rates/single
