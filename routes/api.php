@@ -733,7 +733,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/change-password', [HomeController::class, 'changePassword']);
     Route::get('/dashboard', [HomeController::class, 'index']);
     Route::get('/user/permissions', [HomeController::class, 'myPermissions']);
-    Route::get('/user-business', [HomeController::class, 'userBusinesses']);
+    Route::get('user/permissions1', [HomeController::class, 'myPermissions1']);
 
 });
 
