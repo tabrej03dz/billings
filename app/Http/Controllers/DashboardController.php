@@ -190,7 +190,7 @@ class DashboardController extends Controller
             $businessTypeName = (string) ($business->type ?? '');
         }
 
-        $isServiceBusiness = Str::slug($businessTypeName) === 'service';
+        $isServiceBusiness = Str::slug($businessTypeName) === 'services' || Str::slug($businessTypeName) === 'service';
 
         /*
         |--------------------------------------------------------------------------

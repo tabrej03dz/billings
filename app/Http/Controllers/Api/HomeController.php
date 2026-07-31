@@ -1427,4 +1427,15 @@ public function verifyRegisterOtp(Request $request)
             . substr($phone, -4);
     }
 
+    public function userBusinesses(Request $request){
+        $user = $request->user();
+        return response()->json([
+            'status' => true,
+            'message' => 'user businesses',
+
+            'business' => $user->businesses,
+            
+        ], 200);
+    }
+
 }
