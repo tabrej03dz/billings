@@ -1429,100 +1429,16 @@ public function verifyRegisterOtp(Request $request)
 
 public function userBusinesses(Request $request)
 {
-    try {
-        /*
-        |--------------------------------------------------------------------------
-        | Authenticated user
-        |--------------------------------------------------------------------------
-        | Login/OTP verification ke baad mila Bearer token is API me bhejna hai.
-        */
-        $user = $request->user();
+    $user = $request->user();
 
-        if (!$user) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Unauthenticated.',
-                'active_business_id' => null,
-                'total' => 0,
-                'businesses' => [],
-                'business' => [],
-            ], 401);
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | User ke accessible businesses
-        |--------------------------------------------------------------------------
-        */
-        $businesses = $user->businesses()
-            ->select('businesses.*')
-            ->distinct()
-            ->orderByDesc('businesses.id')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | Existing current business
-        |--------------------------------------------------------------------------
-        | Sirf tab return hoga jab current_business_id valid ho aur user ko
-        | us business ka access ho. Koi automatic first-business fallback nahi.
-        */
-        $activeBusinessId = null;
-
-        if (
-            Schema::hasColumn('users', 'current_business_id') &&
-            !empty($user->current_business_id)
-        ) {
-            $currentBusinessId = (int) $user->current_business_id;
-
-            $hasAccess = $businesses->contains(function ($business) use (
-                $currentBusinessId
-            ) {
-                return (int) $business->id === $currentBusinessId;
-            });
-
-            if ($hasAccess) {
-                $activeBusinessId = $currentBusinessId;
-            }
-        }
+        $permissions = $user->getAllPermissions()
+            ->pluck('name')
+            ->unique()
+            ->values();
 
         return response()->json([
             'status' => true,
-            'message' => $businesses->isEmpty()
-                ? 'No business found for this user.'
-                : 'User businesses fetched successfully.',
-
-            /*
-             * Null ho sakta hai. App user se business select karwa kar
-             * agli request me selected ID bhejega.
-             */
-            'active_business_id' => $activeBusinessId,
-
-            'total' => $businesses->count(),
-
-            /*
-             * Recommended response key
-             */
-            'businesses' => $businesses,
-
-            /*
-             * Purane app compatibility ke liye
-             */
-            'business' => $businesses,
-        ], 200);
-
-    } catch (\Throwable $exception) {
-        report($exception);
-
-        return response()->json([
-            'status' => false,
-            'message' => 'Unable to fetch user businesses.',
-            'active_business_id' => null,
-            'total' => 0,
-            'businesses' => [],
-            'business' => [],
-        ], 500);
-    }
-}
+            'permissions' => $permissions,
+        ], 200);}
 
 }
