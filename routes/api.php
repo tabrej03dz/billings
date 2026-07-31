@@ -723,19 +723,15 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
     });
 });
 
-Route::middleware(['auth:sanctum'])->group(function () {
+/*
+| User-specific endpoints only need authentication. They expose the current
+| authenticated user's own information.
+*/
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [HomeController::class, 'user']);
-    Route::get('/user/business', [HomeController::class, 'userBusinesses']);
-    Route::get('/user/businesses', [HomeController::class, 'userBusinesses']);
+    Route::post('/user/profile-update', [HomeController::class, 'updateProfile']);
+    Route::post('/user/change-password', [HomeController::class, 'changePassword']);
+    Route::get('/dashboard', [HomeController::class, 'index']);
     Route::get('/user/permissions', [HomeController::class, 'myPermissions']);
-
-    Route::post('/user/profile-update', [
-        HomeController::class,
-        'updateProfile',
-    ]);
-
-    Route::post('/user/change-password', [
-        HomeController::class,
-        'changePassword',
-    ]);
+    Route::get('/user-business', [HomeController::class, 'userBusinesses']);
 });
