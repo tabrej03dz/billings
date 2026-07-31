@@ -225,6 +225,121 @@
         }
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Keep Active Sidebar Menu Visible
+    |--------------------------------------------------------------------------
+    | JS jab active menu tak scroll kare, tab item sidebar ke bilkul edge par
+    | chipakne ke bajay comfortable spacing ke saath visible rahe.
+    */
+    .mobile-full-height-sidebar {
+        scroll-padding-block: 5rem;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Strong Active Sidebar Menu Highlight
+    |--------------------------------------------------------------------------
+    | Flux ke current nav item aur normal active links dono ko clearly
+    | highlight karega. Existing attention classes isse override ho sakti hain.
+    */
+
+    .mobile-full-height-sidebar [aria-current="page"],
+    .mobile-full-height-sidebar [data-current],
+    .mobile-full-height-sidebar a.active-sidebar-link {
+        position: relative !important;
+        border: 1px solid #6366f1 !important;
+        border-radius: 0.75rem !important;
+        background: linear-gradient(
+            135deg,
+            rgba(238, 242, 255, 1),
+            rgba(224, 231, 255, 0.96)
+        ) !important;
+        color: #3730a3 !important;
+        font-weight: 700 !important;
+        box-shadow:
+            0 8px 18px rgba(79, 70, 229, 0.14),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.65) !important;
+    }
+
+    .mobile-full-height-sidebar [aria-current="page"]::before,
+    .mobile-full-height-sidebar [data-current]::before,
+    .mobile-full-height-sidebar a.active-sidebar-link::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: -1px;
+        width: 4px;
+        height: 58%;
+        min-height: 22px;
+        border-radius: 0 999px 999px 0;
+        background: #4f46e5;
+        transform: translateY(-50%);
+        box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
+    }
+
+    .mobile-full-height-sidebar [aria-current="page"] svg,
+    .mobile-full-height-sidebar [data-current] svg,
+    .mobile-full-height-sidebar a.active-sidebar-link svg {
+        filter: saturate(1.15);
+    }
+
+    .mobile-full-height-sidebar [aria-current="page"] span,
+    .mobile-full-height-sidebar [data-current] span,
+    .mobile-full-height-sidebar a.active-sidebar-link span {
+        color: inherit;
+    }
+
+    .dark .mobile-full-height-sidebar [aria-current="page"],
+    .dark .mobile-full-height-sidebar [data-current],
+    .dark .mobile-full-height-sidebar a.active-sidebar-link {
+        border-color: #818cf8 !important;
+        background: linear-gradient(
+            135deg,
+            rgba(49, 46, 129, 0.72),
+            rgba(67, 56, 202, 0.46)
+        ) !important;
+        color: #ffffff !important;
+        box-shadow:
+            0 10px 22px rgba(0, 0, 0, 0.28),
+            0 0 0 1px rgba(129, 140, 248, 0.16),
+            inset 0 0 18px rgba(129, 140, 248, 0.12) !important;
+    }
+
+    .dark .mobile-full-height-sidebar [aria-current="page"]::before,
+    .dark .mobile-full-height-sidebar [data-current]::before,
+    .dark .mobile-full-height-sidebar a.active-sidebar-link::before {
+        background: #a5b4fc;
+        box-shadow: 0 0 14px rgba(165, 180, 252, 0.7);
+    }
+
+    /*
+     * Flux attribute browser/version ke hisab se alag ho sakta hai.
+     * Yeh selectors active/current boolean attributes ko bhi cover karte hain.
+     */
+    .mobile-full-height-sidebar [current],
+    .mobile-full-height-sidebar [data-active="true"] {
+        position: relative !important;
+        border: 1px solid #6366f1 !important;
+        border-radius: 0.75rem !important;
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+        color: #3730a3 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 8px 18px rgba(79, 70, 229, 0.14) !important;
+    }
+
+    .dark .mobile-full-height-sidebar [current],
+    .dark .mobile-full-height-sidebar [data-active="true"] {
+        border-color: #818cf8 !important;
+        background: linear-gradient(
+            135deg,
+            rgba(49, 46, 129, 0.72),
+            rgba(67, 56, 202, 0.46)
+        ) !important;
+        color: #ffffff !important;
+    }
+
 </style>
 </head>
 
@@ -720,7 +835,7 @@
                         border px-3 py-3 transition-all duration-300
 
                         {{ request()->routeIs('business-profile.*')
-                            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                            ? 'active-sidebar-link border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
                             : 'border-zinc-200 bg-white text-zinc-700 hover:border-indigo-300 hover:bg-indigo-50/60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800'
                         }}
 
@@ -915,7 +1030,7 @@
                 <summary
                     class="flex cursor-pointer list-none select-none items-center justify-between rounded-lg px-3 py-2 text-sm font-medium
                     {{ $isInvoiceRoute
-                        ? 'bg-white/15 text-white'
+                        ? 'active-sidebar-link bg-white/15 text-white'
                         : 'text-zinc-300 hover:bg-white/10 hover:text-white'
                     }}
                     focus:outline-none focus:ring-2 focus:ring-white/20"
@@ -1048,7 +1163,7 @@
                 href="{{ route('invoices.reports.page') }}"
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800
                 {{ request()->routeIs('invoices.reports.page')
-                    ? 'bg-gray-100 font-semibold dark:bg-neutral-800'
+                    ? 'active-sidebar-link bg-gray-100 font-semibold dark:bg-neutral-800'
                     : ''
                 }}"
             >
@@ -1080,7 +1195,7 @@
                 href="{{ route('bill-requests.index') }}"
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800
                 {{ request()->routeIs('bill-requests.*')
-                    ? 'bg-gray-100 font-semibold dark:bg-neutral-800'
+                    ? 'active-sidebar-link bg-gray-100 font-semibold dark:bg-neutral-800'
                     : ''
                 }}"
             >
@@ -1112,7 +1227,7 @@
                 href="{{ route('business-types.index') }}"
                 class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800
                 {{ request()->routeIs('business-types.*')
-                    ? 'bg-gray-100 font-semibold dark:bg-neutral-800'
+                    ? 'active-sidebar-link bg-gray-100 font-semibold dark:bg-neutral-800'
                     : ''
                 }}"
             >
@@ -2493,6 +2608,160 @@
         <x-floating-help />
 
     @fluxScripts
+
+    <script>
+        (() => {
+            const SIDEBAR_SELECTOR = '.mobile-full-height-sidebar';
+
+            const ACTIVE_MENU_SELECTORS = [
+                '[aria-current="page"]',
+                '[aria-current="true"]',
+                '[data-current]',
+                '[data-active]',
+                'a.current',
+                'a.active'
+            ];
+
+            let scrollTimer = null;
+            let sidebarObserver = null;
+
+            /**
+             * Flux ke active nav item ko dhundhta hai.
+             */
+            function findActiveMenu(sidebar) {
+                for (const selector of ACTIVE_MENU_SELECTORS) {
+                    const elements = sidebar.querySelectorAll(selector);
+
+                    for (const element of elements) {
+                        const value = element.getAttribute('data-current')
+                            ?? element.getAttribute('data-active');
+
+                        // data-current="false" / data-active="false" ko active na maanein.
+                        if (value === 'false' || value === '0') {
+                            continue;
+                        }
+
+                        // Hidden duplicate/menu item ko ignore karein.
+                        if (element.getClientRects().length === 0) {
+                            continue;
+                        }
+
+                        return element;
+                    }
+                }
+
+                return null;
+            }
+
+            /**
+             * Active menu agar visible area se bahar hai to sidebar ke center
+             * ke paas scroll karta hai. User ki unnecessary scroll position
+             * ko disturb nahi karta.
+             */
+            function revealActiveMenu({ force = false, smooth = false } = {}) {
+                window.clearTimeout(scrollTimer);
+
+                scrollTimer = window.setTimeout(() => {
+                    const sidebar = document.querySelector(SIDEBAR_SELECTOR);
+
+                    if (!sidebar || sidebar.getClientRects().length === 0) {
+                        return;
+                    }
+
+                    const activeMenu = findActiveMenu(sidebar);
+
+                    if (!activeMenu) {
+                        return;
+                    }
+
+                    // Parent details menu active ho to usse pehle open karein.
+                    const parentDetails = activeMenu.closest('details');
+                    if (parentDetails && !parentDetails.open) {
+                        parentDetails.open = true;
+                    }
+
+                    const sidebarRect = sidebar.getBoundingClientRect();
+                    const activeRect = activeMenu.getBoundingClientRect();
+                    const safeTop = sidebarRect.top + 72;
+                    const safeBottom = sidebarRect.bottom - 72;
+                    const isVisible =
+                        activeRect.top >= safeTop &&
+                        activeRect.bottom <= safeBottom;
+
+                    if (!force && isVisible) {
+                        return;
+                    }
+
+                    const targetScrollTop =
+                        sidebar.scrollTop +
+                        (activeRect.top - sidebarRect.top) -
+                        ((sidebar.clientHeight - activeRect.height) / 2);
+
+                    sidebar.scrollTo({
+                        top: Math.max(0, targetScrollTop),
+                        behavior: smooth ? 'smooth' : 'auto'
+                    });
+                }, 80);
+            }
+
+            /**
+             * Mobile Flux sidebar open/close attributes/classes badal sakta hai.
+             * MutationObserver se open hote hi active menu visible kar dete hain.
+             */
+            function observeSidebar() {
+                const sidebar = document.querySelector(SIDEBAR_SELECTOR);
+
+                if (!sidebar) {
+                    return;
+                }
+
+                sidebarObserver?.disconnect();
+
+                sidebarObserver = new MutationObserver(() => {
+                    if (sidebar.getClientRects().length > 0) {
+                        revealActiveMenu({ force: true, smooth: false });
+                    }
+                });
+
+                sidebarObserver.observe(sidebar, {
+                    attributes: true,
+                    attributeFilter: [
+                        'class',
+                        'style',
+                        'open',
+                        'data-flux-sidebar-open',
+                        'aria-hidden'
+                    ]
+                });
+            }
+
+            function initialiseActiveMenuScroll() {
+                observeSidebar();
+                revealActiveMenu({ force: true, smooth: false });
+            }
+
+            document.addEventListener('DOMContentLoaded', initialiseActiveMenuScroll);
+
+            // Livewire wire:navigate ke baad.
+            document.addEventListener('livewire:navigated', initialiseActiveMenuScroll);
+
+            // Browser back/forward cache ke baad.
+            window.addEventListener('pageshow', initialiseActiveMenuScroll);
+
+            // Mobile hamburger click ke turant baad sidebar visible hota hai.
+            document.addEventListener('click', (event) => {
+                const toggle = event.target.closest('[data-flux-sidebar-toggle], flux\:sidebar\.toggle, button[aria-label="Open navigation menu"]');
+
+                if (!toggle) {
+                    return;
+                }
+
+                window.setTimeout(() => {
+                    revealActiveMenu({ force: true, smooth: false });
+                }, 180);
+            });
+        })();
+    </script>
 
     <x-user-activity-tracker />
 </body>

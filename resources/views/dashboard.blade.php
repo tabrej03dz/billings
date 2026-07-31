@@ -623,6 +623,91 @@
         </div>
 
 
+
+        {{-- DASHBOARD CHARTS --}}
+        <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            {{-- Sales vs Purchase Trend --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 xl:col-span-2 sm:p-5">
+                <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                            Sales & Purchase Trend
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Selected date range ka daily comparison
+                        </p>
+                    </div>
+
+                    <span class="mt-2 inline-flex w-fit rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 sm:mt-0">
+                        {{ count($chartLabels ?? []) }} day(s)
+                    </span>
+                </div>
+
+                <div class="relative h-[280px] w-full sm:h-[330px]">
+                    <canvas id="salesPurchaseTrendChart"></canvas>
+                </div>
+            </div>
+
+            {{-- Payment Collection Doughnut --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                        Payment Collection
+                    </h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Collected amount vs pending amount
+                    </p>
+                </div>
+
+                <div class="relative mx-auto h-[220px] max-w-[280px]">
+                    <canvas id="paymentCollectionChart"></canvas>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3 text-center">
+                    <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+                        <p class="text-[11px] font-semibold uppercase text-emerald-700 dark:text-emerald-300">
+                            Collected
+                        </p>
+                        <p class="mt-1 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                            ₹ {{ number_format($filteredCollectedAmount ?? 0, 2) }}
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/30">
+                        <p class="text-[11px] font-semibold uppercase text-rose-700 dark:text-rose-300">
+                            Pending
+                        </p>
+                        <p class="mt-1 text-sm font-bold text-rose-800 dark:text-rose-200">
+                            ₹ {{ number_format($filteredPendingAmount ?? 0, 2) }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {{-- STOCK STATUS CHART --}}
+        <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+            <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                        Stock Status Overview
+                    </h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Healthy, low-stock aur out-of-stock items
+                    </p>
+                </div>
+
+                <a href="{{ route('items.index') }}"
+                   class="mt-2 text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400 sm:mt-0">
+                    Manage stock
+                </a>
+            </div>
+
+            <div class="relative h-[240px] w-full sm:h-[280px]">
+                <canvas id="stockStatusChart"></canvas>
+            </div>
+        </section>
+
         {{-- SECOND ROW: TOTALS + RATES + FORM BUTTON --}}
         <div class="flex flex-wrap gap-4">
 
@@ -1132,4 +1217,269 @@
             }
         </script>
     @endif
+
+    {{-- CHART.JS: wire:navigate compatible --}}
+    <script data-navigate-once src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <script>
+        (() => {
+            const chartData = {
+                labels: @json($chartLabels ?? []),
+                sales: @json($salesChartData ?? []),
+                purchases: @json($purchaseChartData ?? []),
+                payments: @json($paymentChartData ?? [0, 0]),
+                stock: @json($stockChartData ?? [0, 0, 0]),
+            };
+
+            function destroyDashboardCharts() {
+                [
+                    'salesPurchaseTrendChart',
+                    'paymentCollectionChart',
+                    'stockStatusChart'
+                ].forEach((canvasId) => {
+                    const canvas = document.getElementById(canvasId);
+
+                    if (!canvas || typeof Chart === 'undefined') {
+                        return;
+                    }
+
+                    const existingChart = Chart.getChart(canvas);
+
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
+                });
+            }
+
+            function initializeDashboardCharts() {
+                if (typeof Chart === 'undefined') {
+                    return;
+                }
+
+                const trendCanvas = document.getElementById('salesPurchaseTrendChart');
+                const paymentCanvas = document.getElementById('paymentCollectionChart');
+                const stockCanvas = document.getElementById('stockStatusChart');
+
+                // Dashboard DOM abhi page par nahi hai.
+                if (!trendCanvas && !paymentCanvas && !stockCanvas) {
+                    return;
+                }
+
+                destroyDashboardCharts();
+
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const textColor = isDarkMode ? '#d4d4d8' : '#4b5563';
+                const gridColor = isDarkMode
+                    ? 'rgba(115, 115, 115, 0.22)'
+                    : 'rgba(209, 213, 219, 0.55)';
+
+                Chart.defaults.color = textColor;
+                Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, sans-serif';
+
+                const currencyFormatter = (value) => {
+                    return '₹ ' + new Intl.NumberFormat('en-IN', {
+                        maximumFractionDigits: 2
+                    }).format(Number(value || 0));
+                };
+
+                const commonTooltip = {
+                    backgroundColor: isDarkMode ? '#171717' : '#111827',
+                    padding: 12,
+                    cornerRadius: 10,
+                    titleSpacing: 6,
+                    bodySpacing: 6
+                };
+
+                if (trendCanvas) {
+                    new Chart(trendCanvas, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.labels,
+                            datasets: [
+                                {
+                                    label: 'Sales',
+                                    data: chartData.sales,
+                                    borderColor: '#4f46e5',
+                                    backgroundColor: 'rgba(79, 70, 229, 0.12)',
+                                    fill: true,
+                                    tension: 0.35,
+                                    borderWidth: 2.5,
+                                    pointRadius: 3,
+                                    pointHoverRadius: 5
+                                },
+                                {
+                                    label: 'Purchases',
+                                    data: chartData.purchases,
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                                    fill: true,
+                                    tension: 0.35,
+                                    borderWidth: 2.5,
+                                    pointRadius: 3,
+                                    pointHoverRadius: 5
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    align: 'end',
+                                    labels: {
+                                        usePointStyle: true,
+                                        boxWidth: 8,
+                                        padding: 18
+                                    }
+                                },
+                                tooltip: {
+                                    ...commonTooltip,
+                                    callbacks: {
+                                        label(context) {
+                                            return context.dataset.label + ': ' + currencyFormatter(context.raw);
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: {
+                                        maxRotation: 0,
+                                        autoSkip: true,
+                                        maxTicksLimit: 10
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: gridColor },
+                                    ticks: {
+                                        callback(value) {
+                                            return currencyFormatter(value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (paymentCanvas) {
+                    const paymentValues = chartData.payments.map(Number);
+                    const hasPaymentData = paymentValues.some((value) => value > 0);
+
+                    new Chart(paymentCanvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: hasPaymentData
+                                ? ['Collected', 'Pending']
+                                : ['No data'],
+                            datasets: [{
+                                data: hasPaymentData ? paymentValues : [1],
+                                backgroundColor: hasPaymentData
+                                    ? ['#10b981', '#f43f5e']
+                                    : ['#d1d5db'],
+                                borderWidth: 0,
+                                hoverOffset: 7
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '68%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 18
+                                    }
+                                },
+                                tooltip: {
+                                    ...commonTooltip,
+                                    callbacks: {
+                                        label(context) {
+                                            if (!hasPaymentData) {
+                                                return 'No payment data';
+                                            }
+
+                                            return context.label + ': ' + currencyFormatter(context.raw);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (stockCanvas) {
+                    new Chart(stockCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Healthy Stock', 'Low Stock', 'Out of Stock'],
+                            datasets: [{
+                                label: 'Items',
+                                data: chartData.stock,
+                                backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+                                borderRadius: 10,
+                                borderSkipped: false,
+                                maxBarThickness: 72
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    ...commonTooltip,
+                                    callbacks: {
+                                        label(context) {
+                                            return context.raw + ' item(s)';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0 },
+                                    grid: { color: gridColor }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            function bootDashboardCharts() {
+                // wire:navigate ke DOM replacement ko complete hone dein.
+                window.requestAnimationFrame(() => {
+                    window.requestAnimationFrame(initializeDashboardCharts);
+                });
+            }
+
+            // Normal refresh.
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootDashboardCharts, { once: true });
+            } else {
+                bootDashboardCharts();
+            }
+
+            // Flux/Livewire wire:navigate ke baad.
+            document.addEventListener('livewire:navigated', bootDashboardCharts);
+
+            // Page leave hone se pehle old Chart instances clear karein.
+            document.addEventListener('livewire:navigating', destroyDashboardCharts);
+        })();
+    </script>
+
 </x-layouts.app>
