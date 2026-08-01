@@ -677,6 +677,18 @@
                                                 Delete
                                             </button>
                                         </form>
+
+                                        <a
+                                            href="#"
+                                            class="rounded-lg bg-amber-50
+                                                   px-3 py-2 text-xs font-semibold
+                                                   text-amber-700
+                                                   hover:bg-amber-100
+                                                   dark:bg-amber-950/50
+                                                   dark:text-amber-300"
+                                        >
+                                            Patient Profile
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

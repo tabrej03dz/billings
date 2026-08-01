@@ -11,22 +11,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('hospital_departments', function (Blueprint $table) {
+        Schema::create('hospital_rooms', function (Blueprint $table) {
             $table->id();
             $table->foreignId('business_id')
                 ->constrained('businesses')
                 ->cascadeOnDelete();
 
-            $table->string('name');
-            $table->string('code')->nullable();
-            $table->text('description')->nullable();
+            $table->foreignId('ward_id')
+                ->nullable()
+                ->constrained('hospital_wards')
+                ->nullOnDelete();
+
+            $table->string('room_number');
+            $table->string('room_type')->nullable();
+
+            $table->decimal('daily_charge', 12, 2)
+                ->default(0);
+
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
 
             $table->unique([
                 'business_id',
-                'name',
+                'room_number',
             ]);
         });
     }
@@ -36,6 +44,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('hospital_departments');
+        Schema::dropIfExists('hospital_rooms');
     }
 };
