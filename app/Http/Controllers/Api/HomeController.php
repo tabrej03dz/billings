@@ -1080,344 +1080,345 @@ class HomeController extends Controller
     }
 
 
-    // SKIP OTP
+
+    // public function register(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'name'        => ['required','string','max:120'],
+    //         'email'       => ['required','email','max:190','unique:users,email'],
+    //         'password'    => ['required','string','min:6','confirmed'],
+    //         'phone'       => ['required','digits:10','unique:users,phone'],
+    //         'business_id' => ['nullable','integer','exists:businesses,id'],
+    //         'device_name' => ['nullable','string','max:100'],
+    //     ]);
+
+    //     $otp = rand(100000, 999999);
+
+    //     RegisterOtp::where('phone', $data['phone'])->delete();
+
+    //     RegisterOtp::create([
+    //         'phone'      => $data['phone'],
+    //         'email'      => $data['email'],
+    //         'otp'        => $otp,
+    //         'payload'    => $data,
+    //         'expires_at' => now()->addMinutes(10),
+    //     ]);
+
+    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+    //     $response = Http::get('https://kutility.org/app/smsapi/index.php', [
+    //         'key'         => '5620360CF8C9B4',
+    //         'campaign'    => '12754',
+    //         'routeid'     => '7',
+    //         'type'        => 'text',
+    //         'contacts'    => $data['phone'],
+    //         'senderid'    => 'RVGRPS',
+    //         'msg'         => $msg,
+    //         'template_id' => '1707178057481157648',
+    //         'pe_id'       => '1701164032595209992',
+    //     ]);
+
+    //     return response()->json([
+    //         'status'  => true,
+    //         'message' => 'OTP sent successfully on your mobile number.',
+    //         'phone'   => $data['phone'],
+    //         'sms_response' => $response->body(),
+    //     ]);
+    // }
+    // public function verifyRegisterOtp(Request $request)
+    // {
+    //     $request->validate([
+    //         'phone' => ['required','digits:10'],
+    //         'otp'   => ['required','digits:6'],
+    //     ]);
+
+    //     $otpRecord = RegisterOtp::where('phone', $request->phone)
+    //         ->where('otp', $request->otp)
+    //         ->first();
+
+    //     if (!$otpRecord) {
+    //         return response()->json([
+    //             'status'  => false,
+    //             'message' => 'Invalid OTP.',
+    //         ], 422);
+    //     }
+
+    //     if ($otpRecord->expires_at->isPast()) {
+    //         $otpRecord->delete();
+
+    //         return response()->json([
+    //             'status'  => false,
+    //             'message' => 'OTP expired. Please register again.',
+    //         ], 422);
+    //     }
+
+    //     $data = $otpRecord->payload;
+
+    //     return DB::transaction(function () use ($data, $otpRecord) {
+
+    //         $user = User::create([
+    //             'name'     => $data['name'],
+    //             'email'    => $data['email'],
+    //             'password' => Hash::make($data['password']),
+    //             'phone'    => $data['phone'],
+    //         ]);
+
+    //         if (!empty($data['business_id'])) {
+    //             $user->businesses()->attach($data['business_id']);
+
+    //             if (Schema::hasColumn('users', 'current_business_id')) {
+    //                 $user->current_business_id = $data['business_id'];
+    //                 $user->save();
+    //             }
+    //         }
+
+    //         $tokenName = $data['device_name'] ?? 'authToken';
+    //         $token = $user->createToken($tokenName)->plainTextToken;
+
+    //         $user->load('businesses');
+
+    //         $otpRecord->delete();
+
+    //         return response()->json([
+    //             'status'     => true,
+    //             'message'    => 'Mobile number verified and registration successful.',
+    //             'token_type' => 'Bearer',
+    //             'token'      => $token,
+    //             'user'       => [
+    //                 'id'       => $user->id,
+    //                 'name'     => $user->name,
+    //                 'email'    => $user->email,
+    //                 'phone'    => $user->phone,
+    //                 'business' => $user->businesses,
+    //             ],
+    //         ], 201);
+    //     });
+    // }
+
+        // SKIP OTP
     public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name'        => ['required','string','max:120'],
-            'email'       => ['required','email','max:190','unique:users,email'],
-            'password'    => ['required','string','min:6','confirmed'],
-            'phone'       => ['required','digits:10','unique:users,phone'],
-            'business_id' => ['nullable','integer','exists:businesses,id'],
-            'device_name' => ['nullable','string','max:100'],
-        ]);
+{
+    $data = $request->validate([
+        'name'        => ['required', 'string', 'max:120'],
+        'email'       => ['required', 'email', 'max:190', 'unique:users,email'],
+        'password'    => ['required', 'string', 'min:6', 'confirmed'],
+        'phone'       => ['required', 'digits:10', 'unique:users,phone'],
+        'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
+        'device_name' => ['nullable', 'string', 'max:100'],
+    ]);
 
-        $otp = rand(100000, 999999);
+    /*
+    |--------------------------------------------------------------------------
+    | Testing / Local Environment
+    |--------------------------------------------------------------------------
+    | Local और testing environment में SMS send नहीं होगा।
+    | Verify OTP API में कोई भी 6-digit OTP डालकर registration हो जाएगा।
+    */
+    $isTestingEnvironment = app()->environment(['local', 'testing']);
 
-        RegisterOtp::where('phone', $data['phone'])->delete();
+    $otp = $isTestingEnvironment
+        ? '123456'
+        : (string) random_int(100000, 999999);
 
-        RegisterOtp::create([
-            'phone'      => $data['phone'],
-            'email'      => $data['email'],
-            'otp'        => $otp,
-            'payload'    => $data,
-            'expires_at' => now()->addMinutes(10),
-        ]);
+    RegisterOtp::where('phone', $data['phone'])->delete();
 
-        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+    RegisterOtp::create([
+        'phone'      => $data['phone'],
+        'email'      => $data['email'],
+        'otp'        => $otp,
+        'payload'    => $data,
+        'expires_at' => now()->addMinutes(10),
+    ]);
 
-        $response = Http::get('https://kutility.org/app/smsapi/index.php', [
-            'key'         => '5620360CF8C9B4',
-            'campaign'    => '12754',
-            'routeid'     => '7',
-            'type'        => 'text',
-            'contacts'    => $data['phone'],
-            'senderid'    => 'RVGRPS',
-            'msg'         => $msg,
-            'template_id' => '1707178057481157648',
-            'pe_id'       => '1701164032595209992',
-        ]);
-
+    /*
+    |--------------------------------------------------------------------------
+    | Testing में SMS Skip
+    |--------------------------------------------------------------------------
+    */
+    if ($isTestingEnvironment) {
         return response()->json([
-            'status'  => true,
-            'message' => 'OTP sent successfully on your mobile number.',
-            'phone'   => $data['phone'],
-            'sms_response' => $response->body(),
+            'status'      => true,
+            'message'     => 'Testing mode: OTP SMS skipped. Enter any 6-digit OTP.',
+            'phone'       => $data['phone'],
+            'testing_otp' => $otp,
         ]);
     }
-    public function verifyRegisterOtp(Request $request)
-    {
-        $request->validate([
-            'phone' => ['required','digits:10'],
-            'otp'   => ['required','digits:6'],
-        ]);
 
-        $otpRecord = RegisterOtp::where('phone', $request->phone)
-            ->where('otp', $request->otp)
-            ->first();
+    /*
+    |--------------------------------------------------------------------------
+    | Production में Real SMS Send
+    |--------------------------------------------------------------------------
+    */
+    $msg = "Dear Customer, {$otp} this is your login verification OTP. "
+        . "Please do not share with anyone. Best Regards, "
+        . "Real Victory Groups https://myvictory.in/";
 
-        if (!$otpRecord) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Invalid OTP.',
-            ], 422);
-        }
-
-        if ($otpRecord->expires_at->isPast()) {
-            $otpRecord->delete();
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'OTP expired. Please register again.',
-            ], 422);
-        }
-
-        $data = $otpRecord->payload;
-
-        return DB::transaction(function () use ($data, $otpRecord) {
-
-            $user = User::create([
-                'name'     => $data['name'],
-                'email'    => $data['email'],
-                'password' => Hash::make($data['password']),
-                'phone'    => $data['phone'],
+    try {
+        $response = Http::timeout(20)
+            ->get('https://kutility.org/app/smsapi/index.php', [
+                'key'         => '5620360CF8C9B4',
+                'campaign'    => '12754',
+                'routeid'     => '7',
+                'type'        => 'text',
+                'contacts'    => $data['phone'],
+                'senderid'    => 'RVGRPS',
+                'msg'         => $msg,
+                'template_id' => '1707178057481157648',
+                'pe_id'       => '1701164032595209992',
             ]);
 
-            if (!empty($data['business_id'])) {
-                $user->businesses()->attach($data['business_id']);
+        if (!$response->successful()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Unable to send OTP. Please try again.',
+            ], 500);
+        }
 
-                if (Schema::hasColumn('users', 'current_business_id')) {
-                    $user->current_business_id = $data['business_id'];
-                    $user->save();
-                }
-            }
+        return response()->json([
+            'status'       => true,
+            'message'      => 'OTP sent successfully on your mobile number.',
+            'phone'        => $data['phone'],
+            'sms_response' => $response->body(),
+        ]);
+    } catch (\Throwable $e) {
+        report($e);
 
-            $tokenName = $data['device_name'] ?? 'authToken';
-            $token = $user->createToken($tokenName)->plainTextToken;
+        return response()->json([
+            'status'  => false,
+            'message' => 'OTP service is currently unavailable. Please try again.',
+        ], 500);
+    }
+}
 
-            $user->load('businesses');
 
+public function verifyRegisterOtp(Request $request)
+{
+    $validated = $request->validate([
+        'phone' => ['required', 'digits:10'],
+        'otp'   => ['required', 'digits:6'],
+    ]);
+
+    $isTestingEnvironment = app()->environment(['local', 'testing']);
+
+    /*
+    |--------------------------------------------------------------------------
+    | OTP Record Find
+    |--------------------------------------------------------------------------
+    | Testing में केवल phone से record मिलेगा और कोई भी 6-digit OTP चलेगा।
+    | Production में phone और OTP दोनों match होना जरूरी है।
+    */
+    $otpQuery = RegisterOtp::where('phone', $validated['phone']);
+
+    if (!$isTestingEnvironment) {
+        $otpQuery->where('otp', $validated['otp']);
+    }
+
+    $otpRecord = $otpQuery->latest('id')->first();
+
+    if (!$otpRecord) {
+        return response()->json([
+            'status'  => false,
+            'message' => $isTestingEnvironment
+                ? 'Registration request not found. Please register first.'
+                : 'Invalid OTP.',
+        ], 422);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Production में Expiry Check
+    |--------------------------------------------------------------------------
+    | Testing environment में OTP expiry भी skip रहेगी।
+    */
+    if (
+        !$isTestingEnvironment &&
+        (!$otpRecord->expires_at || $otpRecord->expires_at->isPast())
+    ) {
+        $otpRecord->delete();
+
+        return response()->json([
+            'status'  => false,
+            'message' => 'OTP expired. Please register again.',
+        ], 422);
+    }
+
+    $data = $otpRecord->payload;
+
+    if (is_string($data)) {
+        $data = json_decode($data, true);
+    }
+
+    if (!is_array($data)) {
+        return response()->json([
+            'status'  => false,
+            'message' => 'Invalid registration data. Please register again.',
+        ], 422);
+    }
+
+    return DB::transaction(function () use ($data, $otpRecord) {
+        /*
+        |--------------------------------------------------------------------------
+        | Duplicate Check
+        |--------------------------------------------------------------------------
+        | OTP request के बाद किसी दूसरे request से user create हो गया हो,
+        | तो duplicate database error से बचने के लिए दोबारा check करेंगे।
+        */
+        $existingUser = User::where('phone', $data['phone'])
+            ->orWhere('email', $data['email'])
+            ->first();
+
+        if ($existingUser) {
             $otpRecord->delete();
 
             return response()->json([
-                'status'     => true,
-                'message'    => 'Mobile number verified and registration successful.',
-                'token_type' => 'Bearer',
-                'token'      => $token,
-                'user'       => [
-                    'id'       => $user->id,
-                    'name'     => $user->name,
-                    'email'    => $user->email,
-                    'phone'    => $user->phone,
-                    'business' => $user->businesses,
-                ],
-            ], 201);
-        });
-    }
+                'status'  => false,
+                'message' => 'User is already registered with this phone or email.',
+            ], 422);
+        }
 
-//     public function register(Request $request)
-// {
-//     $data = $request->validate([
-//         'name'        => ['required', 'string', 'max:120'],
-//         'email'       => ['required', 'email', 'max:190', 'unique:users,email'],
-//         'password'    => ['required', 'string', 'min:6', 'confirmed'],
-//         'phone'       => ['required', 'digits:10', 'unique:users,phone'],
-//         'business_id' => ['nullable', 'integer', 'exists:businesses,id'],
-//         'device_name' => ['nullable', 'string', 'max:100'],
-//     ]);
+        $user = User::create([
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
+            'phone'    => $data['phone'],
+        ]);
 
-//     /*
-//     |--------------------------------------------------------------------------
-//     | Testing / Local Environment
-//     |--------------------------------------------------------------------------
-//     | Local और testing environment में SMS send नहीं होगा।
-//     | Verify OTP API में कोई भी 6-digit OTP डालकर registration हो जाएगा।
-//     */
-//     $isTestingEnvironment = app()->environment(['local', 'testing']);
+        if (!empty($data['business_id'])) {
+            $user->businesses()->syncWithoutDetaching([
+                $data['business_id'],
+            ]);
 
-//     $otp = $isTestingEnvironment
-//         ? '123456'
-//         : (string) random_int(100000, 999999);
+            if (Schema::hasColumn('users', 'current_business_id')) {
+                $user->current_business_id = $data['business_id'];
+                $user->save();
+            }
+        }
 
-//     RegisterOtp::where('phone', $data['phone'])->delete();
+        $tokenName = $data['device_name'] ?? 'authToken';
 
-//     RegisterOtp::create([
-//         'phone'      => $data['phone'],
-//         'email'      => $data['email'],
-//         'otp'        => $otp,
-//         'payload'    => $data,
-//         'expires_at' => now()->addMinutes(10),
-//     ]);
+        $token = $user
+            ->createToken($tokenName)
+            ->plainTextToken;
 
-//     /*
-//     |--------------------------------------------------------------------------
-//     | Testing में SMS Skip
-//     |--------------------------------------------------------------------------
-//     */
-//     if ($isTestingEnvironment) {
-//         return response()->json([
-//             'status'      => true,
-//             'message'     => 'Testing mode: OTP SMS skipped. Enter any 6-digit OTP.',
-//             'phone'       => $data['phone'],
-//             'testing_otp' => $otp,
-//         ]);
-//     }
+        $user->load('businesses');
 
-//     /*
-//     |--------------------------------------------------------------------------
-//     | Production में Real SMS Send
-//     |--------------------------------------------------------------------------
-//     */
-//     $msg = "Dear Customer, {$otp} this is your login verification OTP. "
-//         . "Please do not share with anyone. Best Regards, "
-//         . "Real Victory Groups https://myvictory.in/";
+        $otpRecord->delete();
 
-//     try {
-//         $response = Http::timeout(20)
-//             ->get('https://kutility.org/app/smsapi/index.php', [
-//                 'key'         => '5620360CF8C9B4',
-//                 'campaign'    => '12754',
-//                 'routeid'     => '7',
-//                 'type'        => 'text',
-//                 'contacts'    => $data['phone'],
-//                 'senderid'    => 'RVGRPS',
-//                 'msg'         => $msg,
-//                 'template_id' => '1707178057481157648',
-//                 'pe_id'       => '1701164032595209992',
-//             ]);
-
-//         if (!$response->successful()) {
-//             return response()->json([
-//                 'status'  => false,
-//                 'message' => 'Unable to send OTP. Please try again.',
-//             ], 500);
-//         }
-
-//         return response()->json([
-//             'status'       => true,
-//             'message'      => 'OTP sent successfully on your mobile number.',
-//             'phone'        => $data['phone'],
-//             'sms_response' => $response->body(),
-//         ]);
-//     } catch (\Throwable $e) {
-//         report($e);
-
-//         return response()->json([
-//             'status'  => false,
-//             'message' => 'OTP service is currently unavailable. Please try again.',
-//         ], 500);
-//     }
-// }
-
-
-// public function verifyRegisterOtp(Request $request)
-// {
-//     $validated = $request->validate([
-//         'phone' => ['required', 'digits:10'],
-//         'otp'   => ['required', 'digits:6'],
-//     ]);
-
-//     $isTestingEnvironment = app()->environment(['local', 'testing']);
-
-//     /*
-//     |--------------------------------------------------------------------------
-//     | OTP Record Find
-//     |--------------------------------------------------------------------------
-//     | Testing में केवल phone से record मिलेगा और कोई भी 6-digit OTP चलेगा।
-//     | Production में phone और OTP दोनों match होना जरूरी है।
-//     */
-//     $otpQuery = RegisterOtp::where('phone', $validated['phone']);
-
-//     if (!$isTestingEnvironment) {
-//         $otpQuery->where('otp', $validated['otp']);
-//     }
-
-//     $otpRecord = $otpQuery->latest('id')->first();
-
-//     if (!$otpRecord) {
-//         return response()->json([
-//             'status'  => false,
-//             'message' => $isTestingEnvironment
-//                 ? 'Registration request not found. Please register first.'
-//                 : 'Invalid OTP.',
-//         ], 422);
-//     }
-
-//     /*
-//     |--------------------------------------------------------------------------
-//     | Production में Expiry Check
-//     |--------------------------------------------------------------------------
-//     | Testing environment में OTP expiry भी skip रहेगी।
-//     */
-//     if (
-//         !$isTestingEnvironment &&
-//         (!$otpRecord->expires_at || $otpRecord->expires_at->isPast())
-//     ) {
-//         $otpRecord->delete();
-
-//         return response()->json([
-//             'status'  => false,
-//             'message' => 'OTP expired. Please register again.',
-//         ], 422);
-//     }
-
-//     $data = $otpRecord->payload;
-
-//     if (is_string($data)) {
-//         $data = json_decode($data, true);
-//     }
-
-//     if (!is_array($data)) {
-//         return response()->json([
-//             'status'  => false,
-//             'message' => 'Invalid registration data. Please register again.',
-//         ], 422);
-//     }
-
-//     return DB::transaction(function () use ($data, $otpRecord) {
-//         /*
-//         |--------------------------------------------------------------------------
-//         | Duplicate Check
-//         |--------------------------------------------------------------------------
-//         | OTP request के बाद किसी दूसरे request से user create हो गया हो,
-//         | तो duplicate database error से बचने के लिए दोबारा check करेंगे।
-//         */
-//         $existingUser = User::where('phone', $data['phone'])
-//             ->orWhere('email', $data['email'])
-//             ->first();
-
-//         if ($existingUser) {
-//             $otpRecord->delete();
-
-//             return response()->json([
-//                 'status'  => false,
-//                 'message' => 'User is already registered with this phone or email.',
-//             ], 422);
-//         }
-
-//         $user = User::create([
-//             'name'     => $data['name'],
-//             'email'    => $data['email'],
-//             'password' => Hash::make($data['password']),
-//             'phone'    => $data['phone'],
-//         ]);
-
-//         if (!empty($data['business_id'])) {
-//             $user->businesses()->syncWithoutDetaching([
-//                 $data['business_id'],
-//             ]);
-
-//             if (Schema::hasColumn('users', 'current_business_id')) {
-//                 $user->current_business_id = $data['business_id'];
-//                 $user->save();
-//             }
-//         }
-
-//         $tokenName = $data['device_name'] ?? 'authToken';
-
-//         $token = $user
-//             ->createToken($tokenName)
-//             ->plainTextToken;
-
-//         $user->load('businesses');
-
-//         $otpRecord->delete();
-
-//         return response()->json([
-//             'status'     => true,
-//             'message'    => 'Mobile number verified and registration successful.',
-//             'token_type' => 'Bearer',
-//             'token'      => $token,
-//             'user'       => [
-//                 'id'       => $user->id,
-//                 'name'     => $user->name,
-//                 'email'    => $user->email,
-//                 'phone'    => $user->phone,
-//                 'business' => $user->businesses,
-//             ],
-//         ], 201);
-//     });
-// }
+        return response()->json([
+            'status'     => true,
+            'message'    => 'Mobile number verified and registration successful.',
+            'token_type' => 'Bearer',
+            'token'      => $token,
+            'user'       => [
+                'id'       => $user->id,
+                'name'     => $user->name,
+                'email'    => $user->email,
+                'phone'    => $user->phone,
+                'business' => $user->businesses,
+            ],
+        ], 201);
+    });
+}
 
 
     private function maskPhoneNumber(?string $phone): ?string

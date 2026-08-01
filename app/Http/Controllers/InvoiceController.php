@@ -8,6 +8,8 @@ use App\Models\Business;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\Client;
+use App\Models\Doctor;
+use App\Models\HospitalDepartment;
 use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Item;
@@ -313,6 +315,311 @@ class InvoiceController extends Controller
 
 
 
+//     public function create(Request $request, $type = 'proforma')
+// {
+//     $user  = $request->user();
+//     $today = now()->toDateString();
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Detect document type
+//     |--------------------------------------------------------------------------
+//     */
+//     $docType = strtolower(trim((string) $type));
+
+//     if (!in_array($docType, [
+//         'tax',
+//         'proforma',
+//         'quotation',
+//     ], true)) {
+//         $docType = 'proforma';
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Permission check
+//     |--------------------------------------------------------------------------
+//     */
+//     $permissionByType = [
+//         'tax'       => 'create invoice',
+//         'proforma'  => 'create proforma',
+//         'quotation' => 'create quotation',
+//     ];
+
+//     $requiredPermission = $permissionByType[$docType]
+//         ?? 'create invoice';
+
+//     if (!$user->can($requiredPermission)) {
+//         abort(
+//             403,
+//             "You don't have permission: {$requiredPermission}"
+//         );
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Resolve active business
+//     |--------------------------------------------------------------------------
+//     */
+//     $bid = $user->current_business_id
+//         ?? session('active_business_id');
+
+//     if (!$bid) {
+//         $bid = $user->businesses()
+//             ->pluck('businesses.id')
+//             ->first();
+//     }
+
+//     if (!$bid) {
+//         return redirect()
+//             ->route('invoices.index')
+//             ->withErrors([
+//                 'business' => 'Active business select/attach नहीं है.',
+//             ]);
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Business and allowed item fields
+//     |--------------------------------------------------------------------------
+//     */
+//     $business = Business::with([
+//         'businessType.itemFields',
+//     ])->findOrFail($bid);
+
+//     $allowedFields = [];
+
+//     if ($business->businessType) {
+//         $allowedFields = $business
+//             ->businessType
+//             ->itemFields
+//             ->pluck('field_name')
+//             ->filter()
+//             ->values()
+//             ->toArray();
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Invoice prefix
+//     |--------------------------------------------------------------------------
+//     */
+//     $attachedBusiness = $user->businesses()
+//         ->where('businesses.id', $bid)
+//         ->first();
+
+//     $taxBase = $attachedBusiness?->invoice_base_prefix
+//         ?? 'RV/SL';
+
+//     $base = match ($docType) {
+//         'proforma'  => 'PF',
+//         'quotation' => 'QT',
+//         default     => $taxBase,
+//     };
+
+//     $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix(
+//         $today,
+//         $base
+//     );
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Clients
+//     |--------------------------------------------------------------------------
+//     */
+//     $clients = Client::query()
+//         ->where('business_id', $bid)
+//         ->where('is_save', true)
+//         ->orderBy('name')
+//         ->get([
+//             'id',
+//             'name',
+//             'mobile',
+//             'address',
+//             'state',
+//             'state_code',
+//             'pincode',
+//             'gstin',
+//             'pan',
+//         ]);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Items
+//     |--------------------------------------------------------------------------
+//     */
+//     $items = Item::query()
+//         ->where('items.business_id', $bid)
+//         ->where('items.is_active', true)
+//         ->leftJoin(
+//             'invoice_items',
+//             'items.id',
+//             '=',
+//             'invoice_items.item_id'
+//         )
+//         ->select([
+//             'items.id',
+//             'items.name',
+//             'items.type',
+//             'items.sku',
+//             'items.barcode',
+//             'items.description',
+//             'items.tax_rate',
+//             'items.making_charge',
+//             'items.sac',
+//             'items.gold_weight',
+//             'items.gold_purity',
+//             'items.silver_weight',
+//             'items.silver_purity',
+//             'items.stone_weight',
+//             'items.stone_charges',
+//             'items.diamond_weight',
+//             'items.diamond_charges',
+//             'items.making_charge_type',
+//             'items.price',
+//             DB::raw(
+//                 'COALESCE(SUM(invoice_items.quantity), 0) as total_sold'
+//             ),
+//         ])
+//         ->groupBy([
+//             'items.id',
+//             'items.name',
+//             'items.type',
+//             'items.sku',
+//             'items.barcode',
+//             'items.description',
+//             'items.tax_rate',
+//             'items.making_charge',
+//             'items.sac',
+//             'items.gold_weight',
+//             'items.gold_purity',
+//             'items.silver_weight',
+//             'items.silver_purity',
+//             'items.stone_weight',
+//             'items.stone_charges',
+//             'items.diamond_weight',
+//             'items.diamond_charges',
+//             'items.making_charge_type',
+//             'items.price',
+//         ])
+//         ->orderByDesc('total_sold')
+//         ->orderBy('items.name')
+//         ->get();
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Categories
+//     |--------------------------------------------------------------------------
+//     */
+//     $categories = Category::query()
+//         ->where('business_id', $bid)
+//         ->orderBy('name')
+//         ->get([
+//             'id',
+//             'name',
+//         ]);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Metal rates
+//     |--------------------------------------------------------------------------
+//     */
+//     $metalRates = MetalRate::query()
+//     ->where('business_id', $bid)
+//     ->whereDate('rate_date', $today)
+//     ->where('is_active', true)
+//     ->orderByDesc('id')
+//     ->get([
+//         'id',
+//         'metal_type',
+//         'purity',
+//         'rate_per_gram',
+//     ])
+//     ->unique(function ($rate) {
+//         return strtolower(trim((string) $rate->metal_type))
+//             . '|'
+//             . strtoupper(
+//                 preg_replace(
+//                     '/[^A-Z0-9]/i',
+//                     '',
+//                     (string) $rate->purity
+//                 )
+//             );
+//     })
+//     ->values();
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Preview invoice number
+//     |--------------------------------------------------------------------------
+//     */
+//     $preview = \App\Services\InvoiceNumber::peek(
+//         $bid,
+//         $today,
+//         $suggestedPrefix,
+//         3,
+//         $docType
+//     );
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Bank accounts
+//     |--------------------------------------------------------------------------
+//     */
+//     $banks = BankAccount::query()
+//         ->where('business_id', $bid)
+//         ->orderBy('bank_name')
+//         ->get([
+//             'id',
+//             'bank_name',
+//             'account_holder',
+//             'account_no',
+//             'ifsc',
+//         ]);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Suggestion visibility
+//     |--------------------------------------------------------------------------
+//     | Current document type में 5 से कम records होने तक suggestion दिखेगा.
+//     */
+//     $currentTypeCount = \App\Models\Invoice::query()
+//         ->where('business_id', $bid)
+//         ->where('invoice_type', $docType)
+//         ->count();
+
+//     $showInvoiceSuggestion = $currentTypeCount < 5;
+
+//     return view('invoices.create_kapoor_style', [
+//         'today'                 => $today,
+
+//         'clientsJson'           => $clients->values()->toJson(),
+//         'itemsJson'             => $items->values()->toJson(),
+//         'categoriesJson'        => $categories->values()->toJson(),
+//         'metalRatesJson'        => $metalRates->values()->toJson(),
+//         'banksJson'             => $banks->values()->toJson(),
+
+//         'suggestedPrefix'       => $suggestedPrefix,
+//         'basePrefix'            => $base,
+//         'initialInvoiceNo'      => $preview['full'] ?? 'Auto',
+//         'defaultTerms'          => $business->terms,
+
+//         'businessState'         => $business->state,
+//         'businessStateCode'     => $business->state_code,
+//         'businessGstin'         => $business->gstin,
+//         'businessName'          => $business->name,
+//         'businessSignature'     => $business->signature,
+
+//         'docType'               => $docType,
+//         'allowedFields'         => $allowedFields,
+
+//         // Suggestion variables
+//         'currentTypeCount'      => $currentTypeCount,
+//         'showInvoiceSuggestion' => $showInvoiceSuggestion,
+//         'activeBusinessId'      => $bid,
+//     ]);
+// }
+
     public function create(Request $request, $type = 'proforma')
 {
     $user  = $request->user();
@@ -425,21 +732,43 @@ class InvoiceController extends Controller
     | Clients
     |--------------------------------------------------------------------------
     */
-    $clients = Client::query()
-        ->where('business_id', $bid)
-        ->where('is_save', true)
-        ->orderBy('name')
-        ->get([
-            'id',
-            'name',
-            'mobile',
-            'address',
-            'state',
-            'state_code',
-            'pincode',
-            'gstin',
-            'pan',
-        ]);
+    // $clients = Client::query()
+    //     ->where('business_id', $bid)
+    //     ->where('is_save', true)
+    //     ->orderBy('name')
+    //     ->get([
+    //         'id',
+    //         'name',
+    //         'mobile',
+    //         'address',
+    //         'state',
+    //         'state_code',
+    //         'pincode',
+    //         'gstin',
+    //         'pan',
+    //     ]);
+
+
+
+    $isHospitalBusiness = $business->isHospitalBusiness();
+
+    $doctors = collect();
+    $departments = collect();
+    $visits = collect();
+
+    if ($isHospitalBusiness) {
+        $doctors = Doctor::query()
+            ->where('business_id', $bid)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $departments = HospitalDepartment::query()
+            ->where('business_id', $bid)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -589,6 +918,7 @@ class InvoiceController extends Controller
     $showInvoiceSuggestion = $currentTypeCount < 5;
 
     return view('invoices.create_kapoor_style', [
+    // return view('invoices.create_hospital_style', [
         'today'                 => $today,
 
         'clientsJson'           => $clients->values()->toJson(),
@@ -615,6 +945,9 @@ class InvoiceController extends Controller
         'currentTypeCount'      => $currentTypeCount,
         'showInvoiceSuggestion' => $showInvoiceSuggestion,
         'activeBusinessId'      => $bid,
+        'doctors'               => $doctors,
+        'departments'           => $departments,
+        'isHospitalBusiness'    => $isHospitalBusiness,
     ]);
 }
 

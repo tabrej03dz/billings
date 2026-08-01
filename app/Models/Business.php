@@ -38,6 +38,20 @@ class Business extends Model
     }
 
 
+    public function isHospitalBusiness(): bool
+    {
+        return in_array(
+            $this->businessType?->slug,
+            [
+                'hospital',
+                'clinic',
+                'diagnostic_center',
+                'pathology_lab',
+            ],
+            true
+        );
+    }
+
 
 
 
