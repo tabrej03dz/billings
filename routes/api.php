@@ -394,8 +394,7 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
 
     /* Business */
     Route::prefix('businesses')->group(function () {
-        Route::get('/index', [BusinessController::class, 'index'])
-            ->middleware('permission:show businesses|view all businesses');
+        Route::get('/index', [BusinessController::class, 'index']);
 
         Route::post('/store', [BusinessController::class, 'store']);
 
