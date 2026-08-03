@@ -955,6 +955,26 @@
             </form>
         @endcan
 
+         {{-- @can('create invoice') --}}
+            <div class="relative mt-2">
+
+                <flux:navlist.item
+                    icon="plus"
+                    :href="route('hospital.dashboard')"
+                    :current="request()->routeIs('hospital.*')"
+                    wire:navigate
+                    class=""
+                >
+                    <div class="flex w-full items-center justify-between gap-2">
+                        <span>Hospital</span>
+                    </div>
+                </flux:navlist.item>
+
+                
+
+            </div>
+        {{-- @endcan --}}
+
         {{-- ============================================================= --}}
         {{-- INVOICES --}}
         {{-- ============================================================= --}}

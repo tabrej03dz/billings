@@ -36,6 +36,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserActivityController;
 use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\AdRegistrationController;
+use App\Http\Controllers\HospitalManagementController;
 use App\Http\Controllers\OnboardingRegistrationController;
 use App\Http\Controllers\UnitController;
 
@@ -345,6 +346,44 @@ Route::middleware(['auth'])->group(function () {
             '/dismiss-suggestion',
             'dismissSuggestion'
         )->name('suggestion.dismiss');
+    });
+
+Route::prefix('hospital')
+    ->name('hospital.')
+    ->controller(HospitalManagementController::class)
+    ->group(function () {
+        Route::get('/', 'dashboard')->name('dashboard');
+
+        Route::get('/doctors', 'doctors')->name('doctors.index');
+        Route::post('/doctors', 'storeDoctor')->name('doctors.store');
+        Route::put('/doctors/{doctor}', 'updateDoctor')->name('doctors.update');
+        Route::delete('/doctors/{doctor}', 'deleteDoctor')->name('doctors.destroy');
+
+        Route::get('/patients', 'patients')->name('patients.index');
+        Route::post('/patients', 'storePatient')->name('patients.store');
+        Route::put('/patients/{patient}', 'updatePatient')->name('patients.update');
+
+        Route::get('/departments', 'departments')->name('departments.index');
+        Route::post('/departments', 'storeDepartment')->name('departments.store');
+        Route::put('/departments/{department}', 'updateDepartment')->name('departments.update');
+        Route::delete('/departments/{department}', 'deleteDepartment')->name('departments.destroy');
+
+        Route::get('/wards', 'wards')->name('wards.index');
+        Route::post('/wards', 'storeWard')->name('wards.store');
+        Route::put('/wards/{ward}', 'updateWard')->name('wards.update');
+        Route::delete('/wards/{ward}', 'deleteWard')->name('wards.destroy');
+
+        Route::get('/rooms', 'rooms')->name('rooms.index');
+        Route::post('/rooms', 'storeRoom')->name('rooms.store');
+        Route::put('/rooms/{room}', 'updateRoom')->name('rooms.update');
+        Route::delete('/rooms/{room}', 'deleteRoom')->name('rooms.destroy');
+
+        Route::get('/beds', 'beds')->name('beds.index');
+        Route::post('/beds', 'storeBed')->name('beds.store');
+        Route::put('/beds/{bed}', 'updateBed')->name('beds.update');
+        Route::delete('/beds/{bed}', 'deleteBed')->name('beds.destroy');
+
+        Route::get('/visits', 'visits')->name('visits.index');
     });
 
 
