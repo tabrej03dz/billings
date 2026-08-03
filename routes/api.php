@@ -497,8 +497,7 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
     Route::post('/ai/scan', [\App\Http\Controllers\Api\ItemAiController::class, 'photoEntry'])
         ->middleware('permission:create item|edit item');
 
-    Route::get('/business-types', [\App\Http\Controllers\Api\BusinessTypeController::class, 'index'])
-        ->middleware('permission:show businesses|create business|edit business');
+    Route::get('/business-types', [\App\Http\Controllers\Api\BusinessTypeController::class, 'index']);
 
     /* Metal rates - database currently has only "show metal rates" permission */
     Route::prefix('metal-rates')

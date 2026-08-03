@@ -1428,15 +1428,87 @@
             .invoice-table tbody tr:nth-child(even) { background: rgba(236,254,255,.35); }
             .invoice-table tbody tr:hover { background: rgba(207,250,254,.6) !important; }
             .invoice-table td { border-color: #e2e8f0 !important; }
-            @media (prefers-color-scheme: dark) {
-                .invoice-create-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
-                .invoice-create-page select,
-                .invoice-create-page textarea { background-color:#202832; border-color:#374151; }
-                .invoice-table tbody tr:nth-child(even) { background: rgba(8,47,73,.16); }
+            /* Dark controls only when the application itself has .dark class. */
+            .dark .invoice-create-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            .dark .invoice-create-page select,
+            .dark .invoice-create-page textarea {
+                background-color: #202832;
+                border-color: #374151;
+                color: #f8fafc;
+            }
+            .dark .invoice-table tbody tr:nth-child(even) {
+                background: rgba(8,47,73,.16);
             }
             @media (max-width: 640px) {
                 .hospital-hero { border-radius: 14px !important; padding: 16px !important; }
                 .hospital-card { border-radius: 14px !important; }
+            }
+
+            /* =========================================================
+             * LIGHT MODE FORM VISIBILITY FIX
+             * Browser dark preference must not make light-mode fields black.
+             * ========================================================= */
+            html:not(.dark) .invoice-create-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            html:not(.dark) .invoice-create-page select,
+            html:not(.dark) .invoice-create-page textarea,
+            body:not(.dark) .invoice-create-page input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            body:not(.dark) .invoice-create-page select,
+            body:not(.dark) .invoice-create-page textarea {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                border-color: #cbd5e1 !important;
+                -webkit-text-fill-color: #0f172a !important;
+                color-scheme: light;
+            }
+
+            html:not(.dark) .invoice-create-page input::placeholder,
+            html:not(.dark) .invoice-create-page textarea::placeholder,
+            body:not(.dark) .invoice-create-page input::placeholder,
+            body:not(.dark) .invoice-create-page textarea::placeholder {
+                color: #64748b !important;
+                opacity: 1 !important;
+                -webkit-text-fill-color: #64748b !important;
+            }
+
+            html:not(.dark) .invoice-create-page select option,
+            body:not(.dark) .invoice-create-page select option {
+                background: #ffffff !important;
+                color: #0f172a !important;
+            }
+
+            html:not(.dark) .invoice-table input:not([type="checkbox"]):not([type="radio"]),
+            html:not(.dark) .invoice-table select,
+            html:not(.dark) .invoice-table textarea,
+            body:not(.dark) .invoice-table input:not([type="checkbox"]):not([type="radio"]),
+            body:not(.dark) .invoice-table select,
+            body:not(.dark) .invoice-table textarea {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                border-color: #cbd5e1 !important;
+                -webkit-text-fill-color: #0f172a !important;
+            }
+
+            html:not(.dark) .invoice-table input::placeholder,
+            html:not(.dark) .invoice-table textarea::placeholder,
+            body:not(.dark) .invoice-table input::placeholder,
+            body:not(.dark) .invoice-table textarea::placeholder {
+                color: #64748b !important;
+                opacity: 1 !important;
+            }
+
+            html:not(.dark) input[type="date"],
+            html:not(.dark) input[type="datetime-local"],
+            html:not(.dark) input[type="time"],
+            body:not(.dark) input[type="date"],
+            body:not(.dark) input[type="datetime-local"],
+            body:not(.dark) input[type="time"] {
+                color-scheme: light !important;
+            }
+
+            .dark .invoice-create-page input::placeholder,
+            .dark .invoice-create-page textarea::placeholder {
+                color: #94a3b8 !important;
+                opacity: 1 !important;
             }
         </style>
         {{-- errors --}}
@@ -1909,7 +1981,7 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-xs font-semibold text-gray-700 dark:text-neutral-300">Clinical / Billing Notes</label>
-                        <textarea name="hospital_notes" x-model.trim="hospital.notes" rows="2" placeholder="Clinical notes, package details or billing remarks"
+                        <textarea name="notes" x-model.trim="hospital.notes" rows="2" placeholder="Clinical notes, package details or billing remarks"
                             class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white"></textarea>
                     </div>
                 </div>
