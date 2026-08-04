@@ -31,6 +31,9 @@ use App\Models\InvoiceAdditionalCharge;
 use App\Models\PatientVisit;
 use Illuminate\Validation\Rule;
 use Throwable;
+use App\Models\HospitalRoom;
+use App\Models\HospitalWard;
+
 
 
 class InvoiceController extends Controller
@@ -625,14 +628,529 @@ class InvoiceController extends Controller
 //     ]);
 // }
 
-    public function create(Request $request, $type = 'proforma')
+//     public function create(Request $request, $type = 'proforma')
+// {
+//     $user  = $request->user();
+//     $today = now()->toDateString();
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Detect document type
+//     |--------------------------------------------------------------------------
+//     */
+//     $docType = strtolower(trim((string) $type));
+
+//     if (!in_array($docType, [
+//         'tax',
+//         'proforma',
+//         'quotation',
+//     ], true)) {
+//         $docType = 'proforma';
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Permission check
+//     |--------------------------------------------------------------------------
+//     */
+//     $permissionByType = [
+//         'tax'       => 'create invoice',
+//         'proforma'  => 'create proforma',
+//         'quotation' => 'create quotation',
+//     ];
+
+//     $requiredPermission = $permissionByType[$docType]
+//         ?? 'create invoice';
+
+//     if (!$user->can($requiredPermission)) {
+//         abort(
+//             403,
+//             "You don't have permission: {$requiredPermission}"
+//         );
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Resolve active business
+//     |--------------------------------------------------------------------------
+//     */
+//     $businessId = $user->current_business_id
+//         ?? session('active_business_id');
+
+//     if (!$businessId) {
+//         $businessId = $user->businesses()
+//             ->pluck('businesses.id')
+//             ->first();
+//     }
+
+//     if (!$businessId) {
+//         return redirect()
+//             ->route('invoices.index')
+//             ->withErrors([
+//                 'business' => 'Active business select/attach nahi hai.',
+//             ]);
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Security: verify that user can access this business
+//     |--------------------------------------------------------------------------
+//     */
+//     $hasBusinessAccess = $user->businesses()
+//         ->where('businesses.id', $businessId)
+//         ->exists();
+
+//     $isPrivilegedUser = $user->hasAnyRole([
+//         'super_admin',
+//         'owner',
+//         'admin',
+//     ]);
+
+//     if (!$hasBusinessAccess && !$isPrivilegedUser) {
+//         abort(403, 'You do not have access to this business.');
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Business
+//     |--------------------------------------------------------------------------
+//     */
+//     $business = Business::with([
+//         'businessType.itemFields',
+//     ])->findOrFail($businessId);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Allowed item fields
+//     |--------------------------------------------------------------------------
+//     */
+//     $allowedFields = $business->businessType
+//         ? $business->businessType
+//             ->itemFields
+//             ->pluck('field_name')
+//             ->filter()
+//             ->unique()
+//             ->values()
+//             ->toArray()
+//         : [];
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Hospital business detection
+//     |--------------------------------------------------------------------------
+//     */
+//     $businessTypeValue = strtolower(trim((string) (
+//         $business->businessType?->slug
+//         ?? $business->businessType?->name
+//         ?? ''
+//     )));
+
+//     /*
+//      * Business model me isHospitalBusiness() method ho to use hoga.
+//      * Method na hone par business type name/slug se detect hoga.
+//      */
+//     $isHospitalBusiness = method_exists(
+//         $business,
+//         'isHospitalBusiness'
+//     )
+//         ? $business->isHospitalBusiness()
+//         : in_array($businessTypeValue, [
+//             'hospital',
+//             'clinic',
+//             'nursing home',
+//             'nursing_home',
+//             'diagnostic center',
+//             'diagnostic_center',
+//             'pathology lab',
+//             'pathology_lab',
+//         ], true);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Invoice prefix
+//     |--------------------------------------------------------------------------
+//     */
+//     $attachedBusiness = $user->businesses()
+//         ->where('businesses.id', $businessId)
+//         ->first();
+
+//     $taxBase = $attachedBusiness?->invoice_base_prefix
+//         ?: ($business->invoice_base_prefix ?: 'RV/SL');
+
+//     $basePrefix = match ($docType) {
+//         'proforma'  => 'PF',
+//         'quotation' => 'QT',
+//         default     => $taxBase,
+//     };
+
+//     $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix(
+//         $today,
+//         $basePrefix
+//     );
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Clients / Patients
+//     |--------------------------------------------------------------------------
+//     */
+//     $clients = Client::query()
+//         ->where('business_id', $businessId)
+//         ->where('is_save', true)
+//         ->orderBy('name')
+//         ->get([
+//             'id',
+//             'name',
+//             'mobile',
+//             'email',
+//             'address',
+//             'state',
+//             'state_code',
+//             'pincode',
+//             'gstin',
+            
+            
+//         ]);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Hospital masters
+//     |--------------------------------------------------------------------------
+//     */
+//     $doctors     = collect();
+//     $departments = collect();
+//     $visits      = collect();
+//     $wards       = collect();
+//     $rooms       = collect();
+//     $beds        = collect();
+
+//     if ($isHospitalBusiness) {
+//         $doctors = Doctor::query()
+//             ->where('business_id', $businessId)
+//             ->where('is_active', true)
+//             ->orderBy('name')
+//             ->get();
+
+//         $departments = HospitalDepartment::query()
+//             ->where('business_id', $businessId)
+//             ->where('is_active', true)
+//             ->orderBy('name')
+//             ->get();
+
+//         /*
+//          * In queries ko tab uncomment/use karein jab corresponding models
+//          * aur tables project me available hon.
+//          */
+
+//         // $visits = PatientVisit::query()
+//         //     ->where('business_id', $businessId)
+//         //     ->latest('visit_at')
+//         //     ->limit(100)
+//         //     ->get();
+
+//         // $wards = HospitalWard::query()
+//         //     ->where('business_id', $businessId)
+//         //     ->where('is_active', true)
+//         //     ->orderBy('name')
+//         //     ->get();
+
+//         // $rooms = HospitalRoom::query()
+//         //     ->where('business_id', $businessId)
+//         //     ->where('is_active', true)
+//         //     ->orderBy('room_number')
+//         //     ->get();
+
+//         // $beds = HospitalBed::query()
+//         //     ->where('business_id', $businessId)
+//         //     ->where('is_active', true)
+//         //     ->orderBy('bed_number')
+//         //     ->get();
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Items / Hospital services
+//     |--------------------------------------------------------------------------
+//     */
+//     $items = Item::query()
+//         ->where('items.business_id', $businessId)
+//         ->where('items.is_active', true)
+//         ->leftJoin(
+//             'invoice_items',
+//             'items.id',
+//             '=',
+//             'invoice_items.item_id'
+//         )
+//         ->select([
+//             'items.id',
+//             'items.name',
+//             'items.type',
+//             'items.sku',
+//             'items.barcode',
+//             'items.description',
+//             'items.tax_rate',
+//             'items.making_charge',
+//             'items.sac',
+//             'items.gold_weight',
+//             'items.gold_purity',
+//             'items.silver_weight',
+//             'items.silver_purity',
+//             'items.stone_weight',
+//             'items.stone_charges',
+//             'items.diamond_weight',
+//             'items.diamond_charges',
+//             'items.making_charge_type',
+//             'items.price',
+
+//             DB::raw(
+//                 'COALESCE(SUM(invoice_items.quantity), 0) AS total_sold'
+//             ),
+//         ])
+//         ->groupBy([
+//             'items.id',
+//             'items.name',
+//             'items.type',
+//             'items.sku',
+//             'items.barcode',
+//             'items.description',
+//             'items.tax_rate',
+//             'items.making_charge',
+//             'items.sac',
+//             'items.gold_weight',
+//             'items.gold_purity',
+//             'items.silver_weight',
+//             'items.silver_purity',
+//             'items.stone_weight',
+//             'items.stone_charges',
+//             'items.diamond_weight',
+//             'items.diamond_charges',
+//             'items.making_charge_type',
+//             'items.price',
+//         ])
+//         ->orderByDesc('total_sold')
+//         ->orderBy('items.name')
+//         ->get();
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Categories
+//     |--------------------------------------------------------------------------
+//     */
+//     $categories = Category::query()
+//         ->where('business_id', $businessId)
+//         ->orderBy('name')
+//         ->get([
+//             'id',
+//             'name',
+//         ]);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Metal rates
+//     |--------------------------------------------------------------------------
+//     */
+//     $metalRates = MetalRate::query()
+//         ->where('business_id', $businessId)
+//         ->whereDate('rate_date', $today)
+//         ->where('is_active', true)
+//         ->orderByDesc('id')
+//         ->get([
+//             'id',
+//             'metal_type',
+//             'purity',
+//             'rate_per_gram',
+//         ])
+//         ->unique(function ($rate) {
+//             $metalType = strtolower(
+//                 trim((string) $rate->metal_type)
+//             );
+
+//             $purity = strtoupper(
+//                 preg_replace(
+//                     '/[^A-Z0-9]/i',
+//                     '',
+//                     (string) $rate->purity
+//                 )
+//             );
+
+//             return $metalType . '|' . $purity;
+//         })
+//         ->values();
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Preview invoice number
+//     |--------------------------------------------------------------------------
+//     */
+//     $preview = \App\Services\InvoiceNumber::peek(
+//         $businessId,
+//         $today,
+//         $suggestedPrefix,
+//         3,
+//         $docType
+//     );
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Bank accounts
+//     |--------------------------------------------------------------------------
+//     */
+//     $banks = BankAccount::query()
+//         ->where('business_id', $businessId)
+//         ->orderBy('bank_name')
+//         ->get([
+//             'id',
+//             'bank_name',
+//             'account_holder',
+//             'account_no',
+//             'ifsc',
+//         ]);
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Create guide visibility
+//     |--------------------------------------------------------------------------
+//     */
+//     $currentTypeCount = Invoice::query()
+//         ->where('business_id', $businessId)
+//         ->where('invoice_type', $docType)
+//         ->count();
+
+//     $showInvoiceSuggestion = $currentTypeCount < 5;
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Select hospital/general invoice view
+//     |--------------------------------------------------------------------------
+//     */
+//     $viewName = $isHospitalBusiness
+//         ? 'invoices.create_hospital_style'
+//         : 'invoices.create_kapoor_style';
+
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | View data
+//     |--------------------------------------------------------------------------
+//     */
+//     $viewData = [
+//         'today' => $today,
+
+//         /*
+//          * Collections bhi bhej rahe hain, agar Blade direct variables use kare.
+//          */
+//         'clients'     => $clients,
+//         'items'       => $items,
+//         'categories'  => $categories,
+//         'metalRates'  => $metalRates,
+//         'banks'       => $banks,
+
+//         /*
+//          * Alpine/JavaScript JSON payloads.
+//          */
+//         'clientsJson' => $clients
+//             ->values()
+//             ->toJson(),
+
+//         'itemsJson' => $items
+//             ->values()
+//             ->toJson(),
+
+//         'categoriesJson' => $categories
+//             ->values()
+//             ->toJson(),
+
+//         'metalRatesJson' => $metalRates
+//             ->values()
+//             ->toJson(),
+
+//         'banksJson' => $banks
+//             ->values()
+//             ->toJson(),
+
+//         /*
+//          * Invoice header.
+//          */
+//         'suggestedPrefix'  => $suggestedPrefix,
+//         'basePrefix'       => $basePrefix,
+//         'initialInvoiceNo' => $preview['full'] ?? 'Auto',
+//         'defaultTerms'     => $business->terms,
+
+//         /*
+//          * Business information.
+//          */
+//         'business'          => $business,
+//         'businessState'     => $business->state,
+//         'businessStateCode' => $business->state_code,
+//         'businessGstin'     => $business->gstin,
+//         'businessName'      => $business->name,
+//         'businessSignature' => $business->signature,
+
+//         /*
+//          * Document settings.
+//          */
+//         'docType'          => $docType,
+//         'allowedFields'    => $allowedFields,
+//         'activeBusinessId' => $businessId,
+
+//         /*
+//          * Suggestion variables.
+//          */
+//         'currentTypeCount'      => $currentTypeCount,
+//         'showInvoiceSuggestion' => $showInvoiceSuggestion,
+
+//         /*
+//          * Hospital variables.
+//          */
+//         'isHospitalBusiness' => $isHospitalBusiness,
+//         'doctors'            => $doctors,
+//         'departments'        => $departments,
+//         'visits'             => $visits,
+//         'wards'              => $wards,
+//         'rooms'              => $rooms,
+//         'beds'               => $beds,
+
+//         /*
+//          * Hospital JSON payloads.
+//          */
+//         'doctorsJson' => $doctors
+//             ->values()
+//             ->toJson(),
+
+//         'departmentsJson' => $departments
+//             ->values()
+//             ->toJson(),
+
+//         'visitsJson' => $visits
+//             ->values()
+//             ->toJson(),
+
+//         'wardsJson' => $wards
+//             ->values()
+//             ->toJson(),
+
+//         'roomsJson' => $rooms
+//             ->values()
+//             ->toJson(),
+
+//         'bedsJson' => $beds
+//             ->values()
+//             ->toJson(),
+//     ];
+
+//     return view($viewName, $viewData);
+//         // return view('invoices.create_hospital_style', $viewData);
+// }
+
+
+
+public function create(Request $request, $type = 'proforma')
 {
-    $user  = $request->user();
+    $user = $request->user();
     $today = now()->toDateString();
 
     /*
     |--------------------------------------------------------------------------
-    | Detect document type
+    | Document type
     |--------------------------------------------------------------------------
     */
     $docType = strtolower(trim((string) $type));
@@ -647,12 +1165,12 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Permission check
+    | Permission
     |--------------------------------------------------------------------------
     */
     $permissionByType = [
-        'tax'       => 'create invoice',
-        'proforma'  => 'create proforma',
+        'tax' => 'create invoice',
+        'proforma' => 'create proforma',
         'quotation' => 'create quotation',
     ];
 
@@ -668,7 +1186,7 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Resolve active business
+    | Active business
     |--------------------------------------------------------------------------
     */
     $businessId = $user->current_business_id
@@ -690,21 +1208,24 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Security: verify that user can access this business
+    | Access check
     |--------------------------------------------------------------------------
     */
     $hasBusinessAccess = $user->businesses()
         ->where('businesses.id', $businessId)
         ->exists();
 
-    $isPrivilegedUser = $user->hasAnyRole([
+    $isPrivileged = $user->hasAnyRole([
         'super_admin',
         'owner',
         'admin',
     ]);
 
-    if (!$hasBusinessAccess && !$isPrivilegedUser) {
-        abort(403, 'You do not have access to this business.');
+    if (!$hasBusinessAccess && !$isPrivileged) {
+        abort(
+            403,
+            'You do not have access to this business.'
+        );
     }
 
     /*
@@ -733,7 +1254,7 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Hospital business detection
+    | Hospital detection
     |--------------------------------------------------------------------------
     */
     $businessTypeValue = strtolower(trim((string) (
@@ -742,10 +1263,6 @@ class InvoiceController extends Controller
         ?? ''
     )));
 
-    /*
-     * Business model me isHospitalBusiness() method ho to use hoga.
-     * Method na hone par business type name/slug se detect hoga.
-     */
     $isHospitalBusiness = method_exists(
         $business,
         'isHospitalBusiness'
@@ -764,7 +1281,7 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Invoice prefix
+    | Prefix
     |--------------------------------------------------------------------------
     */
     $attachedBusiness = $user->businesses()
@@ -775,15 +1292,18 @@ class InvoiceController extends Controller
         ?: ($business->invoice_base_prefix ?: 'RV/SL');
 
     $basePrefix = match ($docType) {
-        'proforma'  => 'PF',
+        'proforma' => 'PF',
         'quotation' => 'QT',
-        default     => $taxBase,
+        default => $isHospitalBusiness
+            ? 'HSP'
+            : $taxBase,
     };
 
-    $suggestedPrefix = \App\Services\InvoiceNumber::previewPrefix(
-        $today,
-        $basePrefix
-    );
+    $suggestedPrefix =
+        \App\Services\InvoiceNumber::previewPrefix(
+            $today,
+            $basePrefix
+        );
 
     /*
     |--------------------------------------------------------------------------
@@ -794,78 +1314,143 @@ class InvoiceController extends Controller
         ->where('business_id', $businessId)
         ->where('is_save', true)
         ->orderBy('name')
-        ->get([
-            'id',
-            'name',
-            'mobile',
-            'email',
-            'address',
-            'state',
-            'state_code',
-            'pincode',
-            'gstin',
-            
-            
-        ]);
+        ->get();
 
     /*
     |--------------------------------------------------------------------------
     | Hospital masters
     |--------------------------------------------------------------------------
     */
-    $doctors     = collect();
+    $doctors = collect();
     $departments = collect();
-    $visits      = collect();
-    $wards       = collect();
-    $rooms       = collect();
-    $beds        = collect();
+    $visits = collect();
+    $wards = collect();
+    $rooms = collect();
+    $beds = collect();
 
     if ($isHospitalBusiness) {
         $doctors = Doctor::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get([
+                'id',
+                'business_id',
+                'name',
+                'doctor_code',
+                'mobile',
+                'qualification',
+                'specialization',
+                'registration_number',
+                'consultation_fee',
+                'is_active',
+            ]);
 
         $departments = HospitalDepartment::query()
             ->where('business_id', $businessId)
             ->where('is_active', true)
             ->orderBy('name')
-            ->get();
+            ->get([
+                'id',
+                'business_id',
+                'name',
+                'code',
+                'description',
+                'is_active',
+            ]);
+
+        $wards = HospitalWard::query()
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'business_id',
+                'name',
+                'code',
+                'ward_type',
+                'daily_charge',
+                'is_active',
+            ]);
 
         /*
-         * In queries ko tab uncomment/use karein jab corresponding models
-         * aur tables project me available hon.
+         * Saare active rooms load honge.
+         * Filtering frontend par ward_id se hogi.
          */
+        $rooms = HospitalRoom::query()
+            ->with('ward:id,name')
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->orderBy('room_number')
+            ->get([
+                'id',
+                'business_id',
+                'ward_id',
+                'room_number',
+                'room_type',
+                'daily_charge',
+                'is_active',
+            ])
+            ->map(function (HospitalRoom $room) {
+                return [
+                    'id' => $room->id,
+                    'business_id' => $room->business_id,
+                    'ward_id' => $room->ward_id,
+                    'room_number' => $room->room_number,
+                    'room_type' => $room->room_type,
+                    'daily_charge' => $room->daily_charge,
+                    'is_active' => $room->is_active,
+                    'ward_name' => $room->ward?->name,
+                ];
+            })
+            ->values();
 
-        // $visits = PatientVisit::query()
-        //     ->where('business_id', $businessId)
-        //     ->latest('visit_at')
-        //     ->limit(100)
-        //     ->get();
+        /*
+         * Bed ko room relation se ward_id bhi diya ja raha hai.
+         */
+        $beds = HospitalBed::query()
+            ->with([
+                'room:id,ward_id,room_number',
+                'room.ward:id,name',
+            ])
+            ->where('business_id', $businessId)
+            ->where('is_active', true)
+            ->orderBy('bed_number')
+            ->get([
+                'id',
+                'business_id',
+                'room_id',
+                'bed_number',
+                'daily_charge',
+                'status',
+                'is_active',
+            ])
+            ->map(function (HospitalBed $bed) {
+                return [
+                    'id' => $bed->id,
+                    'business_id' => $bed->business_id,
+                    'room_id' => $bed->room_id,
+                    'ward_id' => $bed->room?->ward_id,
+                    'bed_number' => $bed->bed_number,
+                    'daily_charge' => $bed->daily_charge,
+                    'status' => $bed->status,
+                    'is_active' => $bed->is_active,
+                    'room_number' => $bed->room?->room_number,
+                    'ward_name' => $bed->room?->ward?->name,
+                ];
+            })
+            ->values();
 
-        // $wards = HospitalWard::query()
-        //     ->where('business_id', $businessId)
-        //     ->where('is_active', true)
-        //     ->orderBy('name')
-        //     ->get();
-
-        // $rooms = HospitalRoom::query()
-        //     ->where('business_id', $businessId)
-        //     ->where('is_active', true)
-        //     ->orderBy('room_number')
-        //     ->get();
-
-        // $beds = HospitalBed::query()
-        //     ->where('business_id', $businessId)
-        //     ->where('is_active', true)
-        //     ->orderBy('bed_number')
-        //     ->get();
+        $visits = PatientVisit::query()
+            ->where('business_id', $businessId)
+            ->latest('visit_at')
+            ->limit(100)
+            ->get();
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Items / Hospital services
+    | Items / Services
     |--------------------------------------------------------------------------
     */
     $items = Item::query()
@@ -935,10 +1520,7 @@ class InvoiceController extends Controller
     $categories = Category::query()
         ->where('business_id', $businessId)
         ->orderBy('name')
-        ->get([
-            'id',
-            'name',
-        ]);
+        ->get();
 
     /*
     |--------------------------------------------------------------------------
@@ -950,14 +1532,9 @@ class InvoiceController extends Controller
         ->whereDate('rate_date', $today)
         ->where('is_active', true)
         ->orderByDesc('id')
-        ->get([
-            'id',
-            'metal_type',
-            'purity',
-            'rate_per_gram',
-        ])
+        ->get()
         ->unique(function ($rate) {
-            $metalType = strtolower(
+            $metal = strtolower(
                 trim((string) $rate->metal_type)
             );
 
@@ -969,7 +1546,7 @@ class InvoiceController extends Controller
                 )
             );
 
-            return $metalType . '|' . $purity;
+            return $metal . '|' . $purity;
         })
         ->values();
 
@@ -988,23 +1565,17 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Bank accounts
+    | Banks
     |--------------------------------------------------------------------------
     */
     $banks = BankAccount::query()
         ->where('business_id', $businessId)
         ->orderBy('bank_name')
-        ->get([
-            'id',
-            'bank_name',
-            'account_holder',
-            'account_no',
-            'ifsc',
-        ]);
+        ->get();
 
     /*
     |--------------------------------------------------------------------------
-    | Create guide visibility
+    | Guide
     |--------------------------------------------------------------------------
     */
     $currentTypeCount = Invoice::query()
@@ -1016,34 +1587,23 @@ class InvoiceController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Select hospital/general invoice view
+    | View
     |--------------------------------------------------------------------------
     */
     $viewName = $isHospitalBusiness
         ? 'invoices.create_hospital_style'
         : 'invoices.create_kapoor_style';
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | View data
-    |--------------------------------------------------------------------------
-    */
-    $viewData = [
+    return view($viewName, [
         'today' => $today,
+        'business' => $business,
 
-        /*
-         * Collections bhi bhej rahe hain, agar Blade direct variables use kare.
-         */
-        'clients'     => $clients,
-        'items'       => $items,
-        'categories'  => $categories,
-        'metalRates'  => $metalRates,
-        'banks'       => $banks,
+        'clients' => $clients,
+        'items' => $items,
+        'categories' => $categories,
+        'metalRates' => $metalRates,
+        'banks' => $banks,
 
-        /*
-         * Alpine/JavaScript JSON payloads.
-         */
         'clientsJson' => $clients
             ->values()
             ->toJson(),
@@ -1065,49 +1625,17 @@ class InvoiceController extends Controller
             ->toJson(),
 
         /*
-         * Invoice header.
+         * Hospital collections.
          */
-        'suggestedPrefix'  => $suggestedPrefix,
-        'basePrefix'       => $basePrefix,
-        'initialInvoiceNo' => $preview['full'] ?? 'Auto',
-        'defaultTerms'     => $business->terms,
+        'doctors' => $doctors,
+        'departments' => $departments,
+        'visits' => $visits,
+        'wards' => $wards,
+        'rooms' => $rooms,
+        'beds' => $beds,
 
         /*
-         * Business information.
-         */
-        'business'          => $business,
-        'businessState'     => $business->state,
-        'businessStateCode' => $business->state_code,
-        'businessGstin'     => $business->gstin,
-        'businessName'      => $business->name,
-        'businessSignature' => $business->signature,
-
-        /*
-         * Document settings.
-         */
-        'docType'          => $docType,
-        'allowedFields'    => $allowedFields,
-        'activeBusinessId' => $businessId,
-
-        /*
-         * Suggestion variables.
-         */
-        'currentTypeCount'      => $currentTypeCount,
-        'showInvoiceSuggestion' => $showInvoiceSuggestion,
-
-        /*
-         * Hospital variables.
-         */
-        'isHospitalBusiness' => $isHospitalBusiness,
-        'doctors'            => $doctors,
-        'departments'        => $departments,
-        'visits'             => $visits,
-        'wards'              => $wards,
-        'rooms'              => $rooms,
-        'beds'               => $beds,
-
-        /*
-         * Hospital JSON payloads.
+         * Hospital JSON.
          */
         'doctorsJson' => $doctors
             ->values()
@@ -1132,12 +1660,27 @@ class InvoiceController extends Controller
         'bedsJson' => $beds
             ->values()
             ->toJson(),
-    ];
 
-    return view($viewName, $viewData);
-        // return view('invoices.create_hospital_style', $viewData);
+        'suggestedPrefix' => $suggestedPrefix,
+        'basePrefix' => $basePrefix,
+        'initialInvoiceNo' => $preview['full'] ?? 'Auto',
+        'defaultTerms' => $business->terms,
+
+        'businessState' => $business->state,
+        'businessStateCode' => $business->state_code,
+        'businessGstin' => $business->gstin,
+        'businessName' => $business->name,
+        'businessSignature' => $business->signature,
+
+        'docType' => $docType,
+        'allowedFields' => $allowedFields,
+        'activeBusinessId' => $businessId,
+
+        'currentTypeCount' => $currentTypeCount,
+        'showInvoiceSuggestion' => $showInvoiceSuggestion,
+        'isHospitalBusiness' => $isHospitalBusiness,
+    ]);
 }
-
 
 
 public function edit(Request $request, \App\Models\Invoice $invoice)

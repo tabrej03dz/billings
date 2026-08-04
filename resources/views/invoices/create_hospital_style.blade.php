@@ -1527,11 +1527,11 @@
         <script type="application/json" id="items-json">{!! $itemsJson !!}</script>
         <script type="application/json" id="categories-json">{!! $categoriesJson !!}</script>
         <script type="application/json" id="metal-rates-json">{!! $metalRatesJson !!}</script>
-        <script type="application/json" id="doctors-json">{!! json_encode($doctors ?? []) !!}</script>
-        <script type="application/json" id="departments-json">{!! json_encode($departments ?? []) !!}</script>
-        <script type="application/json" id="wards-json">{!! json_encode($wards ?? []) !!}</script>
-        <script type="application/json" id="rooms-json">{!! json_encode($rooms ?? []) !!}</script>
-        <script type="application/json" id="beds-json">{!! json_encode($beds ?? []) !!}</script>
+        <script type="application/json" id="doctors-json">{!! $doctorsJson ?? json_encode($doctors ?? []) !!}</script>
+        <script type="application/json" id="departments-json">{!! $departmentsJson ?? json_encode($departments ?? []) !!}</script>
+        <script type="application/json" id="wards-json">{!! $wardsJson ?? json_encode($wards ?? []) !!}</script>
+        <script type="application/json" id="rooms-json">{!! $roomsJson ?? json_encode($rooms ?? []) !!}</script>
+        <script type="application/json" id="beds-json">{!! $bedsJson ?? json_encode($beds ?? []) !!}</script>
 
         <script type="application/json" id="allowed-fields-json">
             {!! json_encode($allowedFields ?? []) !!}
@@ -1918,42 +1918,104 @@
                     </div>
                 </div>
 
-                <div x-show="['ipd','emergency','day_care'].includes(hospital.visit_type)" x-transition class="border-t border-cyan-100 bg-cyan-50/60 p-3 dark:border-cyan-900/50 dark:bg-cyan-950/10">
-                    <div class="mb-2 text-xs font-bold uppercase tracking-wide text-cyan-800 dark:text-cyan-300">Admission / Bed Details</div>
+                <div
+                    x-show="['ipd', 'emergency', 'day_care'].includes(hospital.visit_type)"
+                    x-transition
+                    class="border-t border-cyan-100 bg-cyan-50/60 p-3 dark:border-cyan-900/50 dark:bg-cyan-950/10"
+                >
+                    <div class="mb-2 text-xs font-bold uppercase tracking-wide text-cyan-800 dark:text-cyan-300">
+                        Admission / Bed Details
+                    </div>
+
                     <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-neutral-300">Admission At</label>
-                            <input type="datetime-local" name="admitted_at" x-model="hospital.admitted_at"
-                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white">
+                            <input
+                                type="datetime-local"
+                                name="admitted_at"
+                                x-model="hospital.admitted_at"
+                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white"
+                            >
                         </div>
+
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-neutral-300">Discharge At</label>
-                            <input type="datetime-local" name="discharged_at" x-model="hospital.discharged_at"
-                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white">
+                            <input
+                                type="datetime-local"
+                                name="discharged_at"
+                                x-model="hospital.discharged_at"
+                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white"
+                            >
                         </div>
+
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-neutral-300">Ward</label>
-                            <select name="ward_id" x-model="hospital.ward_id" @change="hospital.room_id=''; hospital.bed_id=''"
-                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white">
+                            <select
+                                name="ward_id"
+                                x-model="hospital.ward_id"
+                                @change="onHospitalWardChange()"
+                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white"
+                            >
                                 <option value="">Select ward</option>
-                                <template x-for="ward in wards" :key="ward.id"><option :value="ward.id" x-text="ward.name"></option></template>
+                                <template x-for="ward in wards" :key="'ward-' + ward.id">
+                                    <option
+                                        :value="String(ward.id)"
+                                        x-text="ward.name + (ward.ward_type ? ' (' + ward.ward_type + ')' : '')"
+                                    ></option>
+                                </template>
                             </select>
+                            <p x-show="wards.length === 0" class="mt-1 text-[10px] font-semibold text-red-600">
+                                Current business ke liye active ward nahi mila.
+                            </p>
                         </div>
+
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-neutral-300">Room</label>
-                            <select name="room_id" x-model="hospital.room_id" @change="hospital.bed_id=''"
-                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white">
+                            <select
+                                name="room_id"
+                                x-model="hospital.room_id"
+                                @change="onHospitalRoomChange()"
+                                :disabled="!hospital.ward_id"
+                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-neutral-700 dark:bg-[#242833] dark:text-white dark:disabled:bg-neutral-900"
+                            >
                                 <option value="">Select room</option>
-                                <template x-for="room in filteredHospitalRooms()" :key="room.id"><option :value="room.id" x-text="room.room_number || room.name"></option></template>
+                                <template x-for="room in filteredHospitalRooms()" :key="'room-' + room.id">
+                                    <option
+                                        :value="String(room.id)"
+                                        x-text="room.room_number + (room.room_type ? ' - ' + room.room_type : '')"
+                                    ></option>
+                                </template>
                             </select>
+                            <p
+                                x-show="hospital.ward_id && filteredHospitalRooms().length === 0"
+                                class="mt-1 text-[10px] font-semibold text-red-600"
+                            >
+                                Selected ward me active room nahi mila.
+                            </p>
                         </div>
+
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 dark:text-neutral-300">Bed</label>
-                            <select name="bed_id" x-model="hospital.bed_id"
-                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 dark:border-neutral-700 dark:bg-[#242833] dark:text-white">
+                            <select
+                                name="bed_id"
+                                x-model="hospital.bed_id"
+                                :disabled="!hospital.room_id"
+                                class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 disabled:cursor-not-allowed disabled:bg-gray-100 dark:border-neutral-700 dark:bg-[#242833] dark:text-white dark:disabled:bg-neutral-900"
+                            >
                                 <option value="">Select bed</option>
-                                <template x-for="bed in filteredHospitalBeds()" :key="bed.id"><option :value="bed.id" x-text="bed.bed_number || bed.name"></option></template>
+                                <template x-for="bed in filteredHospitalBeds()" :key="'bed-' + bed.id">
+                                    <option
+                                        :value="String(bed.id)"
+                                        x-text="bed.bed_number + (bed.status ? ' - ' + String(bed.status).replaceAll('_', ' ') : '')"
+                                    ></option>
+                                </template>
                             </select>
+                            <p
+                                x-show="hospital.room_id && filteredHospitalBeds().length === 0"
+                                class="mt-1 text-[10px] font-semibold text-red-600"
+                            >
+                                Selected room me active bed nahi mila.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -3092,6 +3154,9 @@
     </div>
 
     <script type="application/json" id="banks-json">{!! $banksJson !!}</script>
+
+
+
     <script>
 
         function invoiceForm() {
@@ -3404,28 +3469,59 @@
                 },
 
                 onHospitalVisitTypeChange() {
-                    if (!['ipd', 'emergency', 'day_care'].includes(this.hospital.visit_type)) {
+                    const admissionTypes = ['ipd', 'emergency', 'day_care'];
+
+                    if (!admissionTypes.includes(this.hospital.visit_type)) {
                         this.hospital.ward_id = '';
                         this.hospital.room_id = '';
                         this.hospital.bed_id = '';
                         this.hospital.admitted_at = '';
                         this.hospital.discharged_at = '';
+                        return;
                     }
+
+                    if (!this.hospital.admitted_at) {
+                        const now = new Date();
+                        const localDate = new Date(
+                            now.getTime() - now.getTimezoneOffset() * 60000
+                        );
+
+                        this.hospital.admitted_at = localDate
+                            .toISOString()
+                            .slice(0, 16);
+                    }
+                },
+
+                onHospitalWardChange() {
+                    this.hospital.room_id = '';
+                    this.hospital.bed_id = '';
+                },
+
+                onHospitalRoomChange() {
+                    this.hospital.bed_id = '';
                 },
 
                 filteredHospitalRooms() {
                     const wardId = String(this.hospital.ward_id || '');
-                    if (!wardId) return this.rooms;
-                    return this.rooms.filter(room => String(room.ward_id || '') === wardId);
+
+                    if (!wardId) {
+                        return [];
+                    }
+
+                    return this.rooms.filter((room) => {
+                        return String(room.ward_id || '') === wardId;
+                    });
                 },
 
                 filteredHospitalBeds() {
                     const roomId = String(this.hospital.room_id || '');
-                    const wardId = String(this.hospital.ward_id || '');
-                    return this.beds.filter(bed => {
-                        if (roomId) return String(bed.room_id || '') === roomId;
-                        if (wardId && bed.ward_id !== undefined) return String(bed.ward_id || '') === wardId;
-                        return !roomId && !wardId;
+
+                    if (!roomId) {
+                        return [];
+                    }
+
+                    return this.beds.filter((bed) => {
+                        return String(bed.room_id || '') === roomId;
                     });
                 },
 
@@ -5263,4 +5359,3 @@
         }
     </script>
 @endif
-</x-layouts.app>

@@ -3,17 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class HospitalWard extends Model
 {
-     protected $guarded = ['id'];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'daily_charge' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
-    public function rooms()
+    public function rooms(): HasMany
     {
         return $this->hasMany(
             HospitalRoom::class,
@@ -21,19 +23,19 @@ class HospitalWard extends Model
         );
     }
 
-    public function beds()
+    public function beds(): HasManyThrough
     {
         return $this->hasManyThrough(
             HospitalBed::class,
             HospitalRoom::class,
-            'ward_id', // hospital_rooms.ward_id
-            'room_id', // hospital_beds.room_id
-            'id',      // hospital_wards.id
-            'id'       // hospital_rooms.id
+            'ward_id',
+            'room_id',
+            'id',
+            'id'
         );
     }
 
-    public function visits()
+    public function visits(): HasMany
     {
         return $this->hasMany(
             PatientVisit::class,

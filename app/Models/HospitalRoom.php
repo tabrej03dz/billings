@@ -3,17 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HospitalRoom extends Model
 {
-     protected $guarded = ['id'];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'daily_charge' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
-    public function ward()
+    public function ward(): BelongsTo
     {
         return $this->belongsTo(
             HospitalWard::class,
@@ -21,7 +23,7 @@ class HospitalRoom extends Model
         );
     }
 
-    public function beds()
+    public function beds(): HasMany
     {
         return $this->hasMany(
             HospitalBed::class,
@@ -29,7 +31,7 @@ class HospitalRoom extends Model
         );
     }
 
-    public function visits()
+    public function visits(): HasMany
     {
         return $this->hasMany(
             PatientVisit::class,
