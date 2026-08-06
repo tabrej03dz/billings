@@ -1,6 +1,6 @@
 @extends('frontend.layout')
-
 @section('content')
+
 <style>
     :root {
         --mv-blue: #2624CC;

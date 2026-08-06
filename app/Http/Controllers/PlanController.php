@@ -267,160 +267,519 @@ class PlanController extends Controller
     // }
 
 
+    // public function choosenSave(Request $request)
+    // {
+    //     $request->validate([
+    //         'plan_id' => [
+    //             'required',
+    //             'exists:plans,id',
+    //         ],
+
+    //         'business_id' => [
+    //             'nullable',
+    //             'exists:businesses,id',
+    //         ],
+    //     ]);
+
+    //     $user = Auth::user();
+
+    //     if (!$user) {
+    //         return redirect()
+    //             ->route('login')
+    //             ->with('error', 'Please login first.');
+    //     }
+
+    //     $plan = Plan::with([
+    //         'permissions' => function ($query) {
+    //             $query->where('guard_name', 'web');
+    //         },
+    //     ])->findOrFail($request->plan_id);
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Resolve active business
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $businessId = $request->input('business_id')
+    //         ?? $user->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $user->businesses()
+    //             ->pluck('businesses.id')
+    //             ->first();
+
+    //     if (!$businessId) {
+    //         return redirect()
+    //             ->route('business-profile.index')
+    //             ->with(
+    //                 'error',
+    //                 'Business not found. Please complete your business profile first.'
+    //             );
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Ensure business belongs to logged-in user
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     $business = $user->businesses()
+    //         ->where('businesses.id', $businessId)
+    //         ->first();
+
+    //     if (!$business) {
+    //         return redirect()
+    //             ->route('business-profile.index')
+    //             ->with(
+    //                 'error',
+    //                 'Selected business is not available. Please complete your business profile.'
+    //             );
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Check business profile status before transaction
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Plan pehle save hoga. Is flag ke according transaction ke baad
+    //     | redirect decide hoga.
+    //     |
+    //     */
+
+    //     $temporaryBusinessName =
+    //         trim((string) $user->name) . "'s Business";
+
+    //     $businessProfileIncomplete =
+    //         blank($business->name) ||
+    //         blank($business->business_type_id) ||
+    //         trim((string) $business->name) === $temporaryBusinessName;
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Save plan and permissions
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     DB::transaction(function () use (
+    //         $business,
+    //         $user,
+    //         $plan
+    //     ) {
+    //         UserPlan::where('business_id', $business->id)
+    //             ->where('status', 1)
+    //             ->update([
+    //                 'status' => 0,
+    //             ]);
+
+    //         UserPlan::create([
+    //             'business_id' => $business->id,
+    //             'user_id' => $user->id,
+    //             'plan_id' => $plan->id,
+    //             'start_date' => Carbon::today(),
+    //             'expiry_date' => Carbon::today()->addDays(
+    //                 (int) ($plan->duration_days ?? 30)
+    //             ),
+    //             'status' => 1,
+    //         ]);
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Update active business
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         $user->update([
+    //             'current_business_id' => $business->id,
+    //         ]);
+
+    //         session([
+    //             'active_business_id' => $business->id,
+    //         ]);
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Assign plan permissions
+    //         |--------------------------------------------------------------------------
+    //         */
+
+    //         app(PermissionRegistrar::class)
+    //             ->forgetCachedPermissions();
+
+    //         $permissions = $plan->permissions
+    //             ->pluck('name')
+    //             ->filter()
+    //             ->unique()
+    //             ->values()
+    //             ->toArray();
+
+    //         $user->syncPermissions($permissions);
+
+    //         app(PermissionRegistrar::class)
+    //             ->forgetCachedPermissions();
+    //     });
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Redirect after plan save
+    //     |--------------------------------------------------------------------------
+    //     */
+
+    //     if ($businessProfileIncomplete) {
+    //         return redirect()
+    //             ->route('business-profile.index')
+    //             ->with(
+    //                 'success',
+    //                 'Plan selected successfully. Please complete your business profile.'
+    //             );
+    //     }
+
+    //     return redirect()
+    //         ->route('bill-templates.choose')
+    //         ->with(
+    //             'success',
+    //             'Plan selected successfully and permissions assigned.'
+    //         );
+    // }
+
+
     public function choosenSave(Request $request)
     {
-        $request->validate([
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
             'plan_id' => [
                 'required',
+                'integer',
                 'exists:plans,id',
             ],
 
             'business_id' => [
                 'nullable',
+                'integer',
                 'exists:businesses,id',
             ],
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logged-in user
+        |--------------------------------------------------------------------------
+        */
 
         $user = Auth::user();
 
         if (!$user) {
             return redirect()
                 ->route('login')
-                ->with('error', 'Please login first.');
-        }
-
-        $plan = Plan::with([
-            'permissions' => function ($query) {
-                $query->where('guard_name', 'web');
-            },
-        ])->findOrFail($request->plan_id);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Resolve active business
-        |--------------------------------------------------------------------------
-        */
-
-        $businessId = $request->input('business_id')
-            ?? $user->current_business_id
-            ?? session('active_business_id')
-            ?? $user->businesses()
-                ->pluck('businesses.id')
-                ->first();
-
-        if (!$businessId) {
-            return redirect()
-                ->route('business-profile.index')
                 ->with(
                     'error',
-                    'Business not found. Please complete your business profile first.'
+                    'Please login first.'
                 );
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Ensure business belongs to logged-in user
+        | Get selected plan with web permissions
         |--------------------------------------------------------------------------
         */
 
-        $business = $user->businesses()
-            ->where('businesses.id', $businessId)
-            ->first();
+        $plan = Plan::query()
+            ->with([
+                'permissions' => function ($query) {
+                    $query->where(
+                        'guard_name',
+                        'web'
+                    );
+                },
+            ])
+            ->findOrFail(
+                (int) $validated['plan_id']
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Resolve user's business
+        |--------------------------------------------------------------------------
+        |
+        | Priority:
+        |
+        | 1. Request business_id
+        | 2. User current_business_id
+        | 3. Session active_business_id
+        | 4. User ke attached businesses me se first business
+        |
+        | Business nahi milne par $business null rahega.
+        |
+        */
+
+        $requestedBusinessId =
+            $validated['business_id'] ?? null;
+
+        $businessId =
+            $requestedBusinessId
+            ?? $user->current_business_id
+            ?? session('active_business_id')
+            ?? $user->businesses()
+                ->value('businesses.id');
+
+        $business = null;
+
+        if ($businessId) {
+            /*
+            |--------------------------------------------------------------------------
+            | Ensure business belongs to logged-in user
+            |--------------------------------------------------------------------------
+            */
+
+            $business = $user->businesses()
+                ->where(
+                    'businesses.id',
+                    $businessId
+                )
+                ->first();
+
+            if (!$business) {
+                return redirect()
+                    ->route('plan.choose')
+                    ->with(
+                        'error',
+                        'Selected business is not associated with your account.'
+                    );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check business profile status
+        |--------------------------------------------------------------------------
+        |
+        | Business nahi hai to profile incomplete maana jayega.
+        |
+        | Aapke purane records me dummy business ho sakta hai:
+        | "User Name's Business"
+        |
+        */
+
+        $temporaryBusinessName =
+            trim((string) $user->name)
+            . "'s Business";
+
+        $businessTypeId = $business
+            ? (
+                $business->business_type_id
+                ?? $business->type
+                ?? null
+            )
+            : null;
+
+        $businessProfileIncomplete =
+            !$business ||
+            blank($business->name) ||
+            blank($businessTypeId) ||
+            trim((string) $business->name)
+                === $temporaryBusinessName;
+
+        $createdUserPlan = null;
+
+        try {
+            DB::transaction(function () use (
+                $business,
+                $user,
+                $plan,
+                &$createdUserPlan
+            ) {
+                /*
+                |--------------------------------------------------------------------------
+                | Deactivate existing active plan
+                |--------------------------------------------------------------------------
+                |
+                | Business available hai:
+                |     us business ka existing active plan deactivate hoga.
+                |
+                | Business available nahi hai:
+                |     user ka business-less pending active plan deactivate hoga.
+                |
+                */
+
+                if ($business) {
+                    UserPlan::query()
+                        ->where(
+                            'business_id',
+                            $business->id
+                        )
+                        ->where('status', 1)
+                        ->update([
+                            'status' => 0,
+                        ]);
+                } else {
+                    UserPlan::query()
+                        ->where(
+                            'user_id',
+                            $user->id
+                        )
+                        ->whereNull('business_id')
+                        ->where('status', 1)
+                        ->update([
+                            'status' => 0,
+                        ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create selected UserPlan
+                |--------------------------------------------------------------------------
+                |
+                | Business nahi hai to business_id null save hoga.
+                |
+                */
+
+                $createdUserPlan =
+                    UserPlan::query()->create([
+                        'business_id' =>
+                            $business?->id,
+
+                        'user_id' =>
+                            $user->id,
+
+                        'plan_id' =>
+                            $plan->id,
+
+                        'start_date' =>
+                            Carbon::today(),
+
+                        'expiry_date' =>
+                            Carbon::today()->addDays(
+                                (int) (
+                                    $plan->duration_days
+                                    ?? 30
+                                )
+                            ),
+
+                        'status' => 1,
+                    ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Set current business only when business exists
+                |--------------------------------------------------------------------------
+                |
+                | Business nahi hone par koi dummy business create nahi hoga aur
+                | current_business_id me fake value set nahi hogi.
+                |
+                */
+
+                if ($business) {
+                    $user->current_business_id =
+                        $business->id;
+
+                    $user->save();
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Assign selected plan permissions
+                |--------------------------------------------------------------------------
+                */
+
+                app(PermissionRegistrar::class)
+                    ->forgetCachedPermissions();
+
+                $permissions = $plan->permissions
+                    ->pluck('name')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                /*
+                | Plan me jitni direct permissions hain, wahi user ko assign hongi.
+                */
+
+                $user->syncPermissions(
+                    $permissions
+                );
+
+                app(PermissionRegistrar::class)
+                    ->forgetCachedPermissions();
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'plan' =>
+                        app()->environment('local')
+                            ? $exception->getMessage()
+                            : 'Plan select nahi ho paya. Dobara try kijiye.',
+                ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Session handling
+        |--------------------------------------------------------------------------
+        */
+
+        if ($business) {
+            session([
+                'active_business_id' =>
+                    $business->id,
+
+                'active_business_name' =>
+                    $business->name,
+            ]);
+
+            session()->forget([
+                'pending_registration_plan_id',
+                'pending_user_plan_id',
+            ]);
+        } else {
+            /*
+            | Business profile save hone ke baad isi pending UserPlan me
+            | business_id attach kiya ja sakta hai.
+            */
+
+            session()->forget([
+                'active_business_id',
+                'active_business_name',
+            ]);
+
+            session([
+                'pending_registration_plan_id' =>
+                    $plan->id,
+
+                'pending_user_plan_id' =>
+                    $createdUserPlan?->id,
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business missing
+        |--------------------------------------------------------------------------
+        |
+        | UserPlan create ho chuka hai aur permissions assign ho chuki hain.
+        | Ab user ko business profile complete karne bhejenge.
+        |
+        */
 
         if (!$business) {
             return redirect()
                 ->route('business-profile.index')
                 ->with(
-                    'error',
-                    'Selected business is not available. Please complete your business profile.'
+                    'success',
+                    'Plan selected successfully and all plan permissions have been assigned. Please complete your business profile.'
                 );
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Check business profile status before transaction
-        |--------------------------------------------------------------------------
-        |
-        | Plan pehle save hoga. Is flag ke according transaction ke baad
-        | redirect decide hoga.
-        |
-        */
-
-        $temporaryBusinessName =
-            trim((string) $user->name) . "'s Business";
-
-        $businessProfileIncomplete =
-            blank($business->name) ||
-            blank($business->business_type_id) ||
-            trim((string) $business->name) === $temporaryBusinessName;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Save plan and permissions
-        |--------------------------------------------------------------------------
-        */
-
-        DB::transaction(function () use (
-            $business,
-            $user,
-            $plan
-        ) {
-            UserPlan::where('business_id', $business->id)
-                ->where('status', 1)
-                ->update([
-                    'status' => 0,
-                ]);
-
-            UserPlan::create([
-                'business_id' => $business->id,
-                'user_id' => $user->id,
-                'plan_id' => $plan->id,
-                'start_date' => Carbon::today(),
-                'expiry_date' => Carbon::today()->addDays(
-                    (int) ($plan->duration_days ?? 30)
-                ),
-                'status' => 1,
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Update active business
-            |--------------------------------------------------------------------------
-            */
-
-            $user->update([
-                'current_business_id' => $business->id,
-            ]);
-
-            session([
-                'active_business_id' => $business->id,
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | Assign plan permissions
-            |--------------------------------------------------------------------------
-            */
-
-            app(PermissionRegistrar::class)
-                ->forgetCachedPermissions();
-
-            $permissions = $plan->permissions
-                ->pluck('name')
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
-
-            $user->syncPermissions($permissions);
-
-            app(PermissionRegistrar::class)
-                ->forgetCachedPermissions();
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | Redirect after plan save
+        | Business profile incomplete
         |--------------------------------------------------------------------------
         */
 
@@ -429,15 +788,21 @@ class PlanController extends Controller
                 ->route('business-profile.index')
                 ->with(
                     'success',
-                    'Plan selected successfully. Please complete your business profile.'
+                    'Plan selected successfully and permissions assigned. Please complete your business profile.'
                 );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business profile complete
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()
             ->route('bill-templates.choose')
             ->with(
                 'success',
-                'Plan selected successfully and permissions assigned.'
+                'Plan selected successfully and all plan permissions have been assigned.'
             );
     }
 
