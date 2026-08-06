@@ -1,7 +1,6 @@
 {{-- Dedicated professional hospital billing view. Keep separate from general sales invoice view. --}}
 {{-- Hospital billing view derived from the existing invoice create view. --}}
 <x-layouts.app :title="__('Create Hospital Bill')">
-
     @php
         $activeDocType = in_array(
             $docType ?? 'proforma',
@@ -5359,3 +5358,4 @@
         }
     </script>
 @endif
+</x-layouts.app>
