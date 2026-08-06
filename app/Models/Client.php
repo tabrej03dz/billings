@@ -19,4 +19,17 @@ class Client extends Model
     {
         return $this->hasMany(Invoice::class);
     }
+
+    public function patientProfile()
+{
+    return $this->hasOne(PatientProfile::class);
+}
+
+public function patientVisits()
+{
+    return $this->hasMany(
+        PatientVisit::class,
+        'client_id'
+    );
+}
 }
