@@ -6,6 +6,28 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+    /*
+    |--------------------------------------------------------------------------
+    | GST / Non-GST Document Label
+    |--------------------------------------------------------------------------
+    */
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -124,7 +146,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ strtoupper($type) }} {{ $invoiceNo }}</title>
+<title>{{ $docLabel }} {{ $invoiceNo }}</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:"DejaVu Sans",sans-serif;font-size:12px;margin:0;padding:18px;background:#111827;color:#111}
@@ -153,7 +175,7 @@ table{width:100%;border-collapse:collapse}
 </head>
 <body>
 <div class="page">
-    <div class="ribbon">{{ strtoupper($type) }}</div>
+    <div class="ribbon">{{ $docLabel }}</div>
 
     <table>
         <tr>
@@ -166,7 +188,7 @@ table{width:100%;border-collapse:collapse}
                 {{ $b_mobile ?: '-' }} | {{ $b_email ?: '-' }} | GSTIN: {{ $b_gstin ?: '-' }}
             </td>
             <td class="text-right">
-                <div class="doc">{{ strtoupper($type) }}</div>
+                <div class="doc">{{ $docLabel }}</div>
                 No: {{ $invoiceNo }}<br>
                 Date: {{ $dmy($invoiceDate) }}
             </td>

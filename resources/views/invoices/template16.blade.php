@@ -3,6 +3,26 @@
     $b = $biz ?? ($inv->business ?? null);
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
+
+
+    $docType = strtolower((string)($type ?? ($inv->invoice_type ?? 'invoice')));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'JEWELLERY INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'JEWELLERY QUOTATION',
+            'proforma'  => 'JEWELLERY PROFORMA INVOICE',
+            default     => 'JEWELLERY TAX INVOICE',
+        };
+    }
+
+
     $itemExtraPrices = $itemExtraPrices ?? [];
 
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
@@ -270,7 +290,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Jewellery Invoice {{ $invoiceNo }}</title>
+    <title>{{ $docLabel }} {{ $invoiceNo }}</title>
 
     <style>
         * {
@@ -465,7 +485,7 @@
             @endif
         </div>
 
-        <div class="invoice-title">Jewellery Tax Invoice</div>
+        <div class="invoice-title">{{ $docLabel }}</div>
     </div>
 
     <table class="meta-table" style="margin-top:10px;">

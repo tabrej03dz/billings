@@ -6,6 +6,23 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -125,7 +142,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ strtoupper($type) }} {{ $invoiceNo }}</title>
+<title>{{ $docLabel }} {{ $invoiceNo }}</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:"DejaVu Sans",sans-serif;font-size:11.5px;margin:0;padding:15px;color:#000}
@@ -145,7 +162,9 @@ td,th{border:1px solid #000;padding:6px;vertical-align:top}
 </head>
 <body>
 <div class="form">
-    <div class="title">{{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}</div>
+<div class="title">
+    {{ $docLabel }}
+</div>
 
     <table>
         <tr>
@@ -163,8 +182,11 @@ td,th{border:1px solid #000;padding:6px;vertical-align:top}
             </td>
             <td style="width:30%">
                 Invoice No: <strong>{{ $invoiceNo }}</strong><br>
-                Date: <strong>{{ $dmy($invoiceDate) }}</strong><br>
-                Type: <strong>{{ strtoupper($type) }}</strong>
+                Date: <strong>{{ $dmy($invoiceDate) }}</strong>
+
+                @if($isGstBusiness)
+                    <br>
+                    Type: <strong>{{ $docLabel }}</strong>
             </td>
         </tr>
     </table>
