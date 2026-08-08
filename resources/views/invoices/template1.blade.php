@@ -21,6 +21,34 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'INVOICE';
+        $shortDocLabel = 'Invoice';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+
+        $shortDocLabel = match ($docType) {
+            'quotation' => 'Quotation',
+            'proforma'  => 'Proforma',
+            default     => 'Invoice',
+        };
+    }
+
+
+
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -160,8 +188,9 @@
 <html lang="hi">
 <head>
     <meta charset="utf-8">
-    <title>{{ ucfirst($type) }} {{ $type != 'quotation' ? 'Invoice' : '' }} {{ $invoiceNo }}</title>
+    {{-- <title>{{ ucfirst($type) }} {{ $type != 'quotation' ? 'Invoice' : '' }} {{ $invoiceNo }}</title> --}}
 
+    <title>{{ $docLabel }} {{ $invoiceNo }}</title>
     <style>
         *{ box-sizing:border-box; }
 
@@ -318,7 +347,8 @@
     <div class="header clearfix">
         <div class="left">
             <div class="badge">
-                {{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}
+                {{-- {{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }} --}}
+                    {{ $docLabel }}
             </div>
 
             <div class="company">
@@ -352,7 +382,7 @@
         <table>
             <tr>
                 <td>
-                    <strong>{{ $type != 'quotation' ? 'Invoice' : 'Quotation' }} No:</strong>
+                    <strong>{{ $shortDocLabel }} No:</strong>
                     {{ $invoiceNo }}
                 </td>
 

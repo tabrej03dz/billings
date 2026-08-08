@@ -8,10 +8,35 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
-    $docType = strtolower((string)($type ?? 'invoice'));
-    $isQuotation = $docType === 'quotation';
+    // $docType = strtolower((string)($type ?? 'invoice'));
+    // $isQuotation = $docType === 'quotation';
 
-    $docLabel = $isQuotation ? 'QUOTATION' : 'TAX INVOICE';
+    // $docLabel = $isQuotation ? 'QUOTATION' : 'TAX INVOICE';
+
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $isQuotation = $docType === 'quotation';
+    $isProforma  = $docType === 'proforma';
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+
+        // Non-GST business ke liye sab jagah simple Invoice
+        $docLabel = 'INVOICE';
+
+    } else {
+
+        // GST business ke liye proper document title
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
 
     $termsText = $inv->terms ?? null;
 
