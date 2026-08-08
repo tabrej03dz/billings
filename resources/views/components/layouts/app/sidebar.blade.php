@@ -955,9 +955,8 @@
             </form>
         @endcan
 
-         {{-- @can('create invoice') --}}
+         @can('show hospital dashboard')
             <div class="relative mt-2">
-
                 <flux:navlist.item
                     icon="plus"
                     :href="route('hospital.dashboard')"
@@ -969,11 +968,8 @@
                         <span>Hospital</span>
                     </div>
                 </flux:navlist.item>
-
-                
-
             </div>
-        {{-- @endcan --}}
+        @endcan
 
         {{-- ============================================================= --}}
         {{-- INVOICES --}}

@@ -11,86 +11,28 @@ use Illuminate\Validation\Rule;
 
 class PermissionController extends Controller
 {
-//     public function index(){
+    public function index()
+    {
+        if (auth()->user()->hasRole('super admin') || auth()->user()->hasRole('admin')) {
+            $users = User::orderBy('name')->get();
+            $permissions = Permission::orderBy('name')->get();
+            $roles = Role::orderBy('name')->get();
+        } else {
+            $users = User::where('business_id', auth()->user()->business_id)
+                ->orderBy('name')
+                ->get();
 
-// //        Permission::create(['name' => 'create business']);
-// //        Permission::create(['name' => 'create user']);
-// //        Permission::create(['name' => 'create client']);
-// //        Permission::create(['name' => 'create invoice']);
-// //        Permission::create(['name' => 'show permissions']);
-// //        Permission::create(['name' => 'assign permissions']);
-// //        dd('permission created');
-//         if (auth()->user()->role('super admin')){
-//             $users = User::all();
-//             $permissions = Permission::all();
-//         }else{
-//             $users = User::where('business_id', auth()->user()->business_id)->get();
-//             $permissions = auth()->user()->getAllPermissions();
-//         }
-//         return view('permissions.index', compact('permissions', 'users'));
-//     }
+            $permissions = Permission::where('guard_name', 'web')
+                ->orderBy('name')
+                ->get();
 
-//     public function assign(Request $request)
-//     {
-//         $request->validate([
-//             'user' => 'required|exists:users,id',
-//             'permissions' => 'array',
-//             'permissions.*' => 'string|exists:permissions,name',
-//         ]);
+            $roles = Role::where('guard_name', 'web')
+                ->orderBy('name')
+                ->get();
+        }
 
-//         $user = User::findOrFail($request->user);
-
-//         // Add permissions without removing existing ones
-//         if (!empty($request->permissions)) {
-//             $user->givePermissionTo($request->permissions);
-//         }
-
-//         return back()->with('success', 'Permissions added successfully.');
-//     }
-
-
-//     public function store(Request $request)
-//     {
-//         $data = $request->validate([
-//             'name' => 'required|string|max:191|unique:permissions,name',
-//             'guard_name' => 'nullable|string|in:web,api'
-//         ]);
-
-//         $data['guard_name'] = $data['guard_name'] ?? 'web';
-//         Permission::create($data);
-
-//         return back()->with('success', 'Permission created successfully.');
-//     }
-
-//     public function destroy(Permission $permission)
-//     {
-//         $permission->delete();
-//         return back()->with('success', 'Permission deleted successfully.');
-//     }
-
-
-public function index()
-{
-    if (auth()->user()->hasRole('super admin') || auth()->user()->hasRole('admin')) {
-        $users = User::orderBy('name')->get();
-        $permissions = Permission::orderBy('name')->get();
-        $roles = Role::orderBy('name')->get();
-    } else {
-        $users = User::where('business_id', auth()->user()->business_id)
-            ->orderBy('name')
-            ->get();
-
-        $permissions = Permission::where('guard_name', 'web')
-            ->orderBy('name')
-            ->get();
-
-        $roles = Role::where('guard_name', 'web')
-            ->orderBy('name')
-            ->get();
+        return view('permissions.index', compact('permissions', 'users', 'roles'));
     }
-
-    return view('permissions.index', compact('permissions', 'users', 'roles'));
-}
 
     public function assign(Request $request)
     {
