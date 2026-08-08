@@ -1237,6 +1237,28 @@ public function create(Request $request, $type = 'proforma')
         'businessType.itemFields',
     ])->findOrFail($businessId);
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | GST Invoice Restriction
+    |--------------------------------------------------------------------------
+    | GST disabled ya GSTIN missing hai to sirf quotation allowed hai.
+    */
+    $gstInvoiceAllowed =
+        (bool) $business->gst_enabled
+        && filled(trim((string) $business->gstin));
+
+    if (
+        in_array($docType, ['tax', 'proforma'], true)
+        && !$gstInvoiceAllowed
+    ) {
+        return redirect()
+            ->route('invoices.create', ['type' => 'quotation'])
+            ->withErrors([
+                'gst' => 'GST Enabled aur GSTIN ke bina aap sirf Quotation bana sakte hain.',
+            ]);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Allowed item fields
@@ -2967,6 +2989,28 @@ $metalRates = \App\Models\MetalRate::query()
             'quotation',
         ], true)) {
             $docType = 'tax';
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GST Invoice Restriction
+        |--------------------------------------------------------------------------
+        */
+        $gstInvoiceAllowed =
+            (bool) $business->gst_enabled
+            && filled(trim((string) $business->gstin));
+
+        if (
+            in_array($docType, ['tax', 'proforma'], true)
+            && !$gstInvoiceAllowed
+        ) {
+            return back()
+                ->withErrors([
+                    'gst' => 'GST Enabled aur GSTIN ke bina Tax Invoice ya Proforma Invoice nahi banaya ja sakta. Aap sirf Quotation bana sakte hain.',
+                ])
+                ->withInput();
         }
 
         /*

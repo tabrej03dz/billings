@@ -1412,14 +1412,9 @@
                     if (allCheckbox) {
                         allCheckbox.checked = false;
                     }
-
-
                     this.updateCount();
-
                 }
-
             };
-
         }
 
     </script>
