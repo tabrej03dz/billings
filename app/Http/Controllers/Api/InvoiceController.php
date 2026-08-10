@@ -20,6 +20,7 @@ use Mpdf\Mpdf;
 use Mpdf\Config\ConfigVariables;
 use Mpdf\Config\FontVariables;
 use Illuminate\Http\Response;
+use App\Models\Item;
 
 class InvoiceController extends Controller
 {
