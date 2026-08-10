@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BillTemplate;
 use App\Models\Business;
 use App\Models\BusinessBillTemplateSetting;
+use App\Models\BusinessType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -31,23 +32,87 @@ class BillTemplateController extends Controller
 
     public function create()
     {
-        return view('bill_templates.create');
+        $businessTypes = BusinessType::orderBy('name')->get();
+
+        return view('bill_templates.create', compact('businessTypes'));
     }
+
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'name'        => ['required', 'string', 'max:255'],
+    //         'page_name'   => ['required', 'string', 'max:255'],
+    //         'description' => ['nullable', 'string'],
+    //         'preview'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+    //     ]);
+
+    //     if ($request->hasFile('preview')) {
+    //         $validated['preview'] = $request->file('preview')->store('bill_templates/previews', 'public');
+    //     }
+
+    //     BillTemplate::create($validated);
+
+    //     return redirect()
+    //         ->route('bill-templates.index')
+    //         ->with('success', 'Bill template created successfully.');
+    // }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'page_name'   => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'preview'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'business_type_id' => [
+                'required',
+                'exists:business_types,id',
+            ],
+
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'page_name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'description' => [
+                'nullable',
+                'string',
+            ],
+
+            'preview' => [
+                'nullable',
+                'file',
+                'mimes:jpg,jpeg,png,webp,pdf',
+                'max:5120',
+            ],
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Preview Upload
+        |--------------------------------------------------------------------------
+        */
         if ($request->hasFile('preview')) {
-            $validated['preview'] = $request->file('preview')->store('bill_templates/previews', 'public');
+            $validated['preview'] = $request
+                ->file('preview')
+                ->store('bill_templates/previews', 'public');
         }
 
-        BillTemplate::create($validated);
+        /*
+        |--------------------------------------------------------------------------
+        | Create Bill Template
+        |--------------------------------------------------------------------------
+        */
+        BillTemplate::create([
+            'business_type_id' => $validated['business_type_id'],
+            'name' => $validated['name'],
+            'page_name' => $validated['page_name'],
+            'description' => $validated['description'] ?? null,
+            'preview' => $validated['preview'] ?? null,
+        ]);
 
         return redirect()
             ->route('bill-templates.index')
@@ -61,33 +126,72 @@ class BillTemplateController extends Controller
         return view('bill_templates.show', compact('billTemplate'));
     }
 
+    // public function edit($id)
+    // {
+    //     $billTemplate = BillTemplate::findOrFail($id);
+
+    //     return view('bill_templates.edit', compact('billTemplate'));
+    // }
+
+
     public function edit($id)
     {
         $billTemplate = BillTemplate::findOrFail($id);
 
-        return view('bill_templates.edit', compact('billTemplate'));
+        $businessTypes = BusinessType::orderBy('name')->get();
+
+        return view('bill_templates.edit', compact('billTemplate', 'businessTypes'));
     }
+
+    // public function update(Request $request, $id)
+    // {
+    //     $billTemplate = BillTemplate::findOrFail($id);
+
+    //     $validated = $request->validate([
+    //         'name'        => ['required', 'string', 'max:255'],
+    //         'page_name'   => ['required', 'string', 'max:255'],
+    //         'description' => ['nullable', 'string'],
+    //         'preview'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+    //     ]);
+
+    //     if ($request->hasFile('preview')) {
+    //         if ($billTemplate->preview && \Storage::disk('public')->exists($billTemplate->preview)) {
+    //             Storage::disk('public')->delete($billTemplate->preview);
+    //         }
+
+    //         $validated['preview'] = $request->file('preview')->store('bill_templates/previews', 'public');
+    //     }
+
+    //     $billTemplate->update($validated);
+
+    //     return redirect()
+    //         ->route('bill-templates.index')
+    //         ->with('success', 'Bill template updated successfully.');
+    // }
 
     public function update(Request $request, $id)
     {
         $billTemplate = BillTemplate::findOrFail($id);
 
         $validated = $request->validate([
-            'name'        => ['required', 'string', 'max:255'],
-            'page_name'   => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'preview'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
+            'business_type_id' => 'required|exists:business_types,id',
+            'name' => 'required|string|max:255',
+            'page_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'preview' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
 
-        if ($request->hasFile('preview')) {
-            if ($billTemplate->preview && \Storage::disk('public')->exists($billTemplate->preview)) {
-                Storage::disk('public')->delete($billTemplate->preview);
-            }
+        $billTemplate->business_type_id = $validated['business_type_id'];
+        $billTemplate->name = $validated['name'];
+        $billTemplate->page_name = $validated['page_name'];
+        $billTemplate->description = $validated['description'] ?? null;
 
-            $validated['preview'] = $request->file('preview')->store('bill_templates/previews', 'public');
+        if ($request->hasFile('preview')) {
+            $billTemplate->preview = $request->file('preview')
+                ->store('bill_templates/previews', 'public');
         }
 
-        $billTemplate->update($validated);
+        $billTemplate->save();
 
         return redirect()
             ->route('bill-templates.index')

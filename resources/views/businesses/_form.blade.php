@@ -82,7 +82,7 @@
         ['code'=>'19','name'=>'West Bengal'],
     ];
 
- $selectedState = old('state');
+    $selectedState = old('state');
     if (!$selectedState && !empty($business?->state_code) && !empty($business?->state)) {
         $selectedState = $business->state_code . ',' . $business->state; // "09,Uttar Pradesh"
     }
