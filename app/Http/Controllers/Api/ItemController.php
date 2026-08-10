@@ -963,7 +963,7 @@ class ItemController extends Controller
 
         if ($isAllowed('category_id')) {
             $rules['category_id'] = [
-                $requirement('category_id'),
+                'nullable',
                 'integer',
             ];
         }
