@@ -106,14 +106,33 @@
                         />
                     </svg>
 
-                    {{ $billTemplates->count() }}
-                    {{ $billTemplates->count() === 1 ? 'Template' : 'Templates' }}
+                    <span data-visible-template-count>{{ $billTemplates->count() }}</span>
+                    <span data-visible-template-label>{{ $billTemplates->count() === 1 ? 'Template' : 'Templates' }}</span>
                 </div>
             @endif
         </div>
     </div>
 
     <div class="p-3 sm:p-4">
+        <div
+            data-template-business-type-message
+            class="mb-4 hidden rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"
+        >
+            Please select a business type first. Only templates for that business type will be shown here.
+        </div>
+
+        <div
+            data-template-no-match
+            class="mb-4 hidden rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-center dark:border-zinc-700 dark:bg-zinc-950"
+        >
+            <h3 class="text-base font-black text-zinc-800 dark:text-white">
+                No template available for this business type
+            </h3>
+            <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                Please ask the admin to assign an invoice template to this business type.
+            </p>
+        </div>
+
         @if($billTemplates->isEmpty())
             {{-- Empty State --}}
             <div
@@ -152,7 +171,7 @@
             </div>
         @else
             {{-- Compact Template Slider --}}
-            <div class="relative">
+            <div class="relative" data-template-slider-wrapper>
                 <div
                     data-template-slider
                     class="flex snap-x snap-mandatory gap-4 overflow-x-auto
@@ -196,6 +215,7 @@
                                     : 'border-zinc-200 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-xl dark:border-zinc-700'
                                }}"
                         data-template-card
+                        data-business-type-id="{{ (string) $template->business_type_id }}"
                     >
                         {{-- Actual Radio --}}
                         <input
@@ -810,8 +830,30 @@
                     return;
                 }
 
-                const cards = section.querySelectorAll(
-                    '[data-template-card]'
+                const cards = Array.from(
+                    section.querySelectorAll('[data-template-card]')
+                );
+
+                const businessTypeSelect = document.getElementById('type');
+
+                const templateCount = section.querySelector(
+                    '[data-visible-template-count]'
+                );
+
+                const templateLabel = section.querySelector(
+                    '[data-visible-template-label]'
+                );
+
+                const businessTypeMessage = section.querySelector(
+                    '[data-template-business-type-message]'
+                );
+
+                const noMatchMessage = section.querySelector(
+                    '[data-template-no-match]'
+                );
+
+                const sliderWrapper = section.querySelector(
+                    '[data-template-slider-wrapper]'
                 );
 
                 const templateSlider = section.querySelector(
@@ -862,8 +904,8 @@
                  * Slider navigation and arrow states.
                  */
                 const getSliderStep = () => {
-                    const firstCard = templateSlider?.querySelector(
-                        '[data-template-card]'
+                    const firstCard = cards.find(
+                        card => !card.classList.contains('hidden')
                     );
 
                     if (!firstCard) {
@@ -905,7 +947,16 @@
                         button.disabled = atEnd;
                     });
 
-                    if (sliderStatus && cards.length) {
+                    const visibleCards = cards.filter(
+                        card => !card.classList.contains('hidden')
+                    );
+
+                    if (sliderStatus) {
+                        if (!visibleCards.length) {
+                            sliderStatus.textContent = '0 / 0';
+                            return;
+                        }
+
                         const cardsPerView =
                             window.innerWidth >= 1024
                                 ? 3
@@ -916,7 +967,7 @@
                         const pageWidth = getSliderStep() * cardsPerView;
                         const totalPages = Math.max(
                             1,
-                            Math.ceil(cards.length / cardsPerView)
+                            Math.ceil(visibleCards.length / cardsPerView)
                         );
 
                         const currentPage = Math.min(
@@ -1001,6 +1052,85 @@
                     window.addEventListener(
                         'resize',
                         updateSliderArrows
+                    );
+                }
+
+                /*
+                 * Business type ke hisaab se templates filter karega.
+                 */
+                const filterTemplatesByBusinessType = () => {
+                    const selectedBusinessTypeId =
+                        businessTypeSelect?.value?.trim() || '';
+
+                    let visibleCount = 0;
+
+                    cards.forEach(card => {
+                        const cardBusinessTypeId =
+                            card.dataset.businessTypeId || '';
+
+                        const shouldShow =
+                            selectedBusinessTypeId !== '' &&
+                            (
+                                cardBusinessTypeId === '' ||
+                                cardBusinessTypeId === selectedBusinessTypeId
+                            );
+
+                        card.classList.toggle('hidden', !shouldShow);
+
+                        const radio = card.querySelector('.template-radio');
+
+                        if (!shouldShow && radio?.checked) {
+                            radio.checked = false;
+                        }
+
+                        if (shouldShow) {
+                            visibleCount++;
+                        }
+                    });
+
+                    if (templateCount) {
+                        templateCount.textContent = String(visibleCount);
+                    }
+
+                    if (templateLabel) {
+                        templateLabel.textContent =
+                            visibleCount === 1 ? 'Template' : 'Templates';
+                    }
+
+                    businessTypeMessage?.classList.toggle(
+                        'hidden',
+                        selectedBusinessTypeId !== ''
+                    );
+
+                    noMatchMessage?.classList.toggle(
+                        'hidden',
+                        selectedBusinessTypeId === '' ||
+                            visibleCount > 0 ||
+                            cards.length === 0
+                    );
+
+                    sliderWrapper?.classList.toggle(
+                        'hidden',
+                        selectedBusinessTypeId === '' || visibleCount === 0
+                    );
+
+                    if (templateSlider) {
+                        templateSlider.scrollLeft = 0;
+                    }
+
+                    updateTemplateCards();
+                    requestAnimationFrame(updateSliderArrows);
+                };
+
+                if (
+                    businessTypeSelect &&
+                    businessTypeSelect.dataset.templateFilterInitialised !== 'true'
+                ) {
+                    businessTypeSelect.dataset.templateFilterInitialised = 'true';
+
+                    businessTypeSelect.addEventListener(
+                        'change',
+                        filterTemplatesByBusinessType
                     );
                 }
 
@@ -1397,9 +1527,7 @@
                     );
                 }
 
-                updateTemplateCards();
-
-                requestAnimationFrame(updateSliderArrows);
+                filterTemplatesByBusinessType();
             };
 
             document.addEventListener(
