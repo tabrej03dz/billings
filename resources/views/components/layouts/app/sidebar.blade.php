@@ -363,6 +363,26 @@
             ? \App\Models\Business::find($activeBusinessId)
             : null;
 
+
+            $activeBusinessType = null;
+
+            if ($business && filled($business->type)) {
+                $activeBusinessType = \App\Models\BusinessType::query()
+                    ->find($business->type);
+            }
+
+            $activeBusinessTypeSlug = strtolower(
+                trim((string) ($activeBusinessType?->slug ?? ''))
+            );
+
+            $activeBusinessTypeName = strtolower(
+                trim((string) ($activeBusinessType?->name ?? ''))
+            );
+
+            $isHospitalBusiness =
+                $activeBusinessTypeSlug === 'hospital'
+                || $activeBusinessTypeName === 'hospital';
+
         /*
         |--------------------------------------------------------------------------
         | Profile Completion
@@ -955,21 +975,22 @@
             </form>
         @endcan
 
-         @can('show hospital dashboard')
-            <div class="relative mt-2">
-                <flux:navlist.item
-                    icon="plus"
-                    :href="route('hospital.dashboard')"
-                    :current="request()->routeIs('hospital.*')"
-                    wire:navigate
-                    class=""
-                >
-                    <div class="flex w-full items-center justify-between gap-2">
-                        <span>Hospital</span>
-                    </div>
-                </flux:navlist.item>
-            </div>
-        @endcan
+         @if($isHospitalBusiness)
+            @can('show hospital dashboard')
+                <div class="relative mt-2">
+                    <flux:navlist.item
+                        icon="plus"
+                        :href="route('hospital.dashboard')"
+                        :current="request()->routeIs('hospital.*')"
+                        wire:navigate
+                    >
+                        <div class="flex w-full items-center justify-between gap-2">
+                            <span>Hospital</span>
+                        </div>
+                    </flux:navlist.item>
+                </div>
+            @endcan
+        @endif
 
         {{-- ============================================================= --}}
         {{-- INVOICES --}}
