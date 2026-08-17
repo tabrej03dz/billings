@@ -17,7 +17,7 @@ class PlanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Plan::with(['permissions', 'planFeatures'])
+        $query = Plan::with(['permissions', 'planFeatures'])->where('status', '1')
             ->orderBy('sort_order', 'asc')
             ->latest();
 
