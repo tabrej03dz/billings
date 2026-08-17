@@ -536,6 +536,13 @@ Route::middleware(['auth'])->group(function () {
             ->only(['index','create','store','edit','update','destroy']);
 
 
+
+        Route::get('/clients/{client}/report/pdf', [ClientController::class, 'exportPdf'])
+        ->name('clients.report.pdf');
+
+    Route::get('/clients/{client}/report/excel', [ClientController::class, 'exportExcel'])
+        ->name('clients.report.excel');
+
     Route::prefix('clients')->name('clients.')->controller(\App\Http\Controllers\ClientController::class)->group(function(){
         Route::get('/', 'index')->name('index');
         Route::get('create', 'create')->name('create');

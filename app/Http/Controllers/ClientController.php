@@ -4,8 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Business;
 use App\Models\Client;
+use App\Models\InvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use App\Exports\ClientPurchaseReportExport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ClientController extends Controller
 {
@@ -509,45 +514,113 @@ public function index(Request $request)
 
     // App\Http\Controllers\ClientController.php
 
-    public function show(Request $request, \App\Models\Client $client)
+    // public function show(Request $request, \App\Models\Client $client)
+    // {
+    //     // Multi-business context (same logic jaisa invoice edit me)
+    //     $user = $request->user();
+
+    //     $businessId =
+    //         $user->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $user->businesses()->pluck('businesses.id')->first();
+
+    //     // ✔️ Invoices for this client + business
+    //     $invoiceQuery = $client->invoices()
+    //         ->where('business_id', $businessId)
+    //         ->orderByDesc('invoice_date')
+    //         ->orderByDesc('id');
+
+    //     // Summary totals (alag se, taaki full history ka data mile)
+    //     $summary = [
+    //         'total_invoices' => (clone $invoiceQuery)->count(),
+    //         'total_amount'   => (clone $invoiceQuery)->sum('total'),
+    //         'total_received' => (clone $invoiceQuery)->sum('received_amount'),
+    //         'total_balance'  => (clone $invoiceQuery)->sum('balance'),
+    //     ];
+
+    //     // List ke liye paginate
+    //     $invoices = $invoiceQuery
+    //         ->withCount('items')
+    //         ->paginate(15)
+    //         ->withQueryString();
+
+    //     // Recent purchased items (last 10 lines)
+    //     $recentItems = \App\Models\InvoiceItem::with(['invoice' => function ($q) use ($businessId, $client) {
+    //         $q->where('business_id', $businessId)
+    //             ->where('client_id', $client->id);
+    //     }])
+    //         ->whereHas('invoice', function ($q) use ($businessId, $client) {
+    //             $q->where('business_id', $businessId)
+    //                 ->where('client_id', $client->id);
+    //         })
+    //         ->latest('created_at')
+    //         ->limit(10)
+    //         ->get();
+
+    //     return view('clients.show', [
+    //         'client'      => $client,
+    //         'invoices'    => $invoices,
+    //         'summary'     => $summary,
+    //         'recentItems' => $recentItems,
+    //     ]);
+    // }
+
+
+    /**
+     * Client purchase report.
+     */
+    public function show(Request $request, Client $client)
     {
-        // Multi-business context (same logic jaisa invoice edit me)
-        $user = $request->user();
+        $businessId = $this->resolveBusinessId($request);
 
-        $businessId =
-            $user->current_business_id
-            ?? session('active_business_id')
-            ?? $user->businesses()->pluck('businesses.id')->first();
+        abort_unless($businessId, 403, 'Active business not found.');
 
-        // ✔️ Invoices for this client + business
-        $invoiceQuery = $client->invoices()
-            ->where('business_id', $businessId)
-            ->orderByDesc('invoice_date')
-            ->orderByDesc('id');
+        /*
+        |--------------------------------------------------------------------------
+        | Filtered invoice query
+        |--------------------------------------------------------------------------
+        */
+        $invoiceQuery = $this->buildInvoiceReportQuery(
+            $request,
+            $client,
+            $businessId
+        );
 
-        // Summary totals (alag se, taaki full history ka data mile)
-        $summary = [
-            'total_invoices' => (clone $invoiceQuery)->count(),
-            'total_amount'   => (clone $invoiceQuery)->sum('total'),
-            'total_received' => (clone $invoiceQuery)->sum('received_amount'),
-            'total_balance'  => (clone $invoiceQuery)->sum('balance'),
-        ];
+        /*
+        |--------------------------------------------------------------------------
+        | Summary - filtered records only
+        |--------------------------------------------------------------------------
+        */
+        $summary = $this->getReportSummary($invoiceQuery);
 
-        // List ke liye paginate
-        $invoices = $invoiceQuery
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+        $perPage = (int) $request->get('per_page', 15);
+
+        if (!in_array($perPage, [15, 25, 50, 100], true)) {
+            $perPage = 15;
+        }
+
+        $invoices = (clone $invoiceQuery)
             ->withCount('items')
-            ->paginate(15)
+            ->paginate($perPage)
             ->withQueryString();
 
-        // Recent purchased items (last 10 lines)
-        $recentItems = \App\Models\InvoiceItem::with(['invoice' => function ($q) use ($businessId, $client) {
-            $q->where('business_id', $businessId)
-                ->where('client_id', $client->id);
-        }])
-            ->whereHas('invoice', function ($q) use ($businessId, $client) {
-                $q->where('business_id', $businessId)
-                    ->where('client_id', $client->id);
-            })
+        /*
+        |--------------------------------------------------------------------------
+        | Recent items according to currently filtered invoices
+        |--------------------------------------------------------------------------
+        */
+        $filteredInvoiceIds = (clone $invoiceQuery)
+            ->reorder()
+            ->select('id');
+
+        $recentItems = InvoiceItem::query()
+            ->with('invoice')
+            ->whereIn('invoice_id', $filteredInvoiceIds)
             ->latest('created_at')
             ->limit(10)
             ->get();
@@ -557,7 +630,367 @@ public function index(Request $request)
             'invoices'    => $invoices,
             'summary'     => $summary,
             'recentItems' => $recentItems,
+            'filters'     => $request->query(),
         ]);
+    }
+
+
+    /**
+     * Download filtered report as PDF.
+     */
+    public function exportPdf(Request $request, Client $client)
+    {
+        $businessId = $this->resolveBusinessId($request);
+
+        abort_unless($businessId, 403, 'Active business not found.');
+
+        $invoiceQuery = $this->buildInvoiceReportQuery(
+            $request,
+            $client,
+            $businessId
+        );
+
+        $summary = $this->getReportSummary($invoiceQuery);
+
+        $invoices = (clone $invoiceQuery)
+            ->withCount('items')
+            ->get();
+
+        $pdf = Pdf::loadView('clients.exports.pdf', [
+            'client'     => $client,
+            'invoices'   => $invoices,
+            'summary'    => $summary,
+            'filters'    => $request->query(),
+            'businessId' => $businessId,
+        ])
+            ->setPaper('a4', 'landscape');
+
+        $clientName = preg_replace(
+            '/[^A-Za-z0-9\-_]/',
+            '_',
+            $client->name
+        );
+
+        return $pdf->download(
+            'client-purchase-report-' .
+            $clientName .
+            '-' .
+            now()->format('d-m-Y-H-i-s') .
+            '.pdf'
+        );
+    }
+
+
+    /**
+     * Download filtered report as Excel.
+     */
+    public function exportExcel(Request $request, Client $client)
+    {
+        $businessId = $this->resolveBusinessId($request);
+
+        abort_unless($businessId, 403, 'Active business not found.');
+
+        $invoiceQuery = $this->buildInvoiceReportQuery(
+            $request,
+            $client,
+            $businessId
+        );
+
+        $summary = $this->getReportSummary($invoiceQuery);
+
+        $invoices = (clone $invoiceQuery)
+            ->withCount('items')
+            ->get();
+
+        $clientName = preg_replace(
+            '/[^A-Za-z0-9\-_]/',
+            '_',
+            $client->name
+        );
+
+        return Excel::download(
+            new ClientPurchaseReportExport(
+                $client,
+                $invoices,
+                $summary,
+                $request->query()
+            ),
+            'client-purchase-report-' .
+            $clientName .
+            '-' .
+            now()->format('d-m-Y-H-i-s') .
+            '.xlsx'
+        );
+    }
+
+
+    /**
+     * Resolve currently active business.
+     */
+    private function resolveBusinessId(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        $businessId =
+            $user->current_business_id
+            ?? session('active_business_id')
+            ?? $user->businesses()->pluck('businesses.id')->first();
+
+        return $businessId ? (int) $businessId : null;
+    }
+
+
+    /**
+     * Common invoice report query.
+     *
+     * IMPORTANT:
+     * Screen, PDF and Excel tino isi query ko use karenge.
+     * Isliye filters kabhi mismatch nahi honge.
+     */
+    private function buildInvoiceReportQuery(
+        Request $request,
+        Client $client,
+        int $businessId
+    ) {
+        $query = $client->invoices()
+            ->where('business_id', $businessId);
+
+        /*
+        |--------------------------------------------------------------------------
+        | DATE FILTER
+        |--------------------------------------------------------------------------
+        */
+
+        $dateFrom = null;
+        $dateTo   = null;
+
+        /*
+        * Custom dates ko priority milegi.
+        */
+        if ($request->filled('date_from')) {
+            $dateFrom = Carbon::parse($request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $dateTo = Carbon::parse($request->date_to);
+        }
+
+        /*
+        * Custom dates nahi diye to Period apply hoga.
+        */
+        if (!$dateFrom && !$dateTo) {
+
+            switch ($request->period) {
+
+                case 'today':
+
+                    $dateFrom = Carbon::today();
+                    $dateTo   = Carbon::today();
+
+                    break;
+
+
+                case 'this_week':
+
+                    $dateFrom = Carbon::now()->startOfWeek();
+                    $dateTo   = Carbon::now()->endOfWeek();
+
+                    break;
+
+
+                case 'this_month':
+
+                    $dateFrom = Carbon::now()->startOfMonth();
+                    $dateTo   = Carbon::now()->endOfMonth();
+
+                    break;
+
+
+                case 'last_month':
+
+                    $dateFrom = Carbon::now()
+                        ->subMonthNoOverflow()
+                        ->startOfMonth();
+
+                    $dateTo = Carbon::now()
+                        ->subMonthNoOverflow()
+                        ->endOfMonth();
+
+                    break;
+
+
+                case 'this_year':
+
+                    $dateFrom = Carbon::now()->startOfYear();
+                    $dateTo   = Carbon::now()->endOfYear();
+
+                    break;
+            }
+        }
+
+
+        if ($dateFrom) {
+
+            $query->whereDate(
+                'invoice_date',
+                '>=',
+                $dateFrom->format('Y-m-d')
+            );
+
+        }
+
+
+        if ($dateTo) {
+
+            $query->whereDate(
+                'invoice_date',
+                '<=',
+                $dateTo->format('Y-m-d')
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PAYMENT STATUS
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('payment_status')) {
+
+            switch ($request->payment_status) {
+
+                case 'paid':
+
+                    $query->where('balance', '<=', 0);
+
+                    break;
+
+
+                case 'partial':
+
+                    $query
+                        ->where('received_amount', '>', 0)
+                        ->where('balance', '>', 0);
+
+                    break;
+
+
+                case 'unpaid':
+
+                    $query
+                        ->where(function ($q) {
+                            $q->whereNull('received_amount')
+                                ->orWhere('received_amount', '<=', 0);
+                        })
+                        ->where('balance', '>', 0);
+
+                    break;
+
+
+                case 'due':
+
+                    $query->where('balance', '>', 0);
+
+                    break;
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SEARCH
+        |--------------------------------------------------------------------------
+        | Same box:
+        |
+        | Invoice Number
+        | Invoice Prefix
+        | Item Description
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+
+            $search = trim((string) $request->search);
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where(
+                    'invoice_number',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhere(
+                    'invoice_prefix',
+                    'like',
+                    "%{$search}%"
+                )
+
+                ->orWhereHas(
+                    'items',
+                    function ($itemQuery) use ($search) {
+
+                        $itemQuery->where(
+                            'description',
+                            'like',
+                            "%{$search}%"
+                        );
+
+                    }
+                );
+
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DEFAULT SORT
+        |--------------------------------------------------------------------------
+        */
+
+        return $query
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id');
+    }
+
+
+    /**
+     * Calculate totals from currently filtered query.
+     */
+    private function getReportSummary($invoiceQuery): array
+    {
+        return [
+            'total_invoices' => (clone $invoiceQuery)
+                ->reorder()
+                ->count(),
+
+            'total_subtotal' => (clone $invoiceQuery)
+                ->reorder()
+                ->sum('subtotal'),
+
+            'total_tax' => (clone $invoiceQuery)
+                ->reorder()
+                ->sum('tax_amount'),
+
+            'total_amount' => (clone $invoiceQuery)
+                ->reorder()
+                ->sum('total'),
+
+            'total_received' => (clone $invoiceQuery)
+                ->reorder()
+                ->sum('received_amount'),
+
+            'total_balance' => (clone $invoiceQuery)
+                ->reorder()
+                ->sum('balance'),
+        ];
     }
 
 
