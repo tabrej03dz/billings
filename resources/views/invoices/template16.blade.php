@@ -204,8 +204,7 @@
         $metalAmountCheck = $goldAmountCheck + $silverAmountCheck;
 
         $makingChargeCheck = (float) (
-            $itCheck->making_rate
-            ?? $itCheck->making_charge
+            $itCheck->making_charge
             ?? $itCheck->making_amount
             ?? 0
         );
@@ -671,8 +670,7 @@
                 // invoice_items table me making_rate already saved amount hai,
                 // isliye yahan koi calculation nahi karni.
                 $makingCharge = (float) (
-                    $it->making_rate
-                    ?? $it->making_charge
+                    $it->making_charge
                     ?? $it->making_amount
                     ?? 0
                 );
