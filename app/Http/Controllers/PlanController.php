@@ -37,68 +37,151 @@ class PlanController extends Controller
         return view('plans.index', compact('plans'));
     }
 
+    // public function create()
+    // {
+    //     $permissions = Permission::orderBy('name')->get();
+
+    //     return view('plans.create', compact('permissions'));
+    // }
+
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'name'                    => ['required', 'string', 'max:255'],
+    //         'subtitle'                => ['nullable', 'string', 'max:255'],
+    //         'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
+    //         'price'                   => ['required', 'numeric', 'min:0'],
+    //         'duration_days'           => ['required', 'integer', 'min:1'],
+    //         'description'             => ['nullable', 'string'],
+    //         'status'                  => ['nullable', 'boolean'],
+    //         'is_recommended'          => ['nullable', 'boolean'],
+    //         'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+    //         'permission_ids'          => ['nullable', 'array'],
+    //         'permission_ids.*'        => ['exists:permissions,id'],
+
+    //         'feature_titles'          => ['nullable', 'array'],
+    //         'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+    //         'feature_descriptions'    => ['nullable', 'array'],
+    //         'feature_descriptions.*'  => ['nullable', 'string'],
+    //         'feature_icons'           => ['nullable', 'array'],
+    //         'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+    //         'feature_sort_orders'     => ['nullable', 'array'],
+    //         'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+    //         'feature_is_active'       => ['nullable', 'array'],
+    //     ]);
+
+    //     $slug = !empty($validated['slug'])
+    //         ? Str::slug($validated['slug'])
+    //         : Str::slug($validated['name']);
+
+    //     $slug = $this->makeUniqueSlug($slug);
+
+    //     DB::transaction(function () use ($request, $validated, $slug) {
+    //         $plan = Plan::create([
+    //             'name'              => $validated['name'],
+    //             'subtitle'          => $validated['subtitle'] ?? null,
+    //             'slug'              => $slug,
+    //             'price'             => $validated['price'],
+    //             'duration_days'     => $validated['duration_days'],
+    //             'description'       => $validated['description'] ?? null,
+    //             'status'            => $request->boolean('status'),
+    //             'is_recommended'    => $request->boolean('is_recommended'),
+    //             'sort_order'        => $validated['sort_order'] ?? 0,
+    //         ]);
+
+    //         $plan->permissions()->sync($validated['permission_ids'] ?? []);
+
+    //         $this->syncPlanFeatures($plan, $request);
+    //     });
+
+    //     return redirect()
+    //         ->route('plans.index')
+    //         ->with('success', 'Plan created successfully.');
+    // }
+
+
     public function create()
-    {
-        $permissions = Permission::orderBy('name')->get();
+{
+    $permissions = Permission::orderBy('name')->get();
 
-        return view('plans.create', compact('permissions'));
-    }
+    return view('plans.create', compact('permissions'));
+}
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'                    => ['required', 'string', 'max:255'],
-            'subtitle'                => ['nullable', 'string', 'max:255'],
-            'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
-            'price'                   => ['required', 'numeric', 'min:0'],
-            'duration_days'           => ['required', 'integer', 'min:1'],
-            'description'             => ['nullable', 'string'],
-            'status'                  => ['nullable', 'boolean'],
-            'is_recommended'          => ['nullable', 'boolean'],
-            'sort_order'              => ['nullable', 'integer', 'min:0'],
 
-            'permission_ids'          => ['nullable', 'array'],
-            'permission_ids.*'        => ['exists:permissions,id'],
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'                    => ['required', 'string', 'max:255'],
+        'subtitle'                => ['nullable', 'string', 'max:255'],
+        'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
+        'price'                   => ['required', 'numeric', 'min:0'],
+        'duration_days'           => ['required', 'integer', 'min:1'],
 
-            'feature_titles'          => ['nullable', 'array'],
-            'feature_titles.*'        => ['nullable', 'string', 'max:255'],
-            'feature_descriptions'    => ['nullable', 'array'],
-            'feature_descriptions.*'  => ['nullable', 'string'],
-            'feature_icons'           => ['nullable', 'array'],
-            'feature_icons.*'         => ['nullable', 'string', 'max:255'],
-            'feature_sort_orders'     => ['nullable', 'array'],
-            'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
-            'feature_is_active'       => ['nullable', 'array'],
+        // Plan limits
+        'number_of_office'        => ['required', 'integer', 'min:1'],
+        'number_of_user'          => ['required', 'integer', 'min:1'],
+
+        'description'             => ['nullable', 'string'],
+        'status'                  => ['nullable', 'boolean'],
+        'is_recommended'          => ['nullable', 'boolean'],
+        'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+        'permission_ids'          => ['nullable', 'array'],
+        'permission_ids.*'        => ['exists:permissions,id'],
+
+        'feature_titles'          => ['nullable', 'array'],
+        'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+
+        'feature_descriptions'    => ['nullable', 'array'],
+        'feature_descriptions.*'  => ['nullable', 'string'],
+
+        'feature_icons'           => ['nullable', 'array'],
+        'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+
+        'feature_sort_orders'     => ['nullable', 'array'],
+        'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+
+        'feature_is_active'       => ['nullable', 'array'],
+    ]);
+
+    $slug = !empty($validated['slug'])
+        ? Str::slug($validated['slug'])
+        : Str::slug($validated['name']);
+
+    $slug = $this->makeUniqueSlug($slug);
+
+    DB::transaction(function () use ($request, $validated, $slug) {
+
+        $plan = Plan::create([
+            'name'               => $validated['name'],
+            'subtitle'           => $validated['subtitle'] ?? null,
+            'slug'               => $slug,
+            'price'              => $validated['price'],
+            'duration_days'      => $validated['duration_days'],
+
+            // Plan limits
+            'number_of_office'   => $validated['number_of_office'],
+            'number_of_user'     => $validated['number_of_user'],
+
+            'description'        => $validated['description'] ?? null,
+            'status'             => $request->boolean('status'),
+            'is_recommended'     => $request->boolean('is_recommended'),
+            'sort_order'         => $validated['sort_order'] ?? 0,
         ]);
 
-        $slug = !empty($validated['slug'])
-            ? Str::slug($validated['slug'])
-            : Str::slug($validated['name']);
+        $plan->permissions()->sync(
+            $validated['permission_ids'] ?? []
+        );
 
-        $slug = $this->makeUniqueSlug($slug);
+        $this->syncPlanFeatures($plan, $request);
+    });
 
-        DB::transaction(function () use ($request, $validated, $slug) {
-            $plan = Plan::create([
-                'name'              => $validated['name'],
-                'subtitle'          => $validated['subtitle'] ?? null,
-                'slug'              => $slug,
-                'price'             => $validated['price'],
-                'duration_days'     => $validated['duration_days'],
-                'description'       => $validated['description'] ?? null,
-                'status'            => $request->boolean('status'),
-                'is_recommended'    => $request->boolean('is_recommended'),
-                'sort_order'        => $validated['sort_order'] ?? 0,
-            ]);
+    return redirect()
+        ->route('plans.index')
+        ->with('success', 'Plan created successfully.');
+}
 
-            $plan->permissions()->sync($validated['permission_ids'] ?? []);
-
-            $this->syncPlanFeatures($plan, $request);
-        });
-
-        return redirect()
-            ->route('plans.index')
-            ->with('success', 'Plan created successfully.');
-    }
 
     public function show($id)
     {
@@ -107,77 +190,180 @@ class PlanController extends Controller
         return view('plans.show', compact('plan'));
     }
 
+    // public function edit($id)
+    // {
+    //     $plan = Plan::with(['permissions', 'planFeatures'])->findOrFail($id);
+    //     $permissions = Permission::orderBy('name')->get();
+    //     $selectedPermissions = $plan->permissions->pluck('id')->toArray();
+
+    //     return view('plans.edit', compact('plan', 'permissions', 'selectedPermissions'));
+    // }
+
+    // public function update(Request $request, $id)
+    // {
+    //     $plan = Plan::with('planFeatures')->findOrFail($id);
+
+    //     $validated = $request->validate([
+    //         'name'                    => ['required', 'string', 'max:255'],
+    //         'subtitle'                => ['nullable', 'string', 'max:255'],
+    //         'slug'                    => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //             Rule::unique('plans', 'slug')->ignore($plan->id),
+    //         ],
+    //         'price'                   => ['required', 'numeric', 'min:0'],
+    //         'duration_days'           => ['required', 'integer', 'min:1'],
+    //         'description'             => ['nullable', 'string'],
+    //         'status'                  => ['nullable', 'boolean'],
+    //         'is_recommended'          => ['nullable', 'boolean'],
+    //         'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+    //         'permission_ids'          => ['nullable', 'array'],
+    //         'permission_ids.*'        => ['exists:permissions,id'],
+
+    //         'feature_titles'          => ['nullable', 'array'],
+    //         'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+    //         'feature_descriptions'    => ['nullable', 'array'],
+    //         'feature_descriptions.*'  => ['nullable', 'string'],
+    //         'feature_icons'           => ['nullable', 'array'],
+    //         'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+    //         'feature_sort_orders'     => ['nullable', 'array'],
+    //         'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+    //         'feature_is_active'       => ['nullable', 'array'],
+    //     ]);
+
+    //     $slug = !empty($validated['slug'])
+    //         ? Str::slug($validated['slug'])
+    //         : Str::slug($validated['name']);
+
+    //     $slug = $this->makeUniqueSlug($slug, $plan->id);
+
+    //     DB::transaction(function () use ($request, $validated, $plan, $slug) {
+    //         $plan->update([
+    //             'name'              => $validated['name'],
+    //             'subtitle'          => $validated['subtitle'] ?? null,
+    //             'slug'              => $slug,
+    //             'price'             => $validated['price'],
+    //             'duration_days'     => $validated['duration_days'],
+    //             'description'       => $validated['description'] ?? null,
+    //             'status'            => $request->boolean('status'),
+    //             'is_recommended'    => $request->boolean('is_recommended'),
+    //             'sort_order'        => $validated['sort_order'] ?? 0,
+    //         ]);
+
+    //         $plan->permissions()->sync($validated['permission_ids'] ?? []);
+
+    //         $this->syncPlanFeatures($plan, $request);
+    //     });
+
+    //     return redirect()
+    //         ->route('plans.index')
+    //         ->with('success', 'Plan updated successfully.');
+    // }
+
     public function edit($id)
-    {
-        $plan = Plan::with(['permissions', 'planFeatures'])->findOrFail($id);
-        $permissions = Permission::orderBy('name')->get();
-        $selectedPermissions = $plan->permissions->pluck('id')->toArray();
+{
+    $plan = Plan::with([
+        'permissions',
+        'planFeatures',
+    ])->findOrFail($id);
 
-        return view('plans.edit', compact('plan', 'permissions', 'selectedPermissions'));
-    }
+    $permissions = Permission::orderBy('name')->get();
 
-    public function update(Request $request, $id)
-    {
-        $plan = Plan::with('planFeatures')->findOrFail($id);
+    $selectedPermissions = $plan->permissions
+        ->pluck('id')
+        ->toArray();
 
-        $validated = $request->validate([
-            'name'                    => ['required', 'string', 'max:255'],
-            'subtitle'                => ['nullable', 'string', 'max:255'],
-            'slug'                    => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('plans', 'slug')->ignore($plan->id),
-            ],
-            'price'                   => ['required', 'numeric', 'min:0'],
-            'duration_days'           => ['required', 'integer', 'min:1'],
-            'description'             => ['nullable', 'string'],
-            'status'                  => ['nullable', 'boolean'],
-            'is_recommended'          => ['nullable', 'boolean'],
-            'sort_order'              => ['nullable', 'integer', 'min:0'],
+    return view('plans.edit', compact(
+        'plan',
+        'permissions',
+        'selectedPermissions'
+    ));
+}
 
-            'permission_ids'          => ['nullable', 'array'],
-            'permission_ids.*'        => ['exists:permissions,id'],
 
-            'feature_titles'          => ['nullable', 'array'],
-            'feature_titles.*'        => ['nullable', 'string', 'max:255'],
-            'feature_descriptions'    => ['nullable', 'array'],
-            'feature_descriptions.*'  => ['nullable', 'string'],
-            'feature_icons'           => ['nullable', 'array'],
-            'feature_icons.*'         => ['nullable', 'string', 'max:255'],
-            'feature_sort_orders'     => ['nullable', 'array'],
-            'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
-            'feature_is_active'       => ['nullable', 'array'],
+public function update(Request $request, $id)
+{
+    $plan = Plan::with('planFeatures')->findOrFail($id);
+
+    $validated = $request->validate([
+        'name'                    => ['required', 'string', 'max:255'],
+        'subtitle'                => ['nullable', 'string', 'max:255'],
+
+        'slug'                    => [
+            'nullable',
+            'string',
+            'max:255',
+            Rule::unique('plans', 'slug')->ignore($plan->id),
+        ],
+
+        'price'                   => ['required', 'numeric', 'min:0'],
+        'duration_days'           => ['required', 'integer', 'min:1'],
+
+        // Plan limits
+        'number_of_office'        => ['required', 'integer', 'min:1'],
+        'number_of_user'          => ['required', 'integer', 'min:1'],
+
+        'description'             => ['nullable', 'string'],
+        'status'                  => ['nullable', 'boolean'],
+        'is_recommended'          => ['nullable', 'boolean'],
+        'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+        'permission_ids'          => ['nullable', 'array'],
+        'permission_ids.*'        => ['exists:permissions,id'],
+
+        'feature_titles'          => ['nullable', 'array'],
+        'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+
+        'feature_descriptions'    => ['nullable', 'array'],
+        'feature_descriptions.*'  => ['nullable', 'string'],
+
+        'feature_icons'           => ['nullable', 'array'],
+        'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+
+        'feature_sort_orders'     => ['nullable', 'array'],
+        'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+
+        'feature_is_active'       => ['nullable', 'array'],
+    ]);
+
+    $slug = !empty($validated['slug'])
+        ? Str::slug($validated['slug'])
+        : Str::slug($validated['name']);
+
+    $slug = $this->makeUniqueSlug($slug, $plan->id);
+
+    DB::transaction(function () use ($request, $validated, $plan, $slug) {
+
+        $plan->update([
+            'name'               => $validated['name'],
+            'subtitle'           => $validated['subtitle'] ?? null,
+            'slug'               => $slug,
+            'price'              => $validated['price'],
+            'duration_days'      => $validated['duration_days'],
+
+            // Plan limits
+            'number_of_office'   => $validated['number_of_office'],
+            'number_of_user'     => $validated['number_of_user'],
+
+            'description'        => $validated['description'] ?? null,
+            'status'             => $request->boolean('status'),
+            'is_recommended'     => $request->boolean('is_recommended'),
+            'sort_order'         => $validated['sort_order'] ?? 0,
         ]);
 
-        $slug = !empty($validated['slug'])
-            ? Str::slug($validated['slug'])
-            : Str::slug($validated['name']);
+        $plan->permissions()->sync(
+            $validated['permission_ids'] ?? []
+        );
 
-        $slug = $this->makeUniqueSlug($slug, $plan->id);
+        $this->syncPlanFeatures($plan, $request);
+    });
 
-        DB::transaction(function () use ($request, $validated, $plan, $slug) {
-            $plan->update([
-                'name'              => $validated['name'],
-                'subtitle'          => $validated['subtitle'] ?? null,
-                'slug'              => $slug,
-                'price'             => $validated['price'],
-                'duration_days'     => $validated['duration_days'],
-                'description'       => $validated['description'] ?? null,
-                'status'            => $request->boolean('status'),
-                'is_recommended'    => $request->boolean('is_recommended'),
-                'sort_order'        => $validated['sort_order'] ?? 0,
-            ]);
-
-            $plan->permissions()->sync($validated['permission_ids'] ?? []);
-
-            $this->syncPlanFeatures($plan, $request);
-        });
-
-        return redirect()
-            ->route('plans.index')
-            ->with('success', 'Plan updated successfully.');
-    }
+    return redirect()
+        ->route('plans.index')
+        ->with('success', 'Plan updated successfully.');
+}
 
     public function destroy($id)
     {

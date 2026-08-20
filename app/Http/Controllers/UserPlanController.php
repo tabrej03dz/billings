@@ -79,92 +79,229 @@ class UserPlanController extends Controller
         ));
     }
 
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'business_id' => [
+    //             'nullable',
+    //             'required_without:user_id',
+    //             'exists:businesses,id',
+    //         ],
+    //         'user_id' => [
+    //             'nullable',
+    //             'exists:users,id',
+    //         ],
+    //         'plan_id' => [
+    //             'required',
+    //             'exists:plans,id',
+    //         ],
+    //         'start_date' => [
+    //             'nullable',
+    //             'date',
+    //         ],
+    //         'expiry_date' => [
+    //             'nullable',
+    //             'date',
+    //             'after_or_equal:start_date',
+    //         ],
+    //         'status' => [
+    //             'nullable',
+    //             'boolean',
+    //         ],
+    //     ], [
+    //         'business_id.required_without' => 'Business select karna zaroori hai jab user select nahi kiya gaya ho.',
+    //         'business_id.exists' => 'Selected business valid nahi hai.',
+    //         'user_id.exists' => 'Selected user valid nahi hai.',
+    //         'plan_id.required' => 'Please select a plan.',
+    //         'plan_id.exists' => 'Selected plan valid nahi hai.',
+    //         'expiry_date.after_or_equal' => 'Expiry date start date se pehle nahi ho sakti.',
+    //     ]);
+
+    //     $userPlan = DB::transaction(function () use ($request, $validated) {
+    //         $plan = Plan::query()
+    //             ->with('permissions')
+    //             ->findOrFail($validated['plan_id']);
+
+    //         $startDate = !empty($validated['start_date'])
+    //             ? Carbon::parse($validated['start_date'])->startOfDay()
+    //             : now()->startOfDay();
+
+    //         $expiryDate = !empty($validated['expiry_date'])
+    //             ? Carbon::parse($validated['expiry_date'])->startOfDay()
+    //             : $startDate->copy()->addDays(
+    //                 max(0, (int) ($plan->duration_days ?? 0))
+    //             );
+
+    //         $userPlan = UserPlan::create([
+    //             'business_id' => $validated['business_id'] ?? null,
+    //             'user_id' => $validated['user_id'] ?? null,
+    //             'plan_id' => $validated['plan_id'],
+    //             'start_date' => $startDate->toDateString(),
+    //             'expiry_date' => $expiryDate->toDateString(),
+    //             'status' => $request->has('status')
+    //                 ? $request->boolean('status')
+    //                 : true,
+    //         ]);
+
+    //         /*
+    //          * Plan ki saari permissions target user/users ko assign karega.
+    //          */
+    //         $this->assignPlanPermissions(
+    //             userPlan: $userPlan,
+    //             plan: $plan
+    //         );
+
+    //         return $userPlan;
+    //     });
+
+    //     return redirect()
+    //         ->route('user-plans.index', array_filter([
+    //             'business_id' => $userPlan->business_id,
+    //         ]))
+    //         ->with(
+    //             'success',
+    //             $userPlan->user_id
+    //                 ? 'User plan created and all plan permissions assigned successfully.'
+    //                 : 'Business plan created and permissions assigned to all business users successfully.'
+    //         );
+    // }
+
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'business_id' => [
-                'nullable',
-                'required_without:user_id',
-                'exists:businesses,id',
-            ],
-            'user_id' => [
-                'nullable',
-                'exists:users,id',
-            ],
-            'plan_id' => [
-                'required',
-                'exists:plans,id',
-            ],
-            'start_date' => [
-                'nullable',
-                'date',
-            ],
-            'expiry_date' => [
-                'nullable',
-                'date',
-                'after_or_equal:start_date',
-            ],
-            'status' => [
-                'nullable',
-                'boolean',
-            ],
-        ], [
-            'business_id.required_without' => 'Business select karna zaroori hai jab user select nahi kiya gaya ho.',
-            'business_id.exists' => 'Selected business valid nahi hai.',
-            'user_id.exists' => 'Selected user valid nahi hai.',
-            'plan_id.required' => 'Please select a plan.',
-            'plan_id.exists' => 'Selected plan valid nahi hai.',
-            'expiry_date.after_or_equal' => 'Expiry date start date se pehle nahi ho sakti.',
+{
+    $validated = $request->validate([
+        'business_id' => [
+            'nullable',
+            'required_without:user_id',
+            'exists:businesses,id',
+        ],
+
+        'user_id' => [
+            'nullable',
+            'exists:users,id',
+        ],
+
+        'plan_id' => [
+            'required',
+            'exists:plans,id',
+        ],
+
+        'number_of_office' => [
+            'required',
+            'integer',
+            'min:1',
+        ],
+
+        'number_of_user' => [
+            'required',
+            'integer',
+            'min:1',
+        ],
+
+        'start_date' => [
+            'nullable',
+            'date',
+        ],
+
+        'expiry_date' => [
+            'nullable',
+            'date',
+            'after_or_equal:start_date',
+        ],
+
+        'status' => [
+            'nullable',
+            'boolean',
+        ],
+    ], [
+        'business_id.required_without' =>
+            'Business select karna zaroori hai jab user select nahi kiya gaya ho.',
+
+        'business_id.exists' =>
+            'Selected business valid nahi hai.',
+
+        'user_id.exists' =>
+            'Selected user valid nahi hai.',
+
+        'plan_id.required' =>
+            'Please select a plan.',
+
+        'plan_id.exists' =>
+            'Selected plan valid nahi hai.',
+
+        'number_of_office.required' =>
+            'Number of offices required hai.',
+
+        'number_of_office.integer' =>
+            'Number of offices valid number hona chahiye.',
+
+        'number_of_office.min' =>
+            'Kam se kam 1 office hona chahiye.',
+
+        'number_of_user.required' =>
+            'Number of users required hai.',
+
+        'number_of_user.integer' =>
+            'Number of users valid number hona chahiye.',
+
+        'number_of_user.min' =>
+            'Kam se kam 1 user hona chahiye.',
+
+        'expiry_date.after_or_equal' =>
+            'Expiry date start date se pehle nahi ho sakti.',
+    ]);
+
+    $userPlan = DB::transaction(function () use ($request, $validated) {
+
+        $plan = Plan::query()
+            ->with('permissions')
+            ->findOrFail($validated['plan_id']);
+
+        $startDate = !empty($validated['start_date'])
+            ? Carbon::parse($validated['start_date'])->startOfDay()
+            : now()->startOfDay();
+
+        $expiryDate = !empty($validated['expiry_date'])
+            ? Carbon::parse($validated['expiry_date'])->startOfDay()
+            : $startDate->copy()->addDays(
+                max(0, (int) ($plan->duration_days ?? 0))
+            );
+
+        $userPlan = UserPlan::create([
+            'business_id'     => $validated['business_id'] ?? null,
+            'user_id'         => $validated['user_id'] ?? null,
+            'plan_id'         => $validated['plan_id'],
+
+            'number_of_office' => $validated['number_of_office'],
+            'number_of_user'   => $validated['number_of_user'],
+
+            'start_date'      => $startDate->toDateString(),
+            'expiry_date'     => $expiryDate->toDateString(),
+
+            'status'          => $request->has('status')
+                ? $request->boolean('status')
+                : true,
         ]);
 
-        $userPlan = DB::transaction(function () use ($request, $validated) {
-            $plan = Plan::query()
-                ->with('permissions')
-                ->findOrFail($validated['plan_id']);
+        $this->assignPlanPermissions(
+            userPlan: $userPlan,
+            plan: $plan
+        );
 
-            $startDate = !empty($validated['start_date'])
-                ? Carbon::parse($validated['start_date'])->startOfDay()
-                : now()->startOfDay();
+        return $userPlan;
+    });
 
-            $expiryDate = !empty($validated['expiry_date'])
-                ? Carbon::parse($validated['expiry_date'])->startOfDay()
-                : $startDate->copy()->addDays(
-                    max(0, (int) ($plan->duration_days ?? 0))
-                );
+    return redirect()
+        ->route('user-plans.index', array_filter([
+            'business_id' => $userPlan->business_id,
+        ]))
+        ->with(
+            'success',
+            $userPlan->user_id
+                ? 'User plan created and all plan permissions assigned successfully.'
+                : 'Business plan created and permissions assigned to all business users successfully.'
+        );
+}
 
-            $userPlan = UserPlan::create([
-                'business_id' => $validated['business_id'] ?? null,
-                'user_id' => $validated['user_id'] ?? null,
-                'plan_id' => $validated['plan_id'],
-                'start_date' => $startDate->toDateString(),
-                'expiry_date' => $expiryDate->toDateString(),
-                'status' => $request->has('status')
-                    ? $request->boolean('status')
-                    : true,
-            ]);
-
-            /*
-             * Plan ki saari permissions target user/users ko assign karega.
-             */
-            $this->assignPlanPermissions(
-                userPlan: $userPlan,
-                plan: $plan
-            );
-
-            return $userPlan;
-        });
-
-        return redirect()
-            ->route('user-plans.index', array_filter([
-                'business_id' => $userPlan->business_id,
-            ]))
-            ->with(
-                'success',
-                $userPlan->user_id
-                    ? 'User plan created and all plan permissions assigned successfully.'
-                    : 'Business plan created and permissions assigned to all business users successfully.'
-            );
-    }
 
     public function show($id)
     {
