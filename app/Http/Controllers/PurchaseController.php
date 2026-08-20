@@ -454,7 +454,7 @@ class PurchaseController extends Controller
                 'max:255',
             ],
 
-            'phone' => [
+            'mobile' => [
                 'nullable',
                 'string',
                 'max:20',
@@ -485,7 +485,7 @@ class PurchaseController extends Controller
         $supplier->party_type = 'supplier';
         $supplier->name = $data['name'];
 
-        $supplier->phone = $data['phone'] ?? null;
+        $supplier->mobile = $data['mobile'] ?? null;
         $supplier->email = $data['email'] ?? null;
         $supplier->gstin = $data['gstin'] ?? null;
         $supplier->address = $data['address'] ?? null;
@@ -500,7 +500,7 @@ class PurchaseController extends Controller
             'supplier' => [
                 'id' => $supplier->id,
                 'name' => $supplier->name,
-                'phone' => $supplier->phone,
+                'mobile' => $supplier->mobile,
             ],
         ]);
     }

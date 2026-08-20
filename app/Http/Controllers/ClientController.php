@@ -8,65 +8,140 @@ use App\Models\InvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Exports\ClientPurchaseReportExport;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
-use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SupplierPurchaseReportExport;
+
+
 
 class ClientController extends Controller
 {
-    /**
-     * Display a listing of clients.
-     */
+    
+
     // public function index(Request $request)
     // {
-    //     $q = trim($request->get('q', ''));
-    //     $clients = Client::query()
-    //         ->when($q !== '', function ($w) use ($q) {
-    //             $w->where(function ($s) use ($q) {
-    //                 $s->where('name', 'like', "%{$q}%")
+    //     $q = trim((string) $request->get('q', ''));
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Base client query
+    //     |--------------------------------------------------------------------------
+    //     | Client model me active business ka Global Scope laga hai, isliye
+    //     | yahan dobara business_id filter nahi lagaya gaya.
+    //     */
+    //     $baseQuery = Client::query()
+    //         ->where('is_save', true);
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Total saved clients
+    //     |--------------------------------------------------------------------------
+    //     | Search ke bina actual client count.
+    //     */
+    //     $totalClients = (clone $baseQuery)->count();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Client listing
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $clients = $baseQuery
+    //         ->when($q !== '', function ($query) use ($q) {
+    //             $query->where(function ($subQuery) use ($q) {
+    //                 $subQuery
+    //                     ->where('name', 'like', "%{$q}%")
     //                     ->orWhere('mobile', 'like', "%{$q}%")
     //                     ->orWhere('gstin', 'like', "%{$q}%")
     //                     ->orWhere('pan', 'like', "%{$q}%")
+    //                     ->orWhere('state', 'like', "%{$q}%")
     //                     ->orWhere('address', 'like', "%{$q}%");
     //             });
-    //         })->where('is_save', true)
+    //         })
     //         ->latest()
     //         ->paginate(15)
     //         ->withQueryString();
 
-    //     return view('clients.index', compact('clients', 'q'));
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | New user guide
+    //     |--------------------------------------------------------------------------
+    //     | 5 saved clients se kam hone tak user ko new user maana jayega.
+    //     */
+    //     $showClientSuggestion = $totalClients < 5;
+
+    //     return view('clients.index', compact(
+    //         'clients',
+    //         'q',
+    //         'totalClients',
+    //         'showClientSuggestion'
+    //     ));
     // }
 
-public function index(Request $request)
+
+    public function index(Request $request)
 {
     $q = trim((string) $request->get('q', ''));
 
     /*
     |--------------------------------------------------------------------------
-    | Base client query
+    | Active Tab
     |--------------------------------------------------------------------------
-    | Client model me active business ka Global Scope laga hai, isliye
-    | yahan dobara business_id filter nahi lagaya gaya.
+    |
+    | client / supplier
+    |
     */
+
+    $type = $request->get('type', 'client');
+
+    if (!in_array($type, ['client', 'supplier'], true)) {
+        $type = 'client';
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Base Query
+    |--------------------------------------------------------------------------
+    */
+
     $baseQuery = Client::query()
-        ->where('is_save', true);
+        ->where('is_save', true)
+        ->where('party_type', $type);
+
 
     /*
     |--------------------------------------------------------------------------
-    | Total saved clients
+    | Counts
     |--------------------------------------------------------------------------
-    | Search ke bina actual client count.
     */
-    $totalClients = (clone $baseQuery)->count();
+
+    $totalClients = Client::query()
+        ->where('is_save', true)
+        ->whereIn('party_type', [
+            'client',
+            'both',
+        ])
+        ->count();
+
+
+    $totalSuppliers = Client::query()
+        ->where('is_save', true)
+        ->whereIn('party_type', [
+            'supplier',
+            'both',
+        ])
+        ->count();
+
 
     /*
     |--------------------------------------------------------------------------
-    | Client listing
+    | Current Tab Listing
     |--------------------------------------------------------------------------
     */
+
     $clients = $baseQuery
         ->when($q !== '', function ($query) use ($q) {
+
             $query->where(function ($subQuery) use ($q) {
+
                 $subQuery
                     ->where('name', 'like', "%{$q}%")
                     ->orWhere('mobile', 'like', "%{$q}%")
@@ -74,141 +149,393 @@ public function index(Request $request)
                     ->orWhere('pan', 'like', "%{$q}%")
                     ->orWhere('state', 'like', "%{$q}%")
                     ->orWhere('address', 'like', "%{$q}%");
+
             });
+
         })
         ->latest()
         ->paginate(15)
         ->withQueryString();
 
+
     /*
     |--------------------------------------------------------------------------
-    | New user guide
+    | Client Guide
     |--------------------------------------------------------------------------
-    | 5 saved clients se kam hone tak user ko new user maana jayega.
     */
-    $showClientSuggestion = $totalClients < 5;
+
+    $showClientSuggestion =
+        $type === 'client'
+        && $totalClients < 5;
+
 
     return view('clients.index', compact(
         'clients',
         'q',
+        'type',
         'totalClients',
+        'totalSuppliers',
         'showClientSuggestion'
     ));
 }
 
-    public function create()
+    // public function create()
+    // {
+    //     return view('clients.create');
+    // }
+
+    public function create(Request $request)
     {
-        return view('clients.create');
+        $type = $request->get('type', 'client');
+
+        if (!in_array($type, ['client', 'supplier'], true)) {
+            $type = 'client';
+        }
+
+        return view('clients.create', compact('type'));
     }
 
-//    public function store(Request $request)
-//    {
-//        $bid = $request->user()->current_business_id ?? session('active_business_id');
-//
-//        $data = $request->validate([
-//            'name'    => ['required','string','max:255'],
-//            'mobile'  => [
-//                'nullable','string','max:20',
-//                Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id',$bid)),
-//            ],
-//            'gstin'   => [
-//                'nullable','string','max:50',
-//                Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id',$bid)),
-//            ],
-//            'pan'     => [
-//                'nullable','string','max:50',
-//                Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
-//            ],
-//            'state'  => ['nullable','string','max:100'],
-//            'address' => ['nullable','string','max:1000'],
-//        ]);
-//
-//        $data['state_code'] = null;
-//
-//        if (!empty($data['state']) && str_contains($data['state'], ',')) {
-//            [$code, $name] = explode(',', $data['state'], 2);
-//
-//            $data['state_code'] = trim($code); // "09"
-//            $data['state']      = trim($name); // "Uttar Pradesh"
-//        }
-//
-//        // BelongsToBusiness trait creation time pe business_id auto set kar dega;
-//        // phir bhi explicit set karna chahte ho to:
-//        $data['business_id'] = $bid;
-//
-//        Client::create($data);
-//
-//        return redirect()->route('clients.index')->with('success','Client created successfully.');
-//    }
 
+    // public function store(Request $request)
+    // {
+    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
+
+    //     $data = $request->validate([
+    //         'name'    => ['required','string','max:255'],
+    //         'mobile'  => [
+    //             'nullable','string','max:20',
+    //             Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id',$bid)),
+    //         ],
+    //         'gstin'   => [
+    //             'nullable','string','max:50',
+    //             Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id',$bid)),
+    //         ],
+    //         'pan'     => [
+    //             'nullable','string','max:50',
+    //             Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
+    //         ],
+    //         'state'   => ['nullable','string','max:100'],
+    //         'address' => ['nullable','string','max:1000'],
+    //     ]);
+
+    //     $data['state_code'] = null;
+
+    //     // ✅ CASE 1: State dropdown selected
+    //     if (!empty($data['state']) && str_contains($data['state'], ',')) {
+    //         [$code, $name] = explode(',', $data['state'], 2);
+    //         $data['state_code'] = trim($code);
+    //         $data['state']      = trim($name);
+    //     }
+
+    //     // ✅ CASE 2: State NOT selected → derive from GSTIN
+    //     if (
+    //         empty($data['state']) &&
+    //         !empty($data['gstin']) &&
+    //         strlen($data['gstin']) >= 2
+    //     ) {
+    //         $gstStates = [
+    //             '01'=>'Jammu and Kashmir','02'=>'Himachal Pradesh','03'=>'Punjab',
+    //             '04'=>'Chandigarh','05'=>'Uttarakhand','06'=>'Haryana','07'=>'Delhi',
+    //             '08'=>'Rajasthan','09'=>'Uttar Pradesh','10'=>'Bihar','11'=>'Sikkim',
+    //             '12'=>'Arunachal Pradesh','13'=>'Nagaland','14'=>'Manipur','15'=>'Mizoram',
+    //             '16'=>'Tripura','17'=>'Meghalaya','18'=>'Assam','19'=>'West Bengal',
+    //             '20'=>'Jharkhand','21'=>'Odisha','22'=>'Chhattisgarh',
+    //             '23'=>'Madhya Pradesh','24'=>'Gujarat',
+    //             '26'=>'Dadra and Nagar Haveli and Daman and Diu',
+    //             '27'=>'Maharashtra','29'=>'Karnataka','30'=>'Goa','31'=>'Lakshadweep',
+    //             '32'=>'Kerala','33'=>'Tamil Nadu','34'=>'Puducherry',
+    //             '35'=>'Andaman and Nicobar Islands','36'=>'Telangana',
+    //             '37'=>'Andhra Pradesh','38'=>'Ladakh',
+    //         ];
+
+    //         $code = substr(strtoupper($data['gstin']), 0, 2);
+
+    //         if (isset($gstStates[$code])) {
+    //             $data['state_code'] = $code;
+    //             $data['state']      = $gstStates[$code];
+    //         }
+    //     }
+
+    //     $data['business_id'] = $bid;
+
+    //     Client::create($data);
+
+    //     return redirect()
+    //         ->route('clients.index')
+    //         ->with('success','Client created successfully.');
+    // }
 
     public function store(Request $request)
     {
-        $bid = $request->user()->current_business_id ?? session('active_business_id');
+        $bid =
+            $request->user()->current_business_id
+            ?? session('active_business_id')
+            ?? $request->user()
+                ->businesses()
+                ->pluck('businesses.id')
+                ->first();
+
+
+        abort_unless(
+            $bid,
+            403,
+            'Active business not found.'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize
+        |--------------------------------------------------------------------------
+        */
+
+        $request->merge([
+            'name' => trim((string) $request->name),
+
+            'mobile' => $request->mobile
+                ? preg_replace('/\s+/', '', (string) $request->mobile)
+                : null,
+
+            'gstin' => $request->gstin
+                ? strtoupper(
+                    preg_replace(
+                        '/\s+/',
+                        '',
+                        (string) $request->gstin
+                    )
+                )
+                : null,
+
+            'pan' => $request->pan
+                ? strtoupper(
+                    preg_replace(
+                        '/\s+/',
+                        '',
+                        (string) $request->pan
+                    )
+                )
+                : null,
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
 
         $data = $request->validate([
-            'name'    => ['required','string','max:255'],
-            'mobile'  => [
-                'nullable','string','max:20',
-                Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id',$bid)),
+
+            'party_type' => [
+                'required',
+                Rule::in([
+                    'client',
+                    'supplier',
+                ]),
             ],
-            'gstin'   => [
-                'nullable','string','max:50',
-                Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id',$bid)),
+
+            'name' => [
+                'required',
+                'string',
+                'max:255',
             ],
-            'pan'     => [
-                'nullable','string','max:50',
-                Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
+
+            'mobile' => [
+                'nullable',
+                'string',
+                'max:20',
+
+                Rule::unique('clients', 'mobile')
+                    ->where(
+                        fn ($q) =>
+                            $q->where('business_id', $bid)
+                    ),
             ],
-            'state'   => ['nullable','string','max:100'],
-            'address' => ['nullable','string','max:1000'],
+
+            'gstin' => [
+                'nullable',
+                'string',
+                'max:50',
+
+                Rule::unique('clients', 'gstin')
+                    ->where(
+                        fn ($q) =>
+                            $q->where('business_id', $bid)
+                    ),
+            ],
+
+            'pan' => [
+                'nullable',
+                'string',
+                'max:50',
+
+                Rule::unique('clients', 'pan')
+                    ->where(
+                        fn ($q) =>
+                            $q->where('business_id', $bid)
+                    ),
+            ],
+
+            'state' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'address' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
         ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GST State Map
+        |--------------------------------------------------------------------------
+        */
+
+        $gstStates = [
+            '01' => 'Jammu and Kashmir',
+            '02' => 'Himachal Pradesh',
+            '03' => 'Punjab',
+            '04' => 'Chandigarh',
+            '05' => 'Uttarakhand',
+            '06' => 'Haryana',
+            '07' => 'Delhi',
+            '08' => 'Rajasthan',
+            '09' => 'Uttar Pradesh',
+            '10' => 'Bihar',
+            '11' => 'Sikkim',
+            '12' => 'Arunachal Pradesh',
+            '13' => 'Nagaland',
+            '14' => 'Manipur',
+            '15' => 'Mizoram',
+            '16' => 'Tripura',
+            '17' => 'Meghalaya',
+            '18' => 'Assam',
+            '19' => 'West Bengal',
+            '20' => 'Jharkhand',
+            '21' => 'Odisha',
+            '22' => 'Chhattisgarh',
+            '23' => 'Madhya Pradesh',
+            '24' => 'Gujarat',
+            '26' => 'Dadra and Nagar Haveli and Daman and Diu',
+            '27' => 'Maharashtra',
+            '29' => 'Karnataka',
+            '30' => 'Goa',
+            '31' => 'Lakshadweep',
+            '32' => 'Kerala',
+            '33' => 'Tamil Nadu',
+            '34' => 'Puducherry',
+            '35' => 'Andaman and Nicobar Islands',
+            '36' => 'Telangana',
+            '37' => 'Andhra Pradesh',
+            '38' => 'Ladakh',
+        ];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | State
+        |--------------------------------------------------------------------------
+        */
 
         $data['state_code'] = null;
 
-        // ✅ CASE 1: State dropdown selected
-        if (!empty($data['state']) && str_contains($data['state'], ',')) {
-            [$code, $name] = explode(',', $data['state'], 2);
-            $data['state_code'] = trim($code);
-            $data['state']      = trim($name);
+
+        if (
+            !empty($data['state'])
+            && str_contains($data['state'], ',')
+        ) {
+
+            [$code, $name] =
+                explode(',', $data['state'], 2);
+
+            $data['state_code'] =
+                trim($code);
+
+            $data['state'] =
+                trim($name);
         }
 
-        // ✅ CASE 2: State NOT selected → derive from GSTIN
-        if (
-            empty($data['state']) &&
-            !empty($data['gstin']) &&
-            strlen($data['gstin']) >= 2
-        ) {
-            $gstStates = [
-                '01'=>'Jammu and Kashmir','02'=>'Himachal Pradesh','03'=>'Punjab',
-                '04'=>'Chandigarh','05'=>'Uttarakhand','06'=>'Haryana','07'=>'Delhi',
-                '08'=>'Rajasthan','09'=>'Uttar Pradesh','10'=>'Bihar','11'=>'Sikkim',
-                '12'=>'Arunachal Pradesh','13'=>'Nagaland','14'=>'Manipur','15'=>'Mizoram',
-                '16'=>'Tripura','17'=>'Meghalaya','18'=>'Assam','19'=>'West Bengal',
-                '20'=>'Jharkhand','21'=>'Odisha','22'=>'Chhattisgarh',
-                '23'=>'Madhya Pradesh','24'=>'Gujarat',
-                '26'=>'Dadra and Nagar Haveli and Daman and Diu',
-                '27'=>'Maharashtra','29'=>'Karnataka','30'=>'Goa','31'=>'Lakshadweep',
-                '32'=>'Kerala','33'=>'Tamil Nadu','34'=>'Puducherry',
-                '35'=>'Andaman and Nicobar Islands','36'=>'Telangana',
-                '37'=>'Andhra Pradesh','38'=>'Ladakh',
-            ];
 
-            $code = substr(strtoupper($data['gstin']), 0, 2);
+        /*
+        |--------------------------------------------------------------------------
+        | Auto state using GSTIN
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            empty($data['state'])
+            && !empty($data['gstin'])
+            && strlen($data['gstin']) >= 2
+        ) {
+
+            $code =
+                substr(
+                    strtoupper($data['gstin']),
+                    0,
+                    2
+                );
+
 
             if (isset($gstStates[$code])) {
-                $data['state_code'] = $code;
-                $data['state']      = $gstStates[$code];
+
+                $data['state_code'] =
+                    $code;
+
+                $data['state'] =
+                    $gstStates[$code];
             }
         }
 
-        $data['business_id'] = $bid;
 
-        Client::create($data);
+        /*
+        |--------------------------------------------------------------------------
+        | Business
+        |--------------------------------------------------------------------------
+        */
+
+        $data['business_id'] =
+            $bid;
+
+        $data['is_save'] =
+            true;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create
+        |--------------------------------------------------------------------------
+        */
+
+        $client =
+            Client::create($data);
+
+
+        $label =
+            $client->party_type === 'supplier'
+                ? 'Supplier'
+                : 'Client';
+
 
         return redirect()
-            ->route('clients.index')
-            ->with('success','Client created successfully.');
+            ->route(
+                'clients.index',
+                [
+                    'type' =>
+                        $client->party_type === 'supplier'
+                            ? 'supplier'
+                            : 'client'
+                ]
+            )
+            ->with(
+                'success',
+                $label . ' created successfully.'
+            );
     }
 
     public function edit(Client $client)
@@ -217,132 +544,181 @@ public function index(Request $request)
         return view('clients.edit', compact('client'));
     }
 
-    public function update(Request $request, Client $client)
-    {
-        $bid = $request->user()->current_business_id ?? session('active_business_id');
+    // public function update(Request $request, Client $client)
+    // {
+    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
+
+    //     $data = $request->validate([
+    //         'name'    => ['required','string','max:255'],
+    //         'mobile'  => [
+    //             'nullable','string','max:20',
+    //             Rule::unique('clients','mobile')
+    //                 ->ignore($client->id)
+    //                 ->where(fn($q) => $q->where('business_id',$bid)),
+    //         ],
+    //         'gstin'   => [
+    //             'nullable','string','max:50',
+    //             Rule::unique('clients','gstin')
+    //                 ->ignore($client->id)
+    //                 ->where(fn($q) => $q->where('business_id',$bid)),
+    //         ],
+    //         'pan'     => [
+    //             'nullable','string','max:50',
+    //             Rule::unique('clients','pan')
+    //                 ->ignore($client->id)
+    //                 ->where(fn($q) => $q->where('business_id',$bid)),
+    //         ],
+    //         'state'   => ['nullable','string','max:100'],
+    //         'address' => ['nullable','string','max:1000'],
+    //     ]);
+    //     if (!empty($data['state']) && str_contains($data['state'], ',')) {
+    //         [$code, $name] = explode(',', $data['state'], 2);
+
+    //         $data['state_code'] = trim($code); // "09"
+    //         $data['state']      = trim($name); // "Uttar Pradesh"
+    //     }
+
+    //     $client->update($data);
+
+    //     return redirect()->route('clients.index')->with('success','Client updated successfully.');
+    // }
+
+
+    public function update(
+        Request $request,
+        Client $client
+    ) {
+        $bid =
+            $request->user()->current_business_id
+            ?? session('active_business_id')
+            ?? $request->user()
+                ->businesses()
+                ->pluck('businesses.id')
+                ->first();
+
+
+        abort_unless(
+            $bid,
+            403,
+            'Active business not found.'
+        );
+
 
         $data = $request->validate([
-            'name'    => ['required','string','max:255'],
-            'mobile'  => [
-                'nullable','string','max:20',
-                Rule::unique('clients','mobile')
-                    ->ignore($client->id)
-                    ->where(fn($q) => $q->where('business_id',$bid)),
-            ],
-            'gstin'   => [
-                'nullable','string','max:50',
-                Rule::unique('clients','gstin')
-                    ->ignore($client->id)
-                    ->where(fn($q) => $q->where('business_id',$bid)),
-            ],
-            'pan'     => [
-                'nullable','string','max:50',
-                Rule::unique('clients','pan')
-                    ->ignore($client->id)
-                    ->where(fn($q) => $q->where('business_id',$bid)),
-            ],
-            'state'   => ['nullable','string','max:100'],
-            'address' => ['nullable','string','max:1000'],
-        ]);
-        if (!empty($data['state']) && str_contains($data['state'], ',')) {
-            [$code, $name] = explode(',', $data['state'], 2);
 
-            $data['state_code'] = trim($code); // "09"
-            $data['state']      = trim($name); // "Uttar Pradesh"
+            'party_type' => [
+                'required',
+                Rule::in([
+                    'client',
+                    'supplier',
+                ]),
+            ],
+
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'mobile' => [
+                'nullable',
+                'string',
+                'max:20',
+
+                Rule::unique('clients', 'mobile')
+                    ->ignore($client->id)
+                    ->where(
+                        fn ($q) =>
+                            $q->where('business_id', $bid)
+                    ),
+            ],
+
+            'gstin' => [
+                'nullable',
+                'string',
+                'max:50',
+
+                Rule::unique('clients', 'gstin')
+                    ->ignore($client->id)
+                    ->where(
+                        fn ($q) =>
+                            $q->where('business_id', $bid)
+                    ),
+            ],
+
+            'pan' => [
+                'nullable',
+                'string',
+                'max:50',
+
+                Rule::unique('clients', 'pan')
+                    ->ignore($client->id)
+                    ->where(
+                        fn ($q) =>
+                            $q->where('business_id', $bid)
+                    ),
+            ],
+
+            'state' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'address' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+        ]);
+
+
+        $data['state_code'] =
+            $client->state_code;
+
+
+        if (
+            !empty($data['state'])
+            && str_contains($data['state'], ',')
+        ) {
+
+            [$code, $name] =
+                explode(',', $data['state'], 2);
+
+            $data['state_code'] =
+                trim($code);
+
+            $data['state'] =
+                trim($name);
         }
+
 
         $client->update($data);
 
-        return redirect()->route('clients.index')->with('success','Client updated successfully.');
-    }
 
+        $type =
+            $client->party_type === 'supplier'
+                ? 'supplier'
+                : 'client';
+
+
+        return redirect()
+            ->route(
+                'clients.index',
+                ['type' => $type]
+            )
+            ->with(
+                'success',
+                ucfirst($type) .
+                ' updated successfully.'
+            );
+    }
     public function destroy(Client $client)
     {
         $client->delete();
         return redirect()->route('clients.index')->with('success','Client deleted successfully.');
     }
-
-
-//    public function quickStore(Request $request)
-//    {
-//        // ✅ Business resolve (fallback added)
-//        $bid = $request->user()->current_business_id
-//            ?? session('active_business_id')
-//            ?? $request->user()->businesses()->pluck('businesses.id')->first();
-//
-//        if (!$bid) {
-//            return response()->json([
-//                'ok' => false,
-//                'message' => 'Active business not found.'
-//            ], 422);
-//        }
-//
-//        // ✅ Normalize inputs (avoid duplicates by formatting)
-//        $request->merge([
-//            'mobile'  => $request->mobile ? preg_replace('/\s+/', '', $request->mobile) : null,
-//            'gstin'   => $request->gstin ? strtoupper(preg_replace('/\s+/', '', $request->gstin)) : null,
-//            'pan'     => $request->pan ? strtoupper(preg_replace('/\s+/', '', $request->pan)) : null,
-//            'state'   => $request->state ? trim($request->state) : null,
-//            'state_code'   => $request->state_code ? trim($request->state_code) : null,
-//            'address' => $request->address ? trim($request->address) : null,
-//            'name'    => $request->name ? trim($request->name) : null,
-//            'pincode'    => $request->pincode ? trim($request->pincode) : null,
-//        ]);
-//
-//        // ✅ Convert empty string to null for nullable fields
-//        foreach (['gstin','pan','state','address'] as $f) {
-//            if ($request->has($f) && $request->input($f) === '') {
-//                $request->merge([$f => null]);
-//            }
-//        }
-//
-//        try {
-//            $data = $request->validate([
-//                'name'    => ['required','string','max:255'],
-//                'mobile'  => [
-//                    'nullable','string','max:20',
-//                    Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
-//                ],
-//                'gstin'   => [
-//                    'nullable','string','max:50',
-//                    Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
-//                ],
-//                'pan'     => [
-//                    'nullable','string','max:50',
-//                    Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
-//                ],
-//                'state'   => ['nullable','string','max:100'],
-//                'state_code'   => ['nullable','string','max:100'],
-//                'address' => ['nullable','string','max:1000'],
-//                'pincode' => ['nullable'],
-//            ]);
-//        } catch (ValidationException $e) {
-//            // ✅ return validation errors as JSON for modal
-//            return response()->json([
-//                'ok' => false,
-//                'message' => 'Validation failed',
-//                'errors' => $e->errors(),
-//            ], 422);
-//        }
-//
-//        $data['business_id'] = $bid;
-//
-//        $client = \App\Models\Client::create($data);
-//
-//        return response()->json([
-//            'ok' => true,
-//            'client' => [
-//                'id'         => $client->id,
-//                'name'       => $client->name,
-//                'mobile'     => $client->mobile,
-//                'address'    => $client->address,
-//                'state'      => $client->state,
-//                'state_code' => $client->state_code,
-//                'gstin'      => $client->gstin,
-//                'pincode'      => $client->pincode,
-//            ]
-//        ]);
-//    }
 
 
     public function quickStore(Request $request)
@@ -512,47 +888,61 @@ public function index(Request $request)
     }
 
 
-    // App\Http\Controllers\ClientController.php
-
-    // public function show(Request $request, \App\Models\Client $client)
+    /**
+     * Client purchase report.
+     */
+    // public function show(Request $request, Client $client)
     // {
-    //     // Multi-business context (same logic jaisa invoice edit me)
-    //     $user = $request->user();
+    //     $businessId = $this->resolveBusinessId($request);
 
-    //     $businessId =
-    //         $user->current_business_id
-    //         ?? session('active_business_id')
-    //         ?? $user->businesses()->pluck('businesses.id')->first();
+    //     abort_unless($businessId, 403, 'Active business not found.');
 
-    //     // ✔️ Invoices for this client + business
-    //     $invoiceQuery = $client->invoices()
-    //         ->where('business_id', $businessId)
-    //         ->orderByDesc('invoice_date')
-    //         ->orderByDesc('id');
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Filtered invoice query
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $invoiceQuery = $this->buildInvoiceReportQuery(
+    //         $request,
+    //         $client,
+    //         $businessId
+    //     );
 
-    //     // Summary totals (alag se, taaki full history ka data mile)
-    //     $summary = [
-    //         'total_invoices' => (clone $invoiceQuery)->count(),
-    //         'total_amount'   => (clone $invoiceQuery)->sum('total'),
-    //         'total_received' => (clone $invoiceQuery)->sum('received_amount'),
-    //         'total_balance'  => (clone $invoiceQuery)->sum('balance'),
-    //     ];
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Summary - filtered records only
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $summary = $this->getReportSummary($invoiceQuery);
 
-    //     // List ke liye paginate
-    //     $invoices = $invoiceQuery
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Pagination
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $perPage = (int) $request->get('per_page', 15);
+
+    //     if (!in_array($perPage, [15, 25, 50, 100], true)) {
+    //         $perPage = 15;
+    //     }
+
+    //     $invoices = (clone $invoiceQuery)
     //         ->withCount('items')
-    //         ->paginate(15)
+    //         ->paginate($perPage)
     //         ->withQueryString();
 
-    //     // Recent purchased items (last 10 lines)
-    //     $recentItems = \App\Models\InvoiceItem::with(['invoice' => function ($q) use ($businessId, $client) {
-    //         $q->where('business_id', $businessId)
-    //             ->where('client_id', $client->id);
-    //     }])
-    //         ->whereHas('invoice', function ($q) use ($businessId, $client) {
-    //             $q->where('business_id', $businessId)
-    //                 ->where('client_id', $client->id);
-    //         })
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Recent items according to currently filtered invoices
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $filteredInvoiceIds = (clone $invoiceQuery)
+    //         ->reorder()
+    //         ->select('id');
+
+    //     $recentItems = InvoiceItem::query()
+    //         ->with('invoice')
+    //         ->whereIn('invoice_id', $filteredInvoiceIds)
     //         ->latest('created_at')
     //         ->limit(10)
     //         ->get();
@@ -562,78 +952,227 @@ public function index(Request $request)
     //         'invoices'    => $invoices,
     //         'summary'     => $summary,
     //         'recentItems' => $recentItems,
+    //         'filters'     => $request->query(),
     //     ]);
     // }
 
 
-    /**
-     * Client purchase report.
-     */
     public function show(Request $request, Client $client)
     {
         $businessId = $this->resolveBusinessId($request);
 
-        abort_unless($businessId, 403, 'Active business not found.');
-
-        /*
-        |--------------------------------------------------------------------------
-        | Filtered invoice query
-        |--------------------------------------------------------------------------
-        */
-        $invoiceQuery = $this->buildInvoiceReportQuery(
-            $request,
-            $client,
-            $businessId
+        abort_unless(
+            $businessId,
+            403,
+            'Active business not found.'
         );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Summary - filtered records only
-        |--------------------------------------------------------------------------
-        */
-        $summary = $this->getReportSummary($invoiceQuery);
 
         /*
         |--------------------------------------------------------------------------
-        | Pagination
+        | SUPPLIER RECORD
         |--------------------------------------------------------------------------
         */
-        $perPage = (int) $request->get('per_page', 15);
 
-        if (!in_array($perPage, [15, 25, 50, 100], true)) {
+        if (
+            in_array(
+                $client->party_type,
+                ['supplier', 'both'],
+                true
+            )
+            &&
+            $request->get('view') === 'supplier'
+        ) {
+
+            $search = trim(
+                (string) $request->get('search', '')
+            );
+
+
+            $dateFrom =
+                $request->filled('date_from')
+                    ? Carbon::parse($request->date_from)
+                    : null;
+
+
+            $dateTo =
+                $request->filled('date_to')
+                    ? Carbon::parse($request->date_to)
+                    : null;
+
+
+            $purchaseQuery = Purchase::query()
+                ->where('business_id', $businessId)
+                ->where('supplier_id', $client->id)
+
+                ->when(
+                    $search !== '',
+                    function ($query) use ($search) {
+
+                        $query->where(function ($subQuery) use ($search) {
+
+                            $subQuery
+                                ->where(
+                                    'invoice_no',
+                                    'like',
+                                    "%{$search}%"
+                                );
+
+                        });
+
+                    }
+                )
+
+                ->when(
+                    $dateFrom,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'invoice_date',
+                            '>=',
+                            $dateFrom->format('Y-m-d')
+                        )
+                )
+
+                ->when(
+                    $dateTo,
+                    fn ($query) =>
+                        $query->whereDate(
+                            'invoice_date',
+                            '<=',
+                            $dateTo->format('Y-m-d')
+                        )
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Supplier Summary
+            |--------------------------------------------------------------------------
+            */
+
+            $summary = [
+
+                'total_purchases' =>
+                    (clone $purchaseQuery)->count(),
+
+                'total_amount' =>
+                    (float) (clone $purchaseQuery)
+                        ->sum('total_amount'),
+
+                'paid_amount' =>
+                    (float) (clone $purchaseQuery)
+                        ->sum('paid_amount'),
+
+                'due_amount' =>
+                    (float) (clone $purchaseQuery)
+                        ->sum('due_amount'),
+
+            ];
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Purchase Listing
+            |--------------------------------------------------------------------------
+            */
+
+            $purchases = $purchaseQuery
+                ->with('items.item')
+                ->orderByDesc('invoice_date')
+                ->orderByDesc('id')
+                ->paginate(15)
+                ->withQueryString();
+
+
+            return view(
+                'clients.supplier-show',
+                [
+                    'supplier' => $client,
+                    'purchases' => $purchases,
+                    'summary' => $summary,
+                    'filters' => $request->query(),
+                ]
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NORMAL CLIENT RECORD
+        |--------------------------------------------------------------------------
+        |
+        | Aapka existing invoice report bilkul same.
+        |
+        */
+
+        $invoiceQuery =
+            $this->buildInvoiceReportQuery(
+                $request,
+                $client,
+                $businessId
+            );
+
+
+        $summary =
+            $this->getReportSummary(
+                $invoiceQuery
+            );
+
+
+        $perPage =
+            (int) $request->get(
+                'per_page',
+                15
+            );
+
+
+        if (
+            !in_array(
+                $perPage,
+                [15, 25, 50, 100],
+                true
+            )
+        ) {
             $perPage = 15;
         }
 
-        $invoices = (clone $invoiceQuery)
-            ->withCount('items')
-            ->paginate($perPage)
-            ->withQueryString();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Recent items according to currently filtered invoices
-        |--------------------------------------------------------------------------
-        */
-        $filteredInvoiceIds = (clone $invoiceQuery)
-            ->reorder()
-            ->select('id');
+        $invoices =
+            (clone $invoiceQuery)
+                ->withCount('items')
+                ->paginate($perPage)
+                ->withQueryString();
 
-        $recentItems = InvoiceItem::query()
-            ->with('invoice')
-            ->whereIn('invoice_id', $filteredInvoiceIds)
-            ->latest('created_at')
-            ->limit(10)
-            ->get();
 
-        return view('clients.show', [
-            'client'      => $client,
-            'invoices'    => $invoices,
-            'summary'     => $summary,
-            'recentItems' => $recentItems,
-            'filters'     => $request->query(),
-        ]);
+        $filteredInvoiceIds =
+            (clone $invoiceQuery)
+                ->reorder()
+                ->select('id');
+
+
+        $recentItems =
+            InvoiceItem::query()
+                ->with('invoice')
+                ->whereIn(
+                    'invoice_id',
+                    $filteredInvoiceIds
+                )
+                ->latest('created_at')
+                ->limit(10)
+                ->get();
+
+
+        return view(
+            'clients.show',
+            [
+                'client' => $client,
+                'invoices' => $invoices,
+                'summary' => $summary,
+                'recentItems' => $recentItems,
+                'filters' => $request->query(),
+            ]
+        );
     }
-
 
     /**
      * Download filtered report as PDF.
