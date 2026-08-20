@@ -54,30 +54,68 @@ class UserPlanController extends Controller
         ));
     }
 
+    // public function create(Request $request)
+    // {
+    //     $businesses = Business::query()
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $users = User::query()
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $plans = Plan::query()
+    //         ->where('status', 1)
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $selectedBusinessId = $request->get('business_id');
+
+    //     return view('user-plans.create', compact(
+    //         'businesses',
+    //         'users',
+    //         'plans',
+    //         'selectedBusinessId'
+    //     ));
+    // }
+
     public function create(Request $request)
-    {
+{
+    $selectedBusinessId = $request->get('business_id');
+
+    // Agar business se create page open hua hai,
+    // to sirf wahi business load hoga.
+    if ($selectedBusinessId) {
+        $businesses = Business::query()
+            ->where('id', $selectedBusinessId)
+            ->get();
+
+        $selectedBusiness = Business::findOrFail($selectedBusinessId);
+    } else {
         $businesses = Business::query()
             ->orderBy('name')
             ->get();
 
-        $users = User::query()
-            ->orderBy('name')
-            ->get();
-
-        $plans = Plan::query()
-            ->where('status', 1)
-            ->orderBy('name')
-            ->get();
-
-        $selectedBusinessId = $request->get('business_id');
-
-        return view('user-plans.create', compact(
-            'businesses',
-            'users',
-            'plans',
-            'selectedBusinessId'
-        ));
+        $selectedBusiness = null;
     }
+
+    $users = User::query()
+        ->orderBy('name')
+        ->get();
+
+    $plans = Plan::query()
+        ->where('status', 1)
+        ->orderBy('name')
+        ->get();
+
+    return view('user-plans.create', compact(
+        'businesses',
+        'users',
+        'plans',
+        'selectedBusinessId',
+        'selectedBusiness'
+    ));
+}
 
     // public function store(Request $request)
     // {

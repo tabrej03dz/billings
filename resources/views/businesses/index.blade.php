@@ -87,24 +87,61 @@
                         <td class="px-6 py-4">{{ $business->mobile }}</td>
                         <td class="px-6 py-4">{{ $business->gstin ?? 'N/A' }}</td>
                         <td class="px-6 py-4">{{ $business->address ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 space-x-2">
-                            @can('edit business')
-                                <a href="{{ route('businesses.edit', $business->id) }}" class=" bg-yellow-500 text-white p-2 hover:underline m-3">Edit</a>
-                            @endcan
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
 
-                            @can('delete business')
-                                <form action="{{ route('businesses.delete', $business->id) }}" method="POST" class="inline-block"
-                                      onsubmit="return confirm('Are you sure?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="bg-red-600 p-2 m-3 text-white hover:underline">Delete</button>
-                                </form>
+                                @can('edit business')
+                                    <a
+                                        href="{{ route('businesses.edit', $business->id) }}"
+                                        class="inline-flex items-center justify-center rounded-lg
+                                            bg-yellow-500 px-3 py-2
+                                            text-sm font-medium text-white
+                                            transition hover:bg-yellow-600
+                                            focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                    >
+                                        Edit
+                                    </a>
+                                @endcan
 
-                            @endcan
 
-                            @can('edit business')
-                                <a href="{{ route('user-plans.index1', $business->id) }}" class=" bg-yellow-500 text-white p-2 hover:underline m-3">Edit</a>
-                            @endcan
+                                @can('edit business')
+                                    <a
+                                        href="{{ route('user-plans.index1', $business->id) }}"
+                                        class="inline-flex items-center justify-center rounded-lg
+                                            bg-purple-600 px-3 py-2
+                                            text-sm font-medium text-white
+                                            transition hover:bg-purple-700
+                                            focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                    >
+                                        Plans
+                                    </a>
+                                @endcan
+
+
+                                @can('delete business')
+                                    <form
+                                        action="{{ route('businesses.delete', $business->id) }}"
+                                        method="POST"
+                                        class="inline-flex"
+                                        onsubmit="return confirm('Are you sure you want to delete this business?');"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center rounded-lg
+                                                bg-red-600 px-3 py-2
+                                                text-sm font-medium text-white
+                                                transition hover:bg-red-700
+                                                focus:outline-none focus:ring-2 focus:ring-red-400"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                @endcan
+
+                            </div>
                         </td>
                     </tr>
                 @empty

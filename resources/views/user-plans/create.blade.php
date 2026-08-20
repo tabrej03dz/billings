@@ -117,7 +117,11 @@
                             </h1>
 
                             <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                                Business ya user ke liye subscription plan assign karein.
+                                @if($selectedBusinessId)
+                                    Selected business ke liye subscription plan assign karein.
+                                @else
+                                    Business ya user ke liye subscription plan assign karein.
+                                @endif
                             </p>
                         </div>
 
@@ -125,7 +129,9 @@
 
 
                     <a
-                        href="{{ route('user-plans.index') }}"
+                        href="{{ $selectedBusinessId
+                            ? route('user-plans.index1', $selectedBusinessId)
+                            : route('user-plans.index') }}"
                         class="inline-flex items-center justify-center gap-2
                                rounded-xl border border-gray-200
                                bg-white px-4 py-2.5
@@ -203,11 +209,19 @@
                     <div class="border-b border-gray-100 px-5 py-4 dark:border-neutral-800">
 
                         <h2 class="font-semibold text-gray-900 dark:text-white">
-                            Business & User
+                            @if($selectedBusinessId)
+                                Business
+                            @else
+                                Business & User
+                            @endif
                         </h2>
 
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            Search karke business ya user select karein.
+                            @if($selectedBusinessId)
+                                Plan selected business par assign hoga.
+                            @else
+                                Business aur optional user select karein.
+                            @endif
                         </p>
 
                     </div>
@@ -215,129 +229,239 @@
 
                     <div class="p-5">
 
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        @if($selectedBusinessId)
 
-                            {{-- Business --}}
-                            <div>
+                            {{-- ================================================= --}}
+                            {{-- BUSINESS PAGE SE AAYE HAIN --}}
+                            {{-- Business ID Hidden --}}
+                            {{-- User List Bilkul Nahi --}}
+                            {{-- ================================================= --}}
 
-                                <label
-                                    for="business_id"
-                                    class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200"
-                                >
-                                    Business
-                                </label>
+                            <input
+                                type="hidden"
+                                name="business_id"
+                                id="business_id"
+                                value="{{ old('business_id', $selectedBusinessId) }}"
+                            >
 
-                                <select
-                                    name="business_id"
-                                    id="business_id"
-                                    placeholder="Search business..."
-                                >
+                            <div class="grid grid-cols-1 gap-5">
 
-                                    <option value="">
-                                        Select Business
-                                    </option>
+                                <div>
 
-                                    @foreach($businesses as $business)
+                                    <label
+                                        class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200"
+                                    >
+                                        Business
+                                    </label>
 
-                                        <option
-                                            value="{{ $business->id }}"
-                                            {{
-                                                old(
-                                                    'business_id',
-                                                    $selectedBusinessId
-                                                ) == $business->id
-                                                    ? 'selected'
-                                                    : ''
-                                            }}
+                                    <div
+                                        class="flex min-h-[44px] items-center gap-3
+                                               rounded-xl border border-gray-200
+                                               bg-gray-50 px-4
+                                               dark:border-neutral-700
+                                               dark:bg-neutral-800"
+                                    >
+
+                                        <div
+                                            class="flex h-9 w-9 shrink-0 items-center justify-center
+                                                   rounded-lg bg-blue-100 text-blue-700
+                                                   dark:bg-blue-900/40 dark:text-blue-300"
                                         >
-                                            {{
-                                                $business->name
-                                                ?? $business->business_name
-                                                ?? 'Business #' . $business->id
-                                            }}
-                                        </option>
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                class="h-5 w-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"
+                                                />
+                                            </svg>
+                                        </div>
 
-                                    @endforeach
+                                        <div>
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                                {{
+                                                    $selectedBusiness->name
+                                                    ?? $selectedBusiness->business_name
+                                                    ?? 'Business #' . $selectedBusinessId
+                                                }}
+                                            </p>
 
-                                </select>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                Business ID: {{ $selectedBusinessId }}
+                                            </p>
+                                        </div>
 
-                                @error('business_id')
-                                    <p class="mt-1.5 text-sm text-red-600">
-                                        {{ $message }}
-                                    </p>
-                                @enderror
+                                    </div>
+
+                                    @error('business_id')
+                                        <p class="mt-1.5 text-sm text-red-600">
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+
+                                </div>
 
                             </div>
 
 
-                            {{-- User --}}
-                            <div>
+                            <div
+                                class="mt-5 rounded-xl
+                                       border border-green-100
+                                       bg-green-50 p-4
+                                       text-sm text-green-700
+                                       dark:border-green-900/40
+                                       dark:bg-green-950/20
+                                       dark:text-green-300"
+                            >
+                                Yeh plan directly
+                                <strong>
+                                    {{
+                                        $selectedBusiness->name
+                                        ?? $selectedBusiness->business_name
+                                        ?? 'selected business'
+                                    }}
+                                </strong>
+                                par assign hoga.
+                            </div>
 
-                                <label
-                                    for="user_id"
-                                    class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200"
-                                >
-                                    User
-                                    <span class="font-normal text-gray-400">
-                                        (Optional)
-                                    </span>
-                                </label>
 
-                                <select
-                                    name="user_id"
-                                    id="user_id"
-                                    placeholder="Search user..."
-                                >
+                        @else
 
-                                    <option value="">
-                                        Select User
-                                    </option>
+                            {{-- ================================================= --}}
+                            {{-- NORMAL CREATE PAGE --}}
+                            {{-- Business + User Dropdown --}}
+                            {{-- ================================================= --}}
 
-                                    @foreach($users as $user)
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                                        <option
-                                            value="{{ $user->id }}"
-                                            {{
-                                                old('user_id') == $user->id
-                                                    ? 'selected'
-                                                    : ''
-                                            }}
-                                        >
-                                            {{ $user->name }}
+                                {{-- Business --}}
+                                <div>
 
-                                            @if($user->email)
-                                                ({{ $user->email }})
-                                            @endif
+                                    <label
+                                        for="business_id"
+                                        class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200"
+                                    >
+                                        Business
+                                        <span class="text-red-500">*</span>
+                                    </label>
+
+                                    <select
+                                        name="business_id"
+                                        id="business_id"
+                                        placeholder="Search business..."
+                                    >
+
+                                        <option value="">
+                                            Select Business
                                         </option>
 
-                                    @endforeach
+                                        @foreach($businesses as $business)
 
-                                </select>
+                                            <option
+                                                value="{{ $business->id }}"
+                                                {{
+                                                    old('business_id') == $business->id
+                                                        ? 'selected'
+                                                        : ''
+                                                }}
+                                            >
+                                                {{
+                                                    $business->name
+                                                    ?? $business->business_name
+                                                    ?? 'Business #' . $business->id
+                                                }}
+                                            </option>
 
-                                @error('user_id')
-                                    <p class="mt-1.5 text-sm text-red-600">
-                                        {{ $message }}
-                                    </p>
-                                @enderror
+                                        @endforeach
+
+                                    </select>
+
+                                    @error('business_id')
+                                        <p class="mt-1.5 text-sm text-red-600">
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+
+                                </div>
+
+
+                                {{-- User --}}
+                                <div>
+
+                                    <label
+                                        for="user_id"
+                                        class="mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200"
+                                    >
+                                        User
+
+                                        <span class="font-normal text-gray-400">
+                                            (Optional)
+                                        </span>
+                                    </label>
+
+                                    <select
+                                        name="user_id"
+                                        id="user_id"
+                                        placeholder="Search user..."
+                                    >
+
+                                        <option value="">
+                                            Select User
+                                        </option>
+
+                                        @foreach($users as $user)
+
+                                            <option
+                                                value="{{ $user->id }}"
+                                                {{
+                                                    old('user_id') == $user->id
+                                                        ? 'selected'
+                                                        : ''
+                                                }}
+                                            >
+                                                {{ $user->name }}
+
+                                                @if($user->email)
+                                                    ({{ $user->email }})
+                                                @endif
+                                            </option>
+
+                                        @endforeach
+
+                                    </select>
+
+                                    @error('user_id')
+                                        <p class="mt-1.5 text-sm text-red-600">
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+
+                                </div>
 
                             </div>
 
-                        </div>
 
+                            <div
+                                class="mt-5 rounded-xl
+                                       border border-blue-100
+                                       bg-blue-50 p-4
+                                       text-sm text-blue-700
+                                       dark:border-blue-900/40
+                                       dark:bg-blue-950/20
+                                       dark:text-blue-300"
+                            >
+                                Agar sirf <strong>Business</strong> select karenge aur
+                                User blank rakhenge to plan business level par assign hoga.
+                                User select karenge to specific user ke liye plan assign hoga.
+                            </div>
 
-                        <div
-                            class="mt-5 rounded-xl
-                                   border border-blue-100
-                                   bg-blue-50 p-4
-                                   text-sm text-blue-700
-                                   dark:border-blue-900/40
-                                   dark:bg-blue-950/20
-                                   dark:text-blue-300"
-                        >
-                            Agar sirf <strong>Business</strong> select karenge aur
-                            User blank rakhenge to plan business level par assign hoga.
-                            User select karenge to specific user ke liye plan assign hoga.
-                        </div>
+                        @endif
 
                     </div>
 
@@ -749,7 +873,9 @@
                 >
 
                     <a
-                        href="{{ route('user-plans.index') }}"
+                        href="{{ $selectedBusinessId
+                            ? route('user-plans.index1', $selectedBusinessId)
+                            : route('user-plans.index') }}"
                         class="inline-flex items-center justify-center
                                rounded-xl bg-gray-100
                                px-5 py-2.5
@@ -817,21 +943,25 @@
             |--------------------------------------------------------------------------
             */
 
-            new TomSelect('#business_id', {
-                create: false,
-                allowEmptyOption: true,
-                maxItems: 1,
+            const businessSelect = document.querySelector('select#business_id');
 
-                placeholder: 'Search business name...',
+            if (businessSelect) {
+                new TomSelect(businessSelect, {
+                    create: false,
+                    allowEmptyOption: true,
+                    maxItems: 1,
 
-                searchField: ['text'],
+                    placeholder: 'Search business name...',
 
-                plugins: {
-                    clear_button: {
-                        title: 'Clear'
+                    searchField: ['text'],
+
+                    plugins: {
+                        clear_button: {
+                            title: 'Clear'
+                        }
                     }
-                }
-            });
+                });
+            }
 
 
             /*
@@ -840,21 +970,25 @@
             |--------------------------------------------------------------------------
             */
 
-            new TomSelect('#user_id', {
-                create: false,
-                allowEmptyOption: true,
-                maxItems: 1,
+            const userSelect = document.querySelector('select#user_id');
 
-                placeholder: 'Search name or email...',
+            if (userSelect) {
+                new TomSelect(userSelect, {
+                    create: false,
+                    allowEmptyOption: true,
+                    maxItems: 1,
 
-                searchField: ['text'],
+                    placeholder: 'Search name or email...',
 
-                plugins: {
-                    clear_button: {
-                        title: 'Clear'
+                    searchField: ['text'],
+
+                    plugins: {
+                        clear_button: {
+                            title: 'Clear'
+                        }
                     }
-                }
-            });
+                });
+            }
 
 
             /*
@@ -897,7 +1031,7 @@
 
             function getSelectedPlan() {
 
-                if (!planSelect.value) {
+                if (!planSelect || !planSelect.value) {
                     return null;
                 }
 
@@ -941,9 +1075,13 @@
                 }
 
 
-                officeInput.value = offices;
+                if (officeInput) {
+                    officeInput.value = offices;
+                }
 
-                userInput.value = users;
+                if (userInput) {
+                    userInput.value = users;
+                }
             }
 
 
@@ -970,7 +1108,9 @@
 
 
                 const startDate =
-                    startDateInput.value;
+                    startDateInput
+                        ? startDateInput.value
+                        : null;
 
 
                 if (
@@ -1023,8 +1163,10 @@
                     ).padStart(2, '0');
 
 
-                expiryDateInput.value =
-                    `${year}-${month}-${day}`;
+                if (expiryDateInput) {
+                    expiryDateInput.value =
+                        `${year}-${month}-${day}`;
+                }
             }
 
 
@@ -1042,9 +1184,11 @@
 
                 if (!option) {
 
-                    planPreview.classList.add(
-                        'hidden'
-                    );
+                    if (planPreview) {
+                        planPreview.classList.add(
+                            'hidden'
+                        );
+                    }
 
                     return;
                 }
@@ -1074,31 +1218,41 @@
                     );
 
 
-                previewPrice.textContent =
-                    '₹' + price.toLocaleString(
-                        'en-IN',
-                        {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        }
+                if (previewPrice) {
+                    previewPrice.textContent =
+                        '₹' + price.toLocaleString(
+                            'en-IN',
+                            {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            }
+                        );
+                }
+
+
+                if (previewDuration) {
+                    previewDuration.textContent =
+                        duration + ' Days';
+                }
+
+
+                if (previewOffice) {
+                    previewOffice.textContent =
+                        offices;
+                }
+
+
+                if (previewUser) {
+                    previewUser.textContent =
+                        users;
+                }
+
+
+                if (planPreview) {
+                    planPreview.classList.remove(
+                        'hidden'
                     );
-
-
-                previewDuration.textContent =
-                    duration + ' Days';
-
-
-                previewOffice.textContent =
-                    offices;
-
-
-                previewUser.textContent =
-                    users;
-
-
-                planPreview.classList.remove(
-                    'hidden'
-                );
+                }
             }
 
 
@@ -1108,17 +1262,20 @@
             |--------------------------------------------------------------------------
             */
 
-            planSelect.addEventListener(
-                'change',
-                function () {
+            if (planSelect) {
 
-                    updatePlanLimits();
+                planSelect.addEventListener(
+                    'change',
+                    function () {
 
-                    updateExpiryDate();
+                        updatePlanLimits();
 
-                    updatePreview();
-                }
-            );
+                        updateExpiryDate();
+
+                        updatePreview();
+                    }
+                );
+            }
 
 
             /*
@@ -1127,13 +1284,16 @@
             |--------------------------------------------------------------------------
             */
 
-            startDateInput.addEventListener(
-                'change',
-                function () {
+            if (startDateInput) {
 
-                    updateExpiryDate();
-                }
-            );
+                startDateInput.addEventListener(
+                    'change',
+                    function () {
+
+                        updateExpiryDate();
+                    }
+                );
+            }
 
 
             /*
@@ -1149,7 +1309,7 @@
                 @json(old('number_of_user') !== null);
 
 
-            if (planSelect.value) {
+            if (planSelect && planSelect.value) {
 
                 /*
                  * Agar validation error ke baad page open hua hai
@@ -1161,7 +1321,10 @@
                 }
 
 
-                if (!expiryDateInput.value) {
+                if (
+                    expiryDateInput &&
+                    !expiryDateInput.value
+                ) {
                     updateExpiryDate();
                 }
 
@@ -1183,21 +1346,24 @@
                 document.getElementById('saveButton');
 
 
-            form.addEventListener(
-                'submit',
-                function () {
+            if (form && saveButton) {
 
-                    saveButton.disabled = true;
+                form.addEventListener(
+                    'submit',
+                    function () {
 
-                    saveButton.classList.add(
-                        'opacity-60',
-                        'cursor-not-allowed'
-                    );
+                        saveButton.disabled = true;
 
-                    saveButton.innerHTML =
-                        'Saving...';
-                }
-            );
+                        saveButton.classList.add(
+                            'opacity-60',
+                            'cursor-not-allowed'
+                        );
+
+                        saveButton.innerHTML =
+                            'Saving...';
+                    }
+                );
+            }
 
         });
     </script>

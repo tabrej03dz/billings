@@ -8,7 +8,10 @@ use App\Models\InvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Exports\ClientPurchaseReportExport;
-use App\Exports\SupplierPurchaseReportExport;
+use App\Models\Purchase;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Maatwebsite\Excel\Facades\Excel;
 
 
 
