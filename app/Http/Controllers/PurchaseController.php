@@ -32,22 +32,52 @@ class PurchaseController extends Controller
         return view('purchases.index', compact('purchases'));
     }
 
+    // public function create()
+    // {
+    //     $businessId = auth()->user()->business_id ?? null;
+
+    //     $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->where('is_active', true)
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $purchase = new Purchase();
+
+    //     return view('purchases.create', compact('purchase', 'suppliers', 'items'));
+    // }
+
     public function create()
     {
         $businessId = auth()->user()->business_id ?? null;
 
-        $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+        $suppliers = Client::query()
+            ->when(
+                $businessId,
+                fn ($q) => $q->where('business_id', $businessId)
+            )
+            ->whereIn('party_type', ['supplier', 'both'])
             ->orderBy('name')
             ->get();
 
-        $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+        $items = Item::query()
+            ->when(
+                $businessId,
+                fn ($q) => $q->where('business_id', $businessId)
+            )
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
         $purchase = new Purchase();
 
-        return view('purchases.create', compact('purchase', 'suppliers', 'items'));
+        return view(
+            'purchases.create',
+            compact('purchase', 'suppliers', 'items')
+        );
     }
 
     public function store(Request $request)
@@ -105,24 +135,56 @@ class PurchaseController extends Controller
         }
     }
 
+    // public function edit(Purchase $purchase)
+    // {
+    //     $this->authorizeBusiness($purchase);
+
+    //     $businessId = $purchase->business_id;
+
+    //     $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //         ->where('is_active', true)
+    //         ->orderBy('name')
+    //         ->get();
+
+    //     $purchase->load('items.item');
+
+    //     return view('purchases.edit', compact('purchase', 'suppliers', 'items'));
+    // }
+
     public function edit(Purchase $purchase)
     {
         $this->authorizeBusiness($purchase);
 
         $businessId = $purchase->business_id;
 
-        $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+        $suppliers = Client::query()
+            ->when(
+                $businessId,
+                fn ($q) => $q->where('business_id', $businessId)
+            )
+            ->whereIn('party_type', ['supplier', 'both'])
             ->orderBy('name')
             ->get();
 
-        $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+        $items = Item::query()
+            ->when(
+                $businessId,
+                fn ($q) => $q->where('business_id', $businessId)
+            )
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
         $purchase->load('items.item');
 
-        return view('purchases.edit', compact('purchase', 'suppliers', 'items'));
+        return view(
+            'purchases.edit',
+            compact('purchase', 'suppliers', 'items')
+        );
     }
 
     public function update(Request $request, Purchase $purchase)
@@ -379,5 +441,67 @@ class PurchaseController extends Controller
         ]);
 
         return view('purchases.show', compact('purchase'));
+    }
+
+    public function storeSupplier(Request $request)
+    {
+        $businessId = auth()->user()->business_id ?? null;
+
+        $data = $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'phone' => [
+                'nullable',
+                'string',
+                'max:20',
+            ],
+
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+            ],
+
+            'gstin' => [
+                'nullable',
+                'string',
+                'max:30',
+            ],
+
+            'address' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+        ]);
+
+        $supplier = new Client();
+
+        $supplier->business_id = $businessId;
+        $supplier->party_type = 'supplier';
+        $supplier->name = $data['name'];
+
+        $supplier->phone = $data['phone'] ?? null;
+        $supplier->email = $data['email'] ?? null;
+        $supplier->gstin = $data['gstin'] ?? null;
+        $supplier->address = $data['address'] ?? null;
+
+        $supplier->save();
+
+        return response()->json([
+            'success' => true,
+
+            'message' => 'Supplier created successfully.',
+
+            'supplier' => [
+                'id' => $supplier->id,
+                'name' => $supplier->name,
+                'phone' => $supplier->phone,
+            ],
+        ]);
     }
 }

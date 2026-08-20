@@ -38,6 +38,7 @@ use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\AdRegistrationController;
 use App\Http\Controllers\HospitalManagementController;
 use App\Http\Controllers\OnboardingRegistrationController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\UnitController;
 
 // frontend web routes:::::
@@ -598,7 +599,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('items.create');
 
-    Route::resource('purchases', \App\Http\Controllers\PurchaseController::class);
+    Route::post('/purchases/suppliers',[PurchaseController::class, 'storeSupplier'])->name('purchases.suppliers.store');
+
+
+    Route::resource('purchases', PurchaseController::class);
 
     // routes/web.php
     Route::get('/inventory/summary', [\App\Http\Controllers\InventoryController::class, 'summary'])
