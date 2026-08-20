@@ -130,7 +130,8 @@
                             @if(!$u->trashed())
                                 <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 p-2 text-white">Edit</a>
 
-                                @if(auth()->id() !== $u->id && (auth()->user()->hasRole('super admin') || auth()->user()->can('view all users')))
+
+                                @if(auth()->id() !== $u->id && (auth()->user()->hasRole('super admin') ))
                                     @if(!$u->hasRole('super admin'))
                                         <form action="{{ route('users.impersonate', $u->id) }}" method="POST" class="inline-block"
                                             onsubmit="return confirm('Login as {{ $u->name }}?');">
@@ -142,12 +143,14 @@
                                     @endif
                                 @endif
 
+                                @can('delete user') 
                                 <form action="{{ route('users.destroy', $u->id) }}" method="POST" class="inline-block"
                                     onsubmit="return confirm('Delete this user?');">
                                     @csrf 
                                     @method('DELETE')
                                     <button class="bg-red-600 p-2 text-white">Delete</button>
                                 </form>
+                                @endcan
 
                             @else
                                 <form action="{{ route('users.restore', $u->id) }}" method="POST" class="inline-block">
