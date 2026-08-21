@@ -186,6 +186,7 @@
                     @include('items._form', [
                         'item' => $item,
                         'categories' => $categories,
+                        'units' => $units,
                         'allowedFields' => $allowedFields ?? []
                     ])
                 </form>

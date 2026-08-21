@@ -1,6 +1,7 @@
 @props([
     'item' => null,
     'categories' => collect(),
+    'units' => collect(),
     'allowedFields' => []
 ])
 
