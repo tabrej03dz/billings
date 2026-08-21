@@ -86,7 +86,7 @@
 
                 <form action="{{ route('items.store') }}"
                       method="POST"
-                      id="createItemForm"
+                      id="createItemForm" enctype="multipart/form-data"
                       class="p-5 sm:p-6">
                     @csrf
 

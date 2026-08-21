@@ -165,6 +165,7 @@ class BusinessTypeController extends Controller
             'diamond_weight' => 'Diamond Weight',
             'diamond_charges' => 'Diamond Charges',
             'type' => 'Type',
+            'image' => 'Image',
         ];
     }
 }

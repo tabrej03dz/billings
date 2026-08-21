@@ -175,7 +175,7 @@
 
                 {{-- Update Form --}}
                 <form
-                    action="{{ route('items.update', $item->id) }}"
+                    action="{{ route('items.update', $item->id) }}" enctype="multipart/form-data"
                     method="POST"
                     id="editItemForm"
                     class="p-5 sm:p-7"

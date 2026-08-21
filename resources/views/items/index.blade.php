@@ -729,6 +729,7 @@
                                     class="h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                                 >
                             </th>
+                            <th>Image</th>
                             <th class="px-4 py-3">Name</th>
                             <th class="px-4 py-3">SKU</th>
                             <th class="px-4 py-3">Barcode</th>
@@ -752,6 +753,19 @@
                                         name="item_ids[]"
                                         value="{{ $it->id }}"
                                     >
+                                </td>
+                                <td>
+                                  @if($it->image)
+                                    <img
+                                        src="{{ asset('storage/' . $it->image) }}"
+                                        alt="{{ $it->name }}"
+                                        class="mb-3 h-24 w-24 rounded-xl border border-slate-200 object-cover shadow-sm dark:border-slate-700"
+                                    >
+                                  @else
+                                    <div class="mb-3 flex h-24 w-24 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800">
+                                        No Image
+                                    </div>
+                                  @endif
                                 </td>
                                 <td class="px-4 py-3 font-semibold text-slate-900 dark:text-white">{{ $it->name }}</td>
                                 <td class="px-4 py-3">{{ $it->sku ?? '—' }}</td>

@@ -592,6 +592,56 @@
         </div>
     @endif
 
+    {{-- Item Image --}}
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[#1b2128]">
+        <h3 class="mb-4 text-base font-bold text-slate-800 dark:text-slate-100">Item Image</h3>
+
+        <div class="grid gap-4 md:grid-cols-[1fr_180px] md:items-start">
+            <div>
+                <label for="image" class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Upload Image
+                </label>
+
+                <input
+                    id="image"
+                    type="file"
+                    name="image"
+                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                    class="block w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900
+                           file:mr-4 file:rounded-lg file:border-0 file:bg-teal-600 file:px-4 file:py-2 file:font-semibold file:text-white
+                           hover:file:bg-teal-700
+                           dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                >
+
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    JPG, JPEG, PNG ya WEBP. Maximum size 2 MB.
+                </p>
+
+                @error('image')
+                    <p class="mt-1 text-xs font-medium text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex justify-center md:justify-end">
+                <div class="h-40 w-40 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800">
+                    <img
+                        id="imagePreview"
+                        src="{{ $item?->image ? asset('storage/' . $item->image) : '' }}"
+                        alt="Item image preview"
+                        class="{{ $item?->image ? '' : 'hidden' }} h-full w-full object-cover"
+                    >
+
+                    <div
+                        id="imagePlaceholder"
+                        class="{{ $item?->image ? 'hidden' : '' }} flex h-full w-full items-center justify-center p-3 text-center text-xs font-medium text-slate-400"
+                    >
+                        Image preview
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @if($showField('description'))
         <div>
             <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">Description</label>
@@ -1188,6 +1238,41 @@ document.addEventListener('DOMContentLoaded', function () {
         } finally {
             setUnitLoading(false);
         }
+    });
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('imagePreview');
+    const imagePlaceholder = document.getElementById('imagePlaceholder');
+
+    imageInput?.addEventListener('change', function (event) {
+        const file = event.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            if (imagePreview) {
+                imagePreview.src = e.target?.result || '';
+                imagePreview.classList.remove('hidden');
+            }
+
+            imagePlaceholder?.classList.add('hidden');
+        };
+
+        reader.readAsDataURL(file);
     });
 });
 </script>
