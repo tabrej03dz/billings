@@ -216,6 +216,7 @@ table{width:100%;border-collapse:collapse}
     <table class="items" style="margin-top:10px;">
         <thead>
         <tr>
+               <th style="width:70px;">Image</th>
             <th>Particulars</th>
             <th>SAC</th>
             <th>Qty</th>
@@ -228,6 +229,20 @@ table{width:100%;border-collapse:collapse}
         @foreach($items as $it)
             @php
                 $name = $it->item->name ?? '';
+
+
+                $itemImage = null;
+
+                if (!empty($it->item?->image)) {
+                    $imagePath = \Illuminate\Support\Facades\Storage::disk('public')
+                        ->path($it->item->image);
+
+                    if (is_file($imagePath)) {
+                        $itemImage = $imagePath;
+                    }
+                }
+
+
                 $desc = $it->description ?? '';
                 $note = trim((string)($it->note ?? $it->extra_line ?? ''));
                 $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
@@ -249,6 +264,18 @@ table{width:100%;border-collapse:collapse}
                 if ($single && $lineTotal <= 0) $lineTotal = $finalTotal;
             @endphp
             <tr>
+                 <td style="width:70px;text-align:center;vertical-align:middle;">
+                    @if($itemImage)
+                        <img
+                            src="{{ $itemImage }}"
+                            style="width:55px;height:55px;object-fit:contain;"
+                        >
+                    @else
+                        <span style="font-size:9px;color:#999;">
+                            No Image
+                        </span>
+                    @endif
+                </td>
                 <td>
                     <strong>{{ $name ?: '-' }}</strong>
                     @if($desc)<div class="desc">{{ $desc }}</div>@endif

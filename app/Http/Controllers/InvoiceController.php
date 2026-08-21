@@ -4064,6 +4064,7 @@ $metalRates = \App\Models\MetalRate::query()
         $client = $invoice->client;
         $items  = $invoice->items ?? collect();
 
+
         $payRow = InvoicePayment::where('invoice_id', $inv->id)
             ->latest('id')
             ->first();
