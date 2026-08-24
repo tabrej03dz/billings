@@ -188,14 +188,14 @@ class UserPlanController extends Controller
     $trialCount = (clone $countBaseQuery)
         ->whereNotNull('start_date')
         ->whereNotNull('expiry_date')
-        ->whereRaw('DATEDIFF(expiry_date, start_date) < 30')
+        ->whereRaw('DATEDIFF(expiry_date, start_date) < 31')
         ->count();
 
     $regularCount = (clone $countBaseQuery)
         ->where(function ($query) {
             $query->whereNull('start_date')
                 ->orWhereNull('expiry_date')
-                ->orWhereRaw('DATEDIFF(expiry_date, start_date) >= 30');
+                ->orWhereRaw('DATEDIFF(expiry_date, start_date) >= 31');
         })
         ->count();
 
