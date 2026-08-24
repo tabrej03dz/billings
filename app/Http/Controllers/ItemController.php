@@ -17,193 +17,193 @@ use Illuminate\Support\Facades\Storage;
 class ItemController extends Controller
 {
 
-public function index(Request $request)
-{
-    $user = $request->user();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Active business resolve
-    |--------------------------------------------------------------------------
-    */
-    $businessId = $user->current_business_id
-        ?? session('active_business_id');
-
-    if (!$businessId) {
-        $businessId = $user->businesses()
-            ->pluck('businesses.id')
-            ->first();
-    }
-
-    if (!$businessId) {
-        return back()->withErrors([
-            'business' => 'Active business select/attach नहीं है.',
-        ]);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Filters
-    |--------------------------------------------------------------------------
-    */
-    $q = trim((string) $request->query('q', ''));
-
-    $categoryId = $request->integer('category_id');
-
-    $active = $request->query('active');
-
-    $stockStatus = strtolower(
-        trim((string) $request->query('stock_status', ''))
-    );
-
-    $allowedStockStatuses = [
-        'in_stock',
-        'low_stock',
-        'out_of_stock',
-    ];
-
-    if (!in_array($stockStatus, $allowedStockStatuses, true)) {
-        $stockStatus = '';
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Common low-stock limit
-    |--------------------------------------------------------------------------
-    */
-    $lowStockLimit = 5;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Items query
-    |--------------------------------------------------------------------------
-    */
-    $itemsQuery = Item::query()
-        ->where('business_id', $businessId)
-        ->with('category:id,name')
+    public function index(Request $request)
+    {
+        $user = $request->user();
 
         /*
         |--------------------------------------------------------------------------
-        | Search
+        | Active business resolve
         |--------------------------------------------------------------------------
         */
-        ->when($q !== '', function ($query) use ($q) {
-            $query->where(function ($searchQuery) use ($q) {
-                $searchQuery
-                    ->where('name', 'like', "%{$q}%")
-                    ->orWhere('sku', 'like', "%{$q}%")
-                    ->orWhere('barcode', 'like', "%{$q}%")
-                    ->orWhere('description', 'like', "%{$q}%");
-            });
-        })
+        $businessId = $user->current_business_id
+            ?? session('active_business_id');
+
+        if (!$businessId) {
+            $businessId = $user->businesses()
+                ->pluck('businesses.id')
+                ->first();
+        }
+
+        if (!$businessId) {
+            return back()->withErrors([
+                'business' => 'Active business select/attach नहीं है.',
+            ]);
+        }
 
         /*
         |--------------------------------------------------------------------------
-        | Category
+        | Filters
         |--------------------------------------------------------------------------
         */
-        ->when(
-            $categoryId > 0,
-            fn ($query) => $query->where(
-                'category_id',
-                $categoryId
-            )
-        )
+        $q = trim((string) $request->query('q', ''));
 
-        /*
-        |--------------------------------------------------------------------------
-        | Active status
-        |--------------------------------------------------------------------------
-        */
-        ->when(
-            $active !== null && $active !== '',
-            fn ($query) => $query->where(
-                'is_active',
-                (int) $active
-            )
-        )
+        $categoryId = $request->integer('category_id');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Healthy stock
-        |--------------------------------------------------------------------------
-        */
-        ->when(
-            $stockStatus === 'in_stock',
-            fn ($query) => $query
-                ->where('stock_qty', '>', $lowStockLimit)
-        )
+        $active = $request->query('active');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Low stock
-        |--------------------------------------------------------------------------
-        */
-        ->when(
-            $stockStatus === 'low_stock',
-            fn ($query) => $query
-                ->where('stock_qty', '>', 0)
-                ->where('stock_qty', '<=', $lowStockLimit)
-        )
-
-        /*
-        |--------------------------------------------------------------------------
-        | Out of stock
-        |--------------------------------------------------------------------------
-        */
-        ->when(
-            $stockStatus === 'out_of_stock',
-            fn ($query) => $query
-                ->where('stock_qty', '<=', 0)
+        $stockStatus = strtolower(
+            trim((string) $request->query('stock_status', ''))
         );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Pagination
-    |--------------------------------------------------------------------------
-    */
-    $items = $itemsQuery
-        ->orderByDesc('id')
-        ->paginate(15)
-        ->withQueryString();
+        $allowedStockStatuses = [
+            'in_stock',
+            'low_stock',
+            'out_of_stock',
+        ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | Categories
-    |--------------------------------------------------------------------------
-    */
-    $categories = Category::query()
-        ->where('business_id', $businessId)
-        ->orderBy('name')
-        ->get([
-            'id',
-            'name',
+        if (!in_array($stockStatus, $allowedStockStatuses, true)) {
+            $stockStatus = '';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Common low-stock limit
+        |--------------------------------------------------------------------------
+        */
+        $lowStockLimit = 5;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Items query
+        |--------------------------------------------------------------------------
+        */
+        $itemsQuery = Item::query()
+            ->where('business_id', $businessId)
+            ->with('category:id,name')
+
+            /*
+            |--------------------------------------------------------------------------
+            | Search
+            |--------------------------------------------------------------------------
+            */
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($searchQuery) use ($q) {
+                    $searchQuery
+                        ->where('name', 'like', "%{$q}%")
+                        ->orWhere('sku', 'like', "%{$q}%")
+                        ->orWhere('barcode', 'like', "%{$q}%")
+                        ->orWhere('description', 'like', "%{$q}%");
+                });
+            })
+
+            /*
+            |--------------------------------------------------------------------------
+            | Category
+            |--------------------------------------------------------------------------
+            */
+            ->when(
+                $categoryId > 0,
+                fn ($query) => $query->where(
+                    'category_id',
+                    $categoryId
+                )
+            )
+
+            /*
+            |--------------------------------------------------------------------------
+            | Active status
+            |--------------------------------------------------------------------------
+            */
+            ->when(
+                $active !== null && $active !== '',
+                fn ($query) => $query->where(
+                    'is_active',
+                    (int) $active
+                )
+            )
+
+            /*
+            |--------------------------------------------------------------------------
+            | Healthy stock
+            |--------------------------------------------------------------------------
+            */
+            ->when(
+                $stockStatus === 'in_stock',
+                fn ($query) => $query
+                    ->where('stock_qty', '>', $lowStockLimit)
+            )
+
+            /*
+            |--------------------------------------------------------------------------
+            | Low stock
+            |--------------------------------------------------------------------------
+            */
+            ->when(
+                $stockStatus === 'low_stock',
+                fn ($query) => $query
+                    ->where('stock_qty', '>', 0)
+                    ->where('stock_qty', '<=', $lowStockLimit)
+            )
+
+            /*
+            |--------------------------------------------------------------------------
+            | Out of stock
+            |--------------------------------------------------------------------------
+            */
+            ->when(
+                $stockStatus === 'out_of_stock',
+                fn ($query) => $query
+                    ->where('stock_qty', '<=', 0)
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+        $items = $itemsQuery
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Categories
+        |--------------------------------------------------------------------------
+        */
+        $categories = Category::query()
+            ->where('business_id', $businessId)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Suggestion visibility
+        |--------------------------------------------------------------------------
+        */
+        $currentItemCount = Item::query()
+            ->where('business_id', $businessId)
+            ->count();
+
+        $showItemSuggestion = $currentItemCount < 5;
+
+        return view('items.index', [
+            'items'              => $items,
+            'categories'         => $categories,
+            'q'                  => $q,
+            'category_id'        => $categoryId,
+            'active'             => $active,
+            'stockStatus'        => $stockStatus,
+            'lowStockLimit'      => $lowStockLimit,
+            'currentItemCount'   => $currentItemCount,
+            'showItemSuggestion' => $showItemSuggestion,
+            'activeBusinessId'   => $businessId,
         ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Suggestion visibility
-    |--------------------------------------------------------------------------
-    */
-    $currentItemCount = Item::query()
-        ->where('business_id', $businessId)
-        ->count();
-
-    $showItemSuggestion = $currentItemCount < 5;
-
-    return view('items.index', [
-        'items'              => $items,
-        'categories'         => $categories,
-        'q'                  => $q,
-        'category_id'        => $categoryId,
-        'active'             => $active,
-        'stockStatus'        => $stockStatus,
-        'lowStockLimit'      => $lowStockLimit,
-        'currentItemCount'   => $currentItemCount,
-        'showItemSuggestion' => $showItemSuggestion,
-        'activeBusinessId'   => $businessId,
-    ]);
-}
+    }
 
     public function create(Request $request)
     {
@@ -261,15 +261,20 @@ public function index(Request $request)
 
     // public function store(Request $request, StockService $stock)
     // {
-    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
+    //     $bid = $request->user()->current_business_id
+    //         ?? session('active_business_id');
 
     //     if (!$bid) {
-    //         $bid = $request->user()->businesses()->pluck('businesses.id')->first();
+    //         $bid = $request->user()
+    //             ->businesses()
+    //             ->pluck('businesses.id')
+    //             ->first();
     //     }
 
     //     abort_unless($bid, 422, 'Active business not found.');
 
-    //     $business = \App\Models\Business::with('businessType.itemFields')->find($bid);
+    //     $business = Business::with('businessType.itemFields')
+    //         ->find($bid);
 
     //     $allowedFields = [];
     //     $requiredFields = [];
@@ -285,6 +290,11 @@ public function index(Request $request)
     //             ->toArray();
     //     }
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Default Item Fields
+    //     |--------------------------------------------------------------------------
+    //     */
     //     if (empty($allowedFields)) {
     //         $allowedFields = [
     //             'name',
@@ -316,13 +326,26 @@ public function index(Request $request)
     //         ];
     //     }
 
-    //     $isAllowed = fn ($field) => in_array($field, $allowedFields);
-    //     $isRequired = fn ($field) => in_array($field, $requiredFields) ? 'required' : 'nullable';
+    //     $isAllowed = fn ($field) => in_array($field, $allowedFields, true);
 
+    //     $isRequired = fn ($field) =>
+    //         in_array($field, $requiredFields, true)
+    //             ? 'required'
+    //             : 'nullable';
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Validation Rules
+    //     |--------------------------------------------------------------------------
+    //     */
     //     $rules = [];
 
     //     if ($isAllowed('name')) {
-    //         $rules['name'] = [$isRequired('name'), 'string', 'max:255'];
+    //         $rules['name'] = [
+    //             $isRequired('name'),
+    //             'string',
+    //             'max:255',
+    //         ];
     //     }
 
     //     if ($isAllowed('sku')) {
@@ -330,32 +353,61 @@ public function index(Request $request)
     //             'nullable',
     //             'string',
     //             'max:100',
-    //             Rule::unique('items', 'sku')->where(fn ($q) => $q->where('business_id', $bid)),
+    //             Rule::unique('items', 'sku')
+    //                 ->where(
+    //                     fn ($query) =>
+    //                     $query->where('business_id', $bid)
+    //                 ),
     //         ];
     //     }
 
     //     if ($isAllowed('category_id')) {
-    //         $rules['category_id'] = [$isRequired('category_id'), 'integer'];
+    //         $rules['category_id'] = [
+    //             $isRequired('category_id'),
+    //             'integer',
+    //         ];
     //     }
 
     //     if ($isAllowed('type')) {
-    //         $rules['type'] = [$isRequired('type'), Rule::in(['product', 'service'])];
+    //         $rules['type'] = [
+    //             $isRequired('type'),
+    //             Rule::in([
+    //                 'product',
+    //                 'service',
+    //             ]),
+    //         ];
     //     }
 
     //     if ($isAllowed('sac')) {
-    //         $rules['sac'] = [$isRequired('sac'), 'string', 'max:32'];
+    //         $rules['sac'] = [
+    //             $isRequired('sac'),
+    //             'string',
+    //             'max:32',
+    //         ];
     //     }
 
     //     if ($isAllowed('description')) {
-    //         $rules['description'] = ['nullable', 'string', 'max:2000'];
+    //         $rules['description'] = [
+    //             'nullable',
+    //             'string',
+    //             'max:2000',
+    //         ];
     //     }
 
     //     if ($isAllowed('price')) {
-    //         $rules['price'] = [$isRequired('price'), 'numeric', 'min:0'];
+    //         $rules['price'] = [
+    //             $isRequired('price'),
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('cost_price')) {
-    //         $rules['cost_price'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['cost_price'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('making_charge')) {
@@ -373,101 +425,256 @@ public function index(Request $request)
     //             'nullable',
     //             'numeric',
     //             'min:0',
+
     //             Rule::when(
-    //                 $request->input('making_charge_type', 'percentage') === 'percentage',
+    //                 $request->input(
+    //                     'making_charge_type',
+    //                     'percentage'
+    //                 ) === 'percentage',
     //                 ['max:100']
     //             ),
     //         ];
     //     }
 
     //     if ($isAllowed('stock_qty')) {
-    //         $rules['stock_qty'] = [$isRequired('stock_qty'), 'integer', 'min:0'];
+    //         $rules['stock_qty'] = [
+    //             $isRequired('stock_qty'),
+    //             'integer',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('unit')) {
-    //         $rules['unit'] = ['nullable', 'string', 'max:50'];
+    //         $rules['unit'] = [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //         ];
     //     }
 
     //     if ($isAllowed('tax_rate')) {
-    //         $rules['tax_rate'] = [$isRequired('tax_rate'), 'numeric', 'min:0', 'max:100'];
+    //         $rules['tax_rate'] = [
+    //             $isRequired('tax_rate'),
+    //             'numeric',
+    //             'min:0',
+    //             'max:100',
+    //         ];
     //     }
 
     //     if ($isAllowed('is_active')) {
-    //         $rules['is_active'] = ['nullable'];
+    //         $rules['is_active'] = [
+    //             'nullable',
+    //         ];
     //     }
 
     //     if ($isAllowed('metal_type')) {
-    //         $rules['metal_type'] = ['nullable', Rule::in(['gold', 'silver', 'other'])];
+    //         $rules['metal_type'] = [
+    //             'nullable',
+    //             Rule::in([
+    //                 'gold',
+    //                 'silver',
+    //                 'other',
+    //             ]),
+    //         ];
     //     }
 
     //     if ($isAllowed('purity')) {
-    //         $rules['purity'] = ['nullable', 'string', 'max:50'];
+    //         $rules['purity'] = [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //         ];
     //     }
 
     //     if ($isAllowed('gross_weight')) {
-    //         $rules['gross_weight'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['gross_weight'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('metal_weight')) {
-    //         $rules['metal_weight'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['metal_weight'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('stone_weight')) {
-    //         $rules['stone_weight'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['stone_weight'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('stone_charges')) {
-    //         $rules['stone_charges'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['stone_charges'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('gold_weight')) {
-    //         $rules['gold_weight'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['gold_weight'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('gold_purity')) {
-    //         $rules['gold_purity'] = ['nullable', 'string', 'max:50'];
+    //         $rules['gold_purity'] = [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //         ];
     //     }
 
     //     if ($isAllowed('silver_weight')) {
-    //         $rules['silver_weight'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['silver_weight'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('silver_purity')) {
-    //         $rules['silver_purity'] = ['nullable', 'string', 'max:50'];
+    //         $rules['silver_purity'] = [
+    //             'nullable',
+    //             'string',
+    //             'max:50',
+    //         ];
     //     }
 
     //     if ($isAllowed('diamond_weight')) {
-    //         $rules['diamond_weight'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['diamond_weight'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
     //     if ($isAllowed('diamond_charges')) {
-    //         $rules['diamond_charges'] = ['nullable', 'numeric', 'min:0'];
+    //         $rules['diamond_charges'] = [
+    //             'nullable',
+    //             'numeric',
+    //             'min:0',
+    //         ];
     //     }
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Image Validation
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Image ko business type item fields se independent rakha hai.
+    //     | Isliye har item me optional image upload ho sakegi.
+    //     |
+    //     */
+    //     $rules['image'] = [
+    //         'nullable',
+    //         'image',
+    //         'mimes:jpg,jpeg,png,webp',
+    //         'max:2048',
+    //     ];
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Validate
+    //     |--------------------------------------------------------------------------
+    //     */
     //     $data = $request->validate($rules);
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Validate Category Business
+    //     |--------------------------------------------------------------------------
+    //     */
     //     if (!empty($data['category_id'])) {
-    //         $ok = Category::where('id', $data['category_id'])
+    //         $categoryBelongsToBusiness = Category::query()
+    //             ->where('id', $data['category_id'])
     //             ->where('business_id', $bid)
     //             ->exists();
 
-    //         abort_unless($ok, 422, 'Invalid category for this business.');
+    //         if (!$categoryBelongsToBusiness) {
+    //             return back()
+    //                 ->withErrors([
+    //                     'category_id' =>
+    //                         'Selected category does not belong to active business.',
+    //                 ])
+    //                 ->withInput();
+    //         }
     //     }
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Opening Stock
+    //     |--------------------------------------------------------------------------
+    //     */
     //     $openingQty = (int) ($data['stock_qty'] ?? 0);
 
-    //     $payload = Arr::except($data, ['stock_qty']);
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Remove File + Stock From Normal Payload
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $payload = Arr::except(
+    //         $data,
+    //         [
+    //             'stock_qty',
+    //             'image',
+    //         ]
+    //     );
 
-    //     $payload['making_charge_type'] = $request->input('making_charge_type', 'percentage');
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Making Charge Type
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     if ($isAllowed('making_charge')) {
+    //         $payload['making_charge_type'] =
+    //             $request->input(
+    //                 'making_charge_type',
+    //                 'percentage'
+    //             );
+    //     }
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Business
+    //     |--------------------------------------------------------------------------
+    //     */
     //     $payload['business_id'] = $bid;
 
-    //     $payload['is_active'] = $request->has('is_active')
-    //         ? $request->boolean('is_active')
-    //         : true;
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Active Status
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $payload['is_active'] =
+    //         $request->has('is_active')
+    //             ? $request->boolean('is_active')
+    //             : true;
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Initial Stock Zero
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | StockService opening stock record karega.
+    //     |
+    //     */
     //     $payload['stock_qty'] = 0;
 
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Clear Non Allowed Fields
+    //     |--------------------------------------------------------------------------
+    //     */
     //     $allItemFields = [
     //         'name',
     //         'sku',
@@ -499,7 +706,11 @@ public function index(Request $request)
 
     //     foreach ($allItemFields as $field) {
     //         if (
-    //             !in_array($field, $allowedFields)
+    //             !in_array(
+    //                 $field,
+    //                 $allowedFields,
+    //                 true
+    //             )
     //             && $field !== 'stock_qty'
     //             && $field !== 'is_active'
     //             && $field !== 'making_charge_type'
@@ -508,567 +719,190 @@ public function index(Request $request)
     //         }
     //     }
 
-    //     $item = Item::create($payload);
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Image Upload
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $uploadedImagePath = null;
 
-    //     if ($openingQty > 0) {
-    //         $stock->recordOpening($item, $openingQty, 'Opening stock (item create)');
+    //     if ($request->hasFile('image')) {
+    //         $uploadedImagePath =
+    //             $request->file('image')
+    //                 ->store(
+    //                     'items',
+    //                     'public'
+    //                 );
+
+    //         $payload['image'] =
+    //             $uploadedImagePath;
     //     }
 
-    //     return redirect()
-    //         ->route('items.index')
-    //         ->with('success', 'Item created successfully.');
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Create Item
+    //         |--------------------------------------------------------------------------
+    //         */
+    //         $item = Item::create($payload);
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Opening Stock
+    //         |--------------------------------------------------------------------------
+    //         */
+    //         if ($openingQty > 0) {
+    //             $stock->recordOpening(
+    //                 $item,
+    //                 $openingQty,
+    //                 'Opening stock (item create)'
+    //             );
+    //         }
+
+    //         DB::commit();
+
+    //         return redirect()
+    //             ->route('items.index')
+    //             ->with(
+    //                 'success',
+    //                 'Item created successfully.'
+    //             );
+
+    //     } catch (\Throwable $e) {
+
+    //         DB::rollBack();
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Delete Uploaded Image If DB Failed
+    //         |--------------------------------------------------------------------------
+    //         */
+    //         if (
+    //             $uploadedImagePath
+    //             && Storage::disk('public')
+    //                 ->exists($uploadedImagePath)
+    //         ) {
+    //             Storage::disk('public')
+    //                 ->delete($uploadedImagePath);
+    //         }
+
+    //         Log::error(
+    //             'Item create failed',
+    //             [
+    //                 'business_id' => $bid,
+    //                 'user_id'     => auth()->id(),
+    //                 'message'     => $e->getMessage(),
+    //                 'line'        => $e->getLine(),
+    //                 'file'        => $e->getFile(),
+    //             ]
+    //         );
+
+    //         return back()
+    //             ->withErrors([
+    //                 'general' =>
+    //                     'Item create failed: '
+    //                     . $e->getMessage(),
+    //             ])
+    //             ->withInput();
+    //     }
     // }
 
 
-    public function store(Request $request, StockService $stock)
+    public function store(Request $request)
 {
-    $bid = $request->user()->current_business_id
-        ?? session('active_business_id');
-
-    if (!$bid) {
-        $bid = $request->user()
-            ->businesses()
-            ->pluck('businesses.id')
-            ->first();
-    }
-
-    abort_unless($bid, 422, 'Active business not found.');
-
-    $business = Business::with('businessType.itemFields')
-        ->find($bid);
-
-    $allowedFields = [];
-    $requiredFields = [];
-
-    if ($business && $business->businessType) {
-        $allowedFields = $business->businessType->itemFields
-            ->pluck('field_name')
-            ->toArray();
-
-        $requiredFields = $business->businessType->itemFields
-            ->where('is_required', 1)
-            ->pluck('field_name')
-            ->toArray();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Item Fields
-    |--------------------------------------------------------------------------
-    */
-    if (empty($allowedFields)) {
-        $allowedFields = [
-            'name',
-            'sku',
-            'category_id',
-            'type',
-            'sac',
-            'description',
-            'price',
-            'cost_price',
-            'making_charge_type',
-            'making_charge',
-            'stock_qty',
-            'unit',
-            'tax_rate',
-            'is_active',
-            'metal_type',
-            'purity',
-            'gross_weight',
-            'metal_weight',
-            'stone_weight',
-            'stone_charges',
-            'gold_weight',
-            'gold_purity',
-            'silver_weight',
-            'silver_purity',
-            'diamond_weight',
-            'diamond_charges',
-        ];
-    }
-
-    $isAllowed = fn ($field) => in_array($field, $allowedFields, true);
-
-    $isRequired = fn ($field) =>
-        in_array($field, $requiredFields, true)
-            ? 'required'
-            : 'nullable';
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validation Rules
-    |--------------------------------------------------------------------------
-    */
-    $rules = [];
-
-    if ($isAllowed('name')) {
-        $rules['name'] = [
-            $isRequired('name'),
+    $validated = $request->validate([
+        'name' => [
+            'required',
             'string',
             'max:255',
-        ];
-    }
+        ],
 
-    if ($isAllowed('sku')) {
-        $rules['sku'] = [
-            'nullable',
-            'string',
-            'max:100',
-            Rule::unique('items', 'sku')
-                ->where(
-                    fn ($query) =>
-                    $query->where('business_id', $bid)
-                ),
-        ];
-    }
+        'office_id' => [
+            'required',
+            'exists:offices,id',
+        ],
 
-    if ($isAllowed('category_id')) {
-        $rules['category_id'] = [
-            $isRequired('category_id'),
-            'integer',
-        ];
-    }
+        // baaki validation...
+    ]);
 
-    if ($isAllowed('type')) {
-        $rules['type'] = [
-            $isRequired('type'),
-            Rule::in([
-                'product',
-                'service',
-            ]),
-        ];
-    }
-
-    if ($isAllowed('sac')) {
-        $rules['sac'] = [
-            $isRequired('sac'),
-            'string',
-            'max:32',
-        ];
-    }
-
-    if ($isAllowed('description')) {
-        $rules['description'] = [
-            'nullable',
-            'string',
-            'max:2000',
-        ];
-    }
-
-    if ($isAllowed('price')) {
-        $rules['price'] = [
-            $isRequired('price'),
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('cost_price')) {
-        $rules['cost_price'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('making_charge')) {
-        $rules['making_charge_type'] = [
-            'nullable',
-            Rule::in([
-                'percentage',
-                'fixed',
-                'per_gram',
-                'per_product',
-            ]),
-        ];
-
-        $rules['making_charge'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-
-            Rule::when(
-                $request->input(
-                    'making_charge_type',
-                    'percentage'
-                ) === 'percentage',
-                ['max:100']
-            ),
-        ];
-    }
-
-    if ($isAllowed('stock_qty')) {
-        $rules['stock_qty'] = [
-            $isRequired('stock_qty'),
-            'integer',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('unit')) {
-        $rules['unit'] = [
-            'nullable',
-            'string',
-            'max:50',
-        ];
-    }
-
-    if ($isAllowed('tax_rate')) {
-        $rules['tax_rate'] = [
-            $isRequired('tax_rate'),
-            'numeric',
-            'min:0',
-            'max:100',
-        ];
-    }
-
-    if ($isAllowed('is_active')) {
-        $rules['is_active'] = [
-            'nullable',
-        ];
-    }
-
-    if ($isAllowed('metal_type')) {
-        $rules['metal_type'] = [
-            'nullable',
-            Rule::in([
-                'gold',
-                'silver',
-                'other',
-            ]),
-        ];
-    }
-
-    if ($isAllowed('purity')) {
-        $rules['purity'] = [
-            'nullable',
-            'string',
-            'max:50',
-        ];
-    }
-
-    if ($isAllowed('gross_weight')) {
-        $rules['gross_weight'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('metal_weight')) {
-        $rules['metal_weight'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('stone_weight')) {
-        $rules['stone_weight'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('stone_charges')) {
-        $rules['stone_charges'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('gold_weight')) {
-        $rules['gold_weight'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('gold_purity')) {
-        $rules['gold_purity'] = [
-            'nullable',
-            'string',
-            'max:50',
-        ];
-    }
-
-    if ($isAllowed('silver_weight')) {
-        $rules['silver_weight'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('silver_purity')) {
-        $rules['silver_purity'] = [
-            'nullable',
-            'string',
-            'max:50',
-        ];
-    }
-
-    if ($isAllowed('diamond_weight')) {
-        $rules['diamond_weight'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    if ($isAllowed('diamond_charges')) {
-        $rules['diamond_charges'] = [
-            'nullable',
-            'numeric',
-            'min:0',
-        ];
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Image Validation
-    |--------------------------------------------------------------------------
-    |
-    | Image ko business type item fields se independent rakha hai.
-    | Isliye har item me optional image upload ho sakegi.
-    |
-    */
-    $rules['image'] = [
-        'nullable',
-        'image',
-        'mimes:jpg,jpeg,png,webp',
-        'max:2048',
-    ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate
-    |--------------------------------------------------------------------------
-    */
-    $data = $request->validate($rules);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate Category Business
-    |--------------------------------------------------------------------------
-    */
-    if (!empty($data['category_id'])) {
-        $categoryBelongsToBusiness = Category::query()
-            ->where('id', $data['category_id'])
-            ->where('business_id', $bid)
-            ->exists();
-
-        if (!$categoryBelongsToBusiness) {
-            return back()
-                ->withErrors([
-                    'category_id' =>
-                        'Selected category does not belong to active business.',
-                ])
-                ->withInput();
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Opening Stock
-    |--------------------------------------------------------------------------
-    */
-    $openingQty = (int) ($data['stock_qty'] ?? 0);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Remove File + Stock From Normal Payload
-    |--------------------------------------------------------------------------
-    */
-    $payload = Arr::except(
-        $data,
-        [
-            'stock_qty',
-            'image',
-        ]
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Making Charge Type
-    |--------------------------------------------------------------------------
-    */
-    if ($isAllowed('making_charge')) {
-        $payload['making_charge_type'] =
-            $request->input(
-                'making_charge_type',
-                'percentage'
-            );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Business
-    |--------------------------------------------------------------------------
-    */
-    $payload['business_id'] = $bid;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Active Status
-    |--------------------------------------------------------------------------
-    */
-    $payload['is_active'] =
-        $request->has('is_active')
-            ? $request->boolean('is_active')
-            : true;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Initial Stock Zero
-    |--------------------------------------------------------------------------
-    |
-    | StockService opening stock record karega.
-    |
-    */
-    $payload['stock_qty'] = 0;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Clear Non Allowed Fields
-    |--------------------------------------------------------------------------
-    */
-    $allItemFields = [
-        'name',
-        'sku',
-        'category_id',
-        'type',
-        'sac',
-        'description',
-        'price',
-        'cost_price',
-        'making_charge_type',
-        'making_charge',
-        'stock_qty',
-        'unit',
-        'tax_rate',
-        'is_active',
-        'metal_type',
-        'purity',
-        'gross_weight',
-        'metal_weight',
-        'stone_weight',
-        'stone_charges',
-        'gold_weight',
-        'gold_purity',
-        'silver_weight',
-        'silver_purity',
-        'diamond_weight',
-        'diamond_charges',
-    ];
-
-    foreach ($allItemFields as $field) {
-        if (
-            !in_array(
-                $field,
-                $allowedFields,
-                true
-            )
-            && $field !== 'stock_qty'
-            && $field !== 'is_active'
-            && $field !== 'making_charge_type'
-        ) {
-            $payload[$field] = null;
-        }
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Image Upload
-    |--------------------------------------------------------------------------
-    */
-    $uploadedImagePath = null;
-
-    if ($request->hasFile('image')) {
-        $uploadedImagePath =
-            $request->file('image')
-                ->store(
-                    'items',
-                    'public'
-                );
-
-        $payload['image'] =
-            $uploadedImagePath;
-    }
-
-    DB::beginTransaction();
-
-    try {
+    DB::transaction(function () use (
+        $request,
+        $validated
+    ) {
 
         /*
         |--------------------------------------------------------------------------
-        | Create Item
+        | Lock office row
         |--------------------------------------------------------------------------
         */
-        $item = Item::create($payload);
+
+        $office = Office::query()
+            ->where('id', $validated['office_id'])
+            ->lockForUpdate()
+            ->firstOrFail();
 
         /*
         |--------------------------------------------------------------------------
-        | Opening Stock
+        | Generate next sequence
         |--------------------------------------------------------------------------
         */
-        if ($openingQty > 0) {
-            $stock->recordOpening(
-                $item,
-                $openingQty,
-                'Opening stock (item create)'
+
+        $nextSequence =
+            (int) $office->employee_sequence + 1;
+
+        $prefix =
+            $office->employee_prefix
+            ?: 'OFF' . $office->id;
+
+        $employeeId =
+            strtoupper($prefix)
+            . '-'
+            . str_pad(
+                $nextSequence,
+                4,
+                '0',
+                STR_PAD_LEFT
             );
-        }
-
-        DB::commit();
-
-        return redirect()
-            ->route('items.index')
-            ->with(
-                'success',
-                'Item created successfully.'
-            );
-
-    } catch (\Throwable $e) {
-
-        DB::rollBack();
 
         /*
         |--------------------------------------------------------------------------
-        | Delete Uploaded Image If DB Failed
+        | Create employee
         |--------------------------------------------------------------------------
         */
-        if (
-            $uploadedImagePath
-            && Storage::disk('public')
-                ->exists($uploadedImagePath)
-        ) {
-            Storage::disk('public')
-                ->delete($uploadedImagePath);
-        }
 
-        Log::error(
-            'Item create failed',
-            [
-                'business_id' => $bid,
-                'user_id'     => auth()->id(),
-                'message'     => $e->getMessage(),
-                'line'        => $e->getLine(),
-                'file'        => $e->getFile(),
-            ]
+        $employee = User::create([
+            'name' => $validated['name'],
+
+            'office_id' =>
+                $validated['office_id'],
+
+            'employee_id' =>
+                $employeeId,
+
+            // other fields...
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update office sequence
+        |--------------------------------------------------------------------------
+        */
+
+        $office->employee_sequence =
+            $nextSequence;
+
+        $office->save();
+    });
+
+    return redirect()
+        ->route('employee.index')
+        ->with(
+            'success',
+            'Employee created successfully.'
         );
-
-        return back()
-            ->withErrors([
-                'general' =>
-                    'Item create failed: '
-                    . $e->getMessage(),
-            ])
-            ->withInput();
-    }
 }
 
 
