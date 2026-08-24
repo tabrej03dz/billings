@@ -310,8 +310,7 @@
 
             @if($plans->count())
 
-                <div
-                    class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-7 lg:gap-8 items-start">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-7 lg:gap-8 items-start">
 
                     @foreach($plans as $plan)
 
@@ -340,12 +339,12 @@
                             @if($isPopular)
                                 <div
                                     class="popular-plan-badge absolute -top-3 sm:-top-4 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white text-mvBlue border border-blue-100 text-[10px] sm:text-xs font-black px-4 py-2 rounded-full shadow-lg">
-
                                     Most Recommended ⭐
                                 </div>
                             @endif
 
-                            {{-- Plan heading --}}
+
+                            {{-- Plan Heading --}}
                             <div class="{{ $isPopular ? 'pt-3 sm:pt-2' : '' }}">
 
                                 <div class="flex items-start justify-between gap-3">
@@ -358,8 +357,7 @@
                                             Billing Plan
                                         </p>
 
-                                        <h3
-                                            class="mt-1 text-xl sm:text-2xl font-black uppercase break-words">
+                                        <h3 class="mt-1 text-xl sm:text-2xl font-black uppercase break-words">
                                             {{ $plan->name }}
                                         </h3>
 
@@ -373,8 +371,7 @@
                                                 : 'bg-slate-100 text-slate-600'
                                             }}">
 
-                                            {{ $featureCount }}+
-                                            Features
+                                            {{ $featureCount }}+ Features
                                         </span>
                                     @endif
 
@@ -388,6 +385,7 @@
                                 </p>
 
                             </div>
+
 
                             {{-- Price --}}
                             <div
@@ -412,11 +410,17 @@
                                     <span
                                         class="pb-0.5 text-xs sm:text-sm font-bold
                                         {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
-
                                         / {{ $durationLabel }}
                                     </span>
 
                                 </div>
+
+                                {{-- Sirf GST Rate --}}
+                                <p
+                                    class="mt-2 text-xs font-bold
+                                    {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
+                                    + {{ $plan->tax ?? '18' }}% GST
+                                </p>
 
                                 @if($plan->duration_days >= 365)
                                     <p
@@ -427,6 +431,7 @@
                                 @endif
 
                             </div>
+
 
                             {{-- Features --}}
                             <div class="mt-5 sm:mt-6 flex-1">
@@ -531,7 +536,8 @@
 
                             </div>
 
-                            {{-- Clear action explanation on mobile --}}
+
+                            {{-- Explanation --}}
                             <div
                                 class="mt-6 rounded-2xl px-4 py-3 text-xs leading-5
                                 {{ $isPopular
@@ -539,15 +545,15 @@
                                     : 'bg-blue-50 text-slate-600 border border-blue-100'
                                 }}">
 
-                                <strong
-                                    class="{{ $isPopular ? 'text-white' : 'text-mvBlue' }}">
+                                <strong class="{{ $isPopular ? 'text-white' : 'text-mvBlue' }}">
                                     Confused?
                                 </strong>
 
                                 Trial के लिए पहला button और paid activation के लिए दूसरा button चुनें।
                             </div>
 
-                            {{-- Action buttons --}}
+
+                            {{-- Action Buttons --}}
                             <div class="mt-5 grid grid-cols-1 gap-3">
 
                                 {{-- Trial --}}
@@ -586,11 +592,13 @@
                                         </span>
 
                                         <span>Start Free Trial</span>
+
                                     </button>
 
                                 </form>
 
-                                {{-- Paid plan --}}
+
+                                {{-- Paid --}}
                                 <a
                                     href="{{ route('plan.payment', ['plan' => $plan->id]) }}"
                                     class="plan-action-button start-action-button flex min-h-[56px] w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm sm:text-base font-black
@@ -609,11 +617,12 @@
                                     </span>
 
                                     <span>Start Paid Plan</span>
+
                                 </a>
 
                             </div>
 
-                            {{-- Bottom note --}}
+
                             <p
                                 class="mt-4 text-center text-[11px] leading-5
                                 {{ $isPopular ? 'text-blue-100' : 'text-slate-400' }}">
@@ -626,7 +635,6 @@
                     @endforeach
 
                 </div>
-
             @else
 
                 <div
@@ -648,7 +656,6 @@
                 </div>
 
             @endif
-
         </div>
     </section>
 

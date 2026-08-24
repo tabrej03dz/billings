@@ -14,70 +14,211 @@ use Spatie\Permission\PermissionRegistrar;
 
 class UserPlanController extends Controller
 {
-    public function index(Request $request)
-    {
-        $q = trim((string) $request->get('q'));
-        $businessId = $request->get('business_id');
-
-        $userPlans = UserPlan::with(['user', 'plan', 'business'])
-            ->when($businessId, function ($query) use ($businessId) {
-                $query->where('business_id', $businessId);
-            })
-            ->when($q !== '', function ($query) use ($q) {
-                $query->where(function ($query) use ($q) {
-                    $query->whereHas('user', function ($subQuery) use ($q) {
-                        $subQuery->where('name', 'like', "%{$q}%")
-                            ->orWhere('email', 'like', "%{$q}%");
-                    })
-                        ->orWhereHas('plan', function ($subQuery) use ($q) {
-                            $subQuery->where('name', 'like', "%{$q}%");
-                        })
-                        ->orWhereHas('business', function ($subQuery) use ($q) {
-                            $subQuery->where('name', 'like', "%{$q}%")
-                                ->orWhere('business_name', 'like', "%{$q}%");
-                        });
-                });
-            })
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
-
-        $businesses = Business::query()
-            ->orderBy('name')
-            ->get();
-
-        return view('user-plans.index', compact(
-            'userPlans',
-            'q',
-            'businesses',
-            'businessId'
-        ));
-    }
-
-    // public function create(Request $request)
+    // public function index(Request $request)
     // {
+    //     $q = trim((string) $request->get('q'));
+    //     $businessId = $request->get('business_id');
+
+    //     $userPlans = UserPlan::with(['user', 'plan', 'business'])
+    //         ->when($businessId, function ($query) use ($businessId) {
+    //             $query->where('business_id', $businessId);
+    //         })
+    //         ->when($q !== '', function ($query) use ($q) {
+    //             $query->where(function ($query) use ($q) {
+    //                 $query->whereHas('user', function ($subQuery) use ($q) {
+    //                     $subQuery->where('name', 'like', "%{$q}%")
+    //                         ->orWhere('email', 'like', "%{$q}%");
+    //                 })
+    //                     ->orWhereHas('plan', function ($subQuery) use ($q) {
+    //                         $subQuery->where('name', 'like', "%{$q}%");
+    //                     })
+    //                     ->orWhereHas('business', function ($subQuery) use ($q) {
+    //                         $subQuery->where('name', 'like', "%{$q}%")
+    //                             ->orWhere('business_name', 'like', "%{$q}%");
+    //                     });
+    //             });
+    //         })
+    //         ->latest()
+    //         ->paginate(15)
+    //         ->withQueryString();
+
     //     $businesses = Business::query()
     //         ->orderBy('name')
     //         ->get();
 
-    //     $users = User::query()
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     $plans = Plan::query()
-    //         ->where('status', 1)
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     $selectedBusinessId = $request->get('business_id');
-
-    //     return view('user-plans.create', compact(
+    //     return view('user-plans.index', compact(
+    //         'userPlans',
+    //         'q',
     //         'businesses',
-    //         'users',
-    //         'plans',
-    //         'selectedBusinessId'
+    //         'businessId'
     //     ));
     // }
+
+
+    public function index(Request $request)
+{
+    $q = trim((string) $request->get('q'));
+    $businessId = $request->get('business_id');
+
+    // regular | trial
+    $tab = $request->get('tab', 'regular');
+
+    if (!in_array($tab, ['regular', 'trial'])) {
+        $tab = 'regular';
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Base Query
+    |--------------------------------------------------------------------------
+    */
+    $query = UserPlan::with([
+        'user',
+        'plan',
+        'business',
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Business Filter
+    |--------------------------------------------------------------------------
+    */
+    $query->when($businessId, function ($query) use ($businessId) {
+        $query->where('business_id', $businessId);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Search
+    |--------------------------------------------------------------------------
+    */
+    $query->when($q !== '', function ($query) use ($q) {
+        $query->where(function ($query) use ($q) {
+
+            $query->whereHas('user', function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            })
+
+            ->orWhereHas('plan', function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%");
+            })
+
+            ->orWhereHas('business', function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%")
+                    ->orWhere('business_name', 'like', "%{$q}%");
+            });
+
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trial / Regular Filter
+    |--------------------------------------------------------------------------
+    |
+    | Trial:
+    | Start date se expiry date ka difference 30 days se kam.
+    |
+    | Regular:
+    | 30 days ya usse zyada.
+    |
+    */
+
+    if ($tab === 'trial') {
+
+        $query->whereNotNull('start_date')
+            ->whereNotNull('expiry_date')
+            ->whereRaw('DATEDIFF(expiry_date, start_date) < 30');
+
+    } else {
+
+        $query->where(function ($query) {
+
+            $query->whereNull('start_date')
+                ->orWhereNull('expiry_date')
+                ->orWhereRaw('DATEDIFF(expiry_date, start_date) >= 30');
+
+        });
+
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    */
+    $userPlans = $query
+        ->latest()
+        ->paginate(15)
+        ->withQueryString();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Counts
+    |--------------------------------------------------------------------------
+    */
+
+    $countBaseQuery = UserPlan::query();
+
+    if ($businessId) {
+        $countBaseQuery->where('business_id', $businessId);
+    }
+
+    if ($q !== '') {
+        $countBaseQuery->where(function ($query) use ($q) {
+
+            $query->whereHas('user', function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            })
+
+            ->orWhereHas('plan', function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%");
+            })
+
+            ->orWhereHas('business', function ($subQuery) use ($q) {
+                $subQuery->where('name', 'like', "%{$q}%")
+                    ->orWhere('business_name', 'like', "%{$q}%");
+            });
+
+        });
+    }
+
+    $trialCount = (clone $countBaseQuery)
+        ->whereNotNull('start_date')
+        ->whereNotNull('expiry_date')
+        ->whereRaw('DATEDIFF(expiry_date, start_date) < 30')
+        ->count();
+
+    $regularCount = (clone $countBaseQuery)
+        ->where(function ($query) {
+            $query->whereNull('start_date')
+                ->orWhereNull('expiry_date')
+                ->orWhereRaw('DATEDIFF(expiry_date, start_date) >= 30');
+        })
+        ->count();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Businesses
+    |--------------------------------------------------------------------------
+    */
+    $businesses = Business::query()
+        ->orderBy('name')
+        ->get();
+
+    return view('user-plans.index', compact(
+        'userPlans',
+        'q',
+        'businesses',
+        'businessId',
+        'tab',
+        'trialCount',
+        'regularCount'
+    ));
+}
+
 
     public function create(Request $request)
 {
@@ -116,93 +257,6 @@ class UserPlanController extends Controller
         'selectedBusiness'
     ));
 }
-
-    // public function store(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'business_id' => [
-    //             'nullable',
-    //             'required_without:user_id',
-    //             'exists:businesses,id',
-    //         ],
-    //         'user_id' => [
-    //             'nullable',
-    //             'exists:users,id',
-    //         ],
-    //         'plan_id' => [
-    //             'required',
-    //             'exists:plans,id',
-    //         ],
-    //         'start_date' => [
-    //             'nullable',
-    //             'date',
-    //         ],
-    //         'expiry_date' => [
-    //             'nullable',
-    //             'date',
-    //             'after_or_equal:start_date',
-    //         ],
-    //         'status' => [
-    //             'nullable',
-    //             'boolean',
-    //         ],
-    //     ], [
-    //         'business_id.required_without' => 'Business select karna zaroori hai jab user select nahi kiya gaya ho.',
-    //         'business_id.exists' => 'Selected business valid nahi hai.',
-    //         'user_id.exists' => 'Selected user valid nahi hai.',
-    //         'plan_id.required' => 'Please select a plan.',
-    //         'plan_id.exists' => 'Selected plan valid nahi hai.',
-    //         'expiry_date.after_or_equal' => 'Expiry date start date se pehle nahi ho sakti.',
-    //     ]);
-
-    //     $userPlan = DB::transaction(function () use ($request, $validated) {
-    //         $plan = Plan::query()
-    //             ->with('permissions')
-    //             ->findOrFail($validated['plan_id']);
-
-    //         $startDate = !empty($validated['start_date'])
-    //             ? Carbon::parse($validated['start_date'])->startOfDay()
-    //             : now()->startOfDay();
-
-    //         $expiryDate = !empty($validated['expiry_date'])
-    //             ? Carbon::parse($validated['expiry_date'])->startOfDay()
-    //             : $startDate->copy()->addDays(
-    //                 max(0, (int) ($plan->duration_days ?? 0))
-    //             );
-
-    //         $userPlan = UserPlan::create([
-    //             'business_id' => $validated['business_id'] ?? null,
-    //             'user_id' => $validated['user_id'] ?? null,
-    //             'plan_id' => $validated['plan_id'],
-    //             'start_date' => $startDate->toDateString(),
-    //             'expiry_date' => $expiryDate->toDateString(),
-    //             'status' => $request->has('status')
-    //                 ? $request->boolean('status')
-    //                 : true,
-    //         ]);
-
-    //         /*
-    //          * Plan ki saari permissions target user/users ko assign karega.
-    //          */
-    //         $this->assignPlanPermissions(
-    //             userPlan: $userPlan,
-    //             plan: $plan
-    //         );
-
-    //         return $userPlan;
-    //     });
-
-    //     return redirect()
-    //         ->route('user-plans.index', array_filter([
-    //             'business_id' => $userPlan->business_id,
-    //         ]))
-    //         ->with(
-    //             'success',
-    //             $userPlan->user_id
-    //                 ? 'User plan created and all plan permissions assigned successfully.'
-    //                 : 'Business plan created and permissions assigned to all business users successfully.'
-    //         );
-    // }
 
     public function store(Request $request)
     {
@@ -380,98 +434,6 @@ class UserPlanController extends Controller
             'plans'
         ));
     }
-
-    // public function update(Request $request, $id)
-    // {
-    //     $userPlan = UserPlan::findOrFail($id);
-
-    //     $validated = $request->validate([
-    //         'business_id' => [
-    //             'nullable',
-    //             'required_without:user_id',
-    //             'exists:businesses,id',
-    //         ],
-    //         'user_id' => [
-    //             'nullable',
-    //             'exists:users,id',
-    //         ],
-    //         'plan_id' => [
-    //             'required',
-    //             'exists:plans,id',
-    //         ],
-    //         'start_date' => [
-    //             'nullable',
-    //             'date',
-    //         ],
-    //         'expiry_date' => [
-    //             'nullable',
-    //             'date',
-    //             'after_or_equal:start_date',
-    //         ],
-    //         'status' => [
-    //             'nullable',
-    //             'boolean',
-    //         ],
-    //     ], [
-    //         'business_id.required_without' => 'Business select karna zaroori hai jab user select nahi kiya gaya ho.',
-    //         'business_id.exists' => 'Selected business valid nahi hai.',
-    //         'user_id.exists' => 'Selected user valid nahi hai.',
-    //         'plan_id.required' => 'Please select a plan.',
-    //         'plan_id.exists' => 'Selected plan valid nahi hai.',
-    //         'expiry_date.after_or_equal' => 'Expiry date start date se pehle nahi ho sakti.',
-    //     ]);
-
-    //     DB::transaction(function () use (
-    //         $request,
-    //         $validated,
-    //         $userPlan
-    //     ) {
-    //         $plan = Plan::query()
-    //             ->with('permissions')
-    //             ->findOrFail($validated['plan_id']);
-
-    //         $startDate = !empty($validated['start_date'])
-    //             ? Carbon::parse($validated['start_date'])->startOfDay()
-    //             : now()->startOfDay();
-
-    //         $expiryDate = !empty($validated['expiry_date'])
-    //             ? Carbon::parse($validated['expiry_date'])->startOfDay()
-    //             : $startDate->copy()->addDays(
-    //                 max(0, (int) ($plan->duration_days ?? 0))
-    //             );
-
-    //         $userPlan->update([
-    //             'business_id' => $validated['business_id'] ?? null,
-    //             'user_id' => $validated['user_id'] ?? null,
-    //             'plan_id' => $validated['plan_id'],
-    //             'start_date' => $startDate->toDateString(),
-    //             'expiry_date' => $expiryDate->toDateString(),
-    //             'status' => $request->has('status')
-    //                 ? $request->boolean('status')
-    //                 : true,
-    //         ]);
-
-    //         /*
-    //          * Update ke baad selected plan ki permissions dobara
-    //          * target user/users ko assign hongi.
-    //          */
-    //         $this->assignPlanPermissions(
-    //             userPlan: $userPlan->fresh(),
-    //             plan: $plan
-    //         );
-    //     });
-
-    //     return redirect()
-    //         ->route('user-plans.index', array_filter([
-    //             'business_id' => $userPlan->fresh()->business_id,
-    //         ]))
-    //         ->with(
-    //             'success',
-    //             $userPlan->fresh()->user_id
-    //                 ? 'User plan updated and all plan permissions assigned successfully.'
-    //                 : 'Business plan updated and permissions assigned to all business users successfully.'
-    //         );
-    // }
 
     public function update(Request $request, $id)
     {

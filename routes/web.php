@@ -610,6 +610,11 @@ Route::middleware(['auth'])->group(function () {
 
 
 
+    Route::get(
+        '/businesses/users/search',
+        [App\Http\Controllers\BusinessController::class, 'searchUsers']
+    )->name('businesses.users.search');
+
 
     Route::prefix('businesses')->name('businesses.')->controller(\App\Http\Controllers\BusinessController::class)->group(function(){
         Route::get('/', 'index')->name('index');
