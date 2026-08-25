@@ -268,15 +268,15 @@
                                 </td>
 
                                 <td class="whitespace-nowrap px-5 py-4 text-right font-semibold text-emerald-700 dark:text-emerald-400">
-                                    +{{ $formatQuantity($stockIn) }}
+                                    +{{ $formatQuantity($stockIn) .' ('.$unit .')'}} 
                                 </td>
 
                                 <td class="whitespace-nowrap px-5 py-4 text-right font-semibold text-red-600 dark:text-red-400">
-                                    -{{ $formatQuantity($stockOut) }}
+                                    -{{ $formatQuantity($stockOut) .' ('.$unit.')'}} 
                                 </td>
 
                                 <td class="whitespace-nowrap px-5 py-4 text-right font-bold text-blue-700 dark:text-blue-400">
-                                    {{ $formatQuantity($closingStock) }}
+                                    {{ $formatQuantity($closingStock) .'  ('.$unit.')'}} 
                                 </td>
 
                                 <td class="whitespace-nowrap px-5 py-4 text-right">
