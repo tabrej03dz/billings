@@ -57,6 +57,11 @@ class UserPlanController extends Controller
 
 public function index(Request $request)
 {
+    /*
+    |--------------------------------------------------------------------------
+    | Request Filters
+    |--------------------------------------------------------------------------
+    */
     $q = trim((string) $request->get('q', ''));
     $businessId = $request->get('business_id');
     $tab = $request->get('tab', 'regular');
@@ -70,60 +75,130 @@ public function index(Request $request)
     | Base Query
     |--------------------------------------------------------------------------
     */
-    $query = UserPlan::with([
-        'user',
-        'plan',
-        'business',
-    ]);
+    $baseQuery = UserPlan::query();
 
     /*
     |--------------------------------------------------------------------------
     | Business Filter
     |--------------------------------------------------------------------------
     */
-    $query->when($businessId, function ($query) use ($businessId) {
-        $query->where('business_id', $businessId);
-    });
+    if (!empty($businessId)) {
+        $baseQuery->where('business_id', $businessId);
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | Search
+    | Search Filter
     |--------------------------------------------------------------------------
     */
-    $query->when($q !== '', function ($query) use ($q) {
-        $query->where(function ($query) use ($q) {
-            $query->whereHas('user', function ($subQuery) use ($q) {
-                $subQuery->where('name', 'like', "%{$q}%")
+    if ($q !== '') {
+        $baseQuery->where(function ($query) use ($q) {
+            $query->whereHas('user', function ($userQuery) use ($q) {
+                $userQuery->where('name', 'like', "%{$q}%")
                     ->orWhere('email', 'like', "%{$q}%");
             })
-            ->orWhereHas('plan', function ($subQuery) use ($q) {
-                $subQuery->where('name', 'like', "%{$q}%");
+            ->orWhereHas('plan', function ($planQuery) use ($q) {
+                $planQuery->where('name', 'like', "%{$q}%");
             })
-            ->orWhereHas('business', function ($subQuery) use ($q) {
-                $subQuery->where('name', 'like', "%{$q}%")
+            ->orWhereHas('business', function ($businessQuery) use ($q) {
+                $businessQuery->where('name', 'like', "%{$q}%")
                     ->orWhere('business_name', 'like', "%{$q}%");
             });
         });
-    });
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | Trial / Regular Filter
+    | Trial Count
     |--------------------------------------------------------------------------
     |
-    | Trial   : 31 दिनों से कम
-    | Regular : 31 दिन या उससे अधिक
+    | Trial माना जाएगा:
+    | 1. status की value trial हो
+    | OR
+    | 2. start_date और expiry_date का अंतर 31 दिनों से कम हो
     |
     */
-    if ($tab === 'trial') {
-        $query->whereNotNull('start_date')
-            ->whereNotNull('expiry_date')
-            ->whereRaw('DATEDIFF(expiry_date, start_date) <= 31');
-    } else {
-        $query->where(function ($query) {
+    $trialCount = (clone $baseQuery)
+        ->where(function ($query) {
+            $query->where('status', 'trial')
+                ->orWhere(function ($dateQuery) {
+                    $dateQuery->whereNotNull('start_date')
+                        ->whereNotNull('expiry_date')
+                        ->whereRaw(
+                            'DATEDIFF(DATE(expiry_date), DATE(start_date)) < 31'
+                        );
+                });
+        })
+        ->count();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Regular Count
+    |--------------------------------------------------------------------------
+    |
+    | Regular माना जाएगा:
+    | 1. status trial नहीं हो
+    | AND
+    | 2. duration 31 दिन या उससे अधिक हो
+    |
+    | जिन records में dates नहीं हैं, उन्हें भी Regular में रखा जाएगा।
+    |
+    */
+    $regularCount = (clone $baseQuery)
+        ->where(function ($query) {
+            $query->whereNull('status')
+                ->orWhere('status', '!=', 'trial');
+        })
+        ->where(function ($query) {
             $query->whereNull('start_date')
                 ->orWhereNull('expiry_date')
-                ->orWhereRaw('DATEDIFF(expiry_date, start_date) > 31');
+                ->orWhereRaw(
+                    'DATEDIFF(DATE(expiry_date), DATE(start_date)) >= 31'
+                );
+        })
+        ->count();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Current Tab Records
+    |--------------------------------------------------------------------------
+    */
+    $query = (clone $baseQuery)->with([
+        'user',
+        'plan',
+        'business',
+    ]);
+
+    if ($tab === 'trial') {
+        /*
+        | Trial Plans:
+        | status trial या duration 31 दिनों से कम
+        */
+        $query->where(function ($query) {
+            $query->where('status', 'trial')
+                ->orWhere(function ($dateQuery) {
+                    $dateQuery->whereNotNull('start_date')
+                        ->whereNotNull('expiry_date')
+                        ->whereRaw(
+                            'DATEDIFF(DATE(expiry_date), DATE(start_date)) < 31'
+                        );
+                });
+        });
+    } else {
+        /*
+        | Regular Plans:
+        | status trial नहीं और duration 31 दिन या अधिक
+        */
+        $query->where(function ($query) {
+            $query->whereNull('status')
+                ->orWhere('status', '!=', 'trial');
+        })
+        ->where(function ($query) {
+            $query->whereNull('start_date')
+                ->orWhereNull('expiry_date')
+                ->orWhereRaw(
+                    'DATEDIFF(DATE(expiry_date), DATE(start_date)) >= 31'
+                );
         });
     }
 
@@ -133,60 +208,9 @@ public function index(Request $request)
     |--------------------------------------------------------------------------
     */
     $userPlans = $query
-        ->latest()
+        ->latest('id')
         ->paginate(15)
         ->withQueryString();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Counts Base Query
-    |--------------------------------------------------------------------------
-    */
-    $countBaseQuery = UserPlan::query();
-
-    if ($businessId) {
-        $countBaseQuery->where('business_id', $businessId);
-    }
-
-    if ($q !== '') {
-        $countBaseQuery->where(function ($query) use ($q) {
-            $query->whereHas('user', function ($subQuery) use ($q) {
-                $subQuery->where('name', 'like', "%{$q}%")
-                    ->orWhere('email', 'like', "%{$q}%");
-            })
-            ->orWhereHas('plan', function ($subQuery) use ($q) {
-                $subQuery->where('name', 'like', "%{$q}%");
-            })
-            ->orWhereHas('business', function ($subQuery) use ($q) {
-                $subQuery->where('name', 'like', "%{$q}%")
-                    ->orWhere('business_name', 'like', "%{$q}%");
-            });
-        });
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Trial Count: Less Than 31 Days
-    |--------------------------------------------------------------------------
-    */
-    $trialCount = (clone $countBaseQuery)
-        ->whereNotNull('start_date')
-        ->whereNotNull('expiry_date')
-        ->whereRaw('DATEDIFF(expiry_date, start_date) < 31')
-        ->count();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Regular Count: 31 Days Or More
-    |--------------------------------------------------------------------------
-    */
-    $regularCount = (clone $countBaseQuery)
-        ->where(function ($query) {
-            $query->whereNull('start_date')
-                ->orWhereNull('expiry_date')
-                ->orWhereRaw('DATEDIFF(expiry_date, start_date) >= 31');
-        })
-        ->count();
 
     /*
     |--------------------------------------------------------------------------
@@ -197,6 +221,11 @@ public function index(Request $request)
         ->orderBy('name')
         ->get();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Return View
+    |--------------------------------------------------------------------------
+    */
     return view('user-plans.index', compact(
         'userPlans',
         'q',
@@ -207,7 +236,6 @@ public function index(Request $request)
         'regularCount'
     ));
 }
-
 
     public function create(Request $request)
 {
