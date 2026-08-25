@@ -55,15 +55,13 @@ class UserPlanController extends Controller
     // }
 
 
-    public function index(Request $request)
+public function index(Request $request)
 {
-    $q = trim((string) $request->get('q'));
+    $q = trim((string) $request->get('q', ''));
     $businessId = $request->get('business_id');
-
-    // regular | trial
     $tab = $request->get('tab', 'regular');
 
-    if (!in_array($tab, ['regular', 'trial'])) {
+    if (!in_array($tab, ['regular', 'trial'], true)) {
         $tab = 'regular';
     }
 
@@ -94,21 +92,17 @@ class UserPlanController extends Controller
     */
     $query->when($q !== '', function ($query) use ($q) {
         $query->where(function ($query) use ($q) {
-
             $query->whereHas('user', function ($subQuery) use ($q) {
                 $subQuery->where('name', 'like', "%{$q}%")
                     ->orWhere('email', 'like', "%{$q}%");
             })
-
             ->orWhereHas('plan', function ($subQuery) use ($q) {
                 $subQuery->where('name', 'like', "%{$q}%");
             })
-
             ->orWhereHas('business', function ($subQuery) use ($q) {
                 $subQuery->where('name', 'like', "%{$q}%")
                     ->orWhere('business_name', 'like', "%{$q}%");
             });
-
         });
     });
 
@@ -117,30 +111,20 @@ class UserPlanController extends Controller
     | Trial / Regular Filter
     |--------------------------------------------------------------------------
     |
-    | Trial:
-    | Start date se expiry date ka difference 30 days se kam.
-    |
-    | Regular:
-    | 30 days ya usse zyada.
+    | Trial   : 31 दिनों से कम
+    | Regular : 31 दिन या उससे अधिक
     |
     */
-
     if ($tab === 'trial') {
-
         $query->whereNotNull('start_date')
             ->whereNotNull('expiry_date')
-            ->whereRaw('DATEDIFF(expiry_date, start_date) < 30');
-
+            ->whereRaw('DATEDIFF(expiry_date, start_date) <= 31');
     } else {
-
         $query->where(function ($query) {
-
             $query->whereNull('start_date')
                 ->orWhereNull('expiry_date')
-                ->orWhereRaw('DATEDIFF(expiry_date, start_date) >= 30');
-
+                ->orWhereRaw('DATEDIFF(expiry_date, start_date) > 31');
         });
-
     }
 
     /*
@@ -155,10 +139,9 @@ class UserPlanController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | Counts
+    | Counts Base Query
     |--------------------------------------------------------------------------
     */
-
     $countBaseQuery = UserPlan::query();
 
     if ($businessId) {
@@ -167,30 +150,36 @@ class UserPlanController extends Controller
 
     if ($q !== '') {
         $countBaseQuery->where(function ($query) use ($q) {
-
             $query->whereHas('user', function ($subQuery) use ($q) {
                 $subQuery->where('name', 'like', "%{$q}%")
                     ->orWhere('email', 'like', "%{$q}%");
             })
-
             ->orWhereHas('plan', function ($subQuery) use ($q) {
                 $subQuery->where('name', 'like', "%{$q}%");
             })
-
             ->orWhereHas('business', function ($subQuery) use ($q) {
                 $subQuery->where('name', 'like', "%{$q}%")
                     ->orWhere('business_name', 'like', "%{$q}%");
             });
-
         });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Trial Count: Less Than 31 Days
+    |--------------------------------------------------------------------------
+    */
     $trialCount = (clone $countBaseQuery)
         ->whereNotNull('start_date')
         ->whereNotNull('expiry_date')
         ->whereRaw('DATEDIFF(expiry_date, start_date) < 31')
         ->count();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Regular Count: 31 Days Or More
+    |--------------------------------------------------------------------------
+    */
     $regularCount = (clone $countBaseQuery)
         ->where(function ($query) {
             $query->whereNull('start_date')
