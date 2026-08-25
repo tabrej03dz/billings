@@ -86,16 +86,60 @@
     foreach ($items as $index => $item) {
         $qty = (float) $first($item, ['quantity', 'qty'], 1);
         if ($qty <= 0) $qty = 1;
-        $rate = (float) $first($item, ['rate', 'unit_price', 'price', 'sale_price'], 0);
-        $taxRate = (float) $first($item, ['tax_percent', 'tax_rate', 'gst_rate'], $first($inv, ['tax_percent'], 0));
-        $taxable = (float) $first($item, ['taxable_amount', 'subtotal', 'base_amount'], 0);
-        $lineTotal = (float) $first($item, ['amount', 'line_total', 'total'], 0);
-        $taxAmount = (float) $first($item, ['tax_amount', 'gst_amount'], 0);
 
-        if ($taxable <= 0 && $rate > 0) $taxable = $qty * $rate;
-        if ($taxAmount <= 0 && $taxable > 0 && $taxRate > 0) $taxAmount = $taxable * $taxRate / 100;
-        if ($lineTotal <= 0) $lineTotal = $taxable + $taxAmount;
-        if ($rate <= 0 && $qty > 0) $rate = $taxable / $qty;
+        $taxRate = (float) $first($item, ['tax_percent', 'tax_rate', 'gst_rate'], $first($inv, ['tax_percent'], 0));
+
+        /*
+         |------------------------------------------------------------------
+         | Correct price calculation
+         |------------------------------------------------------------------
+         | `rate` is deliberately NOT the first choice. In the current DB it
+         | can contain a calculated line value instead of one-unit price.
+         |
+         | Source priority:
+         | 1. Invoice item's price/unit_price (actual form RATE / PRICE)
+         | 2. Saved taxable amount divided by quantity
+         | 3. GST-inclusive saved amount converted back to taxable/unit price
+         | 4. Legacy rate only as the final fallback
+         */
+        $unitPrice = (float) $first($item, [
+            'price',
+            'unit_price',
+            'sale_price',
+            'item_price',
+            'price_per_unit',
+        ], 0);
+
+        $savedTaxable = (float) $first($item, [
+            'taxable_amount',
+            'subtotal',
+            'base_amount',
+        ], 0);
+
+        $savedLineTotal = (float) $first($item, [
+            'amount',
+            'line_total',
+            'total',
+            'total_amount',
+        ], 0);
+
+        if ($unitPrice <= 0 && $savedTaxable > 0) {
+            $unitPrice = $savedTaxable / $qty;
+        }
+
+        if ($unitPrice <= 0 && $savedLineTotal > 0) {
+            $gstFactor = 1 + ($taxRate / 100);
+            $unitPrice = ($savedLineTotal / $gstFactor) / $qty;
+        }
+
+        if ($unitPrice <= 0) {
+            $unitPrice = (float) $first($item, ['rate'], 0);
+        }
+
+        // Always rebuild the row using the actual per-unit price.
+        $taxable = round($unitPrice * $qty, 2);
+        $taxAmount = round($taxable * $taxRate / 100, 2);
+        $lineTotal = round($taxable + $taxAmount, 2);
 
         $taxableTotal += $taxable;
         $taxTotal += $taxAmount;
@@ -107,7 +151,7 @@
             'hsn' => $first($item, ['hsn_code', 'hsn', 'sac_code', 'item.hsn_code'], '-'),
             'qty' => $qty,
             'unit' => $first($item, ['unit', 'item.unit'], ''),
-            'rate' => $rate,
+            'rate' => $unitPrice,
             'tax_rate' => $taxRate,
             'taxable' => $taxable,
             'tax' => $taxAmount,
@@ -205,7 +249,7 @@
         <tr>
             <td class="cell" style="width:58%;">
                 @if($enabled('show_logo') && $logo)<img class="logo" src="{{ $logo }}">@endif
-                <div class="seller-name">{{ $businessName }}</div>
+                <div class="seller-name">M/s. {{ $businessName }}</div>
                 @if($enabled('show_business_address') && ($businessAddress || $businessCity || $businessState || $businessPincode))
                     {{ implode(', ', array_filter([$businessAddress, $businessCity, $businessState, $businessPincode])) }}<br>
                 @endif
@@ -321,7 +365,7 @@
                 @endif
             </td>
             <td class="sign-cell">
-                <div class="bold">For - {{ strtoupper($businessName) }}</div>
+                <div class="bold">For - M/s. {{ strtoupper($businessName) }}</div>
                 @if($enabled('show_signature') && $signature)<img class="signature" src="{{ $signature }}">@else<div class="signature-space"></div>@endif
                 <div class="bold">Authorised Signatory</div>
             </td>
