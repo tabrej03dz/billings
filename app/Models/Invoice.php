@@ -141,4 +141,12 @@ class Invoice extends Model
     {
         return $this->belongsTo(Doctor::class);
     }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(
+            \App\Models\BankAccount::class,
+            'bank_account_id'
+        );
+    }
 }

@@ -13,7 +13,10 @@
 
     // $docLabel = $isQuotation ? 'QUOTATION' : 'TAX INVOICE';
 
-    $docType = strtolower((string)($type ?? 'invoice'));
+    $docType = strtolower((string)(
+        $type
+        ?? ($inv->invoice_type ?? 'invoice')
+    ));
 
     $isQuotation = $docType === 'quotation';
     $isProforma  = $docType === 'proforma';
@@ -66,6 +69,177 @@
     $grand_db = (float)($grand_total ?? ($inv->total ?? 0));
 
     $pay = $payRow ?? null;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment + Selected Bank
+    |--------------------------------------------------------------------------
+    */
+    $payment = $paymentDetails ?? [];
+
+    $paymentMethod = trim((string)(
+        $payment['payment_method']
+        ?? $payment['method']
+        ?? ($inv->payment_method ?? '')
+    ));
+
+    $payCash = (float)(
+        $payment['cash_amount']
+        ?? ($pay->cash_amount ?? 0)
+    );
+
+    $payOnline = (float)(
+        $payment['online_amount']
+        ?? ($pay->online_amount ?? 0)
+    );
+
+    $payCard = (float)(
+        $payment['card_amount']
+        ?? ($pay->card_amount ?? 0)
+    );
+
+    $payCheque = (float)(
+        $payment['cheque_amount']
+        ?? ($pay->cheque_amount ?? 0)
+    );
+
+    $payCredit = (float)(
+        $payment['credit_sales_excess_amount']
+        ?? ($pay->credit_sales_excess_amount ?? 0)
+    );
+
+    $payAdvance = (float)(
+        $payment['advance_amount']
+        ?? ($pay->advance_amount ?? 0)
+    );
+
+    $payReceived = (float)(
+        $payment['received_total']
+        ?? ($pay->received_total ?? ($inv->received_amount ?? 0))
+    );
+
+    $onlineMode = trim((string)(
+        $payment['online_mode']
+        ?? ($pay->online_mode ?? '')
+    ));
+
+    $onlineRef = trim((string)(
+        $payment['online_ref']
+        ?? ($pay->online_ref ?? '')
+    ));
+
+    $paymentUpiId = trim((string)(
+        $payment['upi_id']
+        ?? ($pay->upi_id ?? '')
+    ));
+
+    $cardLast4 = trim((string)(
+        $payment['card_last4']
+        ?? ($pay->card_last4 ?? '')
+    ));
+
+    $cardRef = trim((string)(
+        $payment['card_ref']
+        ?? ($pay->card_ref ?? '')
+    ));
+
+    $chequeNo = trim((string)(
+        $payment['cheque_no']
+        ?? ($pay->cheque_no ?? '')
+    ));
+
+    $paymentNotes = trim((string)(
+        $payment['notes']
+        ?? ($pay->notes ?? '')
+    ));
+
+    $enteredBankName = trim((string)(
+        $payment['bank_name']
+        ?? ($pay->bank_name ?? '')
+    ));
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selected Bank - robust fallback
+    |--------------------------------------------------------------------------
+    */
+    $bank = $selectedBank ?? null;
+
+    if (
+        !$bank
+        && !empty($inv->bank_account_id)
+        && !empty($inv->business_id)
+    ) {
+        $bank = \App\Models\BankAccount::query()
+            ->where('business_id', (int) $inv->business_id)
+            ->where('id', (int) $inv->bank_account_id)
+            ->first();
+    }
+
+    $bankName = trim((string)(
+        $bank->bank_name
+        ?? $enteredBankName
+        ?? ''
+    ));
+
+    $bankLabel = trim((string)(
+        $bank->label
+        ?? ''
+    ));
+
+    $bankAccountHolder = trim((string)(
+        $bank->account_holder
+        ?? ''
+    ));
+
+    $bankAccountNumber = trim((string)(
+        $bank->account_no
+        ?? ''
+    ));
+
+    $bankIfsc = trim((string)(
+        $bank->ifsc
+        ?? ''
+    ));
+
+    $bankBranch = trim((string)(
+        $bank->branch
+        ?? ''
+    ));
+
+    $bankUpi = trim((string)(
+        $bank->upi_id
+        ?? ''
+    ));
+
+    $hasPaymentDetails =
+        $paymentMethod !== ''
+        || $payCash > 0
+        || $payOnline > 0
+        || $payCard > 0
+        || $payCheque > 0
+        || $payCredit > 0
+        || $payAdvance > 0
+        || $payReceived > 0
+        || $onlineMode !== ''
+        || $onlineRef !== ''
+        || $paymentUpiId !== ''
+        || $cardLast4 !== ''
+        || $cardRef !== ''
+        || $chequeNo !== ''
+        || $paymentNotes !== '';
+
+    $hasBankDetails =
+        $bank !== null
+        && (
+            $bankName !== ''
+            || $bankLabel !== ''
+            || $bankAccountHolder !== ''
+            || $bankAccountNumber !== ''
+            || $bankIfsc !== ''
+            || $bankBranch !== ''
+            || $bankUpi !== ''
+        );
 
     $receivedTot = (float)($inv->received_amount ?? 0);
     $balanceNow = (float)($balance ?? ($inv->balance ?? max(0, $grand_db - $receivedTot)));
@@ -512,6 +686,35 @@
             font-weight: bold;
             margin-top: 6px;
         }
+
+        .paymentBankWrap {
+            margin-top: 12px;
+            border-top: 2px solid {{ $primaryColor }};
+            border-bottom: 2px solid {{ $primaryColor }};
+        }
+
+        .paymentBankTitle {
+            background: {{ $secondaryColor }};
+            font-weight: bold;
+            font-size: 12px;
+            padding: 6px 8px;
+        }
+
+        .paymentBankTable td {
+            width: 50%;
+            vertical-align: top;
+            padding: 7px 8px;
+            font-size: 11.5px;
+            line-height: 1.45;
+        }
+
+        .paymentBankTable td:first-child {
+            border-right: 1px solid #cccccc;
+        }
+
+        .paymentLabel {
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -792,6 +995,144 @@
                     {{ inr_words($finalTotal) }}
                 </div>
             </div>
+
+            @if($hasPaymentDetails || $hasBankDetails)
+                <div class="paymentBankWrap">
+                    <div class="paymentBankTitle">
+                        PAYMENT & BANK DETAILS
+                    </div>
+
+                    <table class="paymentBankTable">
+                        <tr>
+                            <td>
+                                <div class="bold" style="margin-bottom:4px;">Payment Details</div>
+
+                                @if($paymentMethod !== '')
+                                    <span class="paymentLabel">Payment Method:</span>
+                                    {{ strtoupper($paymentMethod) }}<br>
+                                @endif
+
+                                @if($payCash > 0)
+                                    <span class="paymentLabel">Cash:</span>
+                                    &#8377; {{ $fmt2($payCash) }}<br>
+                                @endif
+
+                                @if($payOnline > 0)
+                                    <span class="paymentLabel">Online / UPI:</span>
+                                    &#8377; {{ $fmt2($payOnline) }}<br>
+                                @endif
+
+                                @if($onlineMode !== '')
+                                    <span class="paymentLabel">Online Mode:</span>
+                                    {{ strtoupper($onlineMode) }}<br>
+                                @endif
+
+                                @if($onlineRef !== '')
+                                    <span class="paymentLabel">Online Ref:</span>
+                                    {{ $onlineRef }}<br>
+                                @endif
+
+                                @if($paymentUpiId !== '')
+                                    <span class="paymentLabel">UPI ID:</span>
+                                    {{ $paymentUpiId }}<br>
+                                @endif
+
+                                @if($payCard > 0)
+                                    <span class="paymentLabel">Card:</span>
+                                    &#8377; {{ $fmt2($payCard) }}<br>
+                                @endif
+
+                                @if($cardLast4 !== '')
+                                    <span class="paymentLabel">Card Last 4:</span>
+                                    {{ $cardLast4 }}<br>
+                                @endif
+
+                                @if($cardRef !== '')
+                                    <span class="paymentLabel">Card Ref:</span>
+                                    {{ $cardRef }}<br>
+                                @endif
+
+                                @if($payCheque > 0)
+                                    <span class="paymentLabel">Cheque:</span>
+                                    &#8377; {{ $fmt2($payCheque) }}<br>
+                                @endif
+
+                                @if($chequeNo !== '')
+                                    <span class="paymentLabel">Cheque No:</span>
+                                    {{ $chequeNo }}<br>
+                                @endif
+
+                                @if($payAdvance > 0)
+                                    <span class="paymentLabel">Advance:</span>
+                                    &#8377; {{ $fmt2($payAdvance) }}<br>
+                                @endif
+
+                                @if($payCredit > 0)
+                                    <span class="paymentLabel">Credit / Excess:</span>
+                                    &#8377; {{ $fmt2($payCredit) }}<br>
+                                @endif
+
+                                @if($payReceived > 0)
+                                    <span class="paymentLabel">Total Received:</span>
+                                    &#8377; {{ $fmt2($payReceived) }}<br>
+                                @endif
+
+                                @if($paymentNotes !== '')
+                                    <span class="paymentLabel">Payment Note:</span>
+                                    {{ $paymentNotes }}
+                                @endif
+                            </td>
+
+                            <td>
+                                <div class="bold" style="margin-bottom:4px;">Selected Bank Account</div>
+
+                                @if($hasBankDetails)
+                                    @if($bankLabel !== '')
+                                        <span class="paymentLabel">Account Label:</span>
+                                        {{ $bankLabel }}<br>
+                                    @endif
+
+                                    @if($bankName !== '')
+                                        <span class="paymentLabel">Bank:</span>
+                                        {{ $bankName }}<br>
+                                    @endif
+
+                                    @if($bankAccountHolder !== '')
+                                        <span class="paymentLabel">Account Holder:</span>
+                                        {{ $bankAccountHolder }}<br>
+                                    @endif
+
+                                    @if($bankAccountNumber !== '')
+                                        <span class="paymentLabel">Account No:</span>
+                                        {{ $bankAccountNumber }}<br>
+                                    @endif
+
+                                    @if($bankIfsc !== '')
+                                        <span class="paymentLabel">IFSC:</span>
+                                        {{ $bankIfsc }}<br>
+                                    @endif
+
+                                    @if($bankBranch !== '')
+                                        <span class="paymentLabel">Branch:</span>
+                                        {{ $bankBranch }}<br>
+                                    @endif
+
+                                    @if($bankUpi !== '')
+                                        <span class="paymentLabel">Bank UPI ID:</span>
+                                        {{ $bankUpi }}<br>
+                                    @endif
+                                @else
+                                    @if(!empty($inv->bank_account_id))
+                                        Bank account details not found.
+                                    @else
+                                        No bank account selected.
+                                    @endif
+                                @endif
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            @endif
 
             @php
                 $invoiceSignature = $inv->signature ?? null;

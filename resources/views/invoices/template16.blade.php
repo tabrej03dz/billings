@@ -16,9 +16,9 @@
         $docLabel = 'JEWELLERY INVOICE';
     } else {
         $docLabel = match ($docType) {
-            'quotation' => 'JEWELLERY QUOTATION',
-            'proforma'  => 'JEWELLERY PROFORMA INVOICE',
-            default     => 'JEWELLERY TAX INVOICE',
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
         };
     }
 
@@ -55,6 +55,92 @@
     $cMobile = $c->mobile ?? $c->phone ?? '';
     $cGstin  = $c->gstin ?? $c->gst_number ?? '';
     $cPan    = $c->pan ?? $c->pan_number ?? '';
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment + selected bank data
+    |--------------------------------------------------------------------------
+    */
+    $pay = $paymentDetails ?? [];
+
+    $payCash = (float)($pay['cash_amount'] ?? ($payRow->cash_amount ?? 0));
+    $payOnline = (float)($pay['online_amount'] ?? ($payRow->online_amount ?? 0));
+    $payCard = (float)($pay['card_amount'] ?? ($payRow->card_amount ?? 0));
+    $payCheque = (float)($pay['cheque_amount'] ?? ($payRow->cheque_amount ?? 0));
+    $payCredit = (float)($pay['credit_sales_excess_amount'] ?? ($payRow->credit_sales_excess_amount ?? 0));
+    $payAdvance = (float)($pay['advance_amount'] ?? ($payRow->advance_amount ?? 0));
+    $payReceivedTotal = (float)($pay['received_total'] ?? ($payRow->received_total ?? $received));
+
+    $onlineMode = trim((string)($pay['online_mode'] ?? ($payRow->online_mode ?? '')));
+    $onlineRef = trim((string)($pay['online_ref'] ?? ($payRow->online_ref ?? '')));
+    $upiId = trim((string)($pay['upi_id'] ?? ($payRow->upi_id ?? '')));
+    $cardLast4 = trim((string)($pay['card_last4'] ?? ($payRow->card_last4 ?? '')));
+    $cardRef = trim((string)($pay['card_ref'] ?? ($payRow->card_ref ?? '')));
+    $chequeNo = trim((string)($pay['cheque_no'] ?? ($payRow->cheque_no ?? '')));
+    $enteredBankName = trim((string)($pay['bank_name_entered'] ?? ($payRow->bank_name ?? '')));
+    $paymentNotes = trim((string)($pay['notes'] ?? ($payRow->notes ?? '')));
+    $paymentMethod = trim((string)($pay['method'] ?? ($inv->payment_method ?? '')));
+
+    $bank = $selectedBank ?? null;
+
+    $bankName = trim((string)(
+        $bank->bank_name
+        ?? $enteredBankName
+        ?? ''
+    ));
+
+    $bankAccountHolder = trim((string)(
+        $bank->account_holder
+        ?? ''
+    ));
+
+    $bankAccountNumber = trim((string)(
+        $bank->account_no
+        ?? ''
+    ));
+
+    $bankIfsc = trim((string)(
+        $bank->ifsc
+        ?? ''
+    ));
+
+    $bankBranch = trim((string)(
+        $bank->branch
+        ?? ''
+    ));
+
+    $bankUpi = trim((string)(
+        $bank->upi_id
+        ?? ''
+    ));
+
+    $hasPaymentDetails =
+        $paymentMethod !== ''
+        || $payCash > 0
+        || $payOnline > 0
+        || $payCard > 0
+        || $payCheque > 0
+        || $payCredit > 0
+        || $payAdvance > 0
+        || $payReceivedTotal > 0
+        || $onlineMode !== ''
+        || $onlineRef !== ''
+        || $upiId !== ''
+        || $cardLast4 !== ''
+        || $cardRef !== ''
+        || $chequeNo !== ''
+        || $paymentNotes !== '';
+
+    $hasBankDetails =
+        $bank !== null
+        && (
+            $bankName !== ''
+            || $bankAccountHolder !== ''
+            || $bankAccountNumber !== ''
+            || $bankIfsc !== ''
+            || $bankBranch !== ''
+            || $bankUpi !== ''
+        );
 
     if (!function_exists('inr_words_jewellery')) {
         function inr_words_jewellery($amount)
@@ -421,6 +507,31 @@
             line-height: 18px;
         }
 
+        .payment-section {
+            margin-top: 10px;
+        }
+
+        .payment-section td {
+            border: 1px solid #444;
+            padding: 7px;
+            vertical-align: top;
+            font-size: 10px;
+            line-height: 16px;
+        }
+
+        .section-heading {
+            font-size: 11px;
+            font-weight: bold;
+            background: #f2f2f2;
+            padding: 5px 7px;
+            border: 1px solid #444;
+            border-bottom: 0;
+        }
+
+        .payment-label {
+            font-weight: bold;
+        }
+
         .terms-box {
             margin-top: 10px;
             border: 1px solid #444;
@@ -514,9 +625,9 @@
                 <strong>Invoice No:</strong><br>
                 {{ $invoiceNo }}<br><br>
 
-                @if(!empty($inv->payment_method))
+                @if($paymentMethod !== '')
                     <strong>Payment Method:</strong><br>
-                    {{ $inv->payment_method }}
+                    {{ strtoupper($paymentMethod) }}
                 @endif
             </td>
 
@@ -875,6 +986,131 @@
             <strong>Amount in Words:</strong>
             {{ $inv->amount_in_words ?: inr_words_jewellery($grandTotal) }}
         </div>
+    @endif
+
+    @if($docType === 'tax' && ($hasPaymentDetails || $hasBankDetails))
+        <div class="section-heading">Payment & Bank Details</div>
+
+        <table class="payment-section" style="margin-top:0;">
+            <tr>
+                <td style="width:50%;">
+                    <strong>Payment Details</strong><br>
+
+                    @if($paymentMethod !== '')
+                        <span class="payment-label">Payment Method:</span>
+                        {{ strtoupper($paymentMethod) }}<br>
+                    @endif
+
+                    @if($payCash > 0)
+                        <span class="payment-label">Cash:</span>
+                        ₹ {{ $fmt2($payCash) }}<br>
+                    @endif
+
+                    @if($payOnline > 0)
+                        <span class="payment-label">Online / UPI:</span>
+                        ₹ {{ $fmt2($payOnline) }}<br>
+                    @endif
+
+                    @if($onlineMode !== '')
+                        <span class="payment-label">Online Mode:</span>
+                        {{ strtoupper($onlineMode) }}<br>
+                    @endif
+
+                    @if($onlineRef !== '')
+                        <span class="payment-label">Online Ref:</span>
+                        {{ $onlineRef }}<br>
+                    @endif
+
+                    @if($upiId !== '')
+                        <span class="payment-label">UPI ID:</span>
+                        {{ $upiId }}<br>
+                    @endif
+
+                    @if($payCard > 0)
+                        <span class="payment-label">Card:</span>
+                        ₹ {{ $fmt2($payCard) }}<br>
+                    @endif
+
+                    @if($cardLast4 !== '')
+                        <span class="payment-label">Card Last 4:</span>
+                        {{ $cardLast4 }}<br>
+                    @endif
+
+                    @if($cardRef !== '')
+                        <span class="payment-label">Card Ref:</span>
+                        {{ $cardRef }}<br>
+                    @endif
+
+                    @if($payCheque > 0)
+                        <span class="payment-label">Cheque:</span>
+                        ₹ {{ $fmt2($payCheque) }}<br>
+                    @endif
+
+                    @if($chequeNo !== '')
+                        <span class="payment-label">Cheque No:</span>
+                        {{ $chequeNo }}<br>
+                    @endif
+
+                    @if($payAdvance > 0)
+                        <span class="payment-label">Advance:</span>
+                        ₹ {{ $fmt2($payAdvance) }}<br>
+                    @endif
+
+                    @if($payCredit > 0)
+                        <span class="payment-label">Credit / Excess:</span>
+                        ₹ {{ $fmt2($payCredit) }}<br>
+                    @endif
+
+                    @if($payReceivedTotal > 0)
+                        <span class="payment-label">Total Received:</span>
+                        ₹ {{ $fmt2($payReceivedTotal) }}<br>
+                    @endif
+
+                    @if($paymentNotes !== '')
+                        <span class="payment-label">Payment Note:</span>
+                        {{ $paymentNotes }}
+                    @endif
+                </td>
+
+                <td style="width:50%;">
+                    <strong>Bank Account</strong><br>
+
+                    @if($bankName !== '')
+                        <span class="payment-label">Bank:</span>
+                        {{ $bankName }}<br>
+                    @endif
+
+                    @if($bankAccountHolder !== '')
+                        <span class="payment-label">Account Holder:</span>
+                        {{ $bankAccountHolder }}<br>
+                    @endif
+
+                    @if($bankAccountNumber !== '')
+                        <span class="payment-label">Account No:</span>
+                        {{ $bankAccountNumber }}<br>
+                    @endif
+
+                    @if($bankIfsc !== '')
+                        <span class="payment-label">IFSC:</span>
+                        {{ $bankIfsc }}<br>
+                    @endif
+
+                    @if($bankBranch !== '')
+                        <span class="payment-label">Branch:</span>
+                        {{ $bankBranch }}<br>
+                    @endif
+
+                    @if($bankUpi !== '')
+                        <span class="payment-label">Bank UPI ID:</span>
+                        {{ $bankUpi }}<br>
+                    @endif
+
+                    @if(!$hasBankDetails)
+                        No bank account selected.
+                    @endif
+                </td>
+            </tr>
+        </table>
     @endif
 
     @if(!empty($inv->notes))
