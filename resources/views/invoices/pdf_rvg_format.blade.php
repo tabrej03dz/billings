@@ -696,20 +696,18 @@
         .paymentBankTitle {
             background: {{ $secondaryColor }};
             font-weight: bold;
-            font-size: 12px;
-            padding: 6px 8px;
+            font-size: 11.5px;
+            padding: 6px 7px;
         }
 
-        .paymentBankTable td {
-            width: 50%;
-            vertical-align: top;
-            padding: 7px 8px;
-            font-size: 11.5px;
+        .paymentBankBlock {
+            padding: 7px 7px;
+            font-size: 10.8px;
             line-height: 1.45;
         }
 
-        .paymentBankTable td:first-child {
-            border-right: 1px solid #cccccc;
+        .paymentBankBlock + .paymentBankBlock {
+            border-top: 1px solid #cccccc;
         }
 
         .paymentLabel {
@@ -943,6 +941,142 @@
                     </div>
                 </div>
             @endif
+
+            @if($hasPaymentDetails || $hasBankDetails)
+                <div class="paymentBankWrap">
+                    <div class="paymentBankTitle">
+                        PAYMENT & BANK DETAILS
+                    </div>
+
+                    @if($hasPaymentDetails)
+                        <div class="paymentBankBlock">
+                            <div class="bold" style="margin-bottom:4px;">Payment Details</div>
+
+                            @if($paymentMethod !== '')
+                                <span class="paymentLabel">Payment Method:</span>
+                                {{ strtoupper($paymentMethod) }}<br>
+                            @endif
+
+                            @if($payCash > 0)
+                                <span class="paymentLabel">Cash:</span>
+                                &#8377; {{ $fmt2($payCash) }}<br>
+                            @endif
+
+                            @if($payOnline > 0)
+                                <span class="paymentLabel">Online / UPI:</span>
+                                &#8377; {{ $fmt2($payOnline) }}<br>
+                            @endif
+
+                            @if($onlineMode !== '')
+                                <span class="paymentLabel">Online Mode:</span>
+                                {{ strtoupper($onlineMode) }}<br>
+                            @endif
+
+                            @if($onlineRef !== '')
+                                <span class="paymentLabel">Online Ref:</span>
+                                {{ $onlineRef }}<br>
+                            @endif
+
+                            @if($paymentUpiId !== '')
+                                <span class="paymentLabel">UPI ID:</span>
+                                {{ $paymentUpiId }}<br>
+                            @endif
+
+                            @if($payCard > 0)
+                                <span class="paymentLabel">Card:</span>
+                                &#8377; {{ $fmt2($payCard) }}<br>
+                            @endif
+
+                            @if($cardLast4 !== '')
+                                <span class="paymentLabel">Card Last 4:</span>
+                                {{ $cardLast4 }}<br>
+                            @endif
+
+                            @if($cardRef !== '')
+                                <span class="paymentLabel">Card Ref:</span>
+                                {{ $cardRef }}<br>
+                            @endif
+
+                            @if($payCheque > 0)
+                                <span class="paymentLabel">Cheque:</span>
+                                &#8377; {{ $fmt2($payCheque) }}<br>
+                            @endif
+
+                            @if($chequeNo !== '')
+                                <span class="paymentLabel">Cheque No:</span>
+                                {{ $chequeNo }}<br>
+                            @endif
+
+                            @if($payAdvance > 0)
+                                <span class="paymentLabel">Advance:</span>
+                                &#8377; {{ $fmt2($payAdvance) }}<br>
+                            @endif
+
+                            @if($payCredit > 0)
+                                <span class="paymentLabel">Credit / Excess:</span>
+                                &#8377; {{ $fmt2($payCredit) }}<br>
+                            @endif
+
+                            @if($payReceived > 0)
+                                <span class="paymentLabel">Total Received:</span>
+                                &#8377; {{ $fmt2($payReceived) }}<br>
+                            @endif
+
+                            @if($paymentNotes !== '')
+                                <span class="paymentLabel">Payment Note:</span>
+                                {{ $paymentNotes }}
+                            @endif
+                        </div>
+                    @endif
+
+                    <div class="paymentBankBlock">
+                        <div class="bold" style="margin-bottom:4px;">Selected Bank Account</div>
+
+                        @if($hasBankDetails)
+                            @if($bankLabel !== '')
+                                <span class="paymentLabel">Account Label:</span>
+                                {{ $bankLabel }}<br>
+                            @endif
+
+                            @if($bankName !== '')
+                                <span class="paymentLabel">Bank:</span>
+                                {{ $bankName }}<br>
+                            @endif
+
+                            @if($bankAccountHolder !== '')
+                                <span class="paymentLabel">Account Holder:</span>
+                                {{ $bankAccountHolder }}<br>
+                            @endif
+
+                            @if($bankAccountNumber !== '')
+                                <span class="paymentLabel">Account No:</span>
+                                {{ $bankAccountNumber }}<br>
+                            @endif
+
+                            @if($bankIfsc !== '')
+                                <span class="paymentLabel">IFSC:</span>
+                                {{ $bankIfsc }}<br>
+                            @endif
+
+                            @if($bankBranch !== '')
+                                <span class="paymentLabel">Branch:</span>
+                                {{ $bankBranch }}<br>
+                            @endif
+
+                            @if($bankUpi !== '')
+                                <span class="paymentLabel">Bank UPI ID:</span>
+                                {{ $bankUpi }}<br>
+                            @endif
+                        @else
+                            @if(!empty($inv->bank_account_id))
+                                Bank account details not found.
+                            @else
+                                No bank account selected.
+                            @endif
+                        @endif
+                    </div>
+                </div>
+            @endif
         </div>
 
         {{-- RIGHT --}}
@@ -996,143 +1130,6 @@
                 </div>
             </div>
 
-            @if($hasPaymentDetails || $hasBankDetails)
-                <div class="paymentBankWrap">
-                    <div class="paymentBankTitle">
-                        PAYMENT & BANK DETAILS
-                    </div>
-
-                    <table class="paymentBankTable">
-                        <tr>
-                            <td>
-                                <div class="bold" style="margin-bottom:4px;">Payment Details</div>
-
-                                @if($paymentMethod !== '')
-                                    <span class="paymentLabel">Payment Method:</span>
-                                    {{ strtoupper($paymentMethod) }}<br>
-                                @endif
-
-                                @if($payCash > 0)
-                                    <span class="paymentLabel">Cash:</span>
-                                    &#8377; {{ $fmt2($payCash) }}<br>
-                                @endif
-
-                                @if($payOnline > 0)
-                                    <span class="paymentLabel">Online / UPI:</span>
-                                    &#8377; {{ $fmt2($payOnline) }}<br>
-                                @endif
-
-                                @if($onlineMode !== '')
-                                    <span class="paymentLabel">Online Mode:</span>
-                                    {{ strtoupper($onlineMode) }}<br>
-                                @endif
-
-                                @if($onlineRef !== '')
-                                    <span class="paymentLabel">Online Ref:</span>
-                                    {{ $onlineRef }}<br>
-                                @endif
-
-                                @if($paymentUpiId !== '')
-                                    <span class="paymentLabel">UPI ID:</span>
-                                    {{ $paymentUpiId }}<br>
-                                @endif
-
-                                @if($payCard > 0)
-                                    <span class="paymentLabel">Card:</span>
-                                    &#8377; {{ $fmt2($payCard) }}<br>
-                                @endif
-
-                                @if($cardLast4 !== '')
-                                    <span class="paymentLabel">Card Last 4:</span>
-                                    {{ $cardLast4 }}<br>
-                                @endif
-
-                                @if($cardRef !== '')
-                                    <span class="paymentLabel">Card Ref:</span>
-                                    {{ $cardRef }}<br>
-                                @endif
-
-                                @if($payCheque > 0)
-                                    <span class="paymentLabel">Cheque:</span>
-                                    &#8377; {{ $fmt2($payCheque) }}<br>
-                                @endif
-
-                                @if($chequeNo !== '')
-                                    <span class="paymentLabel">Cheque No:</span>
-                                    {{ $chequeNo }}<br>
-                                @endif
-
-                                @if($payAdvance > 0)
-                                    <span class="paymentLabel">Advance:</span>
-                                    &#8377; {{ $fmt2($payAdvance) }}<br>
-                                @endif
-
-                                @if($payCredit > 0)
-                                    <span class="paymentLabel">Credit / Excess:</span>
-                                    &#8377; {{ $fmt2($payCredit) }}<br>
-                                @endif
-
-                                @if($payReceived > 0)
-                                    <span class="paymentLabel">Total Received:</span>
-                                    &#8377; {{ $fmt2($payReceived) }}<br>
-                                @endif
-
-                                @if($paymentNotes !== '')
-                                    <span class="paymentLabel">Payment Note:</span>
-                                    {{ $paymentNotes }}
-                                @endif
-                            </td>
-
-                            <td>
-                                <div class="bold" style="margin-bottom:4px;">Selected Bank Account</div>
-
-                                @if($hasBankDetails)
-                                    @if($bankLabel !== '')
-                                        <span class="paymentLabel">Account Label:</span>
-                                        {{ $bankLabel }}<br>
-                                    @endif
-
-                                    @if($bankName !== '')
-                                        <span class="paymentLabel">Bank:</span>
-                                        {{ $bankName }}<br>
-                                    @endif
-
-                                    @if($bankAccountHolder !== '')
-                                        <span class="paymentLabel">Account Holder:</span>
-                                        {{ $bankAccountHolder }}<br>
-                                    @endif
-
-                                    @if($bankAccountNumber !== '')
-                                        <span class="paymentLabel">Account No:</span>
-                                        {{ $bankAccountNumber }}<br>
-                                    @endif
-
-                                    @if($bankIfsc !== '')
-                                        <span class="paymentLabel">IFSC:</span>
-                                        {{ $bankIfsc }}<br>
-                                    @endif
-
-                                    @if($bankBranch !== '')
-                                        <span class="paymentLabel">Branch:</span>
-                                        {{ $bankBranch }}<br>
-                                    @endif
-
-                                    @if($bankUpi !== '')
-                                        <span class="paymentLabel">Bank UPI ID:</span>
-                                        {{ $bankUpi }}<br>
-                                    @endif
-                                @else
-                                    @if(!empty($inv->bank_account_id))
-                                        Bank account details not found.
-                                    @else
-                                        No bank account selected.
-                                    @endif
-                                @endif
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            @endif
 
             @php
                 $invoiceSignature = $inv->signature ?? null;
