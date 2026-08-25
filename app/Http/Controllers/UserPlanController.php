@@ -57,11 +57,6 @@ class UserPlanController extends Controller
 
 public function index(Request $request)
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Request Filters
-    |--------------------------------------------------------------------------
-    */
     $q = trim((string) $request->get('q', ''));
     $businessId = $request->get('business_id');
     $tab = $request->get('tab', 'regular');
@@ -69,6 +64,34 @@ public function index(Request $request)
     if (!in_array($tab, ['regular', 'trial'], true)) {
         $tab = 'regular';
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trial Condition
+    |--------------------------------------------------------------------------
+    | Duration 31 दिन या उससे कम
+    */
+    $applyTrialFilter = function ($query) {
+        $query->whereNotNull('start_date')
+            ->whereNotNull('expiry_date')
+            ->whereRaw(
+                'DATEDIFF(DATE(expiry_date), DATE(start_date)) <= 31'
+            );
+    };
+
+    /*
+    |--------------------------------------------------------------------------
+    | Regular Condition
+    |--------------------------------------------------------------------------
+    | Duration 31 दिन से ज्यादा
+    */
+    $applyRegularFilter = function ($query) {
+        $query->whereNotNull('start_date')
+            ->whereNotNull('expiry_date')
+            ->whereRaw(
+                'DATEDIFF(DATE(expiry_date), DATE(start_date)) > 31'
+            );
+    };
 
     /*
     |--------------------------------------------------------------------------
@@ -111,56 +134,23 @@ public function index(Request $request)
     |--------------------------------------------------------------------------
     | Trial Count
     |--------------------------------------------------------------------------
-    |
-    | Trial माना जाएगा:
-    | 1. status की value trial हो
-    | OR
-    | 2. start_date और expiry_date का अंतर 31 दिनों से कम हो
-    |
     */
     $trialCount = (clone $baseQuery)
-        ->where(function ($query) {
-            $query->where('status', 'trial')
-                ->orWhere(function ($dateQuery) {
-                    $dateQuery->whereNotNull('start_date')
-                        ->whereNotNull('expiry_date')
-                        ->whereRaw(
-                            'DATEDIFF(DATE(expiry_date), DATE(start_date)) < 31'
-                        );
-                });
-        })
+        ->where($applyTrialFilter)
         ->count();
 
     /*
     |--------------------------------------------------------------------------
     | Regular Count
     |--------------------------------------------------------------------------
-    |
-    | Regular माना जाएगा:
-    | 1. status trial नहीं हो
-    | AND
-    | 2. duration 31 दिन या उससे अधिक हो
-    |
-    | जिन records में dates नहीं हैं, उन्हें भी Regular में रखा जाएगा।
-    |
     */
     $regularCount = (clone $baseQuery)
-        ->where(function ($query) {
-            $query->whereNull('status')
-                ->orWhere('status', '!=', 'trial');
-        })
-        ->where(function ($query) {
-            $query->whereNull('start_date')
-                ->orWhereNull('expiry_date')
-                ->orWhereRaw(
-                    'DATEDIFF(DATE(expiry_date), DATE(start_date)) >= 31'
-                );
-        })
+        ->where($applyRegularFilter)
         ->count();
 
     /*
     |--------------------------------------------------------------------------
-    | Current Tab Records
+    | Current Tab Query
     |--------------------------------------------------------------------------
     */
     $query = (clone $baseQuery)->with([
@@ -170,36 +160,9 @@ public function index(Request $request)
     ]);
 
     if ($tab === 'trial') {
-        /*
-        | Trial Plans:
-        | status trial या duration 31 दिनों से कम
-        */
-        $query->where(function ($query) {
-            $query->where('status', 'trial')
-                ->orWhere(function ($dateQuery) {
-                    $dateQuery->whereNotNull('start_date')
-                        ->whereNotNull('expiry_date')
-                        ->whereRaw(
-                            'DATEDIFF(DATE(expiry_date), DATE(start_date)) < 31'
-                        );
-                });
-        });
+        $query->where($applyTrialFilter);
     } else {
-        /*
-        | Regular Plans:
-        | status trial नहीं और duration 31 दिन या अधिक
-        */
-        $query->where(function ($query) {
-            $query->whereNull('status')
-                ->orWhere('status', '!=', 'trial');
-        })
-        ->where(function ($query) {
-            $query->whereNull('start_date')
-                ->orWhereNull('expiry_date')
-                ->orWhereRaw(
-                    'DATEDIFF(DATE(expiry_date), DATE(start_date)) >= 31'
-                );
-        });
+        $query->where($applyRegularFilter);
     }
 
     /*
@@ -221,11 +184,6 @@ public function index(Request $request)
         ->orderBy('name')
         ->get();
 
-    /*
-    |--------------------------------------------------------------------------
-    | Return View
-    |--------------------------------------------------------------------------
-    */
     return view('user-plans.index', compact(
         'userPlans',
         'q',

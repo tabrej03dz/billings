@@ -350,15 +350,13 @@
                     @forelse ($userPlans as $userPlan)
 
                         @php
-
                             $startDate = $userPlan->start_date
-                                ? \Carbon\Carbon::parse($userPlan->start_date)
+                                ? \Carbon\Carbon::parse($userPlan->start_date)->startOfDay()
                                 : null;
 
                             $expiryDate = $userPlan->expiry_date
-                                ? \Carbon\Carbon::parse($userPlan->expiry_date)
+                                ? \Carbon\Carbon::parse($userPlan->expiry_date)->startOfDay()
                                 : null;
-
 
                             $durationDays = null;
 
@@ -366,9 +364,9 @@
                                 $durationDays = $startDate->diffInDays($expiryDate);
                             }
 
-
-                            $isTrial = $durationDays !== null && $durationDays < 30;
-
+                            // 31 दिन या कम = Trial
+                            // 31 दिन से ज्यादा = Regular
+                            $isTrial = $durationDays !== null && $durationDays <= 31;
                         @endphp
 
 
