@@ -61,7 +61,7 @@ class BillTemplateController extends Controller
     {
         $validated = $request->validate([
             'business_type_id' => [
-                'required',
+                'nullable',
                 'exists:business_types,id',
             ],
 

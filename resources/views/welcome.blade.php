@@ -479,34 +479,37 @@
                             {{-- BUTTONS --}}
                             <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
 
+
                                 {{-- FREE TRIAL --}}
-                                <button
-                                    type="button"
-                                    data-plan-id="{{ $plan->id }}"
-                                    data-trial="1"
-                                    class="open-registration-modal block w-full text-center rounded-full py-4 px-4 font-black border
+                                <a
+                                    href="{{ url('/ad') }}?open_register=1&plan_id={{ $plan->id }}&trial=1"
+
+                                    class="block text-center rounded-full py-4 font-black border
+
                                     {{ $isPopular
-                                        ? 'bg-white/10 text-white border-white/40 hover:bg-white/20'
-                                        : 'bg-white text-mvBlue border-mvBlue hover:bg-blue-50'
-                                    }}"
-                                >
+                                        ? 'bg-white/10 text-white border-white/40'
+                                        : 'bg-white text-mvBlue border-mvBlue'
+                                    }}">
+
                                     Start Free Trial
-                                </button>
+
+                                </a>
 
 
-                                {{-- PAID PLAN --}}
-                                <button
-                                    type="button"
-                                    data-plan-id="{{ $plan->id }}"
-                                    data-trial="0"
-                                    class="open-registration-modal block w-full text-center rounded-full py-4 px-4 font-black
+                                {{-- START PLAN --}}
+                                <a
+                                    href="{{ url('/ad') }}?open_register=1&plan_id={{ $plan->id }}&trial=0"
+
+                                    class="block text-center rounded-full py-4 font-black
+
                                     {{ $isPopular
-                                        ? 'bg-white text-mvBlue hover:bg-blue-50'
-                                        : 'bg-mvDark text-white hover:opacity-95'
-                                    }}"
-                                >
+                                        ? 'bg-white text-mvBlue'
+                                        : 'bg-mvDark text-white'
+                                    }}">
+
                                     Start Plan
-                                </button>
+
+                                </a>
 
                             </div>
 

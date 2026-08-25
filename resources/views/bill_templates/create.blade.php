@@ -47,13 +47,12 @@
                            class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
 
                         Business Type
-                        <span class="text-red-500">*</span>
+
 
                     </label>
 
                     <select name="business_type_id"
                             id="business_type_id"
-                            required
                             class="w-full border rounded-lg px-4 py-2.5 text-sm
                                    dark:bg-neutral-800
                                    dark:border-neutral-700

@@ -7756,6 +7756,7 @@ protected function simplePdfBuild(Invoice $invoice): string
 
 
 
+
     protected function normalizePdfPath(?string $value): ?string
     {
         if (!$value) {
