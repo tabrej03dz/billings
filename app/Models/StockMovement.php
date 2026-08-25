@@ -19,6 +19,14 @@ class StockMovement extends Model
         'note',
     ];
 
+
+    protected $casts = [
+        'qty_change'   => 'decimal:3',
+        'gross_weight' => 'decimal:3',
+        'metal_weight' => 'decimal:3',
+        'stone_weight' => 'decimal:3',
+    ];
+
     public function item()
     {
         return $this->belongsTo(Item::class);

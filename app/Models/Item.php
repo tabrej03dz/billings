@@ -17,6 +17,7 @@ class Item extends Model
         'cost_price' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'is_active' => 'boolean',
+        'stock_qty' => 'decimal:3',
     ];
 
     public function category()
@@ -44,13 +45,33 @@ class Item extends Model
 //    }
 
 
+    // public function refreshStockQty(): void
+    // {
+    //     $total = \App\Models\StockMovement::where('item_id', $this->id)
+    //         ->sum('qty_change');    // purchase +, sale -, adjustment ±
+
+    //     $this->stock_qty = (int)$total;
+    //     $this->save();
+    // }
+
+
     public function refreshStockQty(): void
     {
-        $total = \App\Models\StockMovement::where('item_id', $this->id)
-            ->sum('qty_change');    // purchase +, sale -, adjustment ±
+        $stock = \App\Models\StockMovement::query()
+            ->where('business_id', $this->business_id)
+            ->where('item_id', $this->id)
+            ->sum('qty_change');
 
-        $this->stock_qty = (int)$total;
-        $this->save();
+        $this->forceFill([
+            'stock_qty' => number_format(
+                round((float) $stock, 3),
+                3,
+                '.',
+                ''
+            ),
+        ])->saveQuietly();
+
+        $this->refresh();
     }
 
     /**

@@ -252,7 +252,6 @@ Route::post('/register/verify-otp', [RegisterController::class, 'verifyPhoneOtp'
     ->name('register.verifyOtp');
 Route::post('/register/store', [RegisterController::class, 'store'])->name('register.store1');
 
-
     Route::get('/plan/payment/{plan}', [ControllersPlanPaymentController::class, 'show'])
         ->name('plan.payment');
 
