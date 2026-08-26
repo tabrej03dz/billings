@@ -1291,134 +1291,134 @@ class HomeController extends Controller
 // }
 
 
-public function verifyRegisterOtp(Request $request)
-{
-    $validated = $request->validate([
-        'phone' => ['required', 'digits:10'],
-        'otp'   => ['required', 'digits:6'],
-    ]);
+// public function verifyRegisterOtp(Request $request)
+// {
+//     $validated = $request->validate([
+//         'phone' => ['required', 'digits:10'],
+//         'otp'   => ['required', 'digits:6'],
+//     ]);
 
-    $isTestingEnvironment = app()->environment(['local', 'testing']);
+//     $isTestingEnvironment = app()->environment(['local', 'testing']);
 
-    /*
-    |--------------------------------------------------------------------------
-    | OTP Record Find
-    |--------------------------------------------------------------------------
-    | Testing में केवल phone से record मिलेगा और कोई भी 6-digit OTP चलेगा।
-    | Production में phone और OTP दोनों match होना जरूरी है।
-    */
-    $otpQuery = RegisterOtp::where('phone', $validated['phone']);
+//     /*
+//     |--------------------------------------------------------------------------
+//     | OTP Record Find
+//     |--------------------------------------------------------------------------
+//     | Testing में केवल phone से record मिलेगा और कोई भी 6-digit OTP चलेगा।
+//     | Production में phone और OTP दोनों match होना जरूरी है।
+//     */
+//     $otpQuery = RegisterOtp::where('phone', $validated['phone']);
 
-    if (!$isTestingEnvironment) {
-        $otpQuery->where('otp', $validated['otp']);
-    }
+//     if (!$isTestingEnvironment) {
+//         $otpQuery->where('otp', $validated['otp']);
+//     }
 
-    $otpRecord = $otpQuery->latest('id')->first();
+//     $otpRecord = $otpQuery->latest('id')->first();
 
-    if (!$otpRecord) {
-        return response()->json([
-            'status'  => false,
-            'message' => $isTestingEnvironment
-                ? 'Registration request not found. Please register first.'
-                : 'Invalid OTP.',
-        ], 422);
-    }
+//     if (!$otpRecord) {
+//         return response()->json([
+//             'status'  => false,
+//             'message' => $isTestingEnvironment
+//                 ? 'Registration request not found. Please register first.'
+//                 : 'Invalid OTP.',
+//         ], 422);
+//     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Production में Expiry Check
-    |--------------------------------------------------------------------------
-    | Testing environment में OTP expiry भी skip रहेगी।
-    */
-    if (
-        !$isTestingEnvironment &&
-        (!$otpRecord->expires_at || $otpRecord->expires_at->isPast())
-    ) {
-        $otpRecord->delete();
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Production में Expiry Check
+//     |--------------------------------------------------------------------------
+//     | Testing environment में OTP expiry भी skip रहेगी।
+//     */
+//     if (
+//         !$isTestingEnvironment &&
+//         (!$otpRecord->expires_at || $otpRecord->expires_at->isPast())
+//     ) {
+//         $otpRecord->delete();
 
-        return response()->json([
-            'status'  => false,
-            'message' => 'OTP expired. Please register again.',
-        ], 422);
-    }
+//         return response()->json([
+//             'status'  => false,
+//             'message' => 'OTP expired. Please register again.',
+//         ], 422);
+//     }
 
-    $data = $otpRecord->payload;
+//     $data = $otpRecord->payload;
 
-    if (is_string($data)) {
-        $data = json_decode($data, true);
-    }
+//     if (is_string($data)) {
+//         $data = json_decode($data, true);
+//     }
 
-    if (!is_array($data)) {
-        return response()->json([
-            'status'  => false,
-            'message' => 'Invalid registration data. Please register again.',
-        ], 422);
-    }
+//     if (!is_array($data)) {
+//         return response()->json([
+//             'status'  => false,
+//             'message' => 'Invalid registration data. Please register again.',
+//         ], 422);
+//     }
 
-    return DB::transaction(function () use ($data, $otpRecord) {
-        /*
-        |--------------------------------------------------------------------------
-        | Duplicate Check
-        |--------------------------------------------------------------------------
-        | OTP request के बाद किसी दूसरे request से user create हो गया हो,
-        | तो duplicate database error से बचने के लिए दोबारा check करेंगे।
-        */
-        $existingUser = User::where('phone', $data['phone'])
-            ->orWhere('email', $data['email'])
-            ->first();
+//     return DB::transaction(function () use ($data, $otpRecord) {
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Duplicate Check
+//         |--------------------------------------------------------------------------
+//         | OTP request के बाद किसी दूसरे request से user create हो गया हो,
+//         | तो duplicate database error से बचने के लिए दोबारा check करेंगे।
+//         */
+//         $existingUser = User::where('phone', $data['phone'])
+//             ->orWhere('email', $data['email'])
+//             ->first();
 
-        if ($existingUser) {
-            $otpRecord->delete();
+//         if ($existingUser) {
+//             $otpRecord->delete();
 
-            return response()->json([
-                'status'  => false,
-                'message' => 'User is already registered with this phone or email.',
-            ], 422);
-        }
+//             return response()->json([
+//                 'status'  => false,
+//                 'message' => 'User is already registered with this phone or email.',
+//             ], 422);
+//         }
 
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'phone'    => $data['phone'],
-        ]);
+//         $user = User::create([
+//             'name'     => $data['name'],
+//             'email'    => $data['email'],
+//             'password' => Hash::make($data['password']),
+//             'phone'    => $data['phone'],
+//         ]);
 
-        if (!empty($data['business_id'])) {
-            $user->businesses()->syncWithoutDetaching([
-                $data['business_id'],
-            ]);
+//         if (!empty($data['business_id'])) {
+//             $user->businesses()->syncWithoutDetaching([
+//                 $data['business_id'],
+//             ]);
 
-            if (Schema::hasColumn('users', 'current_business_id')) {
-                $user->current_business_id = $data['business_id'];
-                $user->save();
-            }
-        }
+//             if (Schema::hasColumn('users', 'current_business_id')) {
+//                 $user->current_business_id = $data['business_id'];
+//                 $user->save();
+//             }
+//         }
 
-        $tokenName = $data['device_name'] ?? 'authToken';
+//         $tokenName = $data['device_name'] ?? 'authToken';
 
-        $token = $user
-            ->createToken($tokenName)
-            ->plainTextToken;
+//         $token = $user
+//             ->createToken($tokenName)
+//             ->plainTextToken;
 
-        $user->load('businesses');
+//         $user->load('businesses');
 
-        $otpRecord->delete();
+//         $otpRecord->delete();
 
-        return response()->json([
-            'status'     => true,
-            'message'    => 'Mobile number verified and registration successful.',
-            'token_type' => 'Bearer',
-            'token'      => $token,
-            'user'       => [
-                'id'       => $user->id,
-                'name'     => $user->name,
-                'email'    => $user->email,
-                'phone'    => $user->phone,
-                'business' => $user->businesses,
-            ],
-        ], 201);
-    });
-}
+//         return response()->json([
+//             'status'     => true,
+//             'message'    => 'Mobile number verified and registration successful.',
+//             'token_type' => 'Bearer',
+//             'token'      => $token,
+//             'user'       => [
+//                 'id'       => $user->id,
+//                 'name'     => $user->name,
+//                 'email'    => $user->email,
+//                 'phone'    => $user->phone,
+//                 'business' => $user->businesses,
+//             ],
+//         ], 201);
+//     });
+// }
 
 
     private function maskPhoneNumber(?string $phone): ?string
