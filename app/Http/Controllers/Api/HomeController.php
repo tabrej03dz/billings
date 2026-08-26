@@ -1191,6 +1191,11 @@ class HomeController extends Controller
 
             $otpRecord->delete();
 
+            $onboarding = OnboardingRegistration::where('phone', $user->phone)->first();
+            if($onboarding){
+                $onboarding->update(['user_id' => $user->id, 'registration_status' => 'registered']);
+            }
+
             return response()->json([
                 'status'     => true,
                 'message'    => 'Mobile number verified and registration successful.',
