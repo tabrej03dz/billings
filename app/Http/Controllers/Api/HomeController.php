@@ -1193,7 +1193,7 @@ class HomeController extends Controller
 
             $onboarding = OnboardingRegistration::where('phone', $user->phone)->first();
             if($onboarding){
-                $onboarding->update(['user_id' => $user->id, 'registration_status' => 'registered']);
+                $onboarding->update(['user_id' => $user->id, 'registration_status' => 'registered', 'phone_verified_at' => now()]);
             }
 
             return response()->json([
