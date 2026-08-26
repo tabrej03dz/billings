@@ -86,7 +86,7 @@
                 <thead class=" bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Name</th>
-                    <th class="px-6 py-3">Email</th>
+                    <th class="px-6 py-3">Phone</th>
                     <th class="px-6 py-3">Businesses</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
@@ -95,7 +95,7 @@
                 @forelse ($users as $u)
                     <tr>
                         <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">{{ $u->name }}</td>
-                        <td class="px-6 py-3">{{ $u->email }}</td>
+                        <td class="px-6 py-3">{{ $u->phone }}</td>
                         <td class="px-6 py-3">{{ $u->businesses_count }}</td>
                         {{-- <td class="px-6 py-3 space-x-2">
 
