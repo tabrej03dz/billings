@@ -222,70 +222,156 @@ class PlanController extends Controller
     //     ]);
     // }
 
+    // public function choosenSave(Request $request)
+    // {
+    //     $request->validate([
+    //         'plan_id' => ['required', 'exists:plans,id'],
+    //         'business_id' => ['nullable', 'exists:businesses,id'],
+    //         'trial' => ['nullable', 'boolean'],
+    //     ]);
+
+    //     $user = Auth::user();
+    //     $plan = Plan::with('permissions')->findOrFail($request->plan_id);
+
+    //     $isTrial = (bool) $request->input('trial', false);
+
+    //     $businessId = $request->business_id
+    //         ?? $user->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $user->businesses()->pluck('businesses.id')->first();
+
+    //     if (!$businessId) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Business not found. Please select business first.',
+    //         ], 422);
+    //     }
+
+    //     $userPlan = DB::transaction(function () use ($businessId, $user, $plan, $isTrial) {
+    //         UserPlan::where('business_id', $businessId)
+    //             ->where('status', 1)
+    //             ->update(['status' => 0]);
+
+    //         $startDate = Carbon::today();
+
+    //         $expiryDate = $isTrial
+    //             ? Carbon::today()->addMonth()
+    //             : Carbon::today()->addDays((int) $plan->duration_days);
+
+    //         $userPlan = UserPlan::create([
+    //             'business_id' => $businessId,
+    //             'user_id' => $user->id,
+    //             'plan_id' => $plan->id,
+    //             'start_date' => $startDate,
+    //             'expiry_date' => $expiryDate,
+    //             'status' => 1,
+    //             // agar table me column hai to:
+    //             // 'is_trial' => $isTrial,
+    //         ]);
+
+    //         $permissions = $plan->permissions->pluck('name')->toArray();
+
+    //         $user->syncPermissions($permissions);
+
+    //         app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    //         return $userPlan;
+    //     });
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => $isTrial
+    //             ? 'Trial plan selected successfully for 1 month.'
+    //             : 'Plan selected successfully and permissions assigned.',
+    //         'data' => $userPlan->load('plan'),
+    //     ]);
+    // }
+
     public function choosenSave(Request $request)
-    {
-        $request->validate([
-            'plan_id' => ['required', 'exists:plans,id'],
-            'business_id' => ['nullable', 'exists:businesses,id'],
-            'trial' => ['nullable', 'boolean'],
-        ]);
+{
+    $request->validate([
+        'plan_id' => ['required', 'exists:plans,id'],
+        'business_id' => ['nullable', 'exists:businesses,id'],
+        'trial' => ['nullable', 'boolean'],
+    ]);
 
-        $user = Auth::user();
-        $plan = Plan::with('permissions')->findOrFail($request->plan_id);
+    $user = Auth::user();
 
-        $isTrial = (bool) $request->input('trial', false);
+    $plan = Plan::with('permissions')
+        ->findOrFail($request->plan_id);
 
-        $businessId = $request->business_id
-            ?? $user->current_business_id
-            ?? session('active_business_id')
-            ?? $user->businesses()->pluck('businesses.id')->first();
+    $isTrial = $request->boolean('trial');
 
-        if (!$businessId) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Business not found. Please select business first.',
-            ], 422);
-        }
+    $businessId = $request->business_id
+        ?? $user->current_business_id
+        ?? session('active_business_id')
+        ?? $user->businesses()->pluck('businesses.id')->first();
 
-        $userPlan = DB::transaction(function () use ($businessId, $user, $plan, $isTrial) {
-            UserPlan::where('business_id', $businessId)
-                ->where('status', 1)
-                ->update(['status' => 0]);
+    if (!$businessId) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Business not found. Please select business first.',
+        ], 422);
+    }
 
-            $startDate = Carbon::today();
+    $userPlan = DB::transaction(function () use (
+        $businessId,
+        $user,
+        $plan,
+        $isTrial
+    ) {
 
-            $expiryDate = $isTrial
-                ? Carbon::today()->addMonth()
-                : Carbon::today()->addDays((int) $plan->duration_days);
-
-            $userPlan = UserPlan::create([
-                'business_id' => $businessId,
-                'user_id' => $user->id,
-                'plan_id' => $plan->id,
-                'start_date' => $startDate,
-                'expiry_date' => $expiryDate,
-                'status' => 1,
-                // agar table me column hai to:
-                // 'is_trial' => $isTrial,
+        // Purana active/trial plan inactive karo
+        UserPlan::where('business_id', $businessId)
+            ->whereIn('status', ['active', 'trial'])
+            ->update([
+                'status' => 'inactive',
             ]);
 
-            $permissions = $plan->permissions->pluck('name')->toArray();
+        $startDate = Carbon::today();
 
-            $user->syncPermissions($permissions);
+        if ($isTrial) {
+            // UI me 7 days likha hai, isliye 7 days
+            $expiryDate = Carbon::today()->addDays(7);
+        } else {
+            $expiryDate = Carbon::today()
+                ->addDays((int) $plan->duration_days);
+        }
 
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $userPlan = UserPlan::create([
+            'business_id' => $businessId,
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'start_date' => $startDate,
+            'expiry_date' => $expiryDate,
 
-            return $userPlan;
-        });
+            // ENUM values use hongi
+            'status' => $isTrial ? 'trial' : 'active',
 
-        return response()->json([
-            'status' => true,
-            'message' => $isTrial
-                ? 'Trial plan selected successfully for 1 month.'
-                : 'Plan selected successfully and permissions assigned.',
-            'data' => $userPlan->load('plan'),
+            // Agar column available hai:
+            // 'is_trial' => $isTrial,
         ]);
-    }
+
+        $permissions = $plan->permissions
+            ->pluck('name')
+            ->toArray();
+
+        $user->syncPermissions($permissions);
+
+        app(PermissionRegistrar::class)
+            ->forgetCachedPermissions();
+
+        return $userPlan;
+    });
+
+    return response()->json([
+        'status' => true,
+        'message' => $isTrial
+            ? '7-day free trial activated successfully.'
+            : 'Plan selected successfully and permissions assigned.',
+        'data' => $userPlan->load('plan'),
+    ]);
+}
 
 
     private function validatePlan(Request $request, ?int $ignoreId = null): array
