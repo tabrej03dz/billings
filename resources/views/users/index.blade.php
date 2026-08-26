@@ -96,7 +96,41 @@
                     <tr>
                         <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">{{ $u->name }}</td>
                         <td class="px-6 py-3">{{ $u->phone }}</td>
-                        <td class="px-6 py-3">{{ $u->businesses_count }}</td>
+                        <td class="px-6 py-3">
+                            @if($u->businesses->isNotEmpty())
+
+                                <div class="flex flex-wrap gap-1.5">
+
+                                    @foreach($u->businesses as $business)
+
+                                        <span
+                                            class="inline-flex items-center
+                                                px-2.5 py-1
+                                                text-xs font-medium
+                                                rounded-full
+                                                bg-blue-100 text-blue-800
+                                                dark:bg-blue-900/40 dark:text-blue-300"
+                                        >
+                                            {{ $business->name }}
+                                        </span>
+
+                                    @endforeach
+
+                                </div>
+
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $u->businesses_count }}
+                                    {{ $u->businesses_count == 1 ? 'Business' : 'Businesses' }}
+                                </div>
+
+                            @else
+
+                                <span class="text-gray-400 dark:text-gray-500">
+                                    No Business
+                                </span>
+
+                            @endif
+                        </td>
                         {{-- <td class="px-6 py-3 space-x-2">
 
                             @if(!$u->trashed())
