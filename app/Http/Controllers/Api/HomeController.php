@@ -7,6 +7,7 @@ use App\Models\Business;
 use App\Models\Invoice;
 use App\Models\Item;
 use App\Models\MetalRate;
+use App\Models\OnboardingRegistration;
 use App\Models\Purchase;
 use App\Models\RegisterOtp;
 use App\Models\User;
@@ -1103,6 +1104,17 @@ class HomeController extends Controller
             'payload'    => $data,
             'expires_at' => now()->addMinutes(10),
         ]);
+        OnboardingRegistration::updateOrCreate(
+            [
+                'phone' => $data['phone'],
+            ],
+            [
+                'name'   => $data['name'],
+                'registration_status' => 'registering',
+            ]
+        );
+
+
 
         $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
 
