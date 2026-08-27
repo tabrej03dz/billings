@@ -2425,23 +2425,119 @@ class InvoiceController extends Controller
                 'pathology_lab',
             ], true);
 
-        if (!$user->hasAnyRole(['super_admin', 'admin'])) {
-            $activePlan = UserPlan::withoutGlobalScopes()
+        // if (!$user->hasAnyRole(['super_admin', 'admin'])) {
+        //     $activePlan = UserPlan::withoutGlobalScopes()
+        //         ->where('business_id', $bid)
+        //         ->where(function ($q) {
+        //             $q->where('status', 'active')->orWhere('status', 1);
+        //         })
+        //         ->whereDate('start_date', '<=', today())
+        //         ->where(function ($q) {
+        //             $q->whereNull('expiry_date')->orWhereDate('expiry_date', '>=', today());
+        //         })
+        //         ->latest('id')
+        //         ->first();
+
+        //     if (!$activePlan) {
+        //         return response()->json([
+        //             'ok' => false,
+        //             'message' => 'Is business ka active plan available nahi hai ya plan expire ho chuka hai.',
+        //         ], 422);
+        //     }
+        // }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active Business / Business User Plan Check
+        |--------------------------------------------------------------------------
+        |
+        | Invoice allow hogi agar:
+        |
+        | 1. Current business ka valid plan ho
+        |                    OR
+        | 2. Current business ke kisi attached user ka valid plan ho
+        |
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$user->hasAnyRole(['super_admin'])) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Current business ke saare attached users
+            |--------------------------------------------------------------------------
+            */
+            $businessUserIds = DB::table('business_user')
                 ->where('business_id', $bid)
-                ->where(function ($q) {
-                    $q->where('status', 'active')->orWhere('status', 1);
+                ->pluck('user_id')
+                ->map(fn ($id) => (int) $id)
+                ->toArray();
+
+            /*
+            * Logged-in user ko bhi safety ke liye include kar do.
+            */
+            if (!in_array((int) $user->id, $businessUserIds, true)) {
+                $businessUserIds[] = (int) $user->id;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Find valid plan
+            |--------------------------------------------------------------------------
+            */
+            $activePlan = UserPlan::withoutGlobalScopes()
+                ->where(function ($query) use ($bid, $businessUserIds) {
+
+                    /*
+                    * Case 1:
+                    * Business ka directly assigned plan
+                    */
+                    $query->where('business_id', $bid);
+
+                    /*
+                    * Case 2:
+                    * Business ke kisi attached user ka plan
+                    */
+                    if (!empty($businessUserIds)) {
+                        $query->orWhereIn('user_id', $businessUserIds);
+                    }
                 })
-                ->whereDate('start_date', '<=', today())
-                ->where(function ($q) {
-                    $q->whereNull('expiry_date')->orWhereDate('expiry_date', '>=', today());
+
+                /*
+                * Active aur Trial dono valid
+                */
+
+                /*
+                * Start date null ho ya plan start ho chuka ho
+                */
+                ->where(function ($query) {
+                    $query->whereNull('start_date')
+                        ->orWhereDate('start_date', '<=', today());
                 })
-                ->latest('id')
+
+                /*
+                * Expiry null ho ya expiry aaj/future ki ho
+                */
+                ->where(function ($query) {
+                    $query->whereNull('expiry_date')
+                        ->orWhereDate('expiry_date', '>=', today());
+                })
+
+                ->orderByDesc('expiry_date')
+                ->orderByDesc('id')
                 ->first();
 
+
+            /*
+            |--------------------------------------------------------------------------
+            | No valid plan
+            |--------------------------------------------------------------------------
+            */
             if (!$activePlan) {
                 return response()->json([
                     'ok' => false,
-                    'message' => 'Is business ka active plan available nahi hai ya plan expire ho chuka hai.',
+                    'message' => 'Is business ya is business ke kisi user ka active plan available nahi hai, ya plan expire ho chuka hai.',
                 ], 422);
             }
         }
