@@ -2507,6 +2507,10 @@ class InvoiceController extends Controller
                 /*
                 * Active aur Trial dono valid
                 */
+                // ->whereIn('status', [
+                //     'active',
+                //     'trial',
+                // ])
 
                 /*
                 * Start date null ho ya plan start ho chuka ho
