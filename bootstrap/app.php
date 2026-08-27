@@ -23,9 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
-        // $middleware->appendToGroup('web', [
-        //     \App\Http\Middleware\TrackUserActivity::class,
-        // ]);
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\TrackUserActivity::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
