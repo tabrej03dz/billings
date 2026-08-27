@@ -706,12 +706,12 @@ public function update(Request $request, Business $business)
             'max:100',
         ],
 
-        'business_type_id' => [
-            'sometimes',
-            'nullable',
-            'integer',
-            'exists:business_types,id',
-        ],
+        // 'business_type_id' => [
+        //     'sometimes',
+        //     'nullable',
+        //     'integer',
+        //     'exists:business_types,id',
+        // ],
 
         'state' => [
             'sometimes',
