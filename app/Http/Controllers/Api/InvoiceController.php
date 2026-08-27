@@ -4678,7 +4678,13 @@ class InvoiceController extends Controller
         }
 
         // ✅ Items required - without global scopes if InvoiceItem model has scope
+        // $items = InvoiceItem::withoutGlobalScopes()
+        //     ->where('invoice_id', $invoice->id)
+        //     ->orderBy('id')
+        //     ->get();
+
         $items = InvoiceItem::withoutGlobalScopes()
+            ->with('item')
             ->where('invoice_id', $invoice->id)
             ->orderBy('id')
             ->get();
@@ -4913,41 +4919,245 @@ class InvoiceController extends Controller
         return $invoice;
     }
 
+    // protected function renderMpdfOutput(string $view, array $vm): string
+    // {
+    //     $tempDir = storage_path('app/mpdf-temp');
+
+    //     if (!is_dir($tempDir)) {
+    //         mkdir($tempDir, 0775, true);
+    //     }
+
+    //     if (!is_writable($tempDir)) {
+    //         @chmod($tempDir, 0775);
+    //     }
+
+    //     $mpdf = new Mpdf([
+    //         'mode'   => 'utf-8',
+    //         'format' => 'A4',
+
+    //         'margin_left'   => 8,
+    //         'margin_right'  => 8,
+    //         'margin_top'    => 8,
+    //         'margin_bottom' => 8,
+
+    //         'tempDir' => $tempDir,
+
+    //         // Custom NotoSansDevanagari font remove किया गया
+    //         'default_font' => 'freeserif',
+
+    //         'autoScriptToLang' => true,
+    //         'autoLangToFont'   => true,
+    //     ]);
+
+    //     $html = view($view, $vm)->render();
+
+    //     $mpdf->WriteHTML($html);
+
+    //     return $mpdf->Output('', 'S');
+    // }
+
     protected function renderMpdfOutput(string $view, array $vm): string
-    {
-        $tempDir = storage_path('app/mpdf-temp');
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Temp directory
+    |--------------------------------------------------------------------------
+    */
+    $tempDir = storage_path('app/mpdf-temp');
 
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0775, true);
-        }
-
-        if (!is_writable($tempDir)) {
-            @chmod($tempDir, 0775);
-        }
-
-        $mpdf = new Mpdf([
-            'mode'   => 'utf-8',
-            'format' => 'A4',
-
-            'margin_left'   => 8,
-            'margin_right'  => 8,
-            'margin_top'    => 8,
-            'margin_bottom' => 8,
-
-            'tempDir' => $tempDir,
-
-            // Custom NotoSansDevanagari font remove किया गया
-            'default_font' => 'freeserif',
-
-            'autoScriptToLang' => true,
-            'autoLangToFont'   => true,
-        ]);
-
-        $html = view($view, $vm)->render();
-
-        $mpdf->WriteHTML($html);
-
-        return $mpdf->Output('', 'S');
+    if (!is_dir($tempDir)) {
+        mkdir($tempDir, 0775, true);
     }
+
+    if (!is_writable($tempDir)) {
+        @chmod($tempDir, 0775);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | mPDF
+    |--------------------------------------------------------------------------
+    */
+    $mpdf = new \Mpdf\Mpdf([
+        'mode'   => 'utf-8',
+        'format' => 'A4',
+
+        'margin_left'   => 8,
+        'margin_right'  => 8,
+        'margin_top'    => 8,
+        'margin_bottom' => 8,
+
+        'tempDir' => $tempDir,
+
+        'default_font' => 'freeserif',
+
+        'autoScriptToLang' => true,
+        'autoLangToFont'   => true,
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Render Blade HTML
+    |--------------------------------------------------------------------------
+    */
+    $html = view($view, $vm)->render();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Important:
+    | mPDF poora huge HTML ek WriteHTML() me lene par
+    | pcre.backtrack_limit error de raha tha.
+    |--------------------------------------------------------------------------
+    */
+
+    // <style>...</style> ko alag extract karo.
+    $css = '';
+
+    if (
+        preg_match(
+            '/<style\b[^>]*>(.*?)<\/style>/is',
+            $html,
+            $matches
+        )
+    ) {
+        $css = $matches[1] ?? '';
+
+        // Original HTML se style tag remove
+        $html = preg_replace(
+            '/<style\b[^>]*>.*?<\/style>/is',
+            '',
+            $html
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CSS first
+    |--------------------------------------------------------------------------
+    */
+    if (trim($css) !== '') {
+        $mpdf->WriteHTML(
+            $css,
+            \Mpdf\HTMLParserMode::HEADER_CSS
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Body HTML in smaller chunks
+    |--------------------------------------------------------------------------
+    |
+    | 50 KB chunks generally safe hain.
+    | Direct str_split HTML tag ke beech cut kar sakta hai,
+    | isliye pehle logical tags par split karenge.
+    |--------------------------------------------------------------------------
+    */
+
+    $parts = preg_split(
+        '/(?=<\/?(?:div|table|thead|tbody|tfoot|tr|section|header|footer)\b)/i',
+        $html,
+        -1,
+        PREG_SPLIT_NO_EMPTY
+    );
+
+    $buffer = '';
+    $maxChunkSize = 50000; // 50 KB
+
+    foreach ($parts as $part) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Agar current buffer limit cross karne wala hai
+        |--------------------------------------------------------------------------
+        */
+        if (
+            $buffer !== ''
+            && strlen($buffer) + strlen($part) > $maxChunkSize
+        ) {
+            $mpdf->WriteHTML(
+                $buffer,
+                \Mpdf\HTMLParserMode::HTML_BODY
+            );
+
+            $buffer = '';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Agar ek individual part hi bahut bada hai
+        |--------------------------------------------------------------------------
+        */
+        if (strlen($part) > $maxChunkSize) {
+
+            if ($buffer !== '') {
+                $mpdf->WriteHTML(
+                    $buffer,
+                    \Mpdf\HTMLParserMode::HTML_BODY
+                );
+
+                $buffer = '';
+            }
+
+            /*
+            | Large part ko paragraphs / lines ke around split karo.
+            */
+            $subParts = preg_split(
+                '/(?=<\/?(?:p|span|br|td|th|li)\b)/i',
+                $part,
+                -1,
+                PREG_SPLIT_NO_EMPTY
+            );
+
+            $subBuffer = '';
+
+            foreach ($subParts as $subPart) {
+
+                if (
+                    $subBuffer !== ''
+                    && strlen($subBuffer) + strlen($subPart) > $maxChunkSize
+                ) {
+                    $mpdf->WriteHTML(
+                        $subBuffer,
+                        \Mpdf\HTMLParserMode::HTML_BODY
+                    );
+
+                    $subBuffer = '';
+                }
+
+                $subBuffer .= $subPart;
+            }
+
+            if ($subBuffer !== '') {
+                $mpdf->WriteHTML(
+                    $subBuffer,
+                    \Mpdf\HTMLParserMode::HTML_BODY
+                );
+            }
+
+            continue;
+        }
+
+        $buffer .= $part;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Remaining HTML
+    |--------------------------------------------------------------------------
+    */
+    if ($buffer !== '') {
+        $mpdf->WriteHTML(
+            $buffer,
+            \Mpdf\HTMLParserMode::HTML_BODY
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Return PDF binary
+    |--------------------------------------------------------------------------
+    */
+    return $mpdf->Output('', 'S');
+}
 
 }
