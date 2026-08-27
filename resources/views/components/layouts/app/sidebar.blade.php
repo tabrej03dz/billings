@@ -2800,7 +2800,7 @@
         })();
     </script>
 
-    {{-- <x-user-activity-tracker /> --}}
+    <x-user-activity-tracker />
 </body>
 
 </html>
