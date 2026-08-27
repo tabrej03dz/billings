@@ -756,8 +756,7 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
 
     /* Plans */
     Route::prefix('plans')->group(function () {
-        Route::get('/', [PlanController::class, 'index'])
-            ->middleware('permission:show plan');
+        Route::get('/', [PlanController::class, 'index']);
 
         Route::post('/', [PlanController::class, 'store'])
             ->middleware('permission:show plan');
