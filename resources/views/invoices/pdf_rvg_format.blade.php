@@ -359,6 +359,9 @@
     }
 @endphp
 
+
+
+
 <!doctype html>
 <html lang="hi">
 <head>
@@ -739,7 +742,7 @@
     </table>
 
     {{-- COMPANY HEADER --}}
-    <table class="companyHeaderTable">
+    {{-- <table class="companyHeaderTable">
         <tr>
             <td class="logoCell">
                 @if($showLogo && !empty($logoSrc))
@@ -772,7 +775,92 @@
                 </div>
             </td>
         </tr>
-    </table>
+    </table> --}}
+
+    {{-- COMPANY HEADER --}}
+<table class="companyHeaderTable">
+    <tr>
+
+        <td class="logoCell">
+
+            @if($showLogo && !empty($logoSrc))
+
+                <img
+                    src="{{ $logoSrc }}"
+                    alt="Logo"
+                    class="logoImg"
+                    style="
+                        width:108px;
+                        max-width:108px;
+                        height:auto;
+                        display:block;
+                    "
+                >
+
+            @endif
+
+        </td>
+
+        <td class="companyCell">
+
+            <div class="companyName">
+                {{ $b->name ?? 'Real Victory Groups' }}
+            </div>
+
+            <div class="companyAddress">
+
+                {{ $b_addr }}
+
+                @if($b_city)
+                    , {{ $b_city }}
+                @endif
+
+                @if($b_state)
+                    , {{ $b_state }}
+                @endif
+
+                @if($b_pin)
+                    - {{ $b_pin }}
+                @endif
+
+            </div>
+
+            <div class="companyContact">
+
+                <div class="companyContactLine">
+
+                    <span class="bold">
+                        Mobile:
+                    </span>
+
+                    {{ $b_mobile ?: '-' }}
+
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+
+                    <span class="bold">
+                        GSTIN:
+                    </span>
+
+                    {{ $b_gstin ?: '-' }}
+
+                </div>
+
+                <div>
+
+                    <span class="bold">
+                        Email:
+                    </span>
+
+                    {{ $b_email ?: '-' }}
+
+                </div>
+
+            </div>
+
+        </td>
+
+    </tr>
+</table>
 
     <div class="line-red"></div>
 

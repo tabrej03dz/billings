@@ -7552,209 +7552,634 @@ public function store(Request $request, StockService $stock, $docType)
         return $this->renderMpdfOutput('invoices.pdf_kapoor', $vm);
     }
 
+    // protected function simplePdfBuild(Invoice $invoice): string
+    // {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Load Invoice Relations
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $invoice->load([
+    //         'client',
+    //         'items.item',
+    //         'business.billTemplate',
+    //     ]);
+
+    //     $inv    = $invoice;
+    //     $biz    = $invoice->business;
+    //     $client = $invoice->client;
+    //     $items  = $invoice->items ?? collect();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Latest Payment
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $payRow = InvoicePayment::query()
+    //         ->where('business_id', $inv->business_id)
+    //         ->where('invoice_id', $inv->id)
+    //         ->latest('id')
+    //         ->first();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Selected Bank Account
+    //     |--------------------------------------------------------------------------
+    //     |
+    //     | Priority:
+    //     | 1. invoices.bank_account_id
+    //     | 2. current request bank_account_id
+    //     |
+    //     */
+    //     $bankAccountId = null;
+
+    //     if (!empty($inv->bank_account_id)) {
+    //         $bankAccountId = (int) $inv->bank_account_id;
+    //     } elseif (request()->filled('bank_account_id')) {
+    //         $bankAccountId = (int) request()->input('bank_account_id');
+    //     }
+
+    //     $selectedBank = null;
+
+    //     if ($bankAccountId > 0) {
+    //         $selectedBank = BankAccount::query()
+    //             ->where('business_id', (int) $inv->business_id)
+    //             ->where('id', $bankAccountId)
+    //             ->first();
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Persist bank id on invoice
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | forceFill use kar rahe hain taaki Invoice model ke $fillable me
+    //         | bank_account_id missing hone par bhi bank id save ho sake.
+    //         |
+    //         */
+    //         if ($selectedBank && empty($inv->bank_account_id)) {
+    //             $inv->forceFill([
+    //                 'bank_account_id' => $selectedBank->id,
+    //             ])->save();
+
+    //             $inv->bank_account_id = $selectedBank->id;
+    //         }
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Payment Details
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $paymentDetails = [
+    //         'payment_method' => $inv->payment_method ?? null,
+
+    //         'cash_amount' => (float) (
+    //             $payRow->cash_amount ?? 0
+    //         ),
+
+    //         'online_amount' => (float) (
+    //             $payRow->online_amount ?? 0
+    //         ),
+
+    //         'online_mode' => $payRow->online_mode ?? null,
+
+    //         'online_ref' => $payRow->online_ref ?? null,
+
+    //         'upi_id' => $payRow->upi_id ?? null,
+
+    //         'card_amount' => (float) (
+    //             $payRow->card_amount ?? 0
+    //         ),
+
+    //         'card_last4' => $payRow->card_last4 ?? null,
+
+    //         'card_ref' => $payRow->card_ref ?? null,
+
+    //         'cheque_amount' => (float) (
+    //             $payRow->cheque_amount ?? 0
+    //         ),
+
+    //         'cheque_no' => $payRow->cheque_no ?? null,
+
+    //         'bank_name' => $payRow->bank_name ?? null,
+
+    //         'credit_sales_excess_amount' => (float) (
+    //             $payRow->credit_sales_excess_amount ?? 0
+    //         ),
+
+    //         'advance_amount' => (float) (
+    //             $payRow->advance_amount ?? 0
+    //         ),
+
+    //         'received_total' => (float) (
+    //             $payRow->received_total
+    //                 ?? $inv->received_amount
+    //                 ?? 0
+    //         ),
+
+    //         'notes' => $payRow->notes ?? null,
+
+    //         'paid_at' => $payRow->paid_at ?? null,
+    //     ];
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Business Bill Template
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $billTemplate = $biz?->billTemplate;
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Business Template Setting
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $templateSetting = null;
+
+    //     if ($biz && $billTemplate) {
+    //         $templateSetting =
+    //             \App\Models\BusinessBillTemplateSetting::query()
+    //                 ->where('business_id', $biz->id)
+    //                 ->where(
+    //                     'bill_template_id',
+    //                     $billTemplate->id
+    //                 )
+    //                 ->first();
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | View Data
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $vm = [
+    //         'invoice'         => $invoice,
+    //         'inv'             => $inv,
+
+    //         'business'        => $biz,
+    //         'biz'             => $biz,
+
+    //         'client'          => $client,
+    //         'items'           => $items,
+
+    //         'payRow'          => $payRow,
+
+    //         'selectedBank'    => $selectedBank,
+    //         'bankAccountId'   => $bankAccountId,
+
+    //         'paymentDetails'  => $paymentDetails,
+
+    //         'billTemplate'    => $billTemplate,
+    //         'templateSetting' => $templateSetting,
+    //     ];
+
+
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | PDF Blade
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $view = 'invoices.' . (
+    //         $billTemplate->page_name
+    //             ?? 'pdf_simple'
+    //     );
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Generate PDF
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     return $this->renderMpdfOutput(
+    //         $view,
+    //         $vm
+    //     );
+    // }
+
+
     protected function simplePdfBuild(Invoice $invoice): string
-    {
-        /*
-        |--------------------------------------------------------------------------
-        | Load Invoice Relations
-        |--------------------------------------------------------------------------
-        */
-        $invoice->load([
-            'client',
-            'items.item',
-            'business.billTemplate',
-        ]);
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Load Invoice Relations
+    |--------------------------------------------------------------------------
+    */
+    $invoice->load([
+        'client',
+        'items.item',
+        'business.billTemplate',
+    ]);
 
-        $inv    = $invoice;
-        $biz    = $invoice->business;
-        $client = $invoice->client;
-        $items  = $invoice->items ?? collect();
+    $inv    = $invoice;
+    $biz    = $invoice->business;
+    $client = $invoice->client;
+    $items  = $invoice->items ?? collect();
 
-        /*
-        |--------------------------------------------------------------------------
-        | Latest Payment
-        |--------------------------------------------------------------------------
-        */
-        $payRow = InvoicePayment::query()
-            ->where('business_id', $inv->business_id)
-            ->where('invoice_id', $inv->id)
-            ->latest('id')
+    /*
+    |--------------------------------------------------------------------------
+    | Latest Payment
+    |--------------------------------------------------------------------------
+    */
+    $payRow = InvoicePayment::query()
+        ->where('business_id', $inv->business_id)
+        ->where('invoice_id', $inv->id)
+        ->latest('id')
+        ->first();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Selected Bank Account
+    |--------------------------------------------------------------------------
+    |
+    | Priority:
+    | 1. invoices.bank_account_id
+    | 2. current request bank_account_id
+    |
+    */
+    $bankAccountId = null;
+
+    if (!empty($inv->bank_account_id)) {
+
+        $bankAccountId = (int) $inv->bank_account_id;
+
+    } elseif (request()->filled('bank_account_id')) {
+
+        $bankAccountId = (int) request()->input('bank_account_id');
+    }
+
+    $selectedBank = null;
+
+    if ($bankAccountId > 0) {
+
+        $selectedBank = BankAccount::query()
+            ->where('business_id', (int) $inv->business_id)
+            ->where('id', $bankAccountId)
             ->first();
 
         /*
         |--------------------------------------------------------------------------
-        | Selected Bank Account
+        | Persist Bank ID On Invoice
+        |--------------------------------------------------------------------------
+        */
+        if ($selectedBank && empty($inv->bank_account_id)) {
+
+            $inv->forceFill([
+                'bank_account_id' => $selectedBank->id,
+            ])->save();
+
+            $inv->bank_account_id = $selectedBank->id;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Details
+    |--------------------------------------------------------------------------
+    */
+    $paymentDetails = [
+
+        'payment_method' => $inv->payment_method ?? null,
+
+        'cash_amount' => (float) (
+            $payRow->cash_amount ?? 0
+        ),
+
+        'online_amount' => (float) (
+            $payRow->online_amount ?? 0
+        ),
+
+        'online_mode' => $payRow->online_mode ?? null,
+
+        'online_ref' => $payRow->online_ref ?? null,
+
+        'upi_id' => $payRow->upi_id ?? null,
+
+        'card_amount' => (float) (
+            $payRow->card_amount ?? 0
+        ),
+
+        'card_last4' => $payRow->card_last4 ?? null,
+
+        'card_ref' => $payRow->card_ref ?? null,
+
+        'cheque_amount' => (float) (
+            $payRow->cheque_amount ?? 0
+        ),
+
+        'cheque_no' => $payRow->cheque_no ?? null,
+
+        'bank_name' => $payRow->bank_name ?? null,
+
+        'credit_sales_excess_amount' => (float) (
+            $payRow->credit_sales_excess_amount ?? 0
+        ),
+
+        'advance_amount' => (float) (
+            $payRow->advance_amount ?? 0
+        ),
+
+        'received_total' => (float) (
+            $payRow->received_total
+                ?? $inv->received_amount
+                ?? 0
+        ),
+
+        'notes' => $payRow->notes ?? null,
+
+        'paid_at' => $payRow->paid_at ?? null,
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Business Bill Template
+    |--------------------------------------------------------------------------
+    */
+    $billTemplate = $biz?->billTemplate;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Business Template Setting
+    |--------------------------------------------------------------------------
+    */
+    $templateSetting = null;
+
+    if ($biz && $billTemplate) {
+
+        $templateSetting =
+            \App\Models\BusinessBillTemplateSetting::query()
+                ->where('business_id', $biz->id)
+                ->where(
+                    'bill_template_id',
+                    $billTemplate->id
+                )
+                ->first();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Business Logo
+    |--------------------------------------------------------------------------
+    |
+    | Important:
+    | Blade me $logo variable use ho raha hai.
+    |
+    | Isliye yahan business ke logo ko actual server path me convert
+    | karke Blade ko pass karenge.
+    |
+    */
+    $logo = null;
+
+    if ($biz) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logo Database Value
         |--------------------------------------------------------------------------
         |
-        | Priority:
-        | 1. invoices.bank_account_id
-        | 2. current request bank_account_id
+        | Agar aapke column ka naam "logo" hai to pehle wahi use hoga.
+        |
+        | business_logo fallback ke liye diya hai.
         |
         */
-        $bankAccountId = null;
+        $logoPath =
+            $biz->logo
+            ?? $biz->business_logo
+            ?? null;
 
-        if (!empty($inv->bank_account_id)) {
-            $bankAccountId = (int) $inv->bank_account_id;
-        } elseif (request()->filled('bank_account_id')) {
-            $bankAccountId = (int) request()->input('bank_account_id');
-        }
+        if (!empty($logoPath)) {
 
-        $selectedBank = null;
-
-        if ($bankAccountId > 0) {
-            $selectedBank = BankAccount::query()
-                ->where('business_id', (int) $inv->business_id)
-                ->where('id', $bankAccountId)
-                ->first();
+            $logoPath = trim((string) $logoPath);
 
             /*
             |--------------------------------------------------------------------------
-            | Persist bank id on invoice
+            | Data URI
             |--------------------------------------------------------------------------
-            |
-            | forceFill use kar rahe hain taaki Invoice model ke $fillable me
-            | bank_account_id missing hone par bhi bank id save ho sake.
-            |
             */
-            if ($selectedBank && empty($inv->bank_account_id)) {
-                $inv->forceFill([
-                    'bank_account_id' => $selectedBank->id,
-                ])->save();
+            if (
+                \Illuminate\Support\Str::startsWith(
+                    $logoPath,
+                    'data:'
+                )
+            ) {
 
-                $inv->bank_account_id = $selectedBank->id;
+                $logo = $logoPath;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Remote URL
+            |--------------------------------------------------------------------------
+            */
+            } elseif (
+                \Illuminate\Support\Str::startsWith(
+                    $logoPath,
+                    ['http://', 'https://']
+                )
+            ) {
+
+                $logo = $logoPath;
+
+            } else {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Normalize Path
+                |--------------------------------------------------------------------------
+                */
+                $cleanLogoPath = ltrim(
+                    str_replace('\\', '/', $logoPath),
+                    '/'
+                );
+
+                /*
+                |--------------------------------------------------------------------------
+                | Case 1:
+                | DB = storage/business/logo.png
+                |--------------------------------------------------------------------------
+                */
+                if (
+                    \Illuminate\Support\Str::startsWith(
+                        $cleanLogoPath,
+                        'storage/'
+                    )
+                ) {
+
+                    $withoutStorage = \Illuminate\Support\Str::after(
+                        $cleanLogoPath,
+                        'storage/'
+                    );
+
+                    $possiblePaths = [
+
+                        public_path(
+                            'storage/' . $withoutStorage
+                        ),
+
+                        storage_path(
+                            'app/public/' . $withoutStorage
+                        ),
+                    ];
+
+                /*
+                |--------------------------------------------------------------------------
+                | Case 2:
+                | DB = public/storage/business/logo.png
+                |--------------------------------------------------------------------------
+                */
+                } elseif (
+                    \Illuminate\Support\Str::startsWith(
+                        $cleanLogoPath,
+                        'public/storage/'
+                    )
+                ) {
+
+                    $withoutPublicStorage =
+                        \Illuminate\Support\Str::after(
+                            $cleanLogoPath,
+                            'public/storage/'
+                        );
+
+                    $possiblePaths = [
+
+                        public_path(
+                            'storage/' . $withoutPublicStorage
+                        ),
+
+                        storage_path(
+                            'app/public/' . $withoutPublicStorage
+                        ),
+                    ];
+
+                } else {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Normal Possible Locations
+                    |--------------------------------------------------------------------------
+                    */
+                    $possiblePaths = [
+
+                        /*
+                        | public/business/logo.png
+                        */
+                        public_path(
+                            $cleanLogoPath
+                        ),
+
+                        /*
+                        | public/storage/business/logo.png
+                        */
+                        public_path(
+                            'storage/' . $cleanLogoPath
+                        ),
+
+                        /*
+                        | storage/app/public/business/logo.png
+                        */
+                        storage_path(
+                            'app/public/' . $cleanLogoPath
+                        ),
+                    ];
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Find Existing File
+                |--------------------------------------------------------------------------
+                */
+                foreach ($possiblePaths as $possiblePath) {
+
+                    if (
+                        is_string($possiblePath)
+                        && file_exists($possiblePath)
+                        && is_file($possiblePath)
+                    ) {
+
+                        $logo = $possiblePath;
+
+                        break;
+                    }
+                }
             }
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Payment Details
-        |--------------------------------------------------------------------------
-        */
-        $paymentDetails = [
-            'payment_method' => $inv->payment_method ?? null,
-
-            'cash_amount' => (float) (
-                $payRow->cash_amount ?? 0
-            ),
-
-            'online_amount' => (float) (
-                $payRow->online_amount ?? 0
-            ),
-
-            'online_mode' => $payRow->online_mode ?? null,
-
-            'online_ref' => $payRow->online_ref ?? null,
-
-            'upi_id' => $payRow->upi_id ?? null,
-
-            'card_amount' => (float) (
-                $payRow->card_amount ?? 0
-            ),
-
-            'card_last4' => $payRow->card_last4 ?? null,
-
-            'card_ref' => $payRow->card_ref ?? null,
-
-            'cheque_amount' => (float) (
-                $payRow->cheque_amount ?? 0
-            ),
-
-            'cheque_no' => $payRow->cheque_no ?? null,
-
-            'bank_name' => $payRow->bank_name ?? null,
-
-            'credit_sales_excess_amount' => (float) (
-                $payRow->credit_sales_excess_amount ?? 0
-            ),
-
-            'advance_amount' => (float) (
-                $payRow->advance_amount ?? 0
-            ),
-
-            'received_total' => (float) (
-                $payRow->received_total
-                    ?? $inv->received_amount
-                    ?? 0
-            ),
-
-            'notes' => $payRow->notes ?? null,
-
-            'paid_at' => $payRow->paid_at ?? null,
-        ];
-
-        /*
-        |--------------------------------------------------------------------------
-        | Business Bill Template
-        |--------------------------------------------------------------------------
-        */
-        $billTemplate = $biz?->billTemplate;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Business Template Setting
-        |--------------------------------------------------------------------------
-        */
-        $templateSetting = null;
-
-        if ($biz && $billTemplate) {
-            $templateSetting =
-                \App\Models\BusinessBillTemplateSetting::query()
-                    ->where('business_id', $biz->id)
-                    ->where(
-                        'bill_template_id',
-                        $billTemplate->id
-                    )
-                    ->first();
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | View Data
-        |--------------------------------------------------------------------------
-        */
-        $vm = [
-            'invoice'         => $invoice,
-            'inv'             => $inv,
-
-            'business'        => $biz,
-            'biz'             => $biz,
-
-            'client'          => $client,
-            'items'           => $items,
-
-            'payRow'          => $payRow,
-
-            'selectedBank'    => $selectedBank,
-            'bankAccountId'   => $bankAccountId,
-
-            'paymentDetails'  => $paymentDetails,
-
-            'billTemplate'    => $billTemplate,
-            'templateSetting' => $templateSetting,
-        ];
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | PDF Blade
-        |--------------------------------------------------------------------------
-        */
-        $view = 'invoices.' . (
-            $billTemplate->page_name
-                ?? 'pdf_simple'
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Generate PDF
-        |--------------------------------------------------------------------------
-        */
-        return $this->renderMpdfOutput(
-            $view,
-            $vm
-        );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Optional Debug
+    |--------------------------------------------------------------------------
+    |
+    | Agar logo phir bhi na aaye to temporarily uncomment:
+    |
+    | logger()->info('PDF LOGO DEBUG', [
+    |     'business_id' => $biz?->id,
+    |     'db_logo'     => $biz?->logo,
+    |     'logo'        => $logo,
+    |     'exists'      => $logo && !str_starts_with($logo, 'http')
+    |                       ? file_exists($logo)
+    |                       : null,
+    | ]);
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | View Data
+    |--------------------------------------------------------------------------
+    */
+    $vm = [
+
+        'invoice' => $invoice,
+
+        'inv' => $inv,
+
+        'business' => $biz,
+
+        'biz' => $biz,
+
+        'client' => $client,
+
+        'items' => $items,
+
+        'payRow' => $payRow,
+
+        'selectedBank' => $selectedBank,
+
+        'bankAccountId' => $bankAccountId,
+
+        'paymentDetails' => $paymentDetails,
+
+        'billTemplate' => $billTemplate,
+
+        'templateSetting' => $templateSetting,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logo
+        |--------------------------------------------------------------------------
+        */
+        'logo' => $logo,
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | PDF Blade
+    |--------------------------------------------------------------------------
+    */
+    $view = 'invoices.' . (
+        $billTemplate?->page_name
+            ?? 'pdf_simple'
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generate PDF
+    |--------------------------------------------------------------------------
+    */
+    return $this->renderMpdfOutput(
+        $view,
+        $vm
+    );
+}
 
 
 
