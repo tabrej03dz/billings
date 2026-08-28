@@ -530,10 +530,19 @@ public function update(Request $request, $id)
             trim((string) $user->name)
             . "'s Business";
 
+        /*
+        |--------------------------------------------------------------------------
+        | Business Type
+        |--------------------------------------------------------------------------
+        | businesses.type canonical field hai.
+        | business_type_id sirf legacy fallback hai.
+        |--------------------------------------------------------------------------
+        */
+
         $businessTypeId = $business
             ? (
-                $business->business_type_id
-                ?? $business->type
+                $business->type
+                ?? $business->business_type_id
                 ?? null
             )
             : null;

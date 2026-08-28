@@ -11,6 +11,11 @@ class Business extends Model
     use HasFactory, SoftDeletes;
 
     protected $guarded = ['id'];
+        protected $casts = [
+        'type' => 'integer',
+        'pdf_template_id' => 'integer',
+        'gst_enabled' => 'boolean',
+    ];
 
     public function users()
     {

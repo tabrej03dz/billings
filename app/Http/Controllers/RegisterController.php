@@ -463,6 +463,7 @@ public function store(Request $request)
         'business_type_id' => [
             'nullable',
             'required_unless:business_skipped,1',
+            'integer',
             'exists:business_types,id',
         ],
 
@@ -589,7 +590,7 @@ public function store(Request $request)
 
         $businessTypeId = $businessSkipped
             ? $defaultBusinessTypeId
-            : $validated['business_type_id'];
+            : (int) $validated['business_type_id'];
 
         if (!$businessTypeId) {
             throw new \RuntimeException(
@@ -684,7 +685,7 @@ public function store(Request $request)
             'state' => $businessState,
             'state_code' => $businessStateCode,
 
-            'business_type_id' => $businessTypeId,
+            'type' => (int) $businessTypeId,
 
             'invoice_base_prefix' => $invoiceBasePrefix,
             'rounding_mode' => $roundingMode,

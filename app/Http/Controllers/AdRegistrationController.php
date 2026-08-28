@@ -2952,7 +2952,15 @@ public function complete(Request $request): RedirectResponse
                     'address' => $businessAddress,
                     'state' => $businessState,
                     'state_code' => $businessStateCode,
-                    'type' => $businessTypeId,
+
+                    /*
+                    * Type request me aayi hai to update karo.
+                    * Nahi aayi to existing type preserve karo.
+                    */
+                    'type' => filled($validated['type'] ?? null)
+                        ? (int) $validated['type']
+                        : $business->type,
+
                     'invoice_base_prefix' => $invoicePrefix,
                     'rounding_mode' => $roundingMode,
                     'rounding_step' => $roundingStep,

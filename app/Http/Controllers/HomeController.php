@@ -205,7 +205,17 @@ class HomeController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'state_code' => ['nullable', 'string', 'max:255'],
-            'type' => ['nullable', 'string', 'max:255'],
+            'type' => [
+                'nullable',
+                'integer',
+                'exists:business_types,id',
+            ],
+
+            'pdf_template_id' => [
+                'nullable',
+                'integer',
+                'exists:bill_templates,id',
+            ],
 
             // billing step
             'gst_enabled' => ['nullable', 'in:0,1'],
@@ -238,7 +248,20 @@ class HomeController extends Controller
                 'address' => $request->address,
                 'state' => $request->state,
                 'state_code' => $request->state_code,
-                'type' => $request->type,
+                /*
+                 * businesses.type me BusinessType ID save hogi.
+                 */
+                'type' => $request->filled('type')
+                    ? (int) $request->type
+                    : null,
+
+                /*
+                 * businesses.pdf_template_id me BillTemplate ID save hogi.
+                 */
+                'pdf_template_id' => $request->filled('pdf_template_id')
+                    ? (int) $request->pdf_template_id
+                    : null,
+
                 'invoice_base_prefix' => $request->invoice_base_prefix ?: 'RV/SL',
                 'rounding_mode' => $request->rounding_mode ?: 'nearest',
                 'rounding_step' => $request->rounding_step ?: 1.00,
