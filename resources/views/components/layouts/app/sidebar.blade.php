@@ -2799,7 +2799,6 @@
             });
         })();
     </script>
-
     <x-user-activity-tracker />
 </body>
 
