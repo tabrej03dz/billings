@@ -346,6 +346,13 @@
 <body class="min-h-screen bg-white dark:bg-zinc-800">
 
     @php
+    $isAssignedCa = auth()->check()
+        && \App\Models\BusinessCaAssignment::query()
+            ->where('user_id', auth()->id())
+            ->where('is_active', true)
+            ->exists();
+@endphp
+    @php
         $user = auth()->user();
 
         /*
@@ -1018,6 +1025,33 @@
                 </svg>
 
                 <span>CA Access</span>
+            </a>
+        @endif
+
+        {{-- ============================================================= --}}
+        {{-- CA REPORTS - ONLY FOR ASSIGNED CA USERS --}}
+        {{-- ============================================================= --}}
+
+        @if($isAssignedCa)
+            <a href="{{ route('ca.reports') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-neutral-200 dark:hover:bg-neutral-800
+               {{ request()->routeIs('ca.reports*')
+                    ? 'active-sidebar-link bg-gray-100 font-semibold dark:bg-neutral-800'
+                    : ''
+               }}">
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-5 w-5 text-indigo-600"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h6l4 4v12a2 2 0 01-2 2z" />
+                </svg>
+
+                <span>CA Reports</span>
             </a>
         @endif
 

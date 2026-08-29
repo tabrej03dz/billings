@@ -92,27 +92,28 @@ Route::middleware('auth')->group(function () {
 
 
 
-        // ==========================================
-        // CA Management - Business Side
-        // ==========================================
+    // ==========================================
+    // CA Management - Business Side
+    // ==========================================
 
+    // CA Manage Page
         Route::get('/ca/manage', [BusinessCaController::class, 'index'])
             ->name('ca.manage');
 
-        Route::post('/ca/assign', [BusinessCaController::class, 'assign'])
-            ->name('ca.assign');
+        // Assign CA
+        Route::post('/ca/assign', [BusinessCaController::class, 'store'])
+            ->name('business.ca.store');
 
-        Route::post('/ca/{assignment}/revoke', [BusinessCaController::class, 'revoke'])
-            ->name('ca.revoke');
+        // Revoke CA
+        Route::delete('/ca/{assignment}/destroy', [BusinessCaController::class, 'destroy'])
+            ->name('business.ca.destroy');
 
-        Route::post('/ca/{assignment}/activate', [BusinessCaController::class, 'activate'])
-            ->name('ca.activate');
+        // Reactivate CA
+        Route::patch('/ca/{assignment}/reactivate', [BusinessCaController::class, 'reactivate'])
+        ->name('business.ca.reactivate');
 
 
-        // ==========================================
         // CA Reports
-        // ==========================================
-
         Route::get('/ca/reports', [CaReportController::class, 'index'])
             ->name('ca.reports');
 

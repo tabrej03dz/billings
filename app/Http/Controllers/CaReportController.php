@@ -239,4 +239,99 @@ class CaReportController extends Controller
                 return [$period->copy()->startOfMonth()->toDateString(), $period->copy()->endOfMonth()->toDateString()];
         }
     }
+
+
+    public function download(Request $request)
+    {
+        $user = $request->user();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Selected Business
+        |--------------------------------------------------------------------------
+        */
+
+        $businessId = (int) $request->get('business_id');
+
+        if (!$businessId) {
+            return back()->withErrors([
+                'business' => 'Please select a business.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Verify CA Access
+        |--------------------------------------------------------------------------
+        |
+        | IMPORTANT:
+        | business_ca_assignments table me CA column user_id hai.
+        */
+
+        $hasAccess = \App\Models\BusinessCaAssignment::query()
+            ->where('business_id', $businessId)
+            ->where('user_id', $user->id)
+            ->where('is_active', true)
+            ->exists();
+
+        abort_unless(
+            $hasAccess,
+            403,
+            'Aapko is business ki reports access karne ki permission nahi hai.'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Temporarily Set Selected Business
+        |--------------------------------------------------------------------------
+        |
+        | Existing InvoiceReportController active/current business ko use karta hai.
+        | Isliye CA ne jo business choose kiya hai use current context me set karenge.
+        */
+
+        $oldBusinessId = $user->current_business_id;
+        $oldSessionBusinessId = session('active_business_id');
+
+        try {
+
+            $user->current_business_id = $businessId;
+
+            session([
+                'active_business_id' => $businessId,
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Existing Report Download Logic Reuse
+            |--------------------------------------------------------------------------
+            */
+
+            $controller = app(
+                \App\Http\Controllers\InvoiceReportController::class
+            );
+
+            return $controller->export($request);
+
+        } finally {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Restore Previous Business
+            |--------------------------------------------------------------------------
+            */
+
+            $user->current_business_id = $oldBusinessId;
+
+            if ($oldSessionBusinessId) {
+
+                session([
+                    'active_business_id' => $oldSessionBusinessId,
+                ]);
+
+            } else {
+
+                session()->forget('active_business_id');
+            }
+        }
+    }
 }
