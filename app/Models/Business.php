@@ -1,4 +1,4 @@
-<?php
+
 
 namespace App\Models;
 
@@ -22,6 +22,18 @@ class Business extends Model
         return $this->belongsToMany(User::class)
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    public function charteredAccountants()
+    {
+        return $this->belongsToMany(User::class, 'business_ca_assignments', 'business_id', 'user_id')
+            ->withPivot(['is_active', 'assigned_by', 'assigned_at'])
+            ->withTimestamps();
+    }
+
+    public function caAssignments()
+    {
+        return $this->hasMany(BusinessCaAssignment::class);
     }
 
     public function owners()

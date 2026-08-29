@@ -40,6 +40,8 @@ use App\Http\Controllers\HospitalManagementController;
 use App\Http\Controllers\OnboardingRegistrationController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\UnitController;
+use App\Http\Controllers\BusinessCaController;
+use App\Http\Controllers\CaReportController;
 
 // frontend web routes:::::
 
@@ -85,6 +87,40 @@ Route::post(
 */
 
 Route::middleware('auth')->group(function () {
+
+
+
+
+
+        // ==========================================
+        // CA Management - Business Side
+        // ==========================================
+
+        Route::get('/ca/manage', [BusinessCaController::class, 'index'])
+            ->name('ca.manage');
+
+        Route::post('/ca/assign', [BusinessCaController::class, 'assign'])
+            ->name('ca.assign');
+
+        Route::post('/ca/{assignment}/revoke', [BusinessCaController::class, 'revoke'])
+            ->name('ca.revoke');
+
+        Route::post('/ca/{assignment}/activate', [BusinessCaController::class, 'activate'])
+            ->name('ca.activate');
+
+
+        // ==========================================
+        // CA Reports
+        // ==========================================
+
+        Route::get('/ca/reports', [CaReportController::class, 'index'])
+            ->name('ca.reports');
+
+        Route::get('/ca/reports/download', [CaReportController::class, 'download'])
+            ->name('ca.reports.download');
+
+
+
     Route::get(
         '/choose-plan',
         [PlanController::class, 'choose']

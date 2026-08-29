@@ -78,6 +78,21 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    /**
+     * Businesses that assigned this user as their CA.
+     */
+    public function caBusinesses()
+    {
+        return $this->belongsToMany(Business::class, 'business_ca_assignments', 'user_id', 'business_id')
+            ->withPivot(['is_active', 'assigned_by', 'assigned_at'])
+            ->withTimestamps();
+    }
+
+    public function caAssignments()
+    {
+        return $this->hasMany(BusinessCaAssignment::class, 'user_id');
+    }
+
     public function api(){
         return $this->hasOne(ApiKey::class, 'user_id');
     }

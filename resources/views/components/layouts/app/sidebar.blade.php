@@ -992,6 +992,35 @@
             @endcan
         @endif
 
+
+
+
+        @php
+            $currentBusinessId = session('current_business_id')
+                ?? session('active_business_id')
+                ?? auth()->user()?->current_business_id;
+        @endphp
+
+        @if($currentBusinessId)
+            <a href="{{ route('ca.manage') }}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg transition
+            {{ request()->routeIs('ca.manage') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }}">
+
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l3.414 3.414A1 1 0 0117 7.414V19a2 2 0 01-2 2z" />
+                </svg>
+
+                <span>CA Access</span>
+            </a>
+        @endif
+
         {{-- ============================================================= --}}
         {{-- INVOICES --}}
         {{-- ============================================================= --}}
