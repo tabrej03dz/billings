@@ -384,10 +384,6 @@ class ClientController extends Controller
                 'string',
                 'max:100',
             ],
-            'state_code' => [
-                'nullable',
-                'integer',
-            ],
 
             'address' => [
                 'nullable',

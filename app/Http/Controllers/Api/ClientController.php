@@ -43,60 +43,201 @@ class ClientController extends Controller
     // -----------------------------
     // POST /api/clients
     // -----------------------------
+    // public function store(Request $request)
+    // {
+    //     $bid = $this->resolveBusinessId($request);
+
+    //     // Normalize
+    //     $request->merge([
+    //         'mobile'  => $request->mobile ? preg_replace('/\s+/', '', (string) $request->mobile) : null,
+    //         'gstin'   => $request->gstin  ? strtoupper(preg_replace('/\s+/', '', (string) $request->gstin)) : null,
+    //         'pan'     => $request->pan    ? strtoupper(preg_replace('/\s+/', '', (string) $request->pan)) : null,
+    //         'state'   => $request->state  ? trim((string) $request->state) : null,
+    //         'address' => $request->address? trim((string) $request->address) : null,
+    //         'name'    => $request->name   ? trim((string) $request->name) : null,
+    //         'pincode' => $request->pincode? trim((string) $request->pincode) : null,
+    //     ]);
+
+    //     // empty string -> null
+    //     foreach (['mobile','gstin','pan','state','address','pincode'] as $f) {
+    //         if ($request->has($f) && $request->input($f) === '') {
+    //             $request->merge([$f => null]);
+    //         }
+    //     }
+
+    //     $data = $request->validate([
+    //         'name'    => ['required','string','max:255'],
+    //         'mobile'  => [
+    //             'nullable','string','max:20',
+    //             Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
+    //         ],
+    //         'gstin'   => [
+    //             'nullable','string','max:50',
+    //             Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
+    //         ],
+    //         'pan'     => [
+    //             'nullable','string','max:50',
+    //             Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
+    //         ],
+    //         'state'   => ['nullable','string','max:100'], // "09, Uttar Pradesh" OR "Uttar Pradesh"
+    //         'address' => ['nullable','string','max:1000'],
+    //         'pincode' => ['nullable','string','max:20'],
+    //     ]);
+
+    //     // State split/derive
+    //     $data = $this->applyStateFromInputOrGstin($data);
+
+    //     $data['business_id'] = $bid;
+
+    //     $client = Client::create($data);
+
+    //     return response()->json([
+    //         'ok'      => true,
+    //         'message' => 'Client created successfully.',
+    //         'client'  => $this->clientPayload($client),
+    //     ], 201);
+    // }
+
     public function store(Request $request)
-    {
-        $bid = $this->resolveBusinessId($request);
+{
+    $bid = $this->resolveBusinessId($request);
 
-        // Normalize
-        $request->merge([
-            'mobile'  => $request->mobile ? preg_replace('/\s+/', '', (string) $request->mobile) : null,
-            'gstin'   => $request->gstin  ? strtoupper(preg_replace('/\s+/', '', (string) $request->gstin)) : null,
-            'pan'     => $request->pan    ? strtoupper(preg_replace('/\s+/', '', (string) $request->pan)) : null,
-            'state'   => $request->state  ? trim((string) $request->state) : null,
-            'address' => $request->address? trim((string) $request->address) : null,
-            'name'    => $request->name   ? trim((string) $request->name) : null,
-            'pincode' => $request->pincode? trim((string) $request->pincode) : null,
-        ]);
+    // Normalize
+    $request->merge([
+        'mobile'     => $request->mobile
+            ? preg_replace('/\s+/', '', (string) $request->mobile)
+            : null,
 
-        // empty string -> null
-        foreach (['mobile','gstin','pan','state','address','pincode'] as $f) {
-            if ($request->has($f) && $request->input($f) === '') {
-                $request->merge([$f => null]);
-            }
+        'gstin'      => $request->gstin
+            ? strtoupper(preg_replace('/\s+/', '', (string) $request->gstin))
+            : null,
+
+        'pan'        => $request->pan
+            ? strtoupper(preg_replace('/\s+/', '', (string) $request->pan))
+            : null,
+
+        'state'      => $request->state
+            ? trim((string) $request->state)
+            : null,
+
+        'state_code' => $request->state_code !== null && $request->state_code !== ''
+            ? str_pad(trim((string) $request->state_code), 2, '0', STR_PAD_LEFT)
+            : null,
+
+        'address'    => $request->address
+            ? trim((string) $request->address)
+            : null,
+
+        'name'       => $request->name
+            ? trim((string) $request->name)
+            : null,
+
+        'pincode'    => $request->pincode
+            ? trim((string) $request->pincode)
+            : null,
+    ]);
+
+    // Empty string -> null
+    foreach ([
+        'mobile',
+        'gstin',
+        'pan',
+        'state',
+        'state_code',
+        'address',
+        'pincode'
+    ] as $f) {
+        if ($request->has($f) && $request->input($f) === '') {
+            $request->merge([$f => null]);
         }
-
-        $data = $request->validate([
-            'name'    => ['required','string','max:255'],
-            'mobile'  => [
-                'nullable','string','max:20',
-                Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id', $bid)),
-            ],
-            'gstin'   => [
-                'nullable','string','max:50',
-                Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id', $bid)),
-            ],
-            'pan'     => [
-                'nullable','string','max:50',
-                Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id', $bid)),
-            ],
-            'state'   => ['nullable','string','max:100'], // "09, Uttar Pradesh" OR "Uttar Pradesh"
-            'address' => ['nullable','string','max:1000'],
-            'pincode' => ['nullable','string','max:20'],
-        ]);
-
-        // State split/derive
-        $data = $this->applyStateFromInputOrGstin($data);
-
-        $data['business_id'] = $bid;
-
-        $client = Client::create($data);
-
-        return response()->json([
-            'ok'      => true,
-            'message' => 'Client created successfully.',
-            'client'  => $this->clientPayload($client),
-        ], 201);
     }
+
+    $data = $request->validate([
+        'name' => [
+            'required',
+            'string',
+            'max:255'
+        ],
+
+        'mobile' => [
+            'nullable',
+            'string',
+            'max:20',
+            Rule::unique('clients', 'mobile')
+                ->where(fn ($q) => $q->where('business_id', $bid)),
+        ],
+
+        'gstin' => [
+            'nullable',
+            'string',
+            'max:50',
+            Rule::unique('clients', 'gstin')
+                ->where(fn ($q) => $q->where('business_id', $bid)),
+        ],
+
+        'pan' => [
+            'nullable',
+            'string',
+            'max:50',
+            Rule::unique('clients', 'pan')
+                ->where(fn ($q) => $q->where('business_id', $bid)),
+        ],
+
+        'state' => [
+            'nullable',
+            'string',
+            'max:100'
+        ],
+
+        'state_code' => [
+            'nullable',
+            'string',
+            'size:2',
+            'regex:/^[0-9]{2}$/',
+        ],
+
+        'address' => [
+            'nullable',
+            'string',
+            'max:1000'
+        ],
+
+        'pincode' => [
+            'nullable',
+            'string',
+            'max:20'
+        ],
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | State / State Code Handling
+    |--------------------------------------------------------------------------
+    |
+    | Agar state_code request se aaya hai to usko priority milegi.
+    | Agar state_code nahi aaya to existing function GSTIN/state se derive karega.
+    |
+    */
+
+    $requestStateCode = $data['state_code'] ?? null;
+
+    $data = $this->applyStateFromInputOrGstin($data);
+
+    // Request me state_code explicitly aaya tha to derived code overwrite na kare
+    if ($requestStateCode !== null) {
+        $data['state_code'] = $requestStateCode;
+    }
+
+    $data['business_id'] = $bid;
+
+    $client = Client::create($data);
+
+    return response()->json([
+        'ok'      => true,
+        'message' => 'Client created successfully.',
+        'client'  => $this->clientPayload($client),
+    ], 201);
+}
 
     // -----------------------------
     // GET /api/clients/{client}
