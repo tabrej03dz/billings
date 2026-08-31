@@ -232,6 +232,95 @@
                 </div>
             @endif
 
+            {{-- Barcode --}}
+            <div>
+                <div class="mb-1.5 flex items-center justify-between gap-2">
+
+                    <label
+                        for="barcode"
+                        class="block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                    >
+                        Barcode
+                        <span class="text-red-600">*</span>
+                    </label>
+
+                    @if(!$isEdit)
+                        <button
+                            type="button"
+                            id="generateBarcodeButton"
+                            class="inline-flex items-center gap-1 rounded-lg
+                                bg-purple-100 px-2.5 py-1
+                                text-xs font-bold text-purple-700
+                                transition hover:bg-purple-200
+                                dark:bg-purple-900/40
+                                dark:text-purple-300"
+                        >
+                            ↻ Generate New
+                        </button>
+                    @endif
+
+                </div>
+
+                <div class="relative">
+
+                    <input
+                        id="barcode"
+                        type="text"
+                        name="barcode"
+                        required
+                        autocomplete="off"
+
+                        value="{{ old(
+                            'barcode',
+                            $item->barcode ?? ($generatedBarcode ?? '')
+                        ) }}"
+
+                        class="mt-1 w-full rounded-xl
+                            border border-slate-300
+                            bg-slate-50
+                            px-3.5 py-2.5 pr-12
+                            font-mono
+                            font-semibold
+                            tracking-wider
+                            text-slate-900
+                            outline-none
+                            transition
+                            focus:border-purple-500
+                            focus:bg-white
+                            focus:ring-4
+                            focus:ring-purple-100
+
+                            dark:border-slate-600
+                            dark:bg-slate-800
+                            dark:text-white
+                            dark:focus:border-purple-400
+                            dark:focus:ring-purple-900/40"
+
+                        placeholder="Barcode"
+                    >
+
+                    <span
+                        class="pointer-events-none
+                            absolute right-3 top-1/2
+                            -translate-y-1/2
+                            text-lg"
+                    >
+                        ▥
+                    </span>
+
+                </div>
+
+                <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    Barcode automatically generated hai. Zarurat ho to manually change bhi kar sakte hain.
+                </p>
+
+                @error('barcode')
+                    <p class="mt-1 text-xs font-medium text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+
             @if($showField('type'))
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -1274,5 +1363,53 @@ document.addEventListener('DOMContentLoaded', function () {
 
         reader.readAsDataURL(file);
     });
+});
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const barcodeInput =
+        document.getElementById('barcode');
+
+    const generateButton =
+        document.getElementById('generateBarcodeButton');
+
+    if (!barcodeInput || !generateButton) {
+        return;
+    }
+
+    generateButton.addEventListener('click', function () {
+
+        /*
+         * Client side par naya 12-digit number.
+         *
+         * Final duplicate checking backend validation
+         * se bhi hogi.
+         */
+
+        const firstDigit =
+            Math.floor(Math.random() * 9) + 1;
+
+        let barcode =
+            firstDigit.toString();
+
+        for (let i = 0; i < 11; i++) {
+            barcode += Math.floor(
+                Math.random() * 10
+            ).toString();
+        }
+
+        barcodeInput.value = barcode;
+
+        barcodeInput.dispatchEvent(
+            new Event('change')
+        );
+
+        barcodeInput.focus();
+        barcodeInput.select();
+    });
+
 });
 </script>

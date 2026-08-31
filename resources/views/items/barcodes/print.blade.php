@@ -8,18 +8,30 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Print Barcode Labels</title>
+    <title>Barcode Labels</title>
 
     <style>
         /*
         |--------------------------------------------------------------------------
-        | Print configuration
+        | IMPORTANT
         |--------------------------------------------------------------------------
+        |
+        | Jewellery tag assumed size:
+        |
+        | Total Width  : 75mm
+        | Total Height : 13mm
+        |
+        | Printed Part : 46mm
+        | Blank Tail   : 29mm
+        |
+        | Printer ke actual sticker size ke hisaab se
+        | sirf yahi dimensions later adjust karna.
+        |
         */
 
         @page {
-            size: auto;
-            margin: 4mm;
+            size: 75mm 13mm;
+            margin: 0;
         }
 
         * {
@@ -31,22 +43,21 @@
             margin: 0;
             padding: 0;
 
-            color: #000000;
             background: #ffffff;
+            color: #000000;
 
             font-family: Arial, Helvetica, sans-serif;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Toolbar
-        |--------------------------------------------------------------------------
-        */
+
+        /* =========================================================
+           SCREEN TOOLBAR
+        ========================================================= */
 
         .toolbar {
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 999;
 
             display: flex;
             flex-wrap: wrap;
@@ -55,244 +66,358 @@
 
             padding: 12px;
 
-            background: #ffffff;
-            border-bottom: 1px solid #d1d5db;
+            background: #f8fafc;
+            border-bottom: 1px solid #cbd5e1;
         }
 
         .toolbar button {
-            padding: 10px 16px;
-
             border: 0;
-            border-radius: 6px;
+            border-radius: 8px;
+
+            padding: 9px 16px;
+
+            font-size: 13px;
+            font-weight: 700;
 
             cursor: pointer;
-
-            font-size: 14px;
-            font-weight: 700;
         }
 
-        .print-button {
+        .print-btn {
             color: #ffffff;
             background: #16a34a;
         }
 
-        .print-button:hover {
+        .print-btn:hover {
             background: #15803d;
         }
 
-        .close-button {
+        .close-btn {
             color: #111827;
-            background: #e5e7eb;
+            background: #e2e8f0;
         }
 
-        .close-button:hover {
-            background: #d1d5db;
+        .close-btn:hover {
+            background: #cbd5e1;
         }
 
-        .print-note {
-            color: #4b5563;
+        .note {
             font-size: 12px;
+            color: #64748b;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Barcode sheet
-        |--------------------------------------------------------------------------
-        */
+
+        /* =========================================================
+           SCREEN SHEET
+        ========================================================= */
 
         .sheet {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             align-items: flex-start;
-            justify-content: flex-start;
 
-            gap: 5mm;
-            padding: 5mm;
+            gap: 4mm;
+
+            padding: 12px;
+
+            background: #6b7075;
         }
 
-        /*
-         * Barcode ki width fixed nahi rakhi gayi.
-         * Label generated barcode ki natural width ke according expand hoga.
-         */
-        .label {
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
 
-            width: max-content;
-            min-width: max-content;
+        /* =========================================================
+           ONE COMPLETE TAG
+        ========================================================= */
 
-            padding: 6mm 10mm;
+        .tag {
+            position: relative;
 
-            overflow: visible;
+            display: flex;
 
-            color: #000000;
-            text-align: center;
-            white-space: nowrap;
+            width: 75mm;
+            height: 13mm;
+
+            margin: 0;
+
+            overflow: hidden;
 
             background: #ffffff;
-            border: 1px dashed #9ca3af;
 
             page-break-inside: avoid;
             break-inside: avoid;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Item name
-        |--------------------------------------------------------------------------
-        */
 
-        .item-name {
-            width: 100%;
-            margin-bottom: 3mm;
+        /* =========================================================
+           PRINTED PART
+        ========================================================= */
 
-            color: #000000;
+        .print-part {
+            display: flex;
+            align-items: center;
 
-            font-size: 17px;
-            font-weight: 700;
-            line-height: 1.2;
+            width: 46mm;
+            height: 13mm;
 
-            text-align: center;
-        }
+            padding:
+                0.55mm
+                0.7mm
+                0.45mm
+                0.8mm;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Price
-        |--------------------------------------------------------------------------
-        */
+            overflow: hidden;
 
-        .item-price {
-            width: 100%;
-            margin-bottom: 3mm;
-
-            color: #000000;
-
-            font-size: 16px;
-            font-weight: 700;
-            line-height: 1.2;
-
-            text-align: center;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Barcode
-        |--------------------------------------------------------------------------
-        */
-
-        /*
-         * Barcode ke left aur right me large white quiet zone.
-         * Scanner ke liye ye bahut zaruri hai.
-         */
-        .barcode-quiet-zone {
-            display: inline-block;
-
-            width: max-content;
-            min-width: max-content;
-
-            padding: 0 12mm;
-
-            overflow: visible;
-
-            line-height: 0;
             background: #ffffff;
         }
 
+
+        /* =========================================================
+           LEFT INFORMATION
+        ========================================================= */
+
+        .info {
+            flex: 0 0 16mm;
+
+            width: 16mm;
+            height: 11.7mm;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            padding-right: 0.6mm;
+
+            overflow: hidden;
+
+            color: #000000;
+
+            line-height: 1;
+        }
+
+        .mrp {
+            width: 100%;
+
+            overflow: hidden;
+
+            font-size: 5.2pt;
+            font-weight: 800;
+
+            line-height: 1.05;
+
+            white-space: nowrap;
+        }
+
+        .tax {
+            width: 100%;
+
+            margin-top: 0.22mm;
+
+            overflow: hidden;
+
+            font-size: 3.75pt;
+            font-weight: 500;
+
+            line-height: 1;
+
+            white-space: nowrap;
+        }
+
+        .brand {
+            width: 100%;
+
+            margin-top: 0.55mm;
+
+            overflow: hidden;
+
+            font-size: 4.65pt;
+            font-weight: 800;
+
+            line-height: 1;
+
+            white-space: nowrap;
+        }
+
+        .model {
+            width: 100%;
+
+            margin-top: 0.38mm;
+
+            overflow: hidden;
+
+            font-size: 3.65pt;
+            font-weight: 500;
+
+            line-height: 1;
+
+            white-space: nowrap;
+        }
+
+
+        /* =========================================================
+           BARCODE SIDE
+        ========================================================= */
+
+        .barcode-side {
+            flex: 0 0 30mm;
+
+            width: 30mm;
+            height: 11.8mm;
+
+            display: flex;
+            flex-direction: column;
+
+            align-items: center;
+            justify-content: center;
+
+            overflow: hidden;
+        }
+
+
         /*
-         * SVG ko CSS se compress nahi kiya jayega.
-         *
-         * width: auto
-         * max-width: none
-         *
-         * Isse generated barcode apni natural width me rahega.
-         */
-        .barcode-quiet-zone svg {
+        |--------------------------------------------------------------------------
+        | Barcode quiet zone
+        |--------------------------------------------------------------------------
+        |
+        | Scanner ke liye left/right blank space important hai.
+        |
+        */
+
+        .barcode-wrap {
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            width: 29mm;
+            height: 7.4mm;
+
+            padding-left: 1.4mm;
+            padding-right: 1.4mm;
+
+            overflow: hidden;
+
+            background: #ffffff;
+
+            line-height: 0;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode SVG
+        |--------------------------------------------------------------------------
+        |
+        | Vertical height control karenge.
+        |
+        | Horizontal width ko unnecessarily stretch nahi karenge.
+        |
+        */
+
+        .barcode-wrap svg {
             display: block;
 
             width: auto !important;
-            max-width: none !important;
-            min-width: 0 !important;
+            max-width: 26mm !important;
 
-            height: auto !important;
+            height: 6.8mm !important;
+            max-height: 6.8mm !important;
 
             overflow: visible !important;
 
             shape-rendering: crispEdges;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Barcode number
-        |--------------------------------------------------------------------------
-        */
 
         .barcode-number {
-            margin-top: 3mm;
+            width: 29mm;
+
+            margin-top: 0.32mm;
+
+            overflow: hidden;
 
             color: #000000;
 
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 15px;
-            font-weight: 500;
-            letter-spacing: 0;
+
+            font-size: 4pt;
+            font-weight: 700;
+
+            line-height: 1;
+
+            text-align: center;
+
+            white-space: nowrap;
+        }
+
+
+        /* =========================================================
+           INVALID / EMPTY BARCODE
+        ========================================================= */
+
+        .barcode-error {
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            width: 27mm;
+            height: 8mm;
+
+            padding: 1mm;
+
+            color: #b91c1c;
+
+            font-size: 4pt;
+            font-weight: 700;
+
             line-height: 1.2;
 
             text-align: center;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Item meta
-        |--------------------------------------------------------------------------
-        */
 
-        .item-meta {
-            display: flex;
-            width: 100%;
-            justify-content: space-between;
-            align-items: center;
+        /* =========================================================
+           BLANK JEWELLERY TAIL
+        ========================================================= */
 
-            gap: 20mm;
-            margin-top: 3mm;
+        .tail {
+            flex: 0 0 29mm;
 
-            color: #000000;
+            width: 29mm;
+            height: 13mm;
 
-            font-size: 11px;
-            font-weight: 600;
-            line-height: 1.2;
+            background: #ffffff;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Invalid barcode
-        |--------------------------------------------------------------------------
-        */
 
-        .invalid-barcode {
-            min-width: 300px;
-            padding: 20px;
+        /* =========================================================
+           SCREEN PREVIEW ONLY
+        ========================================================= */
 
-            color: #b91c1c;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
+        @media screen {
 
-            font-size: 13px;
-            font-weight: 700;
-            line-height: 1.5;
+            .tag {
+                box-shadow:
+                    0 2px 8px rgba(0, 0, 0, .35);
+            }
+
+            .print-part {
+                border-right:
+                    1px dashed #d1d5db;
+            }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Print mode
-        |--------------------------------------------------------------------------
-        */
+
+        /* =========================================================
+           ACTUAL PRINT
+        ========================================================= */
 
         @media print {
+
             html,
             body {
-                margin: 0;
-                padding: 0;
+                width: 75mm !important;
+
+                margin: 0 !important;
+                padding: 0 !important;
 
                 background: #ffffff !important;
             }
@@ -302,37 +427,34 @@
             }
 
             .sheet {
-                display: flex;
-                flex-wrap: wrap;
+                display: block;
 
-                gap: 4mm;
-                padding: 0;
+                margin: 0 !important;
+                padding: 0 !important;
+
+                background: #ffffff !important;
             }
 
-            .label {
-                width: max-content !important;
-                min-width: max-content !important;
+            .tag {
+                width: 75mm !important;
+                height: 13mm !important;
 
-                padding: 5mm 10mm;
+                margin: 0 !important;
+                padding: 0 !important;
 
-                overflow: visible !important;
+                box-shadow: none !important;
 
-                border: 0;
+                page-break-after: always;
+                break-after: page;
             }
 
-            .barcode-quiet-zone {
-                width: max-content !important;
-                min-width: max-content !important;
-
-                overflow: visible !important;
+            .tag:last-child {
+                page-break-after: auto;
+                break-after: auto;
             }
 
-            .barcode-quiet-zone svg {
-                width: auto !important;
-                max-width: none !important;
-                height: auto !important;
-
-                overflow: visible !important;
+            .print-part {
+                border: 0 !important;
             }
         }
     </style>
@@ -340,159 +462,371 @@
 
 <body>
 
-{{-- ================= TOOLBAR ================= --}}
+
+{{-- =========================================================
+     TOOLBAR
+========================================================= --}}
 
 <div class="toolbar">
 
     <button
         type="button"
-        class="print-button"
+        class="print-btn"
         onclick="window.print()"
     >
-        Print Labels
+        🖨 Print Labels
     </button>
+
 
     <button
         type="button"
-        class="close-button"
+        class="close-btn"
         onclick="window.close()"
     >
         Close
     </button>
 
-    <div class="print-note">
-        Print scale 100%, fit-to-page off, margins minimum.
-    </div>
+
+    <span class="note">
+        Scale 100% • Margins None • Fit to page OFF
+    </span>
 
 </div>
 
-{{-- ================= LABEL SHEET ================= --}}
+
+{{-- =========================================================
+     LABEL SHEET
+========================================================= --}}
 
 <div class="sheet">
 
-    @foreach($items as $entry)
+@foreach($items as $entry)
 
-        @php
-            $item = $entry['item'];
+    @php
 
-            $copies = max(
-                1,
+        /*
+        |--------------------------------------------------------------------------
+        | Item
+        |--------------------------------------------------------------------------
+        */
+
+        $item = $entry['item'];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Copies
+        |--------------------------------------------------------------------------
+        */
+
+        $copies = max(
+            1,
+            min(
+                200,
                 (int) ($entry['quantity'] ?? 1)
-            );
+            )
+        );
 
-            $barcodeValue = strtoupper(
-                trim((string) $item->barcode)
-            );
 
-            /*
-             * Valid barcode format:
-             *
-             * ITM + exactly 15 numeric digits
-             */
-            $validBarcode = preg_match(
-                '/^ITM[0-9]{15}$/',
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode
+        |--------------------------------------------------------------------------
+        */
+
+        $barcodeValue = trim(
+            (string) ($item->barcode ?? '')
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Numeric barcode check
+        |--------------------------------------------------------------------------
+        |
+        | New recommended format:
+        |
+        | 12 numeric digits
+        |
+        | Example:
+        | 381482901245
+        |
+        */
+
+        $is12DigitNumeric =
+            preg_match(
+                '/^[0-9]{12}$/',
                 $barcodeValue
-            );
-        @endphp
+            ) === 1;
 
-        @for($copy = 0; $copy < $copies; $copy++)
 
-            <div class="label">
+        /*
+        |--------------------------------------------------------------------------
+        | Other Code128-compatible barcode
+        |--------------------------------------------------------------------------
+        */
 
-                {{-- Item name --}}
+        $hasBarcode =
+            $barcodeValue !== '';
 
-                <div class="item-name">
-                    {{ $item->name }}
-                </div>
 
-                {{-- Price name ke neeche --}}
+        /*
+        |--------------------------------------------------------------------------
+        | Brand
+        |--------------------------------------------------------------------------
+        */
 
-                <div class="item-price">
-                    Rs. {{ number_format((float) $item->price, 2) }}
-                </div>
+        $brand = trim(
+            (string) (
+                $item->brand
+                ?? $item->name
+                ?? ''
+            )
+        );
 
-                @if($validBarcode)
 
-                    {{--
-                    |--------------------------------------------------------------------------
-                    | Code 128 Auto
-                    |--------------------------------------------------------------------------
-                    |
-                    | C128 use kiya gaya hai, C128B nahi.
-                    |
-                    | C128 automatically:
-                    | - ITM letters ko Code Set B me encode karega.
-                    | - Long numeric part ko compact Code Set C me encode karega.
-                    |
-                    | Bar width: 4
-                    | Height: 150
-                    |
-                    | Isko CSS se compress nahi kiya gaya.
-                    |
-                    --}}
+        /*
+        |--------------------------------------------------------------------------
+        | Model / SKU
+        |--------------------------------------------------------------------------
+        */
 
-                    <div class="barcode-quiet-zone">
-                        {!! DNS1D::getBarcodeSVG(
-                            $barcodeValue,
-                            'C128',
-                            4,
-                            150,
-                            '000000',
-                            false
-                        ) !!}
+        $model = trim(
+            (string) (
+                $item->model_no
+                ?? $item->sku
+                ?? ''
+            )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Price
+        |--------------------------------------------------------------------------
+        */
+
+        $price = (float) (
+            $item->price
+            ?? 0
+        );
+
+    @endphp
+
+
+    @for($copy = 0; $copy < $copies; $copy++)
+
+
+        <div class="tag">
+
+
+            {{-- =================================================
+                 PRINTABLE AREA
+            ================================================== --}}
+
+            <div class="print-part">
+
+
+                {{-- =============================================
+                     LEFT SIDE
+                ============================================== --}}
+
+                <div class="info">
+
+
+                    <div class="mrp">
+
+                        MRP:
+                        ₹{{ number_format(
+                            $price,
+                            0
+                        ) }}/-
+
                     </div>
 
-                    {{-- Barcode text --}}
 
-                    <div class="barcode-number">
-                        {{ $barcodeValue }}
+                    <div class="tax">
+                        Incl. of all Taxes
                     </div>
 
-                @else
 
-                    <div class="invalid-barcode">
-                        Invalid or old barcode:
-                        <br>
-                        {{ $barcodeValue ?: 'Empty barcode' }}
-                        <br><br>
-                        Please regenerate this item's barcode.
+                    <div class="brand">
+
+                        BRAND:
+
+                        {{
+                            \Illuminate\Support\Str::limit(
+                                strtoupper($brand),
+                                9,
+                                ''
+                            )
+                        }}
+
                     </div>
 
-                @endif
 
-                {{-- Bottom information --}}
+                    @if($model !== '')
 
-                <div class="item-meta">
+                        <div class="model">
 
-                    <span>
-                        {{ $item->sku ?: 'ITEM-' . $item->id }}
-                    </span>
+                            M NO:
 
-                    <strong>
-                        Rs. {{ number_format((float) $item->price, 2) }}
-                    </strong>
+                            {{
+                                \Illuminate\Support\Str::limit(
+                                    strtoupper($model),
+                                    8,
+                                    ''
+                                )
+                            }}
+
+                        </div>
+
+                    @endif
+
 
                 </div>
+
+
+                {{-- =============================================
+                     RIGHT BARCODE
+                ============================================== --}}
+
+                <div class="barcode-side">
+
+
+                    @if($hasBarcode)
+
+
+                        {{-- =====================================
+                             12 DIGIT NUMERIC
+                        ====================================== --}}
+
+                        @if($is12DigitNumeric)
+
+
+                            <div class="barcode-wrap">
+
+                                {!! DNS1D::getBarcodeSVG(
+                                    $barcodeValue,
+                                    'C128C',
+                                    1.15,
+                                    34,
+                                    '000000',
+                                    false
+                                ) !!}
+
+                            </div>
+
+
+                            <div class="barcode-number">
+                                {{ $barcodeValue }}
+                            </div>
+
+
+                        @else
+
+
+                            {{--
+                            |--------------------------------------------------------------------------
+                            | OLD / ALPHANUMERIC BARCODE
+                            |--------------------------------------------------------------------------
+                            |
+                            | Existing ITM barcode delete nahi kar rahe.
+                            |
+                            | C128 fallback use hoga.
+                            |
+                            --}}
+
+
+                            <div class="barcode-wrap">
+
+                                {!! DNS1D::getBarcodeSVG(
+                                    $barcodeValue,
+                                    'C128',
+                                    0.85,
+                                    34,
+                                    '000000',
+                                    false
+                                ) !!}
+
+                            </div>
+
+
+                            <div class="barcode-number">
+                                {{ $barcodeValue }}
+                            </div>
+
+
+                        @endif
+
+
+                    @else
+
+
+                        <div class="barcode-error">
+
+                            Barcode
+                            <br>
+                            Not Available
+
+                        </div>
+
+
+                    @endif
+
+
+                </div>
+
 
             </div>
 
-        @endfor
 
-    @endforeach
+            {{-- =================================================
+                 BLANK TAIL
+            ================================================== --}}
+
+            <div class="tail"></div>
+
+
+        </div>
+
+
+    @endfor
+
+
+@endforeach
 
 </div>
 
-{{-- ================= AUTO PRINT ================= --}}
 
-@if($autoPrint)
+{{-- =========================================================
+     AUTO PRINT
+========================================================= --}}
+
+@if(!empty($autoPrint))
+
     <script>
-        window.addEventListener('load', function () {
-            window.setTimeout(function () {
-                window.print();
-            }, 900);
-        });
+
+        window.addEventListener(
+            'load',
+            function () {
+
+                window.setTimeout(
+                    function () {
+
+                        window.print();
+
+                    },
+                    600
+                );
+
+            }
+        );
+
     </script>
+
 @endif
+
 
 </body>
 </html>

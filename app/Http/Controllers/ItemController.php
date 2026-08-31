@@ -251,10 +251,13 @@ class ItemController extends Controller
                 ->toArray();
         }
 
+        $generatedBarcode = $this->generateUniqueBarcode();
+
         return view('items.create', compact(
             'categories',
             'units',
-            'allowedFields'
+            'allowedFields',
+            'generatedBarcode'
         ));
     }
 
@@ -580,6 +583,17 @@ class ItemController extends Controller
             'image',
             'mimes:jpg,jpeg,png,webp',
             'max:2048',
+        ];
+
+        $rules['barcode'] = [
+            'nullable',
+            'string',
+            'max:100',
+            Rule::unique('items', 'barcode')
+                ->where(
+                    fn ($query) =>
+                    $query->where('business_id', $bid)
+                ),
         ];
 
         /*
@@ -1064,451 +1078,468 @@ class ItemController extends Controller
 
 
     public function update(
-    Request $request,
-    Item $item,
-    StockService $stock
-) {
-    $newUploadedImage = null;
+        Request $request,
+        Item $item,
+        StockService $stock
+    ) {
+        $newUploadedImage = null;
 
-    try {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Active Business
-        |--------------------------------------------------------------------------
-        */
-        $bid =
-            $request->user()->current_business_id
-            ?? session('active_business_id');
-
-        if (!$bid) {
-            $bid = $request->user()
-                ->businesses()
-                ->pluck('businesses.id')
-                ->first();
-        }
-
-        abort_unless(
-            $bid,
-            422,
-            'Active business not found.'
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Item Authorization
-        |--------------------------------------------------------------------------
-        */
-        abort_unless(
-            (int) $item->business_id === (int) $bid,
-            403,
-            'Unauthorized item.'
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Validation
-        |--------------------------------------------------------------------------
-        */
-        $data = $request->validate([
-
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
-
-            'sku' => [
-                'nullable',
-                'string',
-                'max:100',
-
-                Rule::unique(
-                    'items',
-                    'sku'
-                )
-                    ->ignore($item->id)
-                    ->where(
-                        fn ($query) =>
-                        $query->where(
-                            'business_id',
-                            $bid
-                        )
-                    ),
-            ],
-
-            'category_id' => [
-                'nullable',
-                'integer',
-            ],
-
-            'type' => [
-                'required',
-                Rule::in([
-                    'product',
-                    'service',
-                ]),
-            ],
-
-            'sac' => [
-                'nullable',
-                'string',
-                'max:32',
-            ],
-
-            'description' => [
-                'nullable',
-                'string',
-                'max:2000',
-            ],
-
-            'price' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'cost_price' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'making_charge_type' => [
-                'nullable',
-
-                Rule::in([
-                    'percentage',
-                    'fixed',
-                    'per_gram',
-                    'per_product',
-                ]),
-            ],
-
-            'making_charge' => [
-                'nullable',
-                'numeric',
-                'min:0',
-
-                Rule::when(
-                    $request->input(
-                        'making_charge_type',
-                        'percentage'
-                    ) === 'percentage',
-                    [
-                        'max:100',
-                    ]
-                ),
-            ],
-
-            'stock_qty' => [
-                'nullable',
-                'integer',
-                'min:0',
-            ],
-
-            'unit' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            'tax_rate' => [
-                'required',
-                'numeric',
-                'min:0',
-                'max:100',
-            ],
-
-            'is_active' => [
-                'nullable',
-            ],
-
-            'metal_type' => [
-                'nullable',
-                Rule::in([
-                    'gold',
-                    'silver',
-                    'other',
-                ]),
-            ],
-
-            'purity' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            'gross_weight' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'metal_weight' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'stone_weight' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'stone_charges' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'gold_weight' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'gold_purity' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            'silver_weight' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'silver_purity' => [
-                'nullable',
-                'string',
-                'max:50',
-            ],
-
-            'diamond_weight' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
-
-            'diamond_charges' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
+        try {
 
             /*
             |--------------------------------------------------------------------------
-            | Image
+            | Active Business
             |--------------------------------------------------------------------------
             */
-            'image' => [
-                'nullable',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:2048',
-            ],
-        ]);
+            $bid =
+                $request->user()->current_business_id
+                ?? session('active_business_id');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Category Business Validation
-        |--------------------------------------------------------------------------
-        */
-        if (!empty($data['category_id'])) {
-
-            $categoryBelongsToBusiness =
-                Category::query()
-                    ->where(
-                        'id',
-                        $data['category_id']
-                    )
-                    ->where(
-                        'business_id',
-                        $bid
-                    )
-                    ->exists();
-
-            if (!$categoryBelongsToBusiness) {
-
-                return back()
-                    ->withErrors([
-                        'category_id' =>
-                            'Selected category does not belong to active business.',
-                    ])
-                    ->withInput();
+            if (!$bid) {
+                $bid = $request->user()
+                    ->businesses()
+                    ->pluck('businesses.id')
+                    ->first();
             }
-        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Final Stock Qty
-        |--------------------------------------------------------------------------
-        */
-        $finalQty =
-            (int) (
-                $data['stock_qty']
-                ?? $item->stock_qty
-                ?? 0
+            abort_unless(
+                $bid,
+                422,
+                'Active business not found.'
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Remove Stock + Image File Object
-        |--------------------------------------------------------------------------
-        */
-        $payload = Arr::except(
-            $data,
-            [
-                'stock_qty',
-                'image',
-            ]
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | Checkbox
-        |--------------------------------------------------------------------------
-        */
-        $payload['is_active'] =
-            $request->has('is_active')
-                ? $request->boolean('is_active')
-                : false;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Making Charge
-        |--------------------------------------------------------------------------
-        */
-        $payload['making_charge_type'] =
-            $request->input(
-                'making_charge_type',
-                'percentage'
+            /*
+            |--------------------------------------------------------------------------
+            | Item Authorization
+            |--------------------------------------------------------------------------
+            */
+            abort_unless(
+                (int) $item->business_id === (int) $bid,
+                403,
+                'Unauthorized item.'
             );
 
-        /*
-        |--------------------------------------------------------------------------
-        | Old Image
-        |--------------------------------------------------------------------------
-        */
-        $oldImage = $item->image;
+            /*
+            |--------------------------------------------------------------------------
+            | Validation
+            |--------------------------------------------------------------------------
+            */
+            $data = $request->validate([
 
-        /*
-        |--------------------------------------------------------------------------
-        | New Image Upload
-        |--------------------------------------------------------------------------
-        */
-        if ($request->hasFile('image')) {
+                'name' => [
+                    'required',
+                    'string',
+                    'max:255',
+                ],
 
-            $newUploadedImage =
-                $request->file('image')
-                    ->store(
+                'sku' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+
+                    Rule::unique(
                         'items',
-                        'public'
-                    );
+                        'sku'
+                    )
+                        ->ignore($item->id)
+                        ->where(
+                            fn ($query) =>
+                            $query->where(
+                                'business_id',
+                                $bid
+                            )
+                        ),
+                ],
 
-            $payload['image'] =
-                $newUploadedImage;
-        }
+                'category_id' => [
+                    'nullable',
+                    'integer',
+                ],
 
-        DB::beginTransaction();
+                'type' => [
+                    'required',
+                    Rule::in([
+                        'product',
+                        'service',
+                    ]),
+                ],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Update Item
-        |--------------------------------------------------------------------------
-        */
-        $item->update($payload);
+                'sac' => [
+                    'nullable',
+                    'string',
+                    'max:32',
+                ],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Update Stock
-        |--------------------------------------------------------------------------
-        */
-        $stock->setStockTo(
-            $item,
-            $finalQty,
-            'Stock updated from item edit'
-        );
+                'description' => [
+                    'nullable',
+                    'string',
+                    'max:2000',
+                ],
 
-        DB::commit();
+                'price' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Delete Old Image
-        |--------------------------------------------------------------------------
-        |
-        | DB successful hone ke baad hi old image delete kar rahe hain.
-        |
-        */
-        if (
-            $newUploadedImage
-            && $oldImage
-            && $oldImage !== $newUploadedImage
-            && Storage::disk('public')
-                ->exists($oldImage)
-        ) {
-            Storage::disk('public')
-                ->delete($oldImage);
-        }
+                'cost_price' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
 
-        return redirect()
-            ->route('items.index')
-            ->with(
-                'success',
-                'Item updated successfully.'
+                'making_charge_type' => [
+                    'nullable',
+
+                    Rule::in([
+                        'percentage',
+                        'fixed',
+                        'per_gram',
+                        'per_product',
+                    ]),
+                ],
+
+                'making_charge' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+
+                    Rule::when(
+                        $request->input(
+                            'making_charge_type',
+                            'percentage'
+                        ) === 'percentage',
+                        [
+                            'max:100',
+                        ]
+                    ),
+                ],
+
+                'stock_qty' => [
+                    'nullable',
+                    'min:0',
+                ],
+
+                'unit' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+
+                'tax_rate' => [
+                    'required',
+                    'numeric',
+                    'min:0',
+                    'max:100',
+                ],
+
+                'is_active' => [
+                    'nullable',
+                ],
+
+                'metal_type' => [
+                    'nullable',
+                    Rule::in([
+                        'gold',
+                        'silver',
+                        'other',
+                    ]),
+                ],
+
+                'purity' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+
+                'gross_weight' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'metal_weight' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'stone_weight' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'stone_charges' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'gold_weight' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'gold_purity' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+
+                'silver_weight' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'silver_purity' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                ],
+
+                'diamond_weight' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                'diamond_charges' => [
+                    'nullable',
+                    'numeric',
+                    'min:0',
+                ],
+
+                /*
+                |--------------------------------------------------------------------------
+                | Image
+                |--------------------------------------------------------------------------
+                */
+                'image' => [
+                    'nullable',
+                    'image',
+                    'mimes:jpg,jpeg,png,webp',
+                    'max:2048',
+                ],
+
+
+                'barcode' => [
+                    'nullable',
+                    'string',
+                    'max:100',
+
+                    Rule::unique('items', 'barcode')
+                        ->ignore($item->id)
+                        ->where(
+                            fn ($query) =>
+                            $query->where(
+                                'business_id',
+                                $bid
+                            )
+                        ),
+                ],
+
+            ]);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Category Business Validation
+            |--------------------------------------------------------------------------
+            */
+            if (!empty($data['category_id'])) {
+
+                $categoryBelongsToBusiness =
+                    Category::query()
+                        ->where(
+                            'id',
+                            $data['category_id']
+                        )
+                        ->where(
+                            'business_id',
+                            $bid
+                        )
+                        ->exists();
+
+                if (!$categoryBelongsToBusiness) {
+
+                    return back()
+                        ->withErrors([
+                            'category_id' =>
+                                'Selected category does not belong to active business.',
+                        ])
+                        ->withInput();
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Final Stock Qty
+            |--------------------------------------------------------------------------
+            */
+            $finalQty =
+                (int) (
+                    $data['stock_qty']
+                    ?? $item->stock_qty
+                    ?? 0
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Remove Stock + Image File Object
+            |--------------------------------------------------------------------------
+            */
+            $payload = Arr::except(
+                $data,
+                [
+                    'stock_qty',
+                    'image',
+                ]
             );
 
-    } catch (\Throwable $e) {
+            /*
+            |--------------------------------------------------------------------------
+            | Checkbox
+            |--------------------------------------------------------------------------
+            */
+            $payload['is_active'] =
+                $request->has('is_active')
+                    ? $request->boolean('is_active')
+                    : false;
 
-        /*
-        |--------------------------------------------------------------------------
-        | Rollback Only If Transaction Active
-        |--------------------------------------------------------------------------
-        */
-        if (DB::transactionLevel() > 0) {
-            DB::rollBack();
+            /*
+            |--------------------------------------------------------------------------
+            | Making Charge
+            |--------------------------------------------------------------------------
+            */
+            $payload['making_charge_type'] =
+                $request->input(
+                    'making_charge_type',
+                    'percentage'
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Old Image
+            |--------------------------------------------------------------------------
+            */
+            $oldImage = $item->image;
+
+            /*
+            |--------------------------------------------------------------------------
+            | New Image Upload
+            |--------------------------------------------------------------------------
+            */
+            if ($request->hasFile('image')) {
+
+                $newUploadedImage =
+                    $request->file('image')
+                        ->store(
+                            'items',
+                            'public'
+                        );
+
+                $payload['image'] =
+                    $newUploadedImage;
+            }
+
+            DB::beginTransaction();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Item
+            |--------------------------------------------------------------------------
+            */
+            $item->update($payload);
+
+            /*
+            |--------------------------------------------------------------------------
+            | Update Stock
+            |--------------------------------------------------------------------------
+            */
+            $stock->setStockTo(
+                $item,
+                $finalQty,
+                'Stock updated from item edit'
+            );
+
+            DB::commit();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Delete Old Image
+            |--------------------------------------------------------------------------
+            |
+            | DB successful hone ke baad hi old image delete kar rahe hain.
+            |
+            */
+            if (
+                $newUploadedImage
+                && $oldImage
+                && $oldImage !== $newUploadedImage
+                && Storage::disk('public')
+                    ->exists($oldImage)
+            ) {
+                Storage::disk('public')
+                    ->delete($oldImage);
+            }
+
+            return redirect()
+                ->route('items.index')
+                ->with(
+                    'success',
+                    'Item updated successfully.'
+                );
+
+        } catch (\Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Rollback Only If Transaction Active
+            |--------------------------------------------------------------------------
+            */
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Remove New Uploaded Image On Failure
+            |--------------------------------------------------------------------------
+            |
+            | Purani image ko touch nahi karenge.
+            |
+            */
+            if (
+                $newUploadedImage
+                && Storage::disk('public')
+                    ->exists($newUploadedImage)
+            ) {
+                Storage::disk('public')
+                    ->delete($newUploadedImage);
+            }
+
+            Log::error(
+                'Item update failed',
+                [
+                    'item_id' => $item->id ?? null,
+                    'user_id' => auth()->id(),
+                    'message' => $e->getMessage(),
+                    'line'    => $e->getLine(),
+                    'file'    => $e->getFile(),
+                ]
+            );
+
+            return back()
+                ->withErrors([
+                    'general' =>
+                        'Update failed: '
+                        . $e->getMessage(),
+                ])
+                ->withInput();
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Remove New Uploaded Image On Failure
-        |--------------------------------------------------------------------------
-        |
-        | Purani image ko touch nahi karenge.
-        |
-        */
-        if (
-            $newUploadedImage
-            && Storage::disk('public')
-                ->exists($newUploadedImage)
-        ) {
-            Storage::disk('public')
-                ->delete($newUploadedImage);
-        }
-
-        Log::error(
-            'Item update failed',
-            [
-                'item_id' => $item->id ?? null,
-                'user_id' => auth()->id(),
-                'message' => $e->getMessage(),
-                'line'    => $e->getLine(),
-                'file'    => $e->getFile(),
-            ]
-        );
-
-        return back()
-            ->withErrors([
-                'general' =>
-                    'Update failed: '
-                    . $e->getMessage(),
-            ])
-            ->withInput();
     }
-}
 
 
     public function destroy(Item $item)
@@ -1593,6 +1624,25 @@ class ItemController extends Controller
             'message' => 'Item created successfully.',
             'item'    => $item,
         ]);
+    }
+
+
+    private function generateUniqueBarcode(): string
+    {
+        do {
+            /*
+            * 12 digit numeric internal barcode
+            * Example: 268315742901
+            */
+            $barcode = (string) random_int(100000000000, 999999999999);
+
+        } while (
+            Item::query()
+                ->where('barcode', $barcode)
+                ->exists()
+        );
+
+        return $barcode;
     }
 
 }

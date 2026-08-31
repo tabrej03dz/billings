@@ -90,11 +90,19 @@
                       class="p-5 sm:p-6">
                     @csrf
 
-                    @include('items._form', [
+                    {{-- @include('items._form', [
                         'item' => null,
                         'categories' => $categories,
                         'units' => $units,
                         'allowedFields' => $allowedFields ?? []
+                    ]) --}}
+
+                    @include('items._form', [
+                        'item' => null,
+                        'categories' => $categories,
+                        'units' => $units,
+                        'allowedFields' => $allowedFields ?? [],
+                        'generatedBarcode' => $generatedBarcode ?? null,
                     ])
                 </form>
             </div>
