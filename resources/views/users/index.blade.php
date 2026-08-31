@@ -88,6 +88,7 @@
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Phone</th>
                     <th class="px-6 py-3">Businesses</th>
+                    <th class="px-6 py-3">Created At</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
                 </thead>
@@ -158,6 +159,8 @@
                             <a href="{{ route('users.permissions', $u->id) }}" class="bg-sky-600 p-2 text-white">Permissions</a>
                         </td> --}}
 
+
+                        <td class="px-6 py-3">{{ $u->phone }}</td>
 
                         <td class="px-6 py-3 space-x-2">
 

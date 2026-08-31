@@ -534,8 +534,7 @@ Route::middleware(['auth:sanctum', 'active.business'])->group(function () {
             Route::get('/', 'index')
                 ->middleware('permission:show categories');
 
-            Route::post('/store', 'store')
-                ->middleware('permission:create category');
+            Route::post('/store', 'store');
 
             Route::post('/update/{category}', 'update')
                 ->middleware('permission:edit category');
