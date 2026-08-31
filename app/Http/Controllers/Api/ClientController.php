@@ -369,69 +369,330 @@ class ClientController extends Controller
 //    }
 
 
+    // public function update(Request $request, Client $client)
+    // {
+    //     $bid = $this->resolveBusinessId($request);
+
+    //     // ✅ Security: same business client hi update ho
+    //     if ((int)$client->business_id !== (int)$bid) {
+    //         return response()->json([
+    //             'ok' => false,
+    //             'message' => 'Client not found for this business.',
+    //         ], 404);
+    //     }
+
+    //     // ✅ Normalize (same as store)
+    //     $request->merge([
+    //         'mobile'  => $request->has('mobile')  ? ($request->mobile ? preg_replace('/\s+/', '', (string)$request->mobile) : null) : $request->mobile,
+    //         'gstin'   => $request->has('gstin')   ? ($request->gstin  ? strtoupper(preg_replace('/\s+/', '', (string)$request->gstin)) : null) : $request->gstin,
+    //         'pan'     => $request->has('pan')     ? ($request->pan    ? strtoupper(preg_replace('/\s+/', '', (string)$request->pan)) : null) : $request->pan,
+    //         'state'   => $request->has('state')   ? ($request->state  ? trim((string)$request->state) : null) : $request->state,
+    //         'address' => $request->has('address') ? ($request->address? trim((string)$request->address) : null) : $request->address,
+    //         'name'    => $request->has('name')    ? ($request->name   ? trim((string)$request->name) : null) : $request->name,
+    //         'pincode' => $request->has('pincode') ? ($request->pincode? trim((string)$request->pincode) : null) : $request->pincode,
+    //     ]);
+
+    //     // ✅ empty string -> null (sirf jo fields aaye hain unpe)
+    //     foreach (['mobile','gstin','pan','state','address','pincode','name'] as $f) {
+    //         if ($request->has($f) && $request->input($f) === '') {
+    //             $request->merge([$f => null]);
+    //         }
+    //     }
+
+    //     // ✅ Validation (PATCH friendly: required nahi, sometimes use)
+    //     $data = $request->validate([
+    //         'name'    => ['sometimes','required','string','max:255'],
+    //         'mobile'  => [
+    //             'sometimes','nullable','string','max:20',
+    //             Rule::unique('clients','mobile')
+    //                 ->where(fn($q) => $q->where('business_id', $bid))
+    //                 ->ignore($client->id),
+    //         ],
+    //         'gstin'   => [
+    //             'sometimes','nullable','string','max:50',
+    //             Rule::unique('clients','gstin')
+    //                 ->where(fn($q) => $q->where('business_id', $bid))
+    //                 ->ignore($client->id),
+    //         ],
+    //         'pan'     => [
+    //             'sometimes','nullable','string','max:50',
+    //             Rule::unique('clients','pan')
+    //                 ->where(fn($q) => $q->where('business_id', $bid))
+    //                 ->ignore($client->id),
+    //         ],
+    //         'state'   => ['sometimes','nullable','string','max:100'], // "09, Uttar Pradesh" OR "Uttar Pradesh"
+    //         'address' => ['sometimes','nullable','string','max:1000'],
+    //         'pincode' => ['sometimes','nullable','string','max:20'],
+    //     ]);
+
+    //     // ✅ State / state_code derive (only if relevant fields are being updated)
+    //     // NOTE: aapka helper internally handle kare. Agar nahi karta,
+    //     // to ye call safe hai, kyunki $data me sirf updated keys hi hongi.
+    //     $data = $this->applyStateFromInputOrGstin($data);
+
+    //     // ✅ Ensure business_id update na ho
+    //     unset($data['business_id']);
+
+    //     $client->fill($data);
+    //     $client->save();
+
+    //     return response()->json([
+    //         'ok'      => true,
+    //         'message' => 'Client updated successfully.',
+    //         'client'  => $this->clientPayload($client->fresh()),
+    //     ], 200);
+    // }
+
+
+
     public function update(Request $request, Client $client)
     {
         $bid = $this->resolveBusinessId($request);
 
-        // ✅ Security: same business client hi update ho
-        if ((int)$client->business_id !== (int)$bid) {
+        // Security: same business ka client hi update ho
+        if ((int) $client->business_id !== (int) $bid) {
             return response()->json([
-                'ok' => false,
+                'ok'      => false,
                 'message' => 'Client not found for this business.',
             ], 404);
         }
 
-        // ✅ Normalize (same as store)
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize
+        |--------------------------------------------------------------------------
+        */
+
         $request->merge([
-            'mobile'  => $request->has('mobile')  ? ($request->mobile ? preg_replace('/\s+/', '', (string)$request->mobile) : null) : $request->mobile,
-            'gstin'   => $request->has('gstin')   ? ($request->gstin  ? strtoupper(preg_replace('/\s+/', '', (string)$request->gstin)) : null) : $request->gstin,
-            'pan'     => $request->has('pan')     ? ($request->pan    ? strtoupper(preg_replace('/\s+/', '', (string)$request->pan)) : null) : $request->pan,
-            'state'   => $request->has('state')   ? ($request->state  ? trim((string)$request->state) : null) : $request->state,
-            'address' => $request->has('address') ? ($request->address? trim((string)$request->address) : null) : $request->address,
-            'name'    => $request->has('name')    ? ($request->name   ? trim((string)$request->name) : null) : $request->name,
-            'pincode' => $request->has('pincode') ? ($request->pincode? trim((string)$request->pincode) : null) : $request->pincode,
+            'mobile' => $request->has('mobile')
+                ? ($request->mobile
+                    ? preg_replace('/\s+/', '', (string) $request->mobile)
+                    : null)
+                : $request->mobile,
+
+            'gstin' => $request->has('gstin')
+                ? ($request->gstin
+                    ? strtoupper(preg_replace('/\s+/', '', (string) $request->gstin))
+                    : null)
+                : $request->gstin,
+
+            'pan' => $request->has('pan')
+                ? ($request->pan
+                    ? strtoupper(preg_replace('/\s+/', '', (string) $request->pan))
+                    : null)
+                : $request->pan,
+
+            'state' => $request->has('state')
+                ? ($request->state
+                    ? trim((string) $request->state)
+                    : null)
+                : $request->state,
+
+            'state_code' => $request->has('state_code')
+                ? (
+                    $request->state_code !== null && $request->state_code !== ''
+                        ? str_pad(
+                            trim((string) $request->state_code),
+                            2,
+                            '0',
+                            STR_PAD_LEFT
+                        )
+                        : null
+                )
+                : $request->state_code,
+
+            'address' => $request->has('address')
+                ? ($request->address
+                    ? trim((string) $request->address)
+                    : null)
+                : $request->address,
+
+            'name' => $request->has('name')
+                ? ($request->name
+                    ? trim((string) $request->name)
+                    : null)
+                : $request->name,
+
+            'pincode' => $request->has('pincode')
+                ? ($request->pincode
+                    ? trim((string) $request->pincode)
+                    : null)
+                : $request->pincode,
         ]);
 
-        // ✅ empty string -> null (sirf jo fields aaye hain unpe)
-        foreach (['mobile','gstin','pan','state','address','pincode','name'] as $f) {
-            if ($request->has($f) && $request->input($f) === '') {
-                $request->merge([$f => null]);
+        /*
+        |--------------------------------------------------------------------------
+        | Empty String -> Null
+        |--------------------------------------------------------------------------
+        |
+        | Sirf wahi fields process hongi jo request me aayi hain.
+        |
+        */
+
+        foreach ([
+            'mobile',
+            'gstin',
+            'pan',
+            'state',
+            'state_code',
+            'address',
+            'pincode',
+            'name',
+        ] as $field) {
+            if (
+                $request->has($field) &&
+                $request->input($field) === ''
+            ) {
+                $request->merge([
+                    $field => null,
+                ]);
             }
         }
 
-        // ✅ Validation (PATCH friendly: required nahi, sometimes use)
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
         $data = $request->validate([
-            'name'    => ['sometimes','required','string','max:255'],
-            'mobile'  => [
-                'sometimes','nullable','string','max:20',
-                Rule::unique('clients','mobile')
-                    ->where(fn($q) => $q->where('business_id', $bid))
+            'name' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'mobile' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20',
+
+                Rule::unique('clients', 'mobile')
+                    ->where(
+                        fn ($query) =>
+                        $query->where('business_id', $bid)
+                    )
                     ->ignore($client->id),
             ],
-            'gstin'   => [
-                'sometimes','nullable','string','max:50',
-                Rule::unique('clients','gstin')
-                    ->where(fn($q) => $q->where('business_id', $bid))
+
+            'gstin' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+
+                Rule::unique('clients', 'gstin')
+                    ->where(
+                        fn ($query) =>
+                        $query->where('business_id', $bid)
+                    )
                     ->ignore($client->id),
             ],
-            'pan'     => [
-                'sometimes','nullable','string','max:50',
-                Rule::unique('clients','pan')
-                    ->where(fn($q) => $q->where('business_id', $bid))
+
+            'pan' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:50',
+
+                Rule::unique('clients', 'pan')
+                    ->where(
+                        fn ($query) =>
+                        $query->where('business_id', $bid)
+                    )
                     ->ignore($client->id),
             ],
-            'state'   => ['sometimes','nullable','string','max:100'], // "09, Uttar Pradesh" OR "Uttar Pradesh"
-            'address' => ['sometimes','nullable','string','max:1000'],
-            'pincode' => ['sometimes','nullable','string','max:20'],
+
+            'state' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'state_code' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'size:2',
+                'regex:/^[0-9]{2}$/',
+            ],
+
+            'address' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'pincode' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'max:20',
+            ],
         ]);
 
-        // ✅ State / state_code derive (only if relevant fields are being updated)
-        // NOTE: aapka helper internally handle kare. Agar nahi karta,
-        // to ye call safe hai, kyunki $data me sirf updated keys hi hongi.
-        $data = $this->applyStateFromInputOrGstin($data);
+        /*
+        |--------------------------------------------------------------------------
+        | State / State Code Handling
+        |--------------------------------------------------------------------------
+        |
+        | Priority:
+        |
+        | 1. Agar request me state_code explicitly aaya hai
+        |    -> wahi save hoga.
+        |
+        | 2. Agar state_code request me nahi aaya
+        |    -> helper state/GSTIN se derive kar sakta hai.
+        |
+        */
 
-        // ✅ Ensure business_id update na ho
+        $stateCodeWasProvided = $request->has('state_code');
+
+        $requestedStateCode = $stateCodeWasProvided
+            ? ($data['state_code'] ?? null)
+            : null;
+
+        // Sirf state/gstin/state_code related update par helper chalana better hai
+        if (
+            array_key_exists('state', $data) ||
+            array_key_exists('gstin', $data) ||
+            array_key_exists('state_code', $data)
+        ) {
+            $data = $this->applyStateFromInputOrGstin($data);
+        }
+
+        /*
+        | Request ka state_code helper ke derived state_code se zyada priority rakhega.
+        |
+        | Example:
+        | state_code = "09"
+        | to final value "09" hi rahegi.
+        |
+        | Agar explicitly null bheja:
+        | state_code = null
+        | to state_code null ho jayega.
+        */
+        if ($stateCodeWasProvided) {
+            $data['state_code'] = $requestedStateCode;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | business_id Update Prevent
+        |--------------------------------------------------------------------------
+        */
+
         unset($data['business_id']);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Save
+        |--------------------------------------------------------------------------
+        */
 
         $client->fill($data);
         $client->save();
@@ -439,7 +700,9 @@ class ClientController extends Controller
         return response()->json([
             'ok'      => true,
             'message' => 'Client updated successfully.',
-            'client'  => $this->clientPayload($client->fresh()),
+            'client'  => $this->clientPayload(
+                $client->fresh()
+            ),
         ], 200);
     }
 
