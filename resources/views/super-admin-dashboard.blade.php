@@ -5,29 +5,6 @@
     @endphp
 
     <div class="flex flex-col gap-6">
-        {{-- HEADER --}}
-        <section class="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-sm dark:border-neutral-700">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <div class="mb-2 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-200">
-                        Global Overview
-                    </div>
-
-                    <h1 class="text-2xl font-bold sm:text-3xl">
-                        Super Admin Dashboard
-                    </h1>
-
-                    <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                        Overall businesses, users, plans, growth aur upcoming expiry ka complete system overview.
-                    </p>
-                </div>
-
-                <div class="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm backdrop-blur">
-                    <div class="text-xs uppercase tracking-wide text-slate-300">Today</div>
-                    <div class="mt-1 font-bold text-white">{{ $today->format('d M Y') }}</div>
-                </div>
-            </div>
-        </section>
 
         {{-- PRIMARY COUNTS --}}
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
