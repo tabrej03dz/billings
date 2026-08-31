@@ -63,18 +63,243 @@
     $shippingGstin = $first($inv, ['shipping_gstin', 'delivery_gstin'], $clientGstin);
     $shippingStateCode = $first($inv, ['shipping_state_code', 'delivery_state_code'], $clientStateCode);
 
-    $logo = $logo ?? $first($biz, ['logo', 'logo_path'], null);
-    $signature = $sign ?? $first($biz, ['signature', 'signature_path'], null);
+    // $logo = $logo ?? $first($biz, ['logo', 'logo_path'], null);
+    // $signature = $sign ?? $first($biz, ['signature', 'signature_path'], null);
+
+    // $resolveImage = static function ($path) {
+    //     if (!$path) return null;
+    //     if (str_starts_with((string) $path, 'data:') || preg_match('~^https?://~i', (string) $path)) return $path;
+    //     $clean = ltrim((string) $path, '/');
+    //     foreach ([public_path($clean), storage_path('app/public/' . preg_replace('~^storage/~', '', $clean))] as $candidate) {
+    //         if (is_file($candidate)) return $candidate;
+    //     }
+    //     return null;
+    // };
+
+
+
+
+
+     /*
+    |--------------------------------------------------------------------------
+    | Business Logo + Signature
+    |--------------------------------------------------------------------------
+    */
+
+    $logo = $logo
+        ?? $first($biz, [
+            'logo',
+            'business_logo',
+            'logo_path',
+        ], null);
+
+    $signature = $sign
+        ?? $first($biz, [
+            'signature',
+            'signature_path',
+        ], null);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Robust PDF Image Resolver
+    |--------------------------------------------------------------------------
+    |
+    | Supported DB values:
+    |
+    | logo.png
+    | business/logo.png
+    | storage/business/logo.png
+    | public/storage/business/logo.png
+    | /storage/business/logo.png
+    | http://...
+    | https://...
+    | data:image/...
+    |
+    */
 
     $resolveImage = static function ($path) {
-        if (!$path) return null;
-        if (str_starts_with((string) $path, 'data:') || preg_match('~^https?://~i', (string) $path)) return $path;
-        $clean = ltrim((string) $path, '/');
-        foreach ([public_path($clean), storage_path('app/public/' . preg_replace('~^storage/~', '', $clean))] as $candidate) {
-            if (is_file($candidate)) return $candidate;
+
+        if (empty($path)) {
+            return null;
         }
+
+        $path = trim((string) $path);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Base64 image
+        |--------------------------------------------------------------------------
+        */
+        if (str_starts_with($path, 'data:')) {
+            return $path;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Remote URL
+        |--------------------------------------------------------------------------
+        */
+        if (preg_match('~^https?://~i', $path)) {
+            return $path;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normalize slashes
+        |--------------------------------------------------------------------------
+        */
+        $cleanPath = ltrim(
+            str_replace('\\', '/', $path),
+            '/'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Possible Paths
+        |--------------------------------------------------------------------------
+        */
+
+        $possiblePaths = [];
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Case 1:
+        | storage/business/logo.png
+        |--------------------------------------------------------------------------
+        */
+        if (str_starts_with($cleanPath, 'storage/')) {
+
+            $withoutStorage = substr(
+                $cleanPath,
+                strlen('storage/')
+            );
+
+            $possiblePaths[] = public_path(
+                'storage/' . $withoutStorage
+            );
+
+            $possiblePaths[] = storage_path(
+                'app/public/' . $withoutStorage
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Case 2:
+        | public/storage/business/logo.png
+        |--------------------------------------------------------------------------
+        */
+        elseif (str_starts_with($cleanPath, 'public/storage/')) {
+
+            $withoutPublicStorage = substr(
+                $cleanPath,
+                strlen('public/storage/')
+            );
+
+            $possiblePaths[] = public_path(
+                'storage/' . $withoutPublicStorage
+            );
+
+            $possiblePaths[] = storage_path(
+                'app/public/' . $withoutPublicStorage
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Case 3:
+        | public/business/logo.png
+        |--------------------------------------------------------------------------
+        */
+        elseif (str_starts_with($cleanPath, 'public/')) {
+
+            $withoutPublic = substr(
+                $cleanPath,
+                strlen('public/')
+            );
+
+            $possiblePaths[] = public_path(
+                $withoutPublic
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Case 4:
+        | business/logo.png
+        |--------------------------------------------------------------------------
+        */
+        else {
+
+            // public/business/logo.png
+            $possiblePaths[] = public_path(
+                $cleanPath
+            );
+
+            // public/storage/business/logo.png
+            $possiblePaths[] = public_path(
+                'storage/' . $cleanPath
+            );
+
+            // storage/app/public/business/logo.png
+            $possiblePaths[] = storage_path(
+                'app/public/' . $cleanPath
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Already absolute server path
+        |--------------------------------------------------------------------------
+        */
+        if (
+            is_file($path)
+            && file_exists($path)
+        ) {
+            return $path;
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Find Existing File
+        |--------------------------------------------------------------------------
+        */
+        foreach ($possiblePaths as $candidate) {
+
+            if (
+                is_string($candidate)
+                && file_exists($candidate)
+                && is_file($candidate)
+            ) {
+                return $candidate;
+            }
+        }
+
+
         return null;
     };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve Images
+    |--------------------------------------------------------------------------
+    */
+
+    $logo = $resolveImage($logo);
+
+    $signature = $resolveImage($signature);
+
+
+
     $logo = $resolveImage($logo);
     $signature = $resolveImage($signature);
 
@@ -364,10 +589,28 @@
                     @if($upi)<span class="label">UPI:</span> {{ $upi }}@endif
                 @endif
             </td>
-            <td class="sign-cell">
+            {{-- <td class="sign-cell">
                 <div class="bold">For - M/s. {{ strtoupper($businessName) }}</div>
                 @if($enabled('show_signature') && $signature)<img class="signature" src="{{ $signature }}">@else<div class="signature-space"></div>@endif
                 <div class="bold">Authorised Signatory</div>
+            </td> --}}
+
+            <td class="sign-cell">
+
+                @if($enabled('show_signature') && $signature)
+                    <img class="signature" src="{{ $signature }}">
+                @else
+                    <div class="signature-space"></div>
+                @endif
+
+                <div class="bold">
+                    For - M/s. {{ strtoupper($businessName) }}
+                </div>
+
+                <div class="bold">
+                    Authorised Signatory
+                </div>
+
             </td>
         </tr>
     </table>
