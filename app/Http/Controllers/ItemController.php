@@ -302,6 +302,7 @@ class ItemController extends Controller
         if (empty($allowedFields)) {
             $allowedFields = [
                 'name',
+                'huid',
                 'sku',
                 'category_id',
                 'type',
@@ -597,17 +598,19 @@ class ItemController extends Controller
                 ),
         ];
 
-        $rules['huid'] = [
-            'nullable',
-            'string',
-            'max:50',
+        if ($isAllowed('huid')) {
+            $rules['huid'] = [
+                $isRequired('huid'),
+                'string',
+                'max:50',
 
-            Rule::unique('items', 'huid')
-                ->where(
-                    fn ($query) =>
-                    $query->where('business_id', $bid)
-                ),
-        ];
+                Rule::unique('items', 'huid')
+                    ->where(
+                        fn ($query) =>
+                        $query->where('business_id', $bid)
+                    ),
+            ];
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -711,6 +714,7 @@ class ItemController extends Controller
         */
         $allItemFields = [
             'name',
+            'huid',
             'sku',
             'category_id',
             'type',

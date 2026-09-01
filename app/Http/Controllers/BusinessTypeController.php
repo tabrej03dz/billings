@@ -136,10 +136,44 @@ class BusinessTypeController extends Controller
         }
     }
 
+    // private function itemColumns(): array
+    // {
+    //     return [
+    //         'barcode' => 'Barcode',
+    //         'category_id' => 'Category',
+    //         'name' => 'Item Name',
+    //         'sku' => 'SKU',
+    //         'description' => 'Description',
+    //         'price' => 'Price',
+    //         'cost_price' => 'Cost Price',
+    //         'stock_qty' => 'Stock Qty',
+    //         'unit' => 'Unit',
+    //         'tax_rate' => 'Tax Rate',
+    //         'making_charge' => 'Making Charge',
+    //         'weight' => 'Weight',
+    //         'metal_type' => 'Metal Type',
+    //         'purity' => 'Purity',
+    //         'gross_weight' => 'Gross Weight',
+    //         'metal_weight' => 'Metal Weight',
+    //         'stone_weight' => 'Stone Weight',
+    //         'stone_charges' => 'Stone Charges',
+    //         'sac' => 'SAC',
+    //         'gold_weight' => 'Gold Weight',
+    //         'gold_purity' => 'Gold Purity',
+    //         'silver_weight' => 'Silver Weight',
+    //         'silver_purity' => 'Silver Purity',
+    //         'diamond_weight' => 'Diamond Weight',
+    //         'diamond_charges' => 'Diamond Charges',
+    //         'type' => 'Type',
+    //         'image' => 'Image',
+    //     ];
+    // }
+
     private function itemColumns(): array
     {
         return [
             'barcode' => 'Barcode',
+            'huid' => 'HUID',
             'category_id' => 'Category',
             'name' => 'Item Name',
             'sku' => 'SKU',
