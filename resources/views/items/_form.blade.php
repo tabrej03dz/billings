@@ -221,6 +221,44 @@
                 </div>
             @endif
 
+
+            {{-- HUID --}}
+            <div>
+                <label
+                    for="huid"
+                    class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200"
+                >
+                    HUID
+                </label>
+
+                <input
+                    type="text"
+                    id="huid"
+                    name="huid"
+                    value="{{ old('huid', $item->huid ?? '') }}"
+                    maxlength="50"
+                    autocomplete="off"
+                    placeholder="Example: AB12CD"
+                    class="mt-1 w-full rounded-xl border border-slate-300
+                        bg-slate-50 px-3.5 py-2.5
+                        font-semibold uppercase tracking-wider
+                        text-slate-900 outline-none transition
+                        placeholder:text-slate-400
+                        focus:border-teal-500 focus:bg-white
+                        focus:ring-4 focus:ring-teal-100
+                        dark:border-slate-600 dark:bg-slate-800
+                        dark:text-white
+                        dark:focus:border-teal-400
+                        dark:focus:ring-teal-900/40"
+                >
+
+                @error('huid')
+                    <p class="mt-1 text-xs font-medium text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+
             @if($showField('sku'))
                 <div>
                     <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">SKU</label>

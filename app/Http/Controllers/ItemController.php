@@ -91,6 +91,7 @@ class ItemController extends Controller
                 $query->where(function ($searchQuery) use ($q) {
                     $searchQuery
                         ->where('name', 'like', "%{$q}%")
+                        ->orWhere('huid', 'like', "%{$q}%")
                         ->orWhere('sku', 'like', "%{$q}%")
                         ->orWhere('barcode', 'like', "%{$q}%")
                         ->orWhere('description', 'like', "%{$q}%");
@@ -596,12 +597,31 @@ class ItemController extends Controller
                 ),
         ];
 
+        $rules['huid'] = [
+            'nullable',
+            'string',
+            'max:50',
+
+            Rule::unique('items', 'huid')
+                ->where(
+                    fn ($query) =>
+                    $query->where('business_id', $bid)
+                ),
+        ];
+
         /*
         |--------------------------------------------------------------------------
         | Validate
         |--------------------------------------------------------------------------
         */
         $data = $request->validate($rules);
+
+
+        if (!empty($data['huid'])) {
+            $data['huid'] = strtoupper(
+                trim($data['huid'])
+            );
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -858,223 +878,98 @@ class ItemController extends Controller
     // }
 
     public function edit(Request $request, Item $item)
-{
-    $user = $request->user();
+    {
+        $user = $request->user();
 
-    $businessId = $user->current_business_id
-        ?? session('active_business_id');
+        $businessId = $user->current_business_id
+            ?? session('active_business_id');
 
-    if (!$businessId) {
-        $businessId = $user->businesses()
-            ->pluck('businesses.id')
-            ->first();
-    }
+        if (!$businessId) {
+            $businessId = $user->businesses()
+                ->pluck('businesses.id')
+                ->first();
+        }
 
-    abort_unless($businessId, 422, 'Active business not found.');
+        abort_unless($businessId, 422, 'Active business not found.');
 
-    abort_unless(
-        (int) $item->business_id === (int) $businessId,
-        403,
-        'Unauthorized item.'
-    );
+        abort_unless(
+            (int) $item->business_id === (int) $businessId,
+            403,
+            'Unauthorized item.'
+        );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Categories - only active business
-    |--------------------------------------------------------------------------
-    */
-    $categories = Category::query()
-        ->where('business_id', $businessId)
-        ->orderBy('name')
-        ->get([
-            'id',
-            'name',
-        ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Categories - only active business
+        |--------------------------------------------------------------------------
+        */
+        $categories = Category::query()
+            ->where('business_id', $businessId)
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
 
-    /*
-    |--------------------------------------------------------------------------
-    | Units
-    |--------------------------------------------------------------------------
-    |
-    | Global units:
-    | business_id = null
-    |
-    | Current business units:
-    | business_id = current business
-    |
-    */
-    $units = Unit::query()
-        ->withoutGlobalScope('business')
-        ->where(function ($query) use ($businessId) {
+        /*
+        |--------------------------------------------------------------------------
+        | Units
+        |--------------------------------------------------------------------------
+        |
+        | Global units:
+        | business_id = null
+        |
+        | Current business units:
+        | business_id = current business
+        |
+        */
+        $units = Unit::query()
+            ->withoutGlobalScope('business')
+            ->where(function ($query) use ($businessId) {
 
-            $query->whereNull('business_id');
+                $query->whereNull('business_id');
 
-            $query->orWhere(
+                $query->orWhere(
+                    'business_id',
+                    (int) $businessId
+                );
+            })
+            ->orderBy('name')
+            ->get([
+                'id',
                 'business_id',
-                (int) $businessId
-            );
-        })
-        ->orderBy('name')
-        ->get([
-            'id',
-            'business_id',
-            'name',
-            'description',
+                'name',
+                'description',
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business Item Fields
+        |--------------------------------------------------------------------------
+        */
+        $business = Business::with('businessType.itemFields')
+            ->find($businessId);
+
+        $allowedFields = [];
+
+        if ($business?->businessType) {
+
+            $allowedFields = $business
+                ->businessType
+                ->itemFields
+                ->pluck('field_name')
+                ->toArray();
+        }
+
+        return view('items.edit', [
+            'item'          => $item,
+            'categories'    => $categories,
+            'units'         => $units,
+            'allowedFields' => $allowedFields,
         ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Business Item Fields
-    |--------------------------------------------------------------------------
-    */
-    $business = Business::with('businessType.itemFields')
-        ->find($businessId);
-
-    $allowedFields = [];
-
-    if ($business?->businessType) {
-
-        $allowedFields = $business
-            ->businessType
-            ->itemFields
-            ->pluck('field_name')
-            ->toArray();
     }
 
-    return view('items.edit', [
-        'item'          => $item,
-        'categories'    => $categories,
-        'units'         => $units,
-        'allowedFields' => $allowedFields,
-    ]);
-}
 
-
-    // public function update(Request $request, Item $item, StockService $stock)
-    // {
-    //     try {
-    //         $bid = $request->user()->current_business_id ?? session('active_business_id');
-
-    //         if (!$bid) {
-    //             $bid = $request->user()->businesses()->pluck('businesses.id')->first();
-    //         }
-
-    //         abort_unless($bid, 422, 'Active business not found.');
-    //         abort_unless((int) $item->business_id === (int) $bid, 403, 'Unauthorized item.');
-
-    //         $data = $request->validate([
-    //             'name' => ['required', 'string', 'max:255'],
-
-    //             'sku' => [
-    //                 'nullable',
-    //                 'string',
-    //                 'max:100',
-    //                 Rule::unique('items', 'sku')
-    //                     ->ignore($item->id)
-    //                     ->where(fn ($q) => $q->where('business_id', $bid)),
-    //             ],
-
-    //             'category_id' => ['nullable', 'integer'],
-    //             'type'        => ['required', Rule::in(['product', 'service'])],
-
-    //             'sac'         => ['nullable', 'string', 'max:32'],
-    //             'description' => ['nullable', 'string', 'max:2000'],
-
-    //             'price'      => ['nullable', 'numeric', 'min:0'],
-    //             'cost_price' => ['nullable', 'numeric', 'min:0'],
-
-    //             'making_charge_type' => [
-    //                 'nullable',
-    //                 Rule::in([
-    //                     'percentage',
-    //                     'fixed',
-    //                     'per_gram',
-    //                     'per_product',
-    //                 ]),
-    //             ],
-
-    //             'making_charge' => [
-    //                 'nullable',
-    //                 'numeric',
-    //                 'min:0',
-    //                 Rule::when(
-    //                     $request->input('making_charge_type', 'percentage') === 'percentage',
-    //                     ['max:100']
-    //                 ),
-    //             ],
-
-    //             'stock_qty' => ['nullable', 'integer', 'min:0'],
-    //             'unit'      => ['nullable', 'string', 'max:50'],
-
-    //             'tax_rate'  => ['required', 'numeric', 'min:0', 'max:100'],
-    //             'is_active' => ['nullable'],
-
-    //             'metal_type' => ['nullable', Rule::in(['gold', 'silver', 'other'])],
-    //             'purity'     => ['nullable', 'string', 'max:50'],
-
-    //             'gross_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'metal_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'stone_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'stone_charges' => ['nullable', 'numeric', 'min:0'],
-
-    //             'gold_weight'     => ['nullable', 'numeric', 'min:0'],
-    //             'gold_purity'     => ['nullable', 'string', 'max:50'],
-    //             'silver_weight'   => ['nullable', 'numeric', 'min:0'],
-    //             'silver_purity'   => ['nullable', 'string', 'max:50'],
-    //             'diamond_weight'  => ['nullable', 'numeric', 'min:0'],
-    //             'diamond_charges' => ['nullable', 'numeric', 'min:0'],
-    //         ]);
-
-    //         if (!empty($data['category_id'])) {
-    //             $categoryBelongsToBusiness = Category::where('id', $data['category_id'])
-    //                 ->where('business_id', $bid)
-    //                 ->exists();
-
-    //             if (!$categoryBelongsToBusiness) {
-    //                 return back()
-    //                     ->withErrors(['category_id' => 'Selected category does not belong to active business.'])
-    //                     ->withInput();
-    //             }
-    //         }
-
-    //         DB::beginTransaction();
-
-    //         $finalQty = (int) ($data['stock_qty'] ?? 0);
-
-    //         $payload = Arr::except($data, ['stock_qty']);
-
-    //         $payload['making_charge_type'] = $request->input('making_charge_type', 'percentage');
-
-    //         $payload['is_active'] = $request->has('is_active')
-    //             ? $request->boolean('is_active')
-    //             : false;
-
-    //         $item->update($payload);
-
-    //         $stock->setStockTo($item, $finalQty, 'Stock updated from item edit');
-
-    //         DB::commit();
-
-    //         return redirect()
-    //             ->route('items.index')
-    //             ->with('success', 'Item updated successfully.');
-
-    //     } catch (\Throwable $e) {
-    //         DB::rollBack();
-
-    //         Log::error('Item update failed', [
-    //             'item_id' => $item->id ?? null,
-    //             'user_id' => auth()->id(),
-    //             'message' => $e->getMessage(),
-    //             'line'    => $e->getLine(),
-    //             'file'    => $e->getFile(),
-    //         ]);
-
-    //         return back()
-    //             ->withErrors(['general' => 'Update failed: ' . $e->getMessage()])
-    //             ->withInput();
-    //     }
-    // }
 
 
     public function update(
@@ -1341,7 +1236,30 @@ class ItemController extends Controller
                         ),
                 ],
 
+                'huid' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+
+                    Rule::unique('items', 'huid')
+                        ->ignore($item->id)
+                        ->where(
+                            fn ($query) =>
+                            $query->where(
+                                'business_id',
+                                $bid
+                            )
+                        ),
+                ],
+
             ]);
+
+
+            if (!empty($data['huid'])) {
+                $data['huid'] = strtoupper(
+                    trim($data['huid'])
+                );
+            }
 
             /*
             |--------------------------------------------------------------------------
@@ -1554,6 +1472,7 @@ class ItemController extends Controller
         return response()->json([
             'id' => $item->id,
             'name' => $item->name,
+            'huid'        => $item->huid,
             'sku' => $item->sku,
             'price' => (float)$item->price,
             'tax_rate' => (float)$item->tax_rate,
@@ -1589,6 +1508,16 @@ class ItemController extends Controller
             'stone_weight'    => ['nullable', 'numeric', 'min:0'],
             'diamond_weight'  => ['nullable', 'numeric', 'min:0'],
             'is_save'         => ['nullable', 'boolean'],
+            'huid' => [
+                'nullable',
+                'string',
+                'max:50',
+                Rule::unique('items', 'huid')
+                    ->where(
+                        fn ($q) =>
+                        $q->where('business_id', $bid)
+                    ),
+            ],
         ]);
 
         if ($data['type'] === 'service' && (float) ($data['price'] ?? 0) <= 0) {
@@ -1618,6 +1547,9 @@ class ItemController extends Controller
             'diamond_weight'   => $data['diamond_weight'] ?? 0,
             'is_active'        => true,
             'is_save'          => (bool) ($data['is_save'] ?? false),
+            'huid' => !empty($data['huid'])
+                ? strtoupper(trim($data['huid']))
+                : null,
         ]);
 
         return response()->json([
