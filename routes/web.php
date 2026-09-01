@@ -556,7 +556,6 @@ Route::middleware(['auth'])->group(function () {
 
 
         // Optional: item lookup by id (JSON). Not required if you preload items.
-        Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
         Route::get('/invoices/{invoice}/download', [\App\Http\Controllers\InvoiceController::class, 'download'])
             ->name('invoices.download');
 
@@ -590,6 +589,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('show/{client}', 'show')->name('show');
 
     });
+
+
+     Route::get('/items/import', [ItemController::class, 'importForm'])
+        ->name('items.import.form');
+
+    Route::post('/items/import', [ItemController::class, 'importStore'])
+        ->name('items.import.store');
+
+    Route::get('/items/import/template', [ItemController::class, 'downloadImportTemplate'])
+        ->name('items.import.template');
+
+    Route::get('/items/{item}', [ItemController::class, 'show'])->name('items.show');
 
     Route::prefix('items')->name('items.')->controller(\App\Http\Controllers\ItemController::class)->group(function(){
         Route::get('/', 'index')->name('index');

@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
+use App\Imports\ItemsImport;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ItemController extends Controller
 {
@@ -1579,6 +1582,913 @@ class ItemController extends Controller
         );
 
         return $barcode;
+    }
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Excel Import Form
+    |--------------------------------------------------------------------------
+    */
+    public function importForm(Request $request)
+    {
+        $businessId = $this->resolveActiveBusinessId(
+            $request
+        );
+
+        abort_unless(
+            $businessId,
+            422,
+            'Active business not found.'
+        );
+
+        $business = Business::with(
+            'businessType.itemFields'
+        )->findOrFail($businessId);
+
+        [
+            $allowedFields,
+            $requiredFields
+        ] = $this->getImportFieldConfiguration(
+            $business
+        );
+
+        $categories = Category::query()
+            ->where(
+                'business_id',
+                $businessId
+            )
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
+
+        $units = Unit::query()
+            ->withoutGlobalScope('business')
+            ->where(function ($query) use (
+                $businessId
+            ) {
+                $query->whereNull(
+                    'business_id'
+                );
+
+                $query->orWhere(
+                    'business_id',
+                    $businessId
+                );
+            })
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Display Columns
+        |--------------------------------------------------------------------------
+        */
+        $columnDetails =
+            $this->getImportColumnDetails(
+                $allowedFields,
+                $requiredFields
+            );
+
+        return view(
+            'items.import',
+            compact(
+                'business',
+                'businessId',
+                'allowedFields',
+                'requiredFields',
+                'columnDetails',
+                'categories',
+                'units'
+            )
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Process Excel Import
+    |--------------------------------------------------------------------------
+    */
+    public function importStore(
+        Request $request,
+        StockService $stock
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Active Business Resolve
+        |--------------------------------------------------------------------------
+        */
+        $businessId = $this->resolveActiveBusinessId(
+            $request
+        );
+
+        abort_unless(
+            $businessId,
+            422,
+            'Active business not found.'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | File Validation
+        |--------------------------------------------------------------------------
+        |
+        | CSV file PHP/Windows me kabhi-kabhi text/plain detect hoti hai,
+        | isliye MIME validation intentionally nahi rakhi gayi.
+        |
+        */
+        $request->validate([
+            'import_file' => [
+                'required',
+                'file',
+                'extensions:xlsx,xls,csv',
+                'max:10240',
+            ],
+        ], [
+            'import_file.required' =>
+                'Excel/CSV file select karein.',
+
+            'import_file.file' =>
+                'Selected upload valid file nahi hai.',
+
+            'import_file.extensions' =>
+                'Sirf XLSX, XLS ya CSV file allowed hai.',
+
+            'import_file.max' =>
+                'File maximum 10 MB honi chahiye.',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business + Allowed Fields
+        |--------------------------------------------------------------------------
+        */
+        $business = Business::with(
+            'businessType.itemFields'
+        )->findOrFail($businessId);
+
+        [
+            $allowedFields,
+            $requiredFields
+        ] = $this->getImportFieldConfiguration(
+            $business
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Import
+        |--------------------------------------------------------------------------
+        */
+        try {
+
+            $import = new ItemsImport(
+                (int) $businessId,
+                $allowedFields,
+                $requiredFields,
+                $stock
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Execute Import
+            |--------------------------------------------------------------------------
+            */
+            Excel::import(
+                $import,
+                $request->file('import_file')
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | Import Result
+            |--------------------------------------------------------------------------
+            */
+            $imported = (int) $import->getImportedCount();
+
+            $skipped = (int) $import->getSkippedCount();
+
+            $importErrors = $import->getErrors();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Empty File / Only Header
+            |--------------------------------------------------------------------------
+            */
+            if (
+                $imported === 0
+                && $skipped === 0
+            ) {
+                return redirect()
+                    ->route('items.import.form')
+                    ->withErrors([
+                        'import_file' =>
+                            'File me import karne ke liye koi item row nahi mili. Header ke neeche item data add karein.',
+                    ]);
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Full Success
+            |--------------------------------------------------------------------------
+            */
+            if (
+                $imported > 0
+                && $skipped === 0
+            ) {
+                return redirect()
+                    ->route('items.import.form')
+                    ->with(
+                        'success',
+                        "Import successful. {$imported} item(s) successfully imported."
+                    )
+                    ->with(
+                        'import_summary',
+                        [
+                            'imported' => $imported,
+                            'skipped'  => 0,
+                        ]
+                    )
+                    ->with(
+                        'import_errors',
+                        []
+                    );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Partial Success
+            |--------------------------------------------------------------------------
+            */
+            if (
+                $imported > 0
+                && $skipped > 0
+            ) {
+                return redirect()
+                    ->route('items.import.form')
+                    ->with(
+                        'success',
+                        "Import completed. {$imported} item(s) successfully imported and {$skipped} row(s) skipped."
+                    )
+                    ->with(
+                        'import_summary',
+                        [
+                            'imported' => $imported,
+                            'skipped'  => $skipped,
+                        ]
+                    )
+                    ->with(
+                        'import_errors',
+                        $importErrors
+                    );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | All Rows Skipped
+            |--------------------------------------------------------------------------
+            */
+            return redirect()
+                ->route('items.import.form')
+                ->with(
+                    'warning',
+                    "Koi item import nahi hua. {$skipped} row(s) skipped."
+                )
+                ->with(
+                    'import_summary',
+                    [
+                        'imported' => 0,
+                        'skipped'  => $skipped,
+                    ]
+                )
+                ->with(
+                    'import_errors',
+                    $importErrors
+                );
+
+        } catch (
+            \Maatwebsite\Excel\Validators\ValidationException $e
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Laravel Excel Validation Exception
+            |--------------------------------------------------------------------------
+            */
+            $failures = [];
+
+            foreach (
+                $e->failures()
+                as $failure
+            ) {
+                $failures[] = [
+                    'row' =>
+                        $failure->row(),
+
+                    'message' =>
+                        implode(
+                            ' | ',
+                            $failure->errors()
+                        ),
+                ];
+            }
+
+            Log::warning(
+                'Item Excel validation failed',
+                [
+                    'business_id' =>
+                        $businessId,
+
+                    'user_id' =>
+                        $request->user()?->id,
+
+                    'failures' =>
+                        $failures,
+                ]
+            );
+
+            return redirect()
+                ->route('items.import.form')
+                ->withErrors([
+                    'import_file' =>
+                        'Excel file me validation errors mile. Neeche skipped rows check karein.',
+                ])
+                ->with(
+                    'import_summary',
+                    [
+                        'imported' => 0,
+                        'skipped'  => count($failures),
+                    ]
+                )
+                ->with(
+                    'import_errors',
+                    $failures
+                );
+
+        } catch (\Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | General Import Exception
+            |--------------------------------------------------------------------------
+            */
+            Log::error(
+                'Item Excel import failed',
+                [
+                    'business_id' =>
+                        $businessId,
+
+                    'user_id' =>
+                        $request->user()?->id,
+
+                    'original_name' =>
+                        $request->file(
+                            'import_file'
+                        )?->getClientOriginalName(),
+
+                    'extension' =>
+                        $request->file(
+                            'import_file'
+                        )?->getClientOriginalExtension(),
+
+                    'message' =>
+                        $e->getMessage(),
+
+                    'line' =>
+                        $e->getLine(),
+
+                    'file' =>
+                        $e->getFile(),
+                ]
+            );
+
+            return redirect()
+                ->route('items.import.form')
+                ->withErrors([
+                    'import_file' =>
+                        'Import failed: '
+                        . $e->getMessage(),
+                ]);
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Download Dynamic CSV Template
+    |--------------------------------------------------------------------------
+    */
+    public function downloadImportTemplate(
+        Request $request
+    ): StreamedResponse {
+        $businessId =
+            $this->resolveActiveBusinessId(
+                $request
+            );
+
+        abort_unless(
+            $businessId,
+            422,
+            'Active business not found.'
+        );
+
+        $business = Business::with(
+            'businessType.itemFields'
+        )->findOrFail($businessId);
+
+        [
+            $allowedFields,
+            $requiredFields
+        ] = $this->getImportFieldConfiguration(
+            $business
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Dynamic Excel/CSV Headers
+        |--------------------------------------------------------------------------
+        */
+        $headers =
+            $this->getImportHeaders(
+                $allowedFields
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Example Row
+        |--------------------------------------------------------------------------
+        */
+        $example = [];
+
+        foreach ($headers as $header) {
+
+            $example[] = match ($header) {
+
+                'name' =>
+                    'Gold Ring',
+
+                'huid' =>
+                    'AB12CD',
+
+                'sku' =>
+                    'RING-001',
+
+                'category' =>
+                    'Gold Jewellery',
+
+                'type' =>
+                    'product',
+
+                'sac' =>
+                    '',
+
+                'description' =>
+                    '22K Gold Ring',
+
+                'price' =>
+                    '55000',
+
+                'cost_price' =>
+                    '50000',
+
+                'making_charge_type' =>
+                    'percentage',
+
+                'making_charge' =>
+                    '10',
+
+                'stock_qty' =>
+                    '5',
+
+                'unit' =>
+                    'pcs',
+
+                'tax_rate' =>
+                    '3',
+
+                'is_active' =>
+                    '1',
+
+                'metal_type' =>
+                    'gold',
+
+                'purity' =>
+                    '22K',
+
+                'gross_weight' =>
+                    '10.500',
+
+                'metal_weight' =>
+                    '10.000',
+
+                'stone_weight' =>
+                    '0.500',
+
+                'stone_charges' =>
+                    '500',
+
+                'gold_weight' =>
+                    '10.000',
+
+                'gold_purity' =>
+                    '22K (916)',
+
+                'silver_weight' =>
+                    '',
+
+                'silver_purity' =>
+                    '',
+
+                'diamond_weight' =>
+                    '',
+
+                'diamond_charges' =>
+                    '',
+
+                'barcode' =>
+                    '',
+
+                default =>
+                    '',
+            };
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | CSV Download
+        |--------------------------------------------------------------------------
+        */
+        return response()->streamDownload(
+            function () use (
+                $headers,
+                $example
+            ) {
+
+                $handle = fopen(
+                    'php://output',
+                    'w'
+                );
+
+                /*
+                * UTF-8 BOM for Excel
+                */
+                fwrite(
+                    $handle,
+                    "\xEF\xBB\xBF"
+                );
+
+                /*
+                * Header
+                */
+                fputcsv(
+                    $handle,
+                    $headers
+                );
+
+                /*
+                * Example Row
+                */
+                fputcsv(
+                    $handle,
+                    $example
+                );
+
+                fclose($handle);
+            },
+            'item-import-template.csv',
+            [
+                'Content-Type' =>
+                    'text/csv; charset=UTF-8',
+            ]
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resolve Active Business
+    |--------------------------------------------------------------------------
+    */
+    private function resolveActiveBusinessId(
+        Request $request
+    ): ?int {
+        $user = $request->user();
+
+        if (!$user) {
+            return null;
+        }
+
+        $businessId =
+            $user->current_business_id
+            ?? session(
+                'active_business_id'
+            );
+
+        if (!$businessId) {
+
+            $businessId =
+                $user->businesses()
+                    ->pluck('businesses.id')
+                    ->first();
+        }
+
+        return $businessId
+            ? (int) $businessId
+            : null;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Import Field Configuration
+    |--------------------------------------------------------------------------
+    */
+    private function getImportFieldConfiguration(
+        Business $business
+    ): array {
+        $allowedFields = [];
+
+        $requiredFields = [];
+
+        if ($business->businessType) {
+
+            $allowedFields =
+                $business
+                    ->businessType
+                    ->itemFields
+                    ->pluck('field_name')
+                    ->toArray();
+
+            $requiredFields =
+                $business
+                    ->businessType
+                    ->itemFields
+                    ->where(
+                        'is_required',
+                        1
+                    )
+                    ->pluck('field_name')
+                    ->toArray();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Default Item Fields
+        |--------------------------------------------------------------------------
+        */
+        if (empty($allowedFields)) {
+
+            $allowedFields = [
+                'name',
+                'huid',
+                'sku',
+                'category_id',
+                'type',
+                'sac',
+                'description',
+                'price',
+                'cost_price',
+                'making_charge_type',
+                'making_charge',
+                'stock_qty',
+                'unit',
+                'tax_rate',
+                'is_active',
+                'metal_type',
+                'purity',
+                'gross_weight',
+                'metal_weight',
+                'stone_weight',
+                'stone_charges',
+                'gold_weight',
+                'gold_purity',
+                'silver_weight',
+                'silver_purity',
+                'diamond_weight',
+                'diamond_charges',
+            ];
+        }
+
+        /*
+        * Import me item name required rakhein.
+        */
+        if (
+            in_array(
+                'name',
+                $allowedFields,
+                true
+            )
+            && !in_array(
+                'name',
+                $requiredFields,
+                true
+            )
+        ) {
+            $requiredFields[] = 'name';
+        }
+
+        return [
+            $allowedFields,
+            $requiredFields,
+        ];
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Excel Headers
+    |--------------------------------------------------------------------------
+    */
+    private function getImportHeaders(
+        array $allowedFields
+    ): array {
+        $headers = [];
+
+        $allFields = [
+            'name',
+            'huid',
+            'sku',
+            'category_id',
+            'type',
+            'sac',
+            'description',
+            'price',
+            'cost_price',
+            'making_charge_type',
+            'making_charge',
+            'stock_qty',
+            'unit',
+            'tax_rate',
+            'is_active',
+            'metal_type',
+            'purity',
+            'gross_weight',
+            'metal_weight',
+            'stone_weight',
+            'stone_charges',
+            'gold_weight',
+            'gold_purity',
+            'silver_weight',
+            'silver_purity',
+            'diamond_weight',
+            'diamond_charges',
+        ];
+
+        foreach ($allFields as $field) {
+
+            if (
+                !in_array(
+                    $field,
+                    $allowedFields,
+                    true
+                )
+            ) {
+                continue;
+            }
+
+            /*
+            * User Excel me category_id
+            * ya numeric ID nahi dalega.
+            */
+            if ($field === 'category_id') {
+                $headers[] = 'category';
+
+                continue;
+            }
+
+            $headers[] = $field;
+        }
+
+        /*
+        * Barcode business type fields se
+        * independent hai.
+        */
+        $headers[] = 'barcode';
+
+        return array_values(
+            array_unique($headers)
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Column Details For Upload Screen
+    |--------------------------------------------------------------------------
+    */
+    private function getImportColumnDetails(
+        array $allowedFields,
+        array $requiredFields
+    ): array {
+        $headers =
+            $this->getImportHeaders(
+                $allowedFields
+            );
+
+        $details = [];
+
+        foreach ($headers as $column) {
+
+            $originalField =
+                $column === 'category'
+                    ? 'category_id'
+                    : $column;
+
+            $required =
+                in_array(
+                    $originalField,
+                    $requiredFields,
+                    true
+                );
+
+            $details[] = [
+                'column' =>
+                    $column,
+
+                'required' =>
+                    $required,
+
+                'format' => match ($column) {
+
+                    'name' =>
+                        'Text e.g. Gold Ring',
+
+                    'huid' =>
+                        'Text e.g. AB12CD',
+
+                    'sku' =>
+                        'Unique text e.g. RING-001',
+
+                    'category' =>
+                        'Existing category name exactly as system',
+
+                    'type' =>
+                        'product / service',
+
+                    'sac' =>
+                        'Text / SAC code',
+
+                    'description' =>
+                        'Optional text',
+
+                    'price',
+                    'cost_price',
+                    'making_charge',
+                    'stone_charges',
+                    'diamond_charges' =>
+                        'Number, minimum 0',
+
+                    'making_charge_type' =>
+                        'percentage / fixed / per_gram / per_product',
+
+                    'stock_qty' =>
+                        'Whole number e.g. 10',
+
+                    'unit' =>
+                        'Text e.g. pcs / gm',
+
+                    'tax_rate' =>
+                        '0 to 100 e.g. 3 / 5 / 18',
+
+                    'is_active' =>
+                        '1/0, Yes/No, Active/Inactive',
+
+                    'metal_type' =>
+                        'gold / silver / other',
+
+                    'purity' =>
+                        'Text e.g. 22K',
+
+                    'gross_weight',
+                    'metal_weight',
+                    'stone_weight',
+                    'gold_weight',
+                    'silver_weight',
+                    'diamond_weight' =>
+                        'Decimal allowed e.g. 10.500',
+
+                    'gold_purity' =>
+                        'e.g. 22K (916)',
+
+                    'silver_purity' =>
+                        'e.g. 999',
+
+                    'barcode' =>
+                        'Optional unique barcode. Blank = auto generate',
+
+                    default =>
+                        'Text / Number',
+                },
+            ];
+        }
+
+        return $details;
     }
 
 }
