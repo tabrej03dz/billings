@@ -14,6 +14,7 @@ use App\Models\InvoiceItem;
 use App\Models\InvoicePayment;
 use App\Models\Item;
 use App\Models\MetalRate;
+use App\Models\Unit;
 use App\Models\UserPlan;
 use App\Services\StockService;
 use Carbon\Carbon;
@@ -454,6 +455,17 @@ class InvoiceController extends Controller
                 ->toArray()
             : [];
 
+            $requiredFields = $business->businessType
+            ? $business->businessType
+                ->itemFields
+                ->where('is_required', 1)
+                ->pluck('field_name')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray()
+            : [];
+
         /*
         |--------------------------------------------------------------------------
         | Hospital detection
@@ -726,6 +738,25 @@ class InvoiceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
+        | Units
+        |--------------------------------------------------------------------------
+        */
+        $units = Unit::query()
+            ->withoutGlobalScope('business')
+            ->where(function ($query) use ($businessId) {
+                $query->whereNull('business_id')
+                    ->orWhere('business_id', $businessId);
+            })
+            ->orderBy('name')
+            ->get([
+                'id',
+                'business_id',
+                'name',
+                'description',
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
         | Metal rates
         |--------------------------------------------------------------------------
         */
@@ -876,6 +907,15 @@ class InvoiceController extends Controller
 
             'docType' => $docType,
             'allowedFields' => $allowedFields,
+
+
+            'requiredFields' => $requiredFields,
+            'units' => $units,
+
+            'unitsJson' => $units
+                ->values()
+                ->toJson(),
+
             'activeBusinessId' => $businessId,
 
             'currentTypeCount' => $currentTypeCount,

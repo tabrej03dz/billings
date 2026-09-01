@@ -1404,6 +1404,13 @@
         <script type="application/json" id="allowed-fields-json">
             {!! json_encode($allowedFields ?? []) !!}
         </script>
+        <script type="application/json" id="required-fields-json">
+            {!! json_encode($requiredFields ?? []) !!}
+        </script>
+
+        <script type="application/json" id="units-json">
+            {!! $unitsJson ?? '[]' !!}
+        </script>
         <div class="flex items-center gap-3 rounded-lg bg-[#BFE0E0] dark:bg-[#354A54] px-4 py-3">
             <button type="button" @click="submitForm()" :disabled="saving"
                 class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2 shrink-0">
@@ -2433,172 +2440,671 @@
             </div>
 
             {{-- =================== ITEM MODAL =================== --}}
-            <div x-show="modals.item" x-transition.opacity
-                class="fixed inset-0 z-50 flex items-center justify-center px-3" style="display:none;">
-                <div class="absolute inset-0 bg-black/50" @click="closeItemModal()"></div>
+            <div x-show="modals.item" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center px-3" style="display:none;">
+                <div
+                    class="absolute inset-0 bg-black/50"
+                    @click="closeItemModal()"
+                ></div>
 
                 <div
-                    class="relative w-full max-w-3xl bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-gray-200 dark:border-neutral-700 p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-neutral-100">Create New Item</h3>
-                        <button type="button" class="text-2xl leading-none text-gray-500 hover:text-red-600"
-                            @click="closeItemModal()">×</button>
+                    class="relative max-h-[92vh] w-full max-w-4xl overflow-y-auto
+                        rounded-2xl border border-gray-200 bg-white p-5 shadow-xl
+                        dark:border-neutral-700 dark:bg-neutral-900"
+                >
+
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-neutral-100">
+                            Create New Item
+                        </h3>
+
+                        <button
+                            type="button"
+                            class="text-2xl leading-none text-gray-500 hover:text-red-600"
+                            @click="closeItemModal()"
+                        >
+                            ×
+                        </button>
                     </div>
 
-                    <div class="grid md:grid-cols-3 gap-3">
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Type *</label>
-                            <select x-model="newItem.type"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+
+                    <div class="grid gap-3 md:grid-cols-3">
+
+                        {{-- ================= NAME ================= --}}
+                        <div
+                            x-show="showItemField('name')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Name
+                                <span
+                                    x-show="isItemFieldRequired('name')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <input
+                                x-model="newItem.name"
+                                placeholder="Item name"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= CATEGORY ================= --}}
+                        <div
+                            x-show="showItemField('category_id')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Category
+
+                                <span
+                                    x-show="isItemFieldRequired('category_id')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <select
+                                x-model="newItem.category_id"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="">-- Select Category --</option>
+
+                                <template
+                                    x-for="cat in categories"
+                                    :key="cat.id"
+                                >
+                                    <option
+                                        :value="cat.id"
+                                        x-text="cat.name"
+                                    ></option>
+                                </template>
+                            </select>
+                        </div>
+
+
+                        {{-- ================= HUID ================= --}}
+                        <div
+                            x-show="showItemField('huid')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                HUID
+                                <span
+                                    x-show="isItemFieldRequired('huid')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <input
+                                x-model="newItem.huid"
+                                placeholder="HUID"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm uppercase
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= SKU ================= --}}
+                        <div
+                            x-show="showItemField('sku')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                SKU
+                            </label>
+
+                            <input
+                                x-model="newItem.sku"
+                                placeholder="SKU"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= BARCODE ================= --}}
+                        <div
+                            x-show="showItemField('barcode')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Barcode
+                                <span
+                                    x-show="isItemFieldRequired('barcode')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <input
+                                x-model="newItem.barcode"
+                                placeholder="Barcode"
+                                autocomplete="off"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= TYPE ================= --}}
+                        <div
+                            x-show="showItemField('type')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Type
+                                <span
+                                    x-show="isItemFieldRequired('type')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <select
+                                x-model="newItem.type"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="">-- Select Type --</option>
                                 <option value="product">Product</option>
                                 <option value="service">Service</option>
                             </select>
                         </div>
 
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Category</label>
-                            <select x-model="newItem.category_id"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                <option value="">-- Select Category --</option>
-                                <template x-for="cat in categories" :key="cat.id">
-                                    <option :value="cat.id" x-text="cat.name"></option>
+
+                        {{-- ================= SAC ================= --}}
+                        <div
+                            x-show="showItemField('sac')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                SAC
+                            </label>
+
+                            <input
+                                x-model="newItem.sac"
+                                placeholder="SAC"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= PRICE ================= --}}
+                        <div
+                            x-show="showItemField('price')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Price
+                                <span
+                                    x-show="isItemFieldRequired('price')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                x-model.number="newItem.price"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= COST PRICE ================= --}}
+                        <div
+                            x-show="showItemField('cost_price')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Cost Price
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                x-model.number="newItem.cost_price"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= STOCK ================= --}}
+                        <div
+                            x-show="showItemField('stock_qty')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Stock Qty
+                                <span
+                                    x-show="isItemFieldRequired('stock_qty')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
+
+                            <input
+                                type="number"
+                                step="1"
+                                min="0"
+                                x-model.number="newItem.stock_qty"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= UNIT ================= --}}
+                        <div
+                            x-show="showItemField('unit')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Unit
+                            </label>
+
+                            <select
+                                x-model="newItem.unit"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="">-- Select Unit --</option>
+
+                                <template
+                                    x-for="unit in units"
+                                    :key="unit.id"
+                                >
+                                    <option
+                                        :value="unit.name"
+                                        x-text="unit.name"
+                                    ></option>
                                 </template>
                             </select>
                         </div>
 
-                        <div class="md:col-span-2">
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Name *</label>
-                            <input x-model="newItem.name"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
-                                placeholder="Item name">
-                        </div>
 
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">SKU</label>
-                            <input x-model="newItem.sku"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700"
-                                placeholder="optional">
-                        </div>
+                        {{-- ================= TAX ================= --}}
+                        <div
+                            x-show="showItemField('tax_rate')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Tax %
+                                <span
+                                    x-show="isItemFieldRequired('tax_rate')"
+                                    class="text-red-600"
+                                >*</span>
+                            </label>
 
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Tax %</label>
-                            <input type="number" step="0.01" min="0" max="100"
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
                                 x-model.number="newItem.tax_rate"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
                         </div>
 
-                        <div x-show="newItem.type==='product'">
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">HSN</label>
-                            <input x-model="newItem.hsn"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+
+                        {{-- ================= MAKING CHARGE ================= --}}
+                        <div
+                            x-show="showItemField('making_charge')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Making Charge Type
+                            </label>
+
+                            <select
+                                x-model="newItem.making_charge_type"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="percentage">Percent (%)</option>
+                                <option value="fixed">Fixed Amount</option>
+                                <option value="per_gram">Per Gram</option>
+                                <option value="per_product">Per Product</option>
+                            </select>
                         </div>
 
-                        <div x-show="newItem.type==='service'">
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">SAC</label>
-                            <input x-model="newItem.sac"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+                        <div
+                            x-show="showItemField('making_charge')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Making Charge
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                x-model.number="newItem.making_charge"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
                         </div>
 
-                        <div class="md:col-span-3">
-                            <label
-                                class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Description</label>
-                            <input x-model="newItem.description"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+
+                        {{-- ================= METAL TYPE ================= --}}
+                        <div
+                            x-show="showItemField('metal_type')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Metal Type
+                            </label>
+
+                            <select
+                                x-model="newItem.metal_type"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="">-- Select --</option>
+                                <option value="gold">Gold</option>
+                                <option value="silver">Silver</option>
+                                <option value="other">Other</option>
+                            </select>
                         </div>
 
-                        {{-- SERVICE fields --}}
-                        <div x-show="newItem.type==='service'">
-                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Service Price (₹)
-                                *</label>
-                            <input type="number" step="0.01" min="0" x-model.number="newItem.price"
-                                class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
+
+                        {{-- ================= PURITY ================= --}}
+                        <div
+                            x-show="showItemField('purity')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Purity
+                            </label>
+
+                            <input
+                                x-model="newItem.purity"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
                         </div>
 
-                        {{-- PRODUCT fields --}}
-                        <template x-if="newItem.type==='product'">
-                            <div
-                                class="md:col-span-3 grid md:grid-cols-3 gap-3 p-3 rounded-xl border border-gray-200 dark:border-neutral-700">
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Making
-                                        Charge</label>
-                                    <input type="number" step="0.01" min="0"
-                                        x-model.number="newItem.making_charge"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Gold
-                                        Weight (g)</label>
-                                    <input type="number" step="0.001" min="0"
-                                        x-model.number="newItem.gold_weight"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Gold
-                                        Purity</label>
-                                    <input x-model="newItem.gold_purity" placeholder="e.g. 22K / 916"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
 
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Silver
-                                        Weight (g)</label>
-                                    <input type="number" step="0.001" min="0"
-                                        x-model.number="newItem.silver_weight"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Silver
-                                        Purity</label>
-                                    <input x-model="newItem.silver_purity" placeholder="e.g. 999"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
-                                <div></div>
+                        {{-- ================= GROSS WEIGHT ================= --}}
+                        <div
+                            x-show="showItemField('gross_weight')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Gross Weight
+                            </label>
 
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Stone Wt
-                                        (ct)</label>
-                                    <input type="number" step="0.001" min="0"
-                                        x-model.number="newItem.stone_weight"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">Diamond Wt
-                                        (ct)</label>
-                                    <input type="number" step="0.001" min="0"
-                                        x-model.number="newItem.diamond_weight"
-                                        class="mt-1 w-full border rounded-xl px-3 py-2 text-sm dark:bg-neutral-900 dark:border-neutral-700">
-                                </div>
-                                <div></div>
-                            </div>
-                        </template>
+                            <input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                x-model.number="newItem.gross_weight"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= METAL WEIGHT ================= --}}
+                        <div
+                            x-show="showItemField('metal_weight')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Metal Weight
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                x-model.number="newItem.metal_weight"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= GOLD ================= --}}
+                        <div
+                            x-show="showItemField('gold_weight')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Gold Weight
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                x-model.number="newItem.gold_weight"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+                        <div
+                            x-show="showItemField('gold_purity')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Gold Purity
+                            </label>
+
+                            <select
+                                x-model="newItem.gold_purity"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="">Select Gold Purity</option>
+                                <option value="24K (999)">24K (999)</option>
+                                <option value="22K (916)">22K (916)</option>
+                                <option value="20K (833)">20K (833)</option>
+                                <option value="18K (750)">18K (750)</option>
+                                <option value="16K (667)">16K (667)</option>
+                                <option value="14K (585)">14K (585)</option>
+                            </select>
+                        </div>
+
+
+                        {{-- ================= SILVER ================= --}}
+                        <div
+                            x-show="showItemField('silver_weight')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Silver Weight
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                x-model.number="newItem.silver_weight"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+                        <div
+                            x-show="showItemField('silver_purity')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Silver Purity
+                            </label>
+
+                            <select
+                                x-model="newItem.silver_purity"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                                <option value="">Select Silver Purity</option>
+                                <option value="999">Silver 999</option>
+                                <option value="925">Silver 925</option>
+                            </select>
+                        </div>
+
+
+                        {{-- ================= STONE ================= --}}
+                        <div
+                            x-show="showItemField('stone_weight')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Stone Weight
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                x-model.number="newItem.stone_weight"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+                        <div
+                            x-show="showItemField('stone_charges')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Stone Charges
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                x-model.number="newItem.stone_charges"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= DIAMOND ================= --}}
+                        <div
+                            x-show="showItemField('diamond_weight')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Diamond Weight
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                x-model.number="newItem.diamond_weight"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+                        <div
+                            x-show="showItemField('diamond_charges')"
+                            x-cloak
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Diamond Charges
+                            </label>
+
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                x-model.number="newItem.diamond_charges"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            >
+                        </div>
+
+
+                        {{-- ================= DESCRIPTION ================= --}}
+                        <div
+                            x-show="showItemField('description')"
+                            x-cloak
+                            class="md:col-span-3"
+                        >
+                            <label class="text-xs font-semibold text-gray-600 dark:text-neutral-300">
+                                Description
+                            </label>
+
+                            <textarea
+                                x-model="newItem.description"
+                                rows="3"
+                                class="mt-1 w-full rounded-xl border px-3 py-2 text-sm
+                                    dark:border-neutral-700 dark:bg-neutral-900"
+                            ></textarea>
+                        </div>
+
                     </div>
 
+
                     <div class="mt-4 flex items-center justify-between gap-3">
+
                         <div class="flex flex-col">
-                            <div class="text-sm text-red-600" x-text="newItemError"></div>
+                            <div
+                                class="text-sm text-red-600"
+                                x-text="newItemError"
+                            ></div>
 
                             <label
-                                class="mt-2 inline-flex items-center gap-2 text-sm text-gray-700 dark:text-neutral-200 select-none">
-                                <input type="checkbox" class="rounded border-gray-300 dark:border-neutral-700"
-                                    x-model="itemAutoSelect">
+                                class="mt-2 inline-flex items-center gap-2
+                                    text-sm text-gray-700 dark:text-neutral-200"
+                            >
+                                <input
+                                    type="checkbox"
+                                    class="rounded border-gray-300"
+                                    x-model="itemAutoSelect"
+                                >
+
                                 Save for future
                             </label>
                         </div>
 
-                        <div class="flex gap-2 shrink-0">
-                            <button type="button" class="px-4 py-2 rounded-xl border dark:border-neutral-700"
-                                @click="closeItemModal()">
+
+                        <div class="flex shrink-0 gap-2">
+                            <button
+                                type="button"
+                                class="rounded-xl border px-4 py-2
+                                    dark:border-neutral-700"
+                                @click="closeItemModal()"
+                            >
                                 Cancel
                             </button>
 
-                            <button type="button"
-                                class="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                                :disabled="savingItem" @click="saveItem()">
-                                <span x-show="!savingItem"
-                                    x-text="itemAutoSelect ? 'Save Item' : 'Use for this Invoice'"></span>
-                                <span x-show="savingItem">Saving...</span>
+                            <button
+                                type="button"
+                                class="rounded-xl bg-blue-600 px-4 py-2
+                                    text-white hover:bg-blue-700
+                                    disabled:opacity-50"
+                                :disabled="savingItem"
+                                @click="saveItem()"
+                            >
+                                <span
+                                    x-show="!savingItem"
+                                    x-text="itemAutoSelect
+                                        ? 'Save Item'
+                                        : 'Use for this Invoice'"
+                                ></span>
+
+                                <span x-show="savingItem">
+                                    Saving...
+                                </span>
                             </button>
                         </div>
+
                     </div>
 
                 </div>
@@ -2763,6 +3269,17 @@
             // const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
             const CATEGORIES = readJSON('categories-json', []);
             const ALLOWED_FIELDS = readJSON('allowed-fields-json', []);
+
+            const REQUIRED_FIELDS = readJSON('required-fields-json', []);
+            const UNITS = readJSON('units-json', []);
+
+            // const showAllowedField = (field) => {
+            //     return ALLOWED_FIELDS.length === 0 || ALLOWED_FIELDS.includes(field);
+            // };
+
+            const isRequiredItemField = (field) => {
+                return REQUIRED_FIELDS.includes(field);
+            };
 
             const showAllowedField = (field) => {
                 return ALLOWED_FIELDS.length === 0 || ALLOWED_FIELDS.includes(field);
@@ -2997,9 +3514,15 @@
                 itemsData: ITEMS,
                 categories: CATEGORIES,
 
-                 showItemField(field) {
+                showItemField(field) {
                     return showAllowedField(field);
                 },
+
+                isItemFieldRequired(field) {
+                    return isRequiredItemField(field);
+                },
+
+                units: UNITS,
 
 
 
@@ -4490,28 +5013,109 @@
                     this.newClient.state = s(parts.slice(1).join(',')).trim();
                 },
 
+                // openItemModal(rowIndex = null) {
+                //     this.activeRowIndex = rowIndex;
+                //     this.newItemError = '';
+                //     this.itemAutoSelect = true;
+
+                //     // this.newItem = {
+                //     //     type: 'product',
+                //     //     name: '',
+                //     //     sku: '',
+                //     //     description: '',
+                //     //     category_id: '',
+                //     //     tax_rate: 0,
+                //     //     hsn: '',
+                //     //     sac: '',
+                //     //     price: 0,
+                //     //     making_charge: 0,
+                //     //     gold_weight: 0,
+                //     //     gold_purity: '',
+                //     //     silver_weight: 0,
+                //     //     silver_purity: '',
+                //     //     stone_weight: 0,
+                //     //     diamond_weight: 0
+                //     // };
+
+                //     this.newItem = {
+                //         type: 'product',
+                //         name: '',
+                //         sku: '',
+                //         description: '',
+                //         category_id: '',
+                //         tax_rate: 0,
+                //         hsn: '',
+                //         sac: '',
+                //         price: 0,
+
+                //         making_charge: 0,
+
+                //         gold_weight: 0,
+                //         gold_purity: '',
+
+                //         silver_weight: 0,
+                //         silver_purity: '',
+
+                //         stone_weight: 0,
+                //         stone_charges: 0,
+
+                //         diamond_weight: 0,
+                //         diamond_charges: 0
+                //     };
+
+                //     this.modals.item = true;
+                // },
+
+
+
                 openItemModal(rowIndex = null) {
                     this.activeRowIndex = rowIndex;
                     this.newItemError = '';
                     this.itemAutoSelect = true;
 
                     this.newItem = {
-                        type: 'product',
                         name: '',
+                        huid: '',
                         sku: '',
-                        description: '',
+                        barcode: '',
                         category_id: '',
-                        tax_rate: 0,
-                        hsn: '',
+
+                        /*
+                        * Type Business Type me visible na ho tab bhi
+                        * invoice calculation ke liye internal default product.
+                        */
+                        type: 'product',
+
                         sac: '',
+                        description: '',
+
                         price: 0,
+                        cost_price: 0,
+
+                        making_charge_type: 'percentage',
                         making_charge: 0,
+
+                        stock_qty: 0,
+                        unit: '',
+
+                        tax_rate: 0,
+
+                        metal_type: '',
+                        purity: '',
+                        gross_weight: 0,
+                        metal_weight: 0,
+
+                        stone_weight: 0,
+                        stone_charges: 0,
+
                         gold_weight: 0,
                         gold_purity: '',
+
                         silver_weight: 0,
                         silver_purity: '',
-                        stone_weight: 0,
-                        diamond_weight: 0
+
+                        diamond_weight: 0,
+                        diamond_charges: 0,
                     };
 
                     this.modals.item = true;
@@ -4583,60 +5187,138 @@
                 async saveItem() {
                     this.newItemError = '';
 
-                    if (!String(this.newItem.name || '').trim()) {
-                        this.newItemError = 'Item name is required.';
-                        return;
-                    }
+                    /*
+                    * Business Type me jo Required fields hain
+                    * sirf unhi ko frontend par mandatory check karenge.
+                    */
+                    const requiredChecks = [
+                        ['name', 'Item name'],
+                        ['huid', 'HUID'],
+                        ['barcode', 'Barcode'],
+                        ['category_id', 'Category'],
+                        ['type', 'Type'],
+                        ['price', 'Price'],
+                        ['stock_qty', 'Stock Qty'],
+                        ['tax_rate', 'Tax Rate'],
+                    ];
 
-                    if (!this.newItem.category_id) {
-                        this.newItemError = 'Please select category.';
-                        return;
-                    }
+                    for (const [field, label] of requiredChecks) {
 
-                    if (this.newItem.type === 'service' && Number(this.newItem.price || 0) <= 0) {
-                        this.newItemError = 'Service price is required.';
-                        return;
+                        if (!this.showItemField(field)) {
+                            continue;
+                        }
+
+                        if (!this.isItemFieldRequired(field)) {
+                            continue;
+                        }
+
+                        const value = this.newItem[field];
+
+                        if (
+                            value === null ||
+                            value === undefined ||
+                            String(value).trim() === ''
+                        ) {
+                            this.newItemError = `${label} is required.`;
+                            return;
+                        }
                     }
 
                     try {
                         this.savingItem = true;
 
-                        const res = await fetch(@js(route('items.store.ajax')), {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': this.csrf(),
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                ...this.newItem,
-                                is_save: this.itemAutoSelect ? 1 : 0
-                            })
-                        });
+                        const res = await fetch(
+                            @js(route('items.store.ajax')),
+                            {
+                                method: 'POST',
+                                credentials: 'same-origin',
 
-                        const data = await res.json().catch(() => ({}));
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.csrf(),
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json',
+                                },
+
+                                body: JSON.stringify({
+                                    ...this.newItem,
+
+                                    is_save:
+                                        this.itemAutoSelect
+                                            ? 1
+                                            : 0
+                                })
+                            }
+                        );
+
+                        const data =
+                            await res.json()
+                                .catch(() => ({}));
 
                         if (!res.ok) {
-                            if (data?.errors?.category_id?.length) {
-                                this.newItemError = data.errors.category_id[0];
+
+                            if (data?.errors) {
+                                const firstError =
+                                    Object.values(data.errors)
+                                        .flat()
+                                        .find(Boolean);
+
+                                this.newItemError =
+                                    firstError ||
+                                    data?.message ||
+                                    'Failed to save item.';
                             } else {
-                                this.newItemError = data?.message || 'Failed to save item.';
+                                this.newItemError =
+                                    data?.message ||
+                                    'Failed to save item.';
                             }
+
                             return;
                         }
 
-                        data.item.type = data.item.type || this.newItem.type;
-                        this.itemsData.unshift(data.item);
+                        if (!data?.item) {
+                            this.newItemError =
+                                'Item created but item information was not received.';
+                            return;
+                        }
 
-                        if (this.activeRowIndex !== null && this.items[this.activeRowIndex]) {
-                            this.pickItem(this.activeRowIndex, data.item.id);
+                        /*
+                        * Type DB me allowed na hone ki wajah se null ho sakta hai.
+                        * Invoice row internally product maan sakti hai.
+                        */
+                        data.item.type =
+                            data.item.type ||
+                            this.newItem.type ||
+                            'product';
+
+                        this.itemsData.unshift(
+                            data.item
+                        );
+
+                        if (
+                            this.activeRowIndex !== null &&
+                            this.items[
+                                this.activeRowIndex
+                            ]
+                        ) {
+                            this.pickItem(
+                                this.activeRowIndex,
+                                data.item.id
+                            );
                         }
 
                         this.modals.item = false;
+
                     } catch (e) {
-                        this.newItemError = 'Network error.';
+
+                        console.error(
+                            'Quick item create error:',
+                            e
+                        );
+
+                        this.newItemError =
+                            'Network error.';
+
                     } finally {
                         this.savingItem = false;
                     }
