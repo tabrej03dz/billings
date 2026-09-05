@@ -2474,6 +2474,7 @@
                 <flux:menu.separator />
 
                  @if($currentBusinessId)
+                    @can('manage ca access')
                     <a href="{{ route('ca.manage') }}"
                     class="flex items-center gap-3 px-3 py-2 rounded-lg transition
                     {{ request()->routeIs('ca.manage') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }}">
@@ -2491,6 +2492,7 @@
 
                         <span>CA Access</span>
                     </a>
+                    @endcan
                 @endif
 
                 <form
