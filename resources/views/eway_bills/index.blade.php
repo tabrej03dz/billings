@@ -408,7 +408,7 @@
 
 
                             {{-- ACTIONS --}}
-                            <td class="px-4 py-3 text-right">
+                            {{-- <td class="px-4 py-3 text-right">
 
                                 <div
                                     class="relative inline-block"
@@ -441,7 +441,7 @@
                                     >
 
                                         {{-- SHOW --}}
-                                        <a
+                                        {{-- <a
                                             href="{{ route(
                                                 'eway-bills.show',
                                                 $ewayBill->id
@@ -451,11 +451,11 @@
                                                    dark:hover:bg-neutral-800"
                                         >
                                             View
-                                        </a>
+                                        </a> --}}
 
 
                                         {{-- EDIT --}}
-                                        <a
+                                        {{-- <a
                                             href="{{ route(
                                                 'eway-bills.edit',
                                                 $ewayBill->id
@@ -467,11 +467,11 @@
                                                    dark:hover:bg-neutral-800"
                                         >
                                             Edit
-                                        </a>
+                                        </a> --}}
 
 
                                         {{-- PRINT --}}
-                                        <a
+                                        {{-- <a
                                             href="{{ route(
                                                 'eway-bills.print',
                                                 $ewayBill->id
@@ -482,17 +482,17 @@
                                                    dark:hover:bg-neutral-800"
                                         >
                                             Print
-                                        </a>
+                                        </a> --}}
 
 
-                                        <div
+                                        {{-- <div
                                             class="border-t border-gray-100
                                                    dark:border-neutral-800"
-                                        ></div>
+                                        ></div> --}}
 
 
                                         {{-- DELETE --}}
-                                        <form
+                                        {{-- <form
                                             method="POST"
                                             action="{{ route(
                                                 'eway-bills.destroy',
@@ -522,10 +522,95 @@
 
                                     </div>
 
+                                </div> --}}
+
+                            {{-- </td> --}} 
+
+                            {{-- ACTIONS --}}
+                            <td class="px-4 py-3">
+
+                                <div class="flex flex-wrap items-center justify-end gap-2">
+
+                                    {{-- VIEW --}}
+                                    <a
+                                        href="{{ route('eway-bills.show', $ewayBill->id) }}"
+                                        class="inline-flex items-center justify-center
+                                            rounded-lg border border-gray-300
+                                            bg-white px-3 py-2
+                                            text-xs font-semibold text-gray-700
+                                            hover:bg-gray-50
+                                            dark:border-neutral-700
+                                            dark:bg-neutral-900
+                                            dark:text-neutral-200
+                                            dark:hover:bg-neutral-800"
+                                    >
+                                        View
+                                    </a>
+
+
+                                    {{-- EDIT --}}
+                                    <a
+                                        href="{{ route('eway-bills.edit', $ewayBill->id) }}"
+                                        class="inline-flex items-center justify-center
+                                            rounded-lg border border-blue-300
+                                            bg-white px-3 py-2
+                                            text-xs font-semibold text-blue-600
+                                            hover:bg-blue-50
+                                            dark:border-blue-800
+                                            dark:bg-neutral-900
+                                            dark:text-blue-400
+                                            dark:hover:bg-blue-950/20"
+                                    >
+                                        Edit
+                                    </a>
+
+
+                                    {{-- PRINT --}}
+                                    <a
+                                        href="{{ route('eway-bills.print', $ewayBill->id) }}"
+                                        target="_blank"
+                                        class="inline-flex items-center justify-center
+                                            rounded-lg border border-gray-300
+                                            bg-gray-800 px-3 py-2
+                                            text-xs font-semibold text-white
+                                            hover:bg-gray-900
+                                            dark:border-neutral-700"
+                                    >
+                                        Print
+                                    </a>
+
+
+                                    {{-- DELETE --}}
+                                    <form
+                                        method="POST"
+                                        action="{{ route('eway-bills.destroy', $ewayBill->id) }}"
+                                        onsubmit="return confirm('Are you sure you want to delete this E-Way Bill?');"
+                                        class="inline"
+                                    >
+
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center
+                                                rounded-lg border border-red-300
+                                                bg-white px-3 py-2
+                                                text-xs font-semibold text-red-600
+                                                hover:bg-red-50
+                                                dark:border-red-800
+                                                dark:bg-neutral-900
+                                                dark:text-red-400
+                                                dark:hover:bg-red-950/20"
+                                        >
+                                            Delete
+                                        </button>
+
+                                    </form>
+
                                 </div>
 
                             </td>
-
                         </tr>
 
                     @empty
