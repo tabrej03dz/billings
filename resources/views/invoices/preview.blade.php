@@ -41,6 +41,25 @@
                         </button>
                     </form>
                 @endif
+
+
+                @if(!$invoice->ewayBill)
+                    <a
+                        href="{{ route('eway-bills.create', $invoice->id) }}"
+                        class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                        Create E-Way Bill
+                    </a>
+                @else
+                    <a
+                        href="{{ route('eway-bills.show', $invoice->ewayBill->id) }}"
+                        class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                    >
+                        View E-Way Bill
+                    </a>
+                @endif
+
+
                 <a href="{{ route('invoices.download', $invoice->id) }}"
                    class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800">
                     ⬇ Download

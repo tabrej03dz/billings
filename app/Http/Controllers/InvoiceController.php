@@ -1431,6 +1431,14 @@ class InvoiceController extends Controller
 
     public function preview(Invoice $invoice)
     {
+
+        $invoice->loadMissing([
+            'business',
+            'client',
+            'items',
+            'ewayBill',
+        ]);
+
         // ✅ Ensure PDF exists (same logic as show but no file return)
         $safeNumber = str_replace(['/', '\\'], '-', (string)($invoice->invoice_number ?? 'INV'));
 

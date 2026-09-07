@@ -42,6 +42,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\BusinessCaController;
 use App\Http\Controllers\CaReportController;
+use App\Http\Controllers\EwayBillController;
 
 // frontend web routes:::::
 
@@ -578,6 +579,35 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/clients/{client}/report/excel', [ClientController::class, 'exportExcel'])
         ->name('clients.report.excel');
+
+
+
+
+        Route::prefix('eway-bills')
+            ->name('eway-bills.')
+            ->group(function () {
+
+            Route::get(
+                '/invoice/{invoice}/create',
+                [EwayBillController::class, 'create']
+            )->name('create');
+
+            Route::post(
+                '/invoice/{invoice}',
+                [EwayBillController::class, 'store']
+            )->name('store');
+
+            Route::get(
+                '/{ewayBill}',
+                [EwayBillController::class, 'show']
+            )->name('show');
+
+            Route::get(
+                '/{ewayBill}/print',
+                [EwayBillController::class, 'print']
+            )->name('print');
+        });
+
 
     Route::prefix('clients')->name('clients.')->controller(\App\Http\Controllers\ClientController::class)->group(function(){
         Route::get('/', 'index')->name('index');
