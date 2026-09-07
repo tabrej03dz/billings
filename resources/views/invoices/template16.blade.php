@@ -319,7 +319,18 @@
             $showSilverValue = true;
         }
 
-        if ($makingChargeCheck > 0) {
+        // if ($makingChargeCheck > 0) {
+        //     $showMaking = true;
+        // }
+
+        $makingRateCheck = (float)($itCheck->making_rate ?? 0);
+        $makingTypeCheck = trim((string)($itCheck->making_charge_type ?? ''));
+
+        if (
+            $makingChargeCheck > 0 ||
+            $makingRateCheck > 0 ||
+            $makingTypeCheck !== ''
+        ) {
             $showMaking = true;
         }
 
@@ -779,14 +790,18 @@
                 $metalAmount = $goldAmount + $silverAmount;
 
                 // invoice_items table me making_rate already saved amount hai,
-                // isliye yahan koi calculation nahi karni.
                 $makingCharge = (float) (
                     $it->making_charge
                     ?? $it->making_amount
                     ?? 0
                 );
 
+                $makingType = strtolower(trim((string)($it->making_charge_type ?? '')));
+                $makingRate = (float)($it->making_rate ?? 0);
+
                 $makingPerGram = $it->making_per_gram ?? null;
+
+
                 $wastage = (float)($it->wastage ?? $it->wastage_percent ?? 0);
 
                 $taxPercent = (float)($it->tax_percent ?? $inv->tax_percent ?? 0);
@@ -876,16 +891,36 @@
 
                 @if($showMaking)
                     <td class="text-right">
-                        @if($makingCharge > 0)
-                            ₹ {{ $fmt2($makingCharge) }}
 
-                            @if($makingPerGram)
-                                <br>
-                                <span class="small-text">₹{{ $fmt2($makingPerGram) }}/gm</span>
-                            @endif
+                        @if($makingCharge > 0)
+                            <strong>₹ {{ $fmt2($makingCharge) }}</strong>
                         @else
                             -
                         @endif
+
+                        @if(!empty($makingType))
+                            <br>
+                            <span class="small-text">
+                                Type:
+                                {{ ucfirst($makingType) }}
+                            </span>
+                        @endif
+
+                        @if($makingRate > 0)
+                            <br>
+                            <span class="small-text">
+                                Rate:
+                                
+                                @if($makingType === 'percentage')
+                                    {{ $fmt2($makingRate) }}%
+                                @elseif(in_array($makingType, ['per_gram', 'pergram', 'per gram']))
+                                    ₹ {{ $fmt2($makingRate) }}/gm
+                                @else
+                                    ₹ {{ $fmt2($makingRate) }}
+                                @endif
+                            </span>
+                        @endif
+
                     </td>
                 @endif
 
