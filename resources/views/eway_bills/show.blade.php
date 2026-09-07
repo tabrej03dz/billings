@@ -16,13 +16,13 @@
 
         {{-- Success Message --}}
         @if(session('success'))
-            <div class="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-700">
+            <div class="mb-5 rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-800 shadow-sm">
                 {{ session('success') }}
             </div>
         @endif
 
 
-        {{-- ================= HEADER ================= --}}
+        {{-- HEADER --}}
         <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
             <div>
@@ -49,7 +49,6 @@
                     ← Back to Invoice
                 </a>
 
-
                 <a
                     href="{{ route('eway-bills.print', $ewayBill->id) }}"
                     target="_blank"
@@ -65,13 +64,14 @@
         </div>
 
 
-        {{-- ================= MAIN CARD ================= --}}
-        <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm
-                    dark:border-neutral-800 dark:bg-neutral-900">
+        {{-- MAIN CARD --}}
+        <div class="overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-sm
+                    dark:border-neutral-700 dark:bg-neutral-900">
 
 
-            {{-- ================= 1. E-WAY DETAILS ================= --}}
-            <div class="bg-emerald-600 px-5 py-3 text-sm font-bold text-white">
+            {{-- 1. E-WAY BILL DETAILS --}}
+            <div class="border-b border-gray-300 bg-gray-100 px-5 py-3 text-sm font-bold
+                        text-gray-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                 1. E-Way Bill Details
             </div>
 
@@ -96,10 +96,10 @@
 
                     <div class="mt-2">
                         <span
-                            class="inline-flex rounded-full px-3 py-1 text-xs font-bold
+                            class="inline-flex rounded-full border px-3 py-1 text-xs font-bold
                             {{ strtolower($ewayBill->status ?? '') === 'cancelled'
-                                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                : 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
+                                ? 'border-red-300 text-red-700 dark:border-red-700 dark:text-red-300'
+                                : 'border-gray-300 text-gray-800 dark:border-neutral-600 dark:text-neutral-200'
                             }}"
                         >
                             {{ strtoupper($ewayBill->status ?? 'generated') }}
@@ -145,6 +145,7 @@
 
                     <div class="mt-1 font-semibold">
                         {{ $ewayBill->supply_type ?: '-' }}
+
                         @if($ewayBill->sub_supply_type)
                             - {{ $ewayBill->sub_supply_type }}
                         @endif
@@ -189,9 +190,9 @@
             </div>
 
 
-
-            {{-- ================= 2. ADDRESS ================= --}}
-            <div class="bg-emerald-600 px-5 py-3 text-sm font-bold text-white">
+            {{-- 2. ADDRESS DETAILS --}}
+            <div class="border-b border-gray-300 bg-gray-100 px-5 py-3 text-sm font-bold
+                        text-gray-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                 2. Address Details
             </div>
 
@@ -201,12 +202,11 @@
                 {{-- FROM --}}
                 <div class="border-b border-r border-gray-200 p-5 dark:border-neutral-800">
 
-                    <div class="mb-4 inline-flex rounded-lg bg-emerald-50 px-3 py-1
-                                text-sm font-bold text-emerald-700
-                                dark:bg-emerald-950 dark:text-emerald-300">
+                    <div class="mb-4 inline-flex rounded-lg border border-gray-300 bg-white px-3 py-1
+                                text-sm font-bold text-gray-800
+                                dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200">
                         From / Supplier
                     </div>
-
 
                     <div class="space-y-2 text-sm">
 
@@ -270,9 +270,9 @@
                 {{-- TO --}}
                 <div class="border-b border-gray-200 p-5 dark:border-neutral-800">
 
-                    <div class="mb-4 inline-flex rounded-lg bg-blue-50 px-3 py-1
-                                text-sm font-bold text-blue-700
-                                dark:bg-blue-950 dark:text-blue-300">
+                    <div class="mb-4 inline-flex rounded-lg border border-gray-300 bg-white px-3 py-1
+                                text-sm font-bold text-gray-800
+                                dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200">
                         To / Customer
                     </div>
 
@@ -338,19 +338,19 @@
             </div>
 
 
-
-            {{-- ================= 3. GOODS ================= --}}
-            <div class="bg-emerald-600 px-5 py-3 text-sm font-bold text-white">
+            {{-- 3. GOODS DETAILS --}}
+            <div class="border-b border-gray-300 bg-gray-100 px-5 py-3 text-sm font-bold
+                        text-gray-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                 3. Goods Details
             </div>
 
 
             <div class="overflow-x-auto p-5">
 
-                <table class="min-w-full overflow-hidden rounded-xl border border-gray-200 text-sm
-                              dark:border-neutral-800">
+                <table class="min-w-full overflow-hidden rounded-xl border border-gray-300 text-sm
+                              dark:border-neutral-700">
 
-                    <thead class="bg-emerald-50 text-gray-700 dark:bg-emerald-950/40 dark:text-neutral-200">
+                    <thead class="bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-neutral-200">
 
                         <tr>
 
@@ -426,7 +426,7 @@
                     @endforeach
 
 
-                    <tr class="bg-emerald-50 font-bold dark:bg-emerald-950/30">
+                    <tr class="bg-gray-100 font-bold dark:bg-neutral-800">
 
                         <td colspan="3" class="border px-3 py-3 text-right">
                             Total
@@ -453,8 +453,7 @@
             </div>
 
 
-
-            {{-- ================= TAX SUMMARY ================= --}}
+            {{-- TAX SUMMARY --}}
             <div class="grid grid-cols-2 gap-0 border-t border-gray-200
                         md:grid-cols-3 xl:grid-cols-6 dark:border-neutral-800">
 
@@ -511,7 +510,7 @@
                         Total Invoice Amount
                     </div>
 
-                    <div class="mt-1 text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                    <div class="mt-1 text-lg font-bold text-gray-900 dark:text-white">
                         ₹{{ number_format((float)($invoice->total ?? 0), 2) }}
                     </div>
                 </div>
@@ -519,9 +518,9 @@
             </div>
 
 
-
-            {{-- ================= 4. TRANSPORTATION ================= --}}
-            <div class="bg-emerald-600 px-5 py-3 text-sm font-bold text-white">
+            {{-- 4. TRANSPORTATION DETAILS --}}
+            <div class="border-b border-t border-gray-300 bg-gray-100 px-5 py-3 text-sm font-bold
+                        text-gray-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white">
                 4. Transportation Details
             </div>
 
@@ -618,7 +617,6 @@
                 </div>
 
             </div>
-
 
         </div>
 

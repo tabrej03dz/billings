@@ -13,6 +13,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <meta charset="UTF-8">
 
     <title>
@@ -58,12 +59,12 @@
         }
 
         .btn-print {
-            background: #15803d;
+            background: #111827;
             color: #fff;
         }
 
         .btn-back {
-            background: #374151;
+            background: #4b5563;
             color: #fff;
         }
 
@@ -93,12 +94,12 @@
         }
 
         .section-title {
-            background: #079447;
-            color: #fff;
+            background: #f3f4f6;
+            color: #111;
             font-size: 11px;
             font-weight: 700;
             padding: 5px 7px;
-            border: 1px solid #04783a;
+            border: 1px solid #9ca3af;
             margin-top: 5px;
         }
 
@@ -117,7 +118,7 @@
         .label {
             font-weight: 700;
             width: 15%;
-            background: #f8fafc;
+            background: #f9fafb;
         }
 
         .value {
@@ -129,8 +130,8 @@
         }
 
         .address-heading {
-            background: #16a34a;
-            color: #fff;
+            background: #f3f4f6;
+            color: #111;
             font-size: 11px;
             font-weight: bold;
             padding: 4px 6px;
@@ -142,7 +143,7 @@
         }
 
         .goods-table th {
-            background: #dcfce7;
+            background: #f3f4f6;
             font-weight: 700;
             text-align: center;
             vertical-align: middle;
@@ -165,7 +166,7 @@
         }
 
         .total-row td {
-            background: #dcfce7;
+            background: #f3f4f6;
             font-weight: 700;
         }
 
@@ -175,12 +176,12 @@
 
         .tax-summary .head {
             font-weight: 700;
-            background: #ecfdf5;
+            background: #f3f4f6;
         }
 
         .status-generated {
             font-weight: 700;
-            color: #067a3c;
+            color: #111;
         }
 
         .status-cancelled {
@@ -198,10 +199,6 @@
             font-size: 9px;
             margin-top: 12px;
             color: #555;
-        }
-
-        .signature-space {
-            height: 40px;
         }
 
         @media print {
@@ -224,9 +221,11 @@
         }
 
     </style>
+
 </head>
 
 <body>
+
 
 <div class="toolbar">
 
@@ -259,10 +258,7 @@
     </div>
 
 
-    {{-- ========================================== --}}
     {{-- 1. E-WAY BILL DETAILS --}}
-    {{-- ========================================== --}}
-
     <div class="section-title">
         1. E-Way Bill Details
     </div>
@@ -333,8 +329,10 @@
 
             <td class="value">
                 {{ $ewayBill->supply_type ?: '-' }}
-                -
-                {{ $ewayBill->sub_supply_type ?: '-' }}
+
+                @if($ewayBill->sub_supply_type)
+                    - {{ $ewayBill->sub_supply_type }}
+                @endif
             </td>
 
             <td class="label">
@@ -375,10 +373,7 @@
     </table>
 
 
-    {{-- ========================================== --}}
     {{-- 2. ADDRESS DETAILS --}}
-    {{-- ========================================== --}}
-
     <div class="section-title">
         2. Address Details
     </div>
@@ -435,7 +430,6 @@
                 <br><br>
 
                 <strong>Dispatch From:</strong>
-
                 {{ $ewayBill->from_place ?: '-' }}
 
             </td>
@@ -476,7 +470,6 @@
                 <br><br>
 
                 <strong>Ship To:</strong>
-
                 {{ $ewayBill->to_place ?: '-' }}
 
             </td>
@@ -486,10 +479,7 @@
     </table>
 
 
-    {{-- ========================================== --}}
     {{-- 3. GOODS DETAILS --}}
-    {{-- ========================================== --}}
-
     <div class="section-title">
         3. Goods Details
     </div>
@@ -531,6 +521,7 @@
         </tr>
 
         </thead>
+
 
         <tbody>
 
@@ -596,10 +587,7 @@
     </table>
 
 
-    {{-- ========================================== --}}
     {{-- TAX SUMMARY --}}
-    {{-- ========================================== --}}
-
     <table class="tax-summary">
 
         <tr>
@@ -629,6 +617,7 @@
             </td>
 
         </tr>
+
 
         <tr>
 
@@ -676,10 +665,7 @@
     </table>
 
 
-    {{-- ========================================== --}}
     {{-- 4. TRANSPORTATION DETAILS --}}
-    {{-- ========================================== --}}
-
     <div class="section-title">
         4. Transportation Details
     </div>
@@ -703,13 +689,9 @@
             <td class="value">
 
                 @if($ewayBill->distance)
-
                     {{ number_format($ewayBill->distance) }} KM
-
                 @else
-
                     -
-
                 @endif
 
             </td>
@@ -765,10 +747,7 @@
     </table>
 
 
-    {{-- ========================================== --}}
     {{-- 5. VEHICLE DETAILS --}}
-    {{-- ========================================== --}}
-
     <div class="section-title">
         5. Vehicle Details
     </div>
@@ -835,11 +814,9 @@
 
 
     <div class="footer-note">
-
         This E-Way Bill has been generated from the billing software
         for Invoice
         <strong>{{ $invoice->invoice_number }}</strong>.
-
     </div>
 
 </div>
