@@ -1269,6 +1269,98 @@
         @endcan
 
         {{-- ============================================================= --}}
+        {{-- MANAGE E-WAY BILL --}}
+        {{-- ============================================================= --}}
+
+        <flux:navlist variant="outline">
+            <flux:navlist.group class="grid">
+
+                <flux:navlist.item
+                    :href="route('eway-bills.index')"
+                    :current="request()->routeIs('eway-bills.*')"
+                    wire:navigate
+                >
+                    {{ __('Manage E-Way Bill') }}
+
+                    <x-slot:icon>
+
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5"
+                            viewBox="0 0 64 64"
+                        >
+
+                            <rect
+                                x="8"
+                                y="6"
+                                width="42"
+                                height="52"
+                                rx="5"
+                                fill="#F3F4F6"
+                            />
+
+                            <rect
+                                x="14"
+                                y="14"
+                                width="30"
+                                height="5"
+                                rx="2"
+                                fill="#4B5563"
+                            />
+
+                            <rect
+                                x="14"
+                                y="25"
+                                width="25"
+                                height="3"
+                                rx="1.5"
+                                fill="#9CA3AF"
+                            />
+
+                            <rect
+                                x="14"
+                                y="32"
+                                width="25"
+                                height="3"
+                                rx="1.5"
+                                fill="#9CA3AF"
+                            />
+
+                            <rect
+                                x="14"
+                                y="39"
+                                width="20"
+                                height="3"
+                                rx="1.5"
+                                fill="#9CA3AF"
+                            />
+
+                            <circle
+                                cx="45"
+                                cy="45"
+                                r="11"
+                                fill="#111827"
+                            />
+
+                            <path
+                                d="M40 45l3 3 6-7"
+                                fill="none"
+                                stroke="#FFFFFF"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+
+                        </svg>
+
+                    </x-slot:icon>
+
+                </flux:navlist.item>
+
+            </flux:navlist.group>
+        </flux:navlist>
+
+        {{-- ============================================================= --}}
         {{-- BILL REQUESTS --}}
         {{-- ============================================================= --}}
 

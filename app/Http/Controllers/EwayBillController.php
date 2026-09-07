@@ -5,40 +5,154 @@ namespace App\Http\Controllers;
 use App\Models\EwayBill;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EwayBillController extends Controller
 {
-    /**
-     * E-Way Bill form open
-     */
-    public function create(Invoice $invoice)
+    /*
+    |--------------------------------------------------------------------------
+    | Active Business ID
+    |--------------------------------------------------------------------------
+    */
+
+    private function activeBusinessId(): ?int
     {
-        $invoice->load([
-            'business',
-            'client',
-            'items',
-            'ewayBill',
-        ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Agar pehle se E-Way Bill bana hua hai
-        |--------------------------------------------------------------------------
-        */
-        if ($invoice->ewayBill) {
-            return redirect()
-                ->route('eway-bills.show', $invoice->ewayBill->id);
-        }
-
-        return view('eway_bills.create', compact('invoice'));
+        return session('active_business_id')
+            ?? session('current_business_id')
+            ?? auth()->user()?->current_business_id
+            ?? auth()->user()?->businesses?->first()?->id;
     }
 
 
-    /**
-     * Store E-Way Bill
-     */
-    public function store(Request $request, Invoice $invoice)
+    /*
+    |--------------------------------------------------------------------------
+    | Manage / List E-Way Bills
+    |--------------------------------------------------------------------------
+    */
+
+    public function index(Request $request)
     {
+        $businessId = $this->activeBusinessId();
+
+        $query = EwayBill::query()
+            ->with([
+                'invoice.client',
+                'invoice.business',
+            ])
+            ->latest('id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business Wise Data
+        |--------------------------------------------------------------------------
+        */
+
+        if ($businessId) {
+            $query->where('business_id', $businessId);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+
+            $search = trim($request->search);
+
+            $query->where(function ($q) use ($search) {
+
+                $q->where('eway_bill_no', 'like', "%{$search}%")
+                    ->orWhere('document_no', 'like', "%{$search}%")
+                    ->orWhere('from_name', 'like', "%{$search}%")
+                    ->orWhere('to_name', 'like', "%{$search}%")
+                    ->orWhere('vehicle_no', 'like', "%{$search}%")
+                    ->orWhereHas('invoice', function ($invoiceQuery) use ($search) {
+                        $invoiceQuery
+                            ->where('invoice_number', 'like', "%{$search}%")
+                            ->orWhereHas('client', function ($clientQuery) use ($search) {
+                                $clientQuery->where(
+                                    'name',
+                                    'like',
+                                    "%{$search}%"
+                                );
+                            });
+                    });
+            });
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date From
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('from_date')) {
+            $query->whereDate(
+                'created_at',
+                '>=',
+                $request->from_date
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date To
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('to_date')) {
+            $query->whereDate(
+                'created_at',
+                '<=',
+                $request->to_date
+            );
+        }
+
+
+        $ewayBills = $query
+            ->paginate(20)
+            ->withQueryString();
+
+        return view(
+            'eway_bills.index',
+            compact('ewayBills')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create Form
+    |--------------------------------------------------------------------------
+    */
+
+    public function create(Invoice $invoice)
+    {
+        $businessId = $this->activeBusinessId();
+
+        if (
+            $businessId &&
+            (int) $invoice->business_id !== (int) $businessId
+        ) {
+            abort(403);
+        }
+
         $invoice->load([
             'business',
             'client',
@@ -48,21 +162,250 @@ class EwayBillController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Duplicate E-Way Bill prevent
+        | Already Exists
         |--------------------------------------------------------------------------
         */
+
         if ($invoice->ewayBill) {
             return redirect()
-                ->route('eway-bills.show', $invoice->ewayBill->id)
-                ->with('error', 'Is invoice ka E-Way Bill already bana hua hai.');
+                ->route(
+                    'eway-bills.show',
+                    $invoice->ewayBill->id
+                );
         }
 
-        $validated = $request->validate([
+        return view(
+            'eway_bills.create',
+            compact('invoice')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Store
+    |--------------------------------------------------------------------------
+    */
+
+    public function store(
+        Request $request,
+        Invoice $invoice
+    ) {
+        $businessId = $this->activeBusinessId();
+
+        if (
+            $businessId &&
+            (int) $invoice->business_id !== (int) $businessId
+        ) {
+            abort(403);
+        }
+
+        $invoice->load([
+            'business',
+            'client',
+            'items',
+            'ewayBill',
+        ]);
+
+        if ($invoice->ewayBill) {
+            return redirect()
+                ->route(
+                    'eway-bills.show',
+                    $invoice->ewayBill->id
+                )
+                ->with(
+                    'error',
+                    'Is invoice ka E-Way Bill already bana hua hai.'
+                );
+        }
+
+        $validated = $this->validateEwayBill(
+            $request
+        );
+
+        $ewayBill = DB::transaction(
+            function () use (
+                $validated,
+                $invoice
+            ) {
+
+                return EwayBill::create([
+                    'business_id' =>
+                        $invoice->business_id,
+
+                    'invoice_id' =>
+                        $invoice->id,
+
+                    ...$validated,
+
+                    'status' =>
+                        $validated['status']
+                        ?? 'generated',
+                ]);
+            }
+        );
+
+        return redirect()
+            ->route(
+                'eway-bills.show',
+                $ewayBill->id
+            )
+            ->with(
+                'success',
+                'E-Way Bill successfully save ho gaya.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Show
+    |--------------------------------------------------------------------------
+    */
+
+    public function show(EwayBill $ewayBill)
+    {
+        $this->authorizeBusiness(
+            $ewayBill
+        );
+
+        $ewayBill->load([
+            'invoice.business',
+            'invoice.client',
+            'invoice.items',
+        ]);
+
+        return view(
+            'eway_bills.show',
+            compact('ewayBill')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Edit
+    |--------------------------------------------------------------------------
+    */
+
+    public function edit(EwayBill $ewayBill)
+    {
+        $this->authorizeBusiness(
+            $ewayBill
+        );
+
+        $ewayBill->load([
+            'invoice.business',
+            'invoice.client',
+            'invoice.items',
+        ]);
+
+        return view(
+            'eway_bills.edit',
+            compact('ewayBill')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update
+    |--------------------------------------------------------------------------
+    */
+
+    public function update(
+        Request $request,
+        EwayBill $ewayBill
+    ) {
+        $this->authorizeBusiness(
+            $ewayBill
+        );
+
+        $validated = $this->validateEwayBill(
+            $request
+        );
+
+        $ewayBill->update(
+            $validated
+        );
+
+        return redirect()
+            ->route(
+                'eway-bills.show',
+                $ewayBill->id
+            )
+            ->with(
+                'success',
+                'E-Way Bill successfully update ho gaya.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
+
+    public function destroy(
+        EwayBill $ewayBill
+    ) {
+        $this->authorizeBusiness(
+            $ewayBill
+        );
+
+        $ewayBill->delete();
+
+        return redirect()
+            ->route('eway-bills.index')
+            ->with(
+                'success',
+                'E-Way Bill delete ho gaya.'
+            );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Print
+    |--------------------------------------------------------------------------
+    */
+
+    public function print(
+        EwayBill $ewayBill
+    ) {
+        $this->authorizeBusiness(
+            $ewayBill
+        );
+
+        $ewayBill->load([
+            'invoice.business',
+            'invoice.client',
+            'invoice.items',
+        ]);
+
+        return view(
+            'eway_bills.print',
+            compact('ewayBill')
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Common Validation
+    |--------------------------------------------------------------------------
+    */
+
+    private function validateEwayBill(
+        Request $request
+    ): array {
+        return $request->validate([
 
             'supply_type' => [
                 'required',
                 'string',
-                'max:20',
+                'max:50',
             ],
 
             'sub_supply_type' => [
@@ -74,7 +417,7 @@ class EwayBillController extends Controller
             'document_type' => [
                 'required',
                 'string',
-                'max:50',
+                'max:100',
             ],
 
             'document_no' => [
@@ -88,9 +431,10 @@ class EwayBillController extends Controller
                 'date',
             ],
 
+
             /*
             |--------------------------------------------------------------------------
-            | From
+            | FROM
             |--------------------------------------------------------------------------
             */
 
@@ -134,9 +478,10 @@ class EwayBillController extends Controller
                 'digits:6',
             ],
 
+
             /*
             |--------------------------------------------------------------------------
-            | To
+            | TO
             |--------------------------------------------------------------------------
             */
 
@@ -180,9 +525,10 @@ class EwayBillController extends Controller
                 'digits:6',
             ],
 
+
             /*
             |--------------------------------------------------------------------------
-            | Transport
+            | TRANSPORT
             |--------------------------------------------------------------------------
             */
 
@@ -219,7 +565,7 @@ class EwayBillController extends Controller
             'vehicle_type' => [
                 'nullable',
                 'string',
-                'max:30',
+                'max:50',
             ],
 
             'transport_doc_no' => [
@@ -233,10 +579,10 @@ class EwayBillController extends Controller
                 'date',
             ],
 
+
             /*
             |--------------------------------------------------------------------------
-            | E-Way Bill Number
-            | Abhi manual rakha hai.
+            | E-WAY DETAILS
             |--------------------------------------------------------------------------
             */
 
@@ -255,49 +601,33 @@ class EwayBillController extends Controller
                 'nullable',
                 'date',
             ],
+
+            'status' => [
+                'nullable',
+                'in:draft,generated,cancelled,failed',
+            ],
         ]);
-
-        $ewayBill = EwayBill::create([
-            'business_id' => $invoice->business_id,
-            'invoice_id' => $invoice->id,
-
-            ...$validated,
-
-            'status' => 'generated',
-        ]);
-
-        return redirect()
-            ->route('eway-bills.show', $ewayBill->id)
-            ->with('success', 'E-Way Bill successfully save ho gaya.');
     }
 
 
-    /**
-     * Show E-Way Bill
-     */
-    public function show(EwayBill $ewayBill)
-    {
-        $ewayBill->load([
-            'invoice.business',
-            'invoice.client',
-            'invoice.items',
-        ]);
+    /*
+    |--------------------------------------------------------------------------
+    | Business Security
+    |--------------------------------------------------------------------------
+    */
 
-        return view('eway_bills.show', compact('ewayBill'));
-    }
+    private function authorizeBusiness(
+        EwayBill $ewayBill
+    ): void {
+        $businessId =
+            $this->activeBusinessId();
 
-
-    /**
-     * Print page
-     */
-    public function print(EwayBill $ewayBill)
-    {
-        $ewayBill->load([
-            'invoice.business',
-            'invoice.client',
-            'invoice.items',
-        ]);
-
-        return view('eway_bills.print', compact('ewayBill'));
+        if (
+            $businessId &&
+            (int) $ewayBill->business_id
+                !== (int) $businessId
+        ) {
+            abort(403);
+        }
     }
 }

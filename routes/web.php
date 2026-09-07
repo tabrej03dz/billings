@@ -583,30 +583,92 @@ Route::middleware(['auth'])->group(function () {
 
 
 
-        Route::prefix('eway-bills')
-            ->name('eway-bills.')
-            ->group(function () {
+    Route::prefix('eway-bills')
+        ->name('eway-bills.')
+        ->group(function () {
 
-            Route::get(
-                '/invoice/{invoice}/create',
-                [EwayBillController::class, 'create']
-            )->name('create');
+        /*
+        |--------------------------------------------------------------------------
+        | Manage E-Way Bills
+        |--------------------------------------------------------------------------
+        */
 
-            Route::post(
-                '/invoice/{invoice}',
-                [EwayBillController::class, 'store']
-            )->name('store');
+        Route::get(
+            '/',
+            [EwayBillController::class, 'index']
+        )->name('index');
 
-            Route::get(
-                '/{ewayBill}',
-                [EwayBillController::class, 'show']
-            )->name('show');
 
-            Route::get(
-                '/{ewayBill}/print',
-                [EwayBillController::class, 'print']
-            )->name('print');
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | Create From Invoice
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/invoice/{invoice}/create',
+            [EwayBillController::class, 'create']
+        )->name('create');
+
+        Route::post(
+            '/invoice/{invoice}',
+            [EwayBillController::class, 'store']
+        )->name('store');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Show
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/{ewayBill}',
+            [EwayBillController::class, 'show']
+        )->name('show');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Edit / Update
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/{ewayBill}/edit',
+            [EwayBillController::class, 'edit']
+        )->name('edit');
+
+        Route::put(
+            '/{ewayBill}',
+            [EwayBillController::class, 'update']
+        )->name('update');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Print
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get(
+            '/{ewayBill}/print',
+            [EwayBillController::class, 'print']
+        )->name('print');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Delete
+        |--------------------------------------------------------------------------
+        */
+
+        Route::delete(
+            '/{ewayBill}',
+            [EwayBillController::class, 'destroy']
+        )->name('destroy');
+
+    });
 
 
     Route::prefix('clients')->name('clients.')->controller(\App\Http\Controllers\ClientController::class)->group(function(){
