@@ -149,4 +149,9 @@ class Invoice extends Model
             'bank_account_id'
         );
     }
+
+    public function ewayBill()
+    {
+        return $this->hasOne(EwayBill::class);
+    }
 }
