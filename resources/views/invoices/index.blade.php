@@ -719,6 +719,28 @@
                                             View
                                         </a>
 
+                                        {{-- @if(strtolower($inv->invoice_type ?? 'tax') === 'tax') --}}
+
+                                            @if($inv->ewayBill)
+
+                                                <a href="{{ route('eway-bills.show', $inv->ewayBill->id) }}"
+                                                class="block px-4 py-2 text-sm text-green-700
+                                                        hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                    View E-Way Bill
+                                                </a>
+
+                                            @else
+
+                                                <a href="{{ route('eway-bills.create', $inv->id) }}"
+                                                class="block px-4 py-2 text-sm text-indigo-700
+                                                        hover:bg-gray-50 dark:hover:bg-neutral-800">
+                                                    Create E-Way Bill
+                                                </a>
+
+                                            @endif
+
+                                        {{-- @endif --}}
+
                                         @can($editPermission)
                                             <a href="{{ route('invoices.edit',$inv->id) }}"
                                             class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-50 dark:hover:bg-neutral-800">
