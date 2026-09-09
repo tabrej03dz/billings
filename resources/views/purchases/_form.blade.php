@@ -4,396 +4,386 @@
     $oldItems = old(
         'items',
         $isEdit
-            ? $purchase->items->toArray()
+            ? $purchase->items->map(function ($purchaseItem) {
+                return [
+                    'item_id' => $purchaseItem->item_id,
+                    'qty' => $purchaseItem->qty,
+                    'qty_unit' => $purchaseItem->qty_unit,
+                    'rate' => $purchaseItem->rate,
+                    'amount' => $purchaseItem->amount,
+                    'gst_rate' => $purchaseItem->gst_rate,
+                    'cgst_amount' => $purchaseItem->cgst_amount,
+                    'sgst_amount' => $purchaseItem->sgst_amount,
+                    'igst_amount' => $purchaseItem->igst_amount,
+                    'total_amount' => $purchaseItem->total_amount,
+                ];
+            })->toArray()
             : [
                 [
-                    'item_id' => null,
+                    'item_id' => '',
                     'qty' => 1,
-                    'qty_unit' => 'pcs',
+                    'qty_unit' => '',
                     'rate' => 0,
-                    'gst_rate' => 3,
-                ]
+                    'amount' => 0,
+                    'gst_rate' => 0,
+                    'cgst_amount' => 0,
+                    'sgst_amount' => 0,
+                    'igst_amount' => 0,
+                    'total_amount' => 0,
+                ],
             ]
     );
+
+    $inputClass = '
+        w-full rounded-xl border border-slate-300
+        bg-slate-50 px-3 py-2.5
+        text-sm text-slate-900
+        outline-none transition
+        focus:border-teal-500 focus:bg-white
+        focus:ring-4 focus:ring-teal-100
+        dark:border-slate-600
+        dark:bg-slate-800
+        dark:text-white
+        dark:focus:border-teal-400
+        dark:focus:ring-teal-900/40
+    ';
 @endphp
 
 
-{{-- ========================================================= --}}
-{{-- PAGE HEADER --}}
-{{-- ========================================================= --}}
-
-<div
-    class="
-        max-w-6xl
-        mx-auto
-        bg-[#BFE0E0]
-        dark:bg-[#354A54]
-        p-6
-        text-center
-        text-xl
-        font-bold
-        my-2
-        rounded-sm
-    "
->
-    {{ $isEdit ? 'Edit Purchase' : 'Create Purchase' }}
-</div>
-
-
-<div
-    class="
-        space-y-6
-        text-gray-900
-        dark:text-neutral-100
-        max-w-6xl
-        mx-auto
-        p-6
-        bg-[#F3F4F6]
-        dark:bg-[#1A1D23]
-    "
->
+<div class="space-y-5">
 
     {{-- ========================================================= --}}
-    {{-- PURCHASE BASIC DETAILS --}}
+    {{-- PURCHASE DETAILS --}}
     {{-- ========================================================= --}}
+    <section
+        class="rounded-2xl border border-slate-200
+               bg-white p-5 shadow-sm
+               dark:border-slate-700 dark:bg-[#1b2128]"
+    >
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div
+            class="mb-5 flex items-center justify-between
+                   border-b border-slate-100 pb-4
+                   dark:border-slate-700"
+        >
 
-        {{-- Supplier --}}
-        <div>
+            <div>
+                <h2
+                    class="font-bold text-slate-900
+                           dark:text-white"
+                >
+                    Purchase Details
+                </h2>
 
-            <label
-                for="supplier_id"
-                class="block text-sm font-medium mb-1"
-            >
-                Supplier
-            </label>
+                <p
+                    class="mt-1 text-xs text-slate-500
+                           dark:text-slate-400"
+                >
+                    Supplier, invoice and tax information
+                </p>
+            </div>
 
-            <div class="flex items-center gap-2">
+        </div>
+
+
+        <div
+            class="grid grid-cols-1 gap-4
+                   md:grid-cols-2 xl:grid-cols-4"
+        >
+
+            {{-- Supplier --}}
+            <div class="xl:col-span-2">
+
+                <div
+                    class="mb-1.5 flex items-center
+                           justify-between gap-3"
+                >
+
+                    <label
+                        for="supplier_id"
+                        class="text-sm font-semibold
+                               text-slate-700
+                               dark:text-slate-200"
+                    >
+                        Supplier
+                    </label>
+
+                    <button
+                        type="button"
+                        id="open-supplier-modal-btn"
+                        class="rounded-lg bg-blue-50
+                               px-2.5 py-1 text-xs
+                               font-semibold text-blue-700
+                               hover:bg-blue-100
+                               dark:bg-blue-500/10
+                               dark:text-blue-400"
+                    >
+                        + Add Supplier
+                    </button>
+
+                </div>
+
 
                 <select
                     name="supplier_id"
                     id="supplier_id"
-                    class="
-                        min-w-0
-                        flex-1
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-white
-                        text-gray-900
-                        border-gray-300
-                        dark:bg-neutral-800
-                        dark:text-white
-                        dark:border-neutral-600
-                        focus:ring-2
-                        focus:ring-blue-500
-                        focus:border-blue-500
-                    "
+                    class="{{ $inputClass }}"
                 >
 
                     <option value="">
-                        Select supplier...
+                        — Select Supplier —
                     </option>
 
-                    @foreach ($suppliers as $sup)
+                    @foreach($suppliers as $supplier)
 
                         <option
-                            value="{{ $sup->id }}"
+                            value="{{ $supplier->id }}"
                             @selected(
-                                old(
+                                (string) old(
                                     'supplier_id',
-                                    $purchase->supplier_id
-                                ) == $sup->id
+                                    $purchase->supplier_id ?? ''
+                                ) === (string) $supplier->id
                             )
                         >
-                            {{ $sup->name }}
+                            {{ $supplier->name }}
+
+                            @if($supplier->mobile)
+                                - {{ $supplier->mobile }}
+                            @endif
                         </option>
 
                     @endforeach
 
                 </select>
 
-
-                <button
-                    type="button"
-                    id="open-supplier-modal-btn"
-                    class="
-                        shrink-0
-                        whitespace-nowrap
-                        rounded
-                        bg-blue-600
-                        px-3
-                        py-2
-                        text-sm
-                        font-semibold
-                        text-white
-                        hover:bg-blue-700
-                        focus:outline-none
-                        focus:ring-2
-                        focus:ring-blue-500
-                    "
-                >
-                    + Add
-                </button>
+                @error('supplier_id')
+                    <p class="mt-1 text-xs text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
 
             </div>
 
 
-            @error('supplier_id')
-                <p class="mt-1 text-xs text-red-600">
-                    {{ $message }}
-                </p>
-            @enderror
+            {{-- Invoice --}}
+            <div>
 
-        </div>
-
-
-
-        {{-- Invoice Number --}}
-        <div>
-
-            <label
-                class="block text-sm font-medium mb-1"
-            >
-                Invoice #
-            </label>
-
-            <input
-                type="text"
-                name="invoice_no"
-                class="
-                    w-full
-                    border
-                    rounded
-                    px-3
-                    py-2
-                    bg-white
-                    text-gray-900
-                    border-gray-300
-                    dark:bg-neutral-800
-                    dark:text-white
-                    dark:border-neutral-600
-                "
-                value="{{ old('invoice_no', $purchase->invoice_no) }}"
-            >
-
-            @error('invoice_no')
-                <p class="mt-1 text-xs text-red-600">
-                    {{ $message }}
-                </p>
-            @enderror
-
-        </div>
-
-
-
-        {{-- Purchase Date --}}
-        <div>
-
-            <label
-                class="block text-sm font-medium mb-1"
-            >
-                Purchase Date
-            </label>
-
-            <input
-                type="date"
-                name="invoice_date"
-                class="
-                    w-full
-                    border
-                    rounded
-                    px-3
-                    py-2
-                    bg-white
-                    text-gray-900
-                    border-gray-300
-                    dark:bg-neutral-800
-                    dark:text-white
-                    dark:border-neutral-600
-                "
-                value="{{ old(
-                    'invoice_date',
-                    optional($purchase->invoice_date)->format('Y-m-d')
-                    ?? now()->format('Y-m-d')
-                ) }}"
-                required
-            >
-
-            @error('invoice_date')
-                <p class="mt-1 text-xs text-red-600">
-                    {{ $message }}
-                </p>
-            @enderror
-
-        </div>
-
-
-
-        {{-- Bill File --}}
-        <div>
-
-            <label
-                class="block text-sm font-medium mb-1"
-            >
-                Upload Bill
-            </label>
-
-            <input
-                type="file"
-                name="bill_file"
-                accept=".jpg,.jpeg,.png,.pdf"
-                class="
-                    w-full
-                    border
-                    rounded
-                    px-3
-                    py-2
-                    bg-white
-                    text-gray-900
-                    border-gray-300
-                    dark:bg-neutral-800
-                    dark:text-white
-                    dark:border-neutral-600
-                "
-            >
-
-            @if (!empty($purchase->bill_file))
-
-                <a
-                    href="{{ asset('storage/' . $purchase->bill_file) }}"
-                    target="_blank"
-                    class="
-                        inline-block
-                        mt-1
-                        text-xs
-                        text-blue-600
-                        dark:text-blue-400
-                        underline
-                    "
+                <label
+                    class="mb-1.5 block text-sm
+                           font-semibold text-slate-700
+                           dark:text-slate-200"
                 >
-                    View Uploaded Bill
-                </a>
+                    Invoice Number
+                </label>
 
-            @endif
+                <input
+                    type="text"
+                    name="invoice_no"
+                    value="{{ old(
+                        'invoice_no',
+                        $purchase->invoice_no ?? ''
+                    ) }}"
+                    placeholder="Supplier invoice no."
+                    class="{{ $inputClass }}"
+                >
+
+                @error('invoice_no')
+                    <p class="mt-1 text-xs text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+
+            </div>
 
 
-            @error('bill_file')
-                <p class="mt-1 text-xs text-red-600">
-                    {{ $message }}
-                </p>
-            @enderror
+            {{-- Date --}}
+            <div>
+
+                <label
+                    class="mb-1.5 block text-sm
+                           font-semibold text-slate-700
+                           dark:text-slate-200"
+                >
+                    Purchase Date
+                    <span class="text-red-500">*</span>
+                </label>
+
+                <input
+                    type="date"
+                    name="invoice_date"
+                    required
+                    value="{{ old(
+                        'invoice_date',
+                        $purchase->invoice_date
+                            ? \Carbon\Carbon::parse($purchase->invoice_date)->format('Y-m-d')
+                            : now()->format('Y-m-d')
+                    ) }}"
+                    class="{{ $inputClass }}"
+                >
+
+                @error('invoice_date')
+                    <p class="mt-1 text-xs text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+
+            </div>
+
+
+            {{-- Tax Type --}}
+            <div>
+
+                <label
+                    class="mb-1.5 block text-sm
+                           font-semibold text-slate-700
+                           dark:text-slate-200"
+                >
+                    Tax Type
+                </label>
+
+                <select
+                    name="tax_type"
+                    id="purchase-tax-type"
+                    class="{{ $inputClass }}"
+                >
+
+                    <option
+                        value="intra_state"
+                        @selected(
+                            old(
+                                'tax_type',
+                                $purchase->tax_type ?? 'intra_state'
+                            ) === 'intra_state'
+                        )
+                    >
+                        Intra State - CGST + SGST
+                    </option>
+
+                    <option
+                        value="inter_state"
+                        @selected(
+                            old(
+                                'tax_type',
+                                $purchase->tax_type ?? ''
+                            ) === 'inter_state'
+                        )
+                    >
+                        Inter State - IGST
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            {{-- Bill File --}}
+            <div class="md:col-span-2">
+
+                <label
+                    class="mb-1.5 block text-sm
+                           font-semibold text-slate-700
+                           dark:text-slate-200"
+                >
+                    Purchase Bill
+                </label>
+
+                <input
+                    type="file"
+                    name="bill_file"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    class="block w-full rounded-xl
+                           border border-slate-300
+                           bg-slate-50 px-3 py-2
+                           text-sm text-slate-700
+                           file:mr-3 file:rounded-lg
+                           file:border-0
+                           file:bg-slate-200
+                           file:px-3 file:py-1.5
+                           file:text-xs file:font-semibold
+                           dark:border-slate-600
+                           dark:bg-slate-800
+                           dark:text-slate-200
+                           dark:file:bg-slate-700
+                           dark:file:text-white"
+                >
+
+                @if(!empty($purchase->bill_file))
+
+                    <a
+                        href="{{ asset(
+                            'storage/'.$purchase->bill_file
+                        ) }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="mt-2 inline-flex text-xs
+                               font-semibold text-blue-600
+                               hover:underline
+                               dark:text-blue-400"
+                    >
+                        View existing bill ↗
+                    </a>
+
+                @endif
+
+                @error('bill_file')
+                    <p class="mt-1 text-xs text-red-600">
+                        {{ $message }}
+                    </p>
+                @enderror
+
+            </div>
 
         </div>
 
-
-
-        {{-- Tax Type --}}
-        <div>
-
-            <label
-                for="purchase-tax-type"
-                class="block text-sm font-medium mb-1"
-            >
-                Tax Type
-            </label>
-
-            <select
-                name="tax_type"
-                id="purchase-tax-type"
-                class="
-                    w-full
-                    border
-                    rounded
-                    px-3
-                    py-2
-                    bg-white
-                    text-gray-900
-                    border-gray-300
-                    dark:bg-neutral-800
-                    dark:text-white
-                    dark:border-neutral-600
-                "
-            >
-
-                <option
-                    value="intra_state"
-                    @selected(
-                        old(
-                            'tax_type',
-                            $purchase->tax_type ?? 'intra_state'
-                        ) === 'intra_state'
-                    )
-                >
-                    Intra State - CGST + SGST
-                </option>
-
-
-                <option
-                    value="inter_state"
-                    @selected(
-                        old(
-                            'tax_type',
-                            $purchase->tax_type ?? ''
-                        ) === 'inter_state'
-                    )
-                >
-                    Inter State - IGST
-                </option>
-
-            </select>
-
-        </div>
-
-    </div>
+    </section>
 
 
 
     {{-- ========================================================= --}}
     {{-- ITEMS --}}
     {{-- ========================================================= --}}
-
-    <div
-        class="
-            border
-            rounded-lg
-            overflow-hidden
-            border-gray-200
-            dark:border-neutral-700
-        "
+    <section
+        class="overflow-hidden rounded-2xl
+               border border-slate-200 bg-white
+               shadow-sm
+               dark:border-slate-700
+               dark:bg-[#1b2128]"
     >
 
         <div
-            class="
-                flex
-                items-center
-                justify-between
-                px-3
-                py-2
-                bg-gray-100
-                dark:bg-neutral-800
-            "
+            class="flex items-center justify-between
+                   border-b border-slate-200
+                   px-5 py-4
+                   dark:border-slate-700"
         >
 
-            <h3 class="font-semibold text-sm">
-                Items
-            </h3>
+            <div>
+
+                <h2
+                    class="font-bold text-slate-900
+                           dark:text-white"
+                >
+                    Purchase Items
+                </h2>
+
+                <p
+                    class="mt-1 text-xs text-slate-500
+                           dark:text-slate-400"
+                >
+                    Unit is loaded automatically from Unit Master
+                </p>
+
+            </div>
 
 
             <button
                 type="button"
                 id="purchase-add-row"
-                class="
-                    text-xs
-                    px-3
-                    py-2
-                    rounded
-                    bg-sky-500
-                    text-white
-                    hover:bg-sky-600
-                "
+                class="inline-flex items-center gap-2
+                       rounded-xl bg-teal-600
+                       px-3.5 py-2
+                       text-xs font-semibold text-white
+                       hover:bg-teal-700"
             >
                 + Add Item
             </button>
@@ -401,124 +391,162 @@
         </div>
 
 
+        @if($units->isEmpty())
+
+            <div
+                class="border-b border-amber-200
+                       bg-amber-50 px-5 py-3
+                       text-sm text-amber-700
+                       dark:border-amber-900
+                       dark:bg-amber-950/30
+                       dark:text-amber-300"
+            >
+                No unit is available in Unit Master.
+                Please create units from Items/Unit Master first.
+            </div>
+
+        @endif
+
+
         <div class="overflow-x-auto">
 
-            <table class="w-max min-w-full text-xs">
+            <table
+                class="min-w-[1500px] w-full
+                       text-sm"
+            >
 
                 <thead
-                    class="
-                        bg-[#BFE0E0]
-                        dark:bg-[#354A54]
-                    "
+                    class="bg-slate-50 text-xs
+                           uppercase tracking-wide
+                           text-slate-500
+                           dark:bg-slate-800
+                           dark:text-slate-400"
                 >
 
-                    <tr class="[&>th]:px-3 [&>th]:py-2 text-left">
+                    <tr>
 
-                        <th class="w-[380px] min-w-[380px]">
+                        <th
+                            class="w-[300px] px-4 py-3
+                                   text-left font-semibold"
+                        >
                             Item
                         </th>
 
-                        <th class="w-[90px] min-w-[90px]">
+                        <th class="px-3 py-3 text-left">
                             Qty
                         </th>
 
-                        <th class="w-[120px] min-w-[120px]">
+                        <th
+                            class="w-[145px] px-3 py-3
+                                   text-left"
+                        >
                             Unit
                         </th>
 
-                        <th class="w-[110px] min-w-[110px]">
+                        <th class="px-3 py-3 text-right">
                             Rate
                         </th>
 
-                        <th class="w-[130px] min-w-[130px]">
+                        <th class="px-3 py-3 text-right">
                             Taxable
                         </th>
 
-                        <th class="w-[90px] min-w-[90px]">
+                        <th class="px-3 py-3 text-right">
                             GST %
                         </th>
 
-                        <th class="w-[110px] min-w-[110px]">
+                        <th class="px-3 py-3 text-right">
                             CGST
                         </th>
 
-                        <th class="w-[110px] min-w-[110px]">
+                        <th class="px-3 py-3 text-right">
                             SGST
                         </th>
 
-                        <th class="w-[110px] min-w-[110px]">
+                        <th class="px-3 py-3 text-right">
                             IGST
                         </th>
 
-                        <th class="w-[130px] min-w-[130px]">
+                        <th class="px-3 py-3 text-right">
                             Total
                         </th>
 
-                        <th class="w-[80px] min-w-[80px]"></th>
+                        <th class="px-3 py-3 text-center">
+                            Action
+                        </th>
 
                     </tr>
 
                 </thead>
 
 
-
                 <tbody
                     id="purchase-items-body"
-                    class="
-                        divide-y
-                        divide-gray-200
-                        dark:divide-neutral-700
-                    "
+                    class="divide-y divide-slate-100
+                           dark:divide-slate-700"
                 >
 
-                    @foreach ($oldItems as $i => $row)
+                    @foreach($oldItems as $i => $row)
+
+                        @php
+                            $currentUnit =
+                                $row['qty_unit'] ?? '';
+                        @endphp
 
                         <tr
-                            class="
-                                purchase-item-row
-                                bg-white
-                                dark:bg-neutral-900
-                            "
+                            class="purchase-item-row
+                                   hover:bg-slate-50/70
+                                   dark:hover:bg-slate-800/40"
                         >
 
                             {{-- Item --}}
-                            <td class="px-3 py-2 w-[380px] min-w-[380px]">
+                            <td class="px-4 py-3">
 
                                 <select
                                     name="items[{{ $i }}][item_id]"
-                                    class="
-                                        w-full
-                                        min-w-[350px]
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        bg-white
-                                        text-gray-900
-                                        dark:bg-neutral-800
-                                        dark:text-white
-                                        dark:border-neutral-600
-                                    "
+                                    class="purchase-item-select
+                                           w-full min-w-[270px]
+                                           rounded-lg border
+                                           border-slate-300
+                                           bg-white px-2.5 py-2
+                                           text-sm text-slate-900
+                                           dark:border-slate-600
+                                           dark:bg-slate-800
+                                           dark:text-white"
                                     required
                                 >
 
                                     <option value="">
-                                        Select item...
+                                        — Select Item —
                                     </option>
 
-                                    @foreach ($items as $it)
+                                    @foreach($items as $item)
 
                                         <option
-                                            value="{{ $it->id }}"
+                                            value="{{ $item->id }}"
+
+                                            data-unit="{{ $item->unit ?? '' }}"
+
+                                            data-rate="{{ $item->cost_price
+                                                ?? $item->price
+                                                ?? 0 }}"
+
+                                            data-gst="{{ $item->tax_rate
+                                                ?? 0 }}"
+
                                             @selected(
-                                                ($row['item_id'] ?? null)
-                                                == $it->id
+                                                (string) (
+                                                    $row['item_id']
+                                                    ?? ''
+                                                )
+                                                ===
+                                                (string) $item->id
                                             )
                                         >
-                                            {{ $it->name }}
+                                            {{ $item->name }}
 
-                                            @if ($it->sku)
-                                                ({{ $it->sku }})
+                                            @if($item->sku)
+                                                ({{ $item->sku }})
                                             @endif
                                         </option>
 
@@ -529,306 +557,272 @@
                             </td>
 
 
-
                             {{-- Qty --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
                                     type="number"
+                                    name="items[{{ $i }}][qty]"
                                     min="0.001"
                                     step="0.001"
-                                    name="items[{{ $i }}][qty]"
-                                    class="
-                                        w-20
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-qty-input
-                                        dark:bg-neutral-800
-                                        dark:border-neutral-600
-                                    "
                                     value="{{ $row['qty'] ?? 1 }}"
+                                    class="purchase-qty-input
+                                           w-24 rounded-lg
+                                           border border-slate-300
+                                           bg-white px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-600
+                                           dark:bg-slate-800"
                                     required
                                 >
 
                             </td>
 
 
-
-                            {{-- Unit --}}
-                            <td class="px-3 py-2">
+                            {{-- Dynamic Unit --}}
+                            <td class="px-3 py-3">
 
                                 <select
                                     name="items[{{ $i }}][qty_unit]"
-                                    class="
-                                        w-28
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        bg-white
-                                        text-gray-900
-                                        dark:bg-neutral-800
-                                        dark:text-white
-                                        dark:border-neutral-600
-                                    "
+                                    class="purchase-unit-select
+                                           w-32 rounded-lg
+                                           border border-slate-300
+                                           bg-white px-2.5 py-2
+                                           dark:border-slate-600
+                                           dark:bg-slate-800"
                                     required
                                 >
 
-                                    @php
-                                        $selectedUnit =
-                                            $row['qty_unit'] ?? 'pcs';
-                                    @endphp
-
-                                    <option
-                                        value="pcs"
-                                        @selected($selectedUnit === 'pcs')
-                                    >
-                                        Pcs
+                                    <option value="">
+                                        Select
                                     </option>
 
-                                    <option
-                                        value="gram"
-                                        @selected($selectedUnit === 'gram')
-                                    >
-                                        Gram
-                                    </option>
+                                    {{-- Existing old unit support --}}
+                                    @if(
+                                        filled($currentUnit)
+                                        &&
+                                        !$units
+                                            ->pluck('name')
+                                            ->contains($currentUnit)
+                                    )
 
-                                    <option
-                                        value="kg"
-                                        @selected($selectedUnit === 'kg')
-                                    >
-                                        Kg
-                                    </option>
+                                        <option
+                                            value="{{ $currentUnit }}"
+                                            selected
+                                        >
+                                            {{ $currentUnit }}
+                                        </option>
 
-                                    <option
-                                        value="carat"
-                                        @selected($selectedUnit === 'carat')
-                                    >
-                                        Carat
-                                    </option>
+                                    @endif
 
-                                    <option
-                                        value="pair"
-                                        @selected($selectedUnit === 'pair')
-                                    >
-                                        Pair
-                                    </option>
 
-                                    <option
-                                        value="set"
-                                        @selected($selectedUnit === 'set')
-                                    >
-                                        Set
-                                    </option>
+                                    @foreach($units as $unit)
 
-                                    <option
-                                        value="dozen"
-                                        @selected($selectedUnit === 'dozen')
-                                    >
-                                        Dozen
-                                    </option>
+                                        <option
+                                            value="{{ $unit->name }}"
+                                            @selected(
+                                                (string) $currentUnit
+                                                ===
+                                                (string) $unit->name
+                                            )
+                                        >
+                                            {{ $unit->name }}
+                                        </option>
+
+                                    @endforeach
 
                                 </select>
 
                             </td>
 
 
-
                             {{-- Rate --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
                                     type="number"
-                                    step="0.01"
-                                    min="0"
                                     name="items[{{ $i }}][rate]"
-                                    class="
-                                        w-24
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-rate-input
-                                        dark:bg-neutral-800
-                                        dark:border-neutral-600
-                                    "
+                                    min="0"
+                                    step="0.01"
                                     value="{{ $row['rate'] ?? 0 }}"
+                                    class="purchase-rate-input
+                                           w-28 rounded-lg
+                                           border border-slate-300
+                                           bg-white px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-600
+                                           dark:bg-slate-800"
                                     required
                                 >
 
                             </td>
 
 
-
-                            {{-- Amount --}}
-                            <td class="px-3 py-2">
+                            {{-- Taxable --}}
+                            <td class="px-3 py-3">
 
                                 <input
                                     type="number"
-                                    step="0.01"
-                                    name="items[{{ $i }}][amount]"
-                                    class="
-                                        w-28
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-amount-input
-                                        bg-gray-100
-                                        dark:bg-neutral-700
-                                        dark:border-neutral-600
-                                    "
-                                    value="{{ $row['amount'] ?? 0 }}"
+                                    tabindex="-1"
                                     readonly
+                                    value="{{ $row['amount'] ?? 0 }}"
+                                    class="purchase-amount-input
+                                           w-28 rounded-lg
+                                           border border-slate-200
+                                           bg-slate-100 px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-700
+                                           dark:bg-slate-700"
                                 >
 
                             </td>
-
 
 
                             {{-- GST --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
                                     type="number"
-                                    step="0.01"
-                                    min="0"
                                     name="items[{{ $i }}][gst_rate]"
-                                    class="
-                                        w-20
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-gst-input
-                                        dark:bg-neutral-800
-                                        dark:border-neutral-600
-                                    "
-                                    value="{{ $row['gst_rate'] ?? 3 }}"
+                                    min="0"
+                                    step="0.01"
+                                    value="{{ $row['gst_rate'] ?? 0 }}"
+                                    class="purchase-gst-input
+                                           w-20 rounded-lg
+                                           border border-slate-300
+                                           bg-white px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-600
+                                           dark:bg-slate-800"
                                 >
 
                             </td>
-
 
 
                             {{-- CGST --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
-                                    type="number"
-                                    step="0.01"
-                                    name="items[{{ $i }}][cgst_amount]"
-                                    class="
-                                        w-24
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-cgst-input
-                                        bg-gray-100
-                                        dark:bg-neutral-700
-                                        dark:border-neutral-600
-                                    "
-                                    value="{{ $row['cgst_amount'] ?? 0 }}"
+                                    type="text"
+                                    tabindex="-1"
                                     readonly
+                                    value="{{ number_format(
+                                        (float) (
+                                            $row['cgst_amount']
+                                            ?? 0
+                                        ),
+                                        2,
+                                        '.',
+                                        ''
+                                    ) }}"
+                                    class="purchase-cgst-input
+                                           w-24 rounded-lg
+                                           border border-slate-200
+                                           bg-slate-100 px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-700
+                                           dark:bg-slate-700"
                                 >
 
                             </td>
-
 
 
                             {{-- SGST --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
-                                    type="number"
-                                    step="0.01"
-                                    name="items[{{ $i }}][sgst_amount]"
-                                    class="
-                                        w-24
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-sgst-input
-                                        bg-gray-100
-                                        dark:bg-neutral-700
-                                        dark:border-neutral-600
-                                    "
-                                    value="{{ $row['sgst_amount'] ?? 0 }}"
+                                    type="text"
+                                    tabindex="-1"
                                     readonly
+                                    value="{{ number_format(
+                                        (float) (
+                                            $row['sgst_amount']
+                                            ?? 0
+                                        ),
+                                        2,
+                                        '.',
+                                        ''
+                                    ) }}"
+                                    class="purchase-sgst-input
+                                           w-24 rounded-lg
+                                           border border-slate-200
+                                           bg-slate-100 px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-700
+                                           dark:bg-slate-700"
                                 >
 
                             </td>
-
 
 
                             {{-- IGST --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
-                                    type="number"
-                                    step="0.01"
-                                    name="items[{{ $i }}][igst_amount]"
-                                    class="
-                                        w-24
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-igst-input
-                                        bg-gray-100
-                                        dark:bg-neutral-700
-                                        dark:border-neutral-600
-                                    "
-                                    value="{{ $row['igst_amount'] ?? 0 }}"
+                                    type="text"
+                                    tabindex="-1"
                                     readonly
+                                    value="{{ number_format(
+                                        (float) (
+                                            $row['igst_amount']
+                                            ?? 0
+                                        ),
+                                        2,
+                                        '.',
+                                        ''
+                                    ) }}"
+                                    class="purchase-igst-input
+                                           w-24 rounded-lg
+                                           border border-slate-200
+                                           bg-slate-100 px-2.5 py-2
+                                           text-right
+                                           dark:border-slate-700
+                                           dark:bg-slate-700"
                                 >
 
                             </td>
-
 
 
                             {{-- Total --}}
-                            <td class="px-3 py-2">
+                            <td class="px-3 py-3">
 
                                 <input
-                                    type="number"
-                                    step="0.01"
-                                    name="items[{{ $i }}][total_amount]"
-                                    class="
-                                        w-28
-                                        border
-                                        rounded
-                                        px-2
-                                        py-2
-                                        purchase-line-total-input
-                                        bg-gray-100
-                                        dark:bg-neutral-700
-                                        dark:border-neutral-600
-                                    "
-                                    value="{{ $row['total_amount'] ?? 0 }}"
+                                    type="text"
+                                    tabindex="-1"
                                     readonly
+                                    value="{{ number_format(
+                                        (float) (
+                                            $row['total_amount']
+                                            ?? 0
+                                        ),
+                                        2,
+                                        '.',
+                                        ''
+                                    ) }}"
+                                    class="purchase-line-total-input
+                                           w-32 rounded-lg
+                                           border border-slate-200
+                                           bg-slate-100 px-2.5 py-2
+                                           text-right font-semibold
+                                           dark:border-slate-700
+                                           dark:bg-slate-700"
                                 >
 
                             </td>
 
 
-
-                            {{-- Remove --}}
-                            <td class="px-3 py-2 text-right">
+                            <td class="px-3 py-3 text-center">
 
                                 <button
                                     type="button"
-                                    class="
-                                        text-red-600
-                                        hover:text-red-800
-                                        text-xs
-                                        font-medium
-                                        purchase-remove-row
-                                    "
+                                    class="purchase-remove-row
+                                           rounded-lg bg-red-50
+                                           px-2.5 py-2
+                                           text-xs font-semibold
+                                           text-red-600
+                                           hover:bg-red-100
+                                           dark:bg-red-500/10
+                                           dark:text-red-400"
                                 >
                                     Remove
                                 </button>
@@ -845,693 +839,458 @@
 
         </div>
 
-    </div>
+    </section>
 
 
 
     {{-- ========================================================= --}}
-    {{-- PURCHASE SUMMARY --}}
+    {{-- TOTALS --}}
     {{-- ========================================================= --}}
-
-    <div
-        class="
-            border
-            rounded-lg
-            border-gray-200
-            dark:border-neutral-700
-            overflow-hidden
-        "
+    <section
+        class="rounded-2xl border border-slate-200
+               bg-white p-5 shadow-sm
+               dark:border-slate-700 dark:bg-[#1b2128]"
     >
 
-        <div
-            class="
-                px-4
-                py-3
-                bg-gray-100
-                dark:bg-neutral-800
-            "
-        >
-            <h3 class="font-semibold text-sm">
-                Purchase Summary
-            </h3>
-        </div>
+        <div class="grid gap-5 lg:grid-cols-2">
 
-
-        <div
-            class="
-                grid
-                grid-cols-1
-                md:grid-cols-4
-                gap-4
-                p-4
-                bg-white
-                dark:bg-neutral-900
-            "
-        >
-
-            {{-- Subtotal --}}
             <div>
 
-                <label class="block text-sm font-medium mb-1">
-                    Subtotal
-                </label>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    name="subtotal"
-                    id="purchase-subtotal"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-gray-100
-                        font-semibold
-                        dark:bg-neutral-700
-                        dark:border-neutral-600
-                    "
-                    readonly
-                    value="{{ old(
-                        'subtotal',
-                        $purchase->subtotal ?? 0
-                    ) }}"
+                <h2
+                    class="font-bold text-slate-900
+                           dark:text-white"
                 >
+                    Payment Adjustment
+                </h2>
+
+                <p
+                    class="mt-1 text-xs text-slate-500
+                           dark:text-slate-400"
+                >
+                    Apply discount, round-off and payment
+                </p>
+
+
+                <div
+                    class="mt-5 grid grid-cols-1
+                           gap-4 sm:grid-cols-3"
+                >
+
+                    <div>
+
+                        <label
+                            class="mb-1.5 block text-sm
+                                   font-semibold text-slate-700
+                                   dark:text-slate-200"
+                        >
+                            Discount
+                        </label>
+
+                        <input
+                            id="purchase-discount"
+                            type="number"
+                            name="discount_amount"
+                            min="0"
+                            step="0.01"
+                            value="{{ old(
+                                'discount_amount',
+                                $purchase->discount_amount ?? 0
+                            ) }}"
+                            class="{{ $inputClass }}"
+                        >
+
+                    </div>
+
+
+                    <div>
+
+                        <label
+                            class="mb-1.5 block text-sm
+                                   font-semibold text-slate-700
+                                   dark:text-slate-200"
+                        >
+                            Round Off
+                        </label>
+
+                        <input
+                            id="purchase-round-off"
+                            type="number"
+                            name="round_off"
+                            step="0.01"
+                            value="{{ old(
+                                'round_off',
+                                $purchase->round_off ?? 0
+                            ) }}"
+                            class="{{ $inputClass }}"
+                        >
+
+                    </div>
+
+
+                    <div>
+
+                        <label
+                            class="mb-1.5 block text-sm
+                                   font-semibold text-slate-700
+                                   dark:text-slate-200"
+                        >
+                            Paid Amount
+                        </label>
+
+                        <input
+                            id="purchase-paid"
+                            type="number"
+                            name="paid_amount"
+                            min="0"
+                            step="0.01"
+                            value="{{ old(
+                                'paid_amount',
+                                $purchase->paid_amount ?? 0
+                            ) }}"
+                            class="{{ $inputClass }}"
+                        >
+
+                    </div>
+
+                </div>
 
             </div>
 
 
+            <div
+                class="rounded-2xl bg-slate-50
+                       p-5 dark:bg-slate-800/70"
+            >
 
-            {{-- CGST --}}
-            <div>
+                <div class="space-y-3">
 
-                <label class="block text-sm font-medium mb-1">
-                    CGST
-                </label>
+                    <div
+                        class="flex items-center
+                               justify-between"
+                    >
+                        <span
+                            class="text-sm text-slate-500
+                                   dark:text-slate-400"
+                        >
+                            Subtotal
+                        </span>
 
-                <input
-                    type="number"
-                    step="0.01"
-                    name="cgst_amount"
-                    id="purchase-cgst-total"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-gray-100
-                        dark:bg-neutral-700
-                        dark:border-neutral-600
-                    "
-                    readonly
-                    value="{{ old(
-                        'cgst_amount',
-                        $purchase->cgst_amount ?? 0
-                    ) }}"
-                >
-
-            </div>
+                        <strong
+                            class="text-slate-800
+                                   dark:text-white"
+                        >
+                            ₹
+                            <span id="summary-subtotal">
+                                0.00
+                            </span>
+                        </strong>
+                    </div>
 
 
+                    <div
+                        class="flex items-center
+                               justify-between"
+                    >
+                        <span
+                            class="text-sm text-slate-500
+                                   dark:text-slate-400"
+                        >
+                            CGST
+                        </span>
 
-            {{-- SGST --}}
-            <div>
-
-                <label class="block text-sm font-medium mb-1">
-                    SGST
-                </label>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    name="sgst_amount"
-                    id="purchase-sgst-total"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-gray-100
-                        dark:bg-neutral-700
-                        dark:border-neutral-600
-                    "
-                    readonly
-                    value="{{ old(
-                        'sgst_amount',
-                        $purchase->sgst_amount ?? 0
-                    ) }}"
-                >
-
-            </div>
+                        <strong>
+                            ₹
+                            <span id="summary-cgst">
+                                0.00
+                            </span>
+                        </strong>
+                    </div>
 
 
+                    <div
+                        class="flex items-center
+                               justify-between"
+                    >
+                        <span
+                            class="text-sm text-slate-500
+                                   dark:text-slate-400"
+                        >
+                            SGST
+                        </span>
 
-            {{-- IGST --}}
-            <div>
-
-                <label class="block text-sm font-medium mb-1">
-                    IGST
-                </label>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    name="igst_amount"
-                    id="purchase-igst-total"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-gray-100
-                        dark:bg-neutral-700
-                        dark:border-neutral-600
-                    "
-                    readonly
-                    value="{{ old(
-                        'igst_amount',
-                        $purchase->igst_amount ?? 0
-                    ) }}"
-                >
-
-            </div>
+                        <strong>
+                            ₹
+                            <span id="summary-sgst">
+                                0.00
+                            </span>
+                        </strong>
+                    </div>
 
 
+                    <div
+                        class="flex items-center
+                               justify-between"
+                    >
+                        <span
+                            class="text-sm text-slate-500
+                                   dark:text-slate-400"
+                        >
+                            IGST
+                        </span>
 
-            {{-- Discount --}}
-            <div>
-
-                <label class="block text-sm font-medium mb-1">
-                    Discount
-                </label>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="discount_amount"
-                    id="purchase-discount"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-white
-                        dark:bg-neutral-800
-                        dark:border-neutral-600
-                    "
-                    value="{{ old(
-                        'discount_amount',
-                        $purchase->discount_amount ?? 0
-                    ) }}"
-                >
-
-            </div>
+                        <strong>
+                            ₹
+                            <span id="summary-igst">
+                                0.00
+                            </span>
+                        </strong>
+                    </div>
 
 
+                    <div
+                        class="border-t border-slate-200
+                               pt-3 dark:border-slate-700"
+                    >
 
-            {{-- Round Off --}}
-            <div>
+                        <div
+                            class="flex items-center
+                                   justify-between"
+                        >
 
-                <label class="block text-sm font-medium mb-1">
-                    Round Off
-                </label>
+                            <span
+                                class="font-semibold
+                                       text-slate-700
+                                       dark:text-slate-200"
+                            >
+                                Grand Total
+                            </span>
 
-                <input
-                    type="number"
-                    step="0.01"
-                    name="round_off"
-                    id="purchase-round-off"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-white
-                        dark:bg-neutral-800
-                        dark:border-neutral-600
-                    "
-                    value="{{ old(
-                        'round_off',
-                        $purchase->round_off ?? 0
-                    ) }}"
-                >
+                            <span
+                                class="text-xl font-bold
+                                       text-slate-900
+                                       dark:text-white"
+                            >
+                                ₹
+                                <span id="summary-grand-total">
+                                    0.00
+                                </span>
+                            </span>
 
-            </div>
+                        </div>
 
-
-
-            {{-- Paid Amount --}}
-            <div>
-
-                <label class="block text-sm font-medium mb-1">
-                    Paid Amount
-                </label>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    name="paid_amount"
-                    id="purchase-paid"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-white
-                        dark:bg-neutral-800
-                        dark:border-neutral-600
-                    "
-                    value="{{ old(
-                        'paid_amount',
-                        $purchase->paid_amount ?? 0
-                    ) }}"
-                >
-
-            </div>
+                    </div>
 
 
+                    <div
+                        class="flex items-center justify-between
+                               rounded-xl bg-red-50
+                               px-3 py-2
+                               dark:bg-red-500/10"
+                    >
 
-            {{-- Due --}}
-            <div>
+                        <span
+                            class="text-sm font-semibold
+                                   text-red-600
+                                   dark:text-red-400"
+                        >
+                            Due Amount
+                        </span>
 
-                <label class="block text-sm font-medium mb-1">
-                    Due Amount
-                </label>
+                        <span
+                            class="font-bold text-red-600
+                                   dark:text-red-400"
+                        >
+                            ₹
+                            <span id="summary-due">
+                                0.00
+                            </span>
+                        </span>
 
-                <input
-                    type="number"
-                    step="0.01"
-                    name="due_amount"
-                    id="purchase-due"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-3
-                        py-2
-                        bg-red-50
-                        font-bold
-                        text-red-700
-                        dark:bg-red-950/30
-                        dark:border-red-900
-                        dark:text-red-400
-                    "
-                    readonly
-                    value="{{ old(
-                        'due_amount',
-                        $purchase->due_amount ?? 0
-                    ) }}"
-                >
+                    </div>
 
-            </div>
-
-
-
-            {{-- Grand Total --}}
-            <div class="md:col-span-4">
-
-                <label class="block text-sm font-medium mb-1">
-                    Grand Total
-                </label>
-
-                <input
-                    type="number"
-                    step="0.01"
-                    name="total_amount"
-                    id="purchase-grand-total"
-                    class="
-                        w-full
-                        border
-                        rounded
-                        px-4
-                        py-3
-                        bg-green-50
-                        text-green-700
-                        text-xl
-                        font-bold
-                        dark:bg-green-950/30
-                        dark:border-green-900
-                        dark:text-green-400
-                    "
-                    readonly
-                    value="{{ old(
-                        'total_amount',
-                        $purchase->total_amount ?? 0
-                    ) }}"
-                >
+                </div>
 
             </div>
 
         </div>
 
-    </div>
+    </section>
 
 </div>
 
 
 
-{{-- ========================================================= --}}
-{{-- ADD SUPPLIER MODAL --}}
-{{-- ========================================================= --}}
-
+{{-- ============================================================= --}}
+{{-- SUPPLIER MODAL --}}
+{{-- ============================================================= --}}
 <div
-    id="supplierModal"
-    class="
-        fixed
-        inset-0
-        z-[9999]
-        hidden
-        items-center
-        justify-center
-        bg-black/50
-        p-4
-    "
+    id="supplier-modal"
+    class="fixed inset-0 z-[100]
+           hidden items-center justify-center
+           bg-black/60 p-4"
 >
 
     <div
-        class="
-            w-full
-            max-w-lg
-            max-h-[90vh]
-            overflow-y-auto
-            rounded-xl
-            bg-white
-            dark:bg-neutral-900
-            shadow-2xl
-        "
+        class="w-full max-w-lg rounded-2xl
+               bg-white shadow-2xl
+               dark:bg-slate-900"
     >
 
-        {{-- Header --}}
         <div
-            class="
-                sticky
-                top-0
-                z-10
-                flex
-                items-center
-                justify-between
-                border-b
-                border-gray-200
-                dark:border-neutral-700
-                bg-white
-                dark:bg-neutral-900
-                px-5
-                py-4
-            "
+            class="flex items-center justify-between
+                   border-b border-slate-200
+                   px-5 py-4
+                   dark:border-slate-700"
         >
 
             <div>
 
-                <h2
-                    class="
-                        text-lg
-                        font-semibold
-                        text-gray-900
-                        dark:text-white
-                    "
+                <h3
+                    class="font-bold text-slate-900
+                           dark:text-white"
                 >
-                    Add New Supplier
-                </h2>
+                    Add Supplier
+                </h3>
 
-                <p class="text-xs text-gray-500 mt-1">
-                    Create supplier without leaving purchase
+                <p
+                    class="mt-1 text-xs text-slate-500
+                           dark:text-slate-400"
+                >
+                    Supplier will be selected automatically
                 </p>
 
             </div>
 
-
             <button
                 type="button"
                 id="close-supplier-modal-btn"
-                class="
-                    flex
-                    h-9
-                    w-9
-                    items-center
-                    justify-center
-                    rounded-full
-                    text-2xl
-                    text-gray-500
-                    hover:bg-gray-100
-                    dark:hover:bg-neutral-800
-                "
+                class="text-2xl text-slate-500
+                       hover:text-slate-800"
             >
-                &times;
+                ×
             </button>
 
         </div>
 
 
-
-        {{-- Body --}}
-        <div class="p-5">
+        <div class="space-y-4 p-5">
 
             <div
                 id="supplier-error"
-                class="
-                    hidden
-                    mb-4
-                    rounded
-                    border
-                    border-red-300
-                    bg-red-50
-                    p-3
-                    text-sm
-                    text-red-700
-                "
+                class="hidden rounded-xl
+                       border border-red-200
+                       bg-red-50 p-3
+                       text-sm text-red-700"
             ></div>
 
 
-            <div class="space-y-4">
+            <div>
 
-                {{-- Name --}}
+                <label class="mb-1 block text-sm font-semibold">
+                    Supplier Name *
+                </label>
+
+                <input
+                    id="supplier-name"
+                    type="text"
+                    class="{{ $inputClass }}"
+                >
+
+            </div>
+
+
+            <div>
+
+                <label class="mb-1 block text-sm font-semibold">
+                    Mobile
+                </label>
+
+                <input
+                    id="supplier-mobile"
+                    type="text"
+                    class="{{ $inputClass }}"
+                >
+
+            </div>
+
+
+            <div class="grid gap-4 sm:grid-cols-2">
+
                 <div>
 
-                    <label
-                        for="supplier-name"
-                        class="block text-sm font-medium mb-1"
-                    >
-                        Supplier Name
-                        <span class="text-red-500">*</span>
-                    </label>
-
-                    <input
-                        type="text"
-                        id="supplier-name"
-                        class="
-                            w-full
-                            border
-                            rounded
-                            px-3
-                            py-2
-                            bg-white
-                            text-gray-900
-                            dark:bg-neutral-800
-                            dark:text-white
-                            dark:border-neutral-600
-                        "
-                        placeholder="Enter supplier name"
-                    >
-
-                </div>
-
-
-
-                {{-- Mobile --}}
-                <div>
-
-                    <label
-                        for="supplier-mobile"
-                        class="block text-sm font-medium mb-1"
-                    >
-                        Mobile Number
-                    </label>
-
-                    <input
-                        type="text"
-                        id="supplier-mobile"
-                        maxlength="20"
-                        class="
-                            w-full
-                            border
-                            rounded
-                            px-3
-                            py-2
-                            bg-white
-                            text-gray-900
-                            dark:bg-neutral-800
-                            dark:text-white
-                            dark:border-neutral-600
-                        "
-                        placeholder="Enter mobile number"
-                    >
-
-                </div>
-
-
-
-                {{-- Email --}}
-                <div>
-
-                    <label
-                        for="supplier-email"
-                        class="block text-sm font-medium mb-1"
-                    >
+                    <label class="mb-1 block text-sm font-semibold">
                         Email
                     </label>
 
                     <input
-                        type="email"
                         id="supplier-email"
-                        class="
-                            w-full
-                            border
-                            rounded
-                            px-3
-                            py-2
-                            bg-white
-                            text-gray-900
-                            dark:bg-neutral-800
-                            dark:text-white
-                            dark:border-neutral-600
-                        "
-                        placeholder="supplier@example.com"
+                        type="email"
+                        class="{{ $inputClass }}"
                     >
 
                 </div>
 
 
-
-                {{-- GSTIN --}}
                 <div>
 
-                    <label
-                        for="supplier-gstin"
-                        class="block text-sm font-medium mb-1"
-                    >
+                    <label class="mb-1 block text-sm font-semibold">
                         GSTIN
                     </label>
 
                     <input
-                        type="text"
                         id="supplier-gstin"
-                        maxlength="30"
-                        class="
-                            w-full
-                            border
-                            rounded
-                            px-3
-                            py-2
-                            uppercase
-                            bg-white
-                            text-gray-900
-                            dark:bg-neutral-800
-                            dark:text-white
-                            dark:border-neutral-600
-                        "
-                        placeholder="Enter GSTIN"
+                        type="text"
+                        class="{{ $inputClass }}"
                     >
 
                 </div>
 
+            </div>
 
 
-                {{-- Address --}}
-                <div>
+            <div>
 
-                    <label
-                        for="supplier-address"
-                        class="block text-sm font-medium mb-1"
-                    >
-                        Address
-                    </label>
+                <label class="mb-1 block text-sm font-semibold">
+                    Address
+                </label>
 
-                    <textarea
-                        id="supplier-address"
-                        rows="3"
-                        class="
-                            w-full
-                            border
-                            rounded
-                            px-3
-                            py-2
-                            bg-white
-                            text-gray-900
-                            dark:bg-neutral-800
-                            dark:text-white
-                            dark:border-neutral-600
-                        "
-                        placeholder="Enter supplier address"
-                    ></textarea>
-
-                </div>
+                <textarea
+                    id="supplier-address"
+                    rows="2"
+                    class="{{ $inputClass }}"
+                ></textarea>
 
             </div>
 
         </div>
 
 
-
-        {{-- Footer --}}
         <div
-            class="
-                sticky
-                bottom-0
-                flex
-                justify-end
-                gap-2
-                border-t
-                border-gray-200
-                dark:border-neutral-700
-                bg-white
-                dark:bg-neutral-900
-                px-5
-                py-4
-            "
+            class="flex justify-end gap-2
+                   border-t border-slate-200
+                   px-5 py-4
+                   dark:border-slate-700"
         >
 
             <button
                 type="button"
-                id="cancel-supplier-btn"
-                class="
-                    rounded
-                    border
-                    border-gray-300
-                    px-4
-                    py-2
-                    text-sm
-                    font-medium
-                    dark:border-neutral-600
-                "
+                id="supplier-modal-cancel"
+                class="rounded-xl border
+                       border-slate-300
+                       px-4 py-2
+                       text-sm font-semibold"
             >
                 Cancel
             </button>
 
-
             <button
                 type="button"
                 id="save-supplier-btn"
-                class="
-                    rounded
-                    bg-blue-600
-                    px-4
-                    py-2
-                    text-sm
-                    font-semibold
-                    text-white
-                    hover:bg-blue-700
-                    disabled:opacity-50
-                    disabled:cursor-not-allowed
-                "
+                class="rounded-xl bg-blue-600
+                       px-4 py-2
+                       text-sm font-semibold
+                       text-white
+                       hover:bg-blue-700"
             >
                 Save Supplier
             </button>
@@ -1544,588 +1303,487 @@
 
 
 
-{{-- ========================================================= --}}
-{{-- JAVASCRIPT --}}
-{{-- ========================================================= --}}
+{{-- ============================================================= --}}
+{{-- ROW TEMPLATE --}}
+{{-- ============================================================= --}}
+<template id="purchase-row-template">
+
+    <tr
+        class="purchase-item-row
+               hover:bg-slate-50/70
+               dark:hover:bg-slate-800/40"
+    >
+
+        <td class="px-4 py-3">
+
+            <select
+                data-name="item_id"
+                class="purchase-item-select
+                       w-full min-w-[270px]
+                       rounded-lg border
+                       border-slate-300
+                       bg-white px-2.5 py-2
+                       dark:border-slate-600
+                       dark:bg-slate-800"
+                required
+            >
+
+                <option value="">
+                    — Select Item —
+                </option>
+
+                @foreach($items as $item)
+
+                    <option
+                        value="{{ $item->id }}"
+                        data-unit="{{ $item->unit ?? '' }}"
+                        data-rate="{{ $item->cost_price
+                            ?? $item->price
+                            ?? 0 }}"
+                        data-gst="{{ $item->tax_rate ?? 0 }}"
+                    >
+                        {{ $item->name }}
+
+                        @if($item->sku)
+                            ({{ $item->sku }})
+                        @endif
+                    </option>
+
+                @endforeach
+
+            </select>
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                data-name="qty"
+                type="number"
+                min="0.001"
+                step="0.001"
+                value="1"
+                class="purchase-qty-input
+                       w-24 rounded-lg border
+                       border-slate-300 px-2.5 py-2
+                       text-right
+                       dark:border-slate-600
+                       dark:bg-slate-800"
+                required
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <select
+                data-name="qty_unit"
+                class="purchase-unit-select
+                       w-32 rounded-lg
+                       border border-slate-300
+                       bg-white px-2.5 py-2
+                       dark:border-slate-600
+                       dark:bg-slate-800"
+                required
+            >
+
+                <option value="">
+                    Select
+                </option>
+
+                @foreach($units as $unit)
+                    <option value="{{ $unit->name }}">
+                        {{ $unit->name }}
+                    </option>
+                @endforeach
+
+            </select>
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                data-name="rate"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                class="purchase-rate-input
+                       w-28 rounded-lg border
+                       border-slate-300 px-2.5 py-2
+                       text-right
+                       dark:border-slate-600
+                       dark:bg-slate-800"
+                required
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                type="text"
+                value="0.00"
+                readonly
+                tabindex="-1"
+                class="purchase-amount-input
+                       w-28 rounded-lg
+                       border border-slate-200
+                       bg-slate-100 px-2.5 py-2
+                       text-right
+                       dark:border-slate-700
+                       dark:bg-slate-700"
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                data-name="gst_rate"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0"
+                class="purchase-gst-input
+                       w-20 rounded-lg
+                       border border-slate-300
+                       px-2.5 py-2 text-right
+                       dark:border-slate-600
+                       dark:bg-slate-800"
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                type="text"
+                value="0.00"
+                readonly
+                tabindex="-1"
+                class="purchase-cgst-input
+                       w-24 rounded-lg
+                       border border-slate-200
+                       bg-slate-100 px-2.5 py-2
+                       text-right
+                       dark:border-slate-700
+                       dark:bg-slate-700"
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                type="text"
+                value="0.00"
+                readonly
+                tabindex="-1"
+                class="purchase-sgst-input
+                       w-24 rounded-lg
+                       border border-slate-200
+                       bg-slate-100 px-2.5 py-2
+                       text-right
+                       dark:border-slate-700
+                       dark:bg-slate-700"
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                type="text"
+                value="0.00"
+                readonly
+                tabindex="-1"
+                class="purchase-igst-input
+                       w-24 rounded-lg
+                       border border-slate-200
+                       bg-slate-100 px-2.5 py-2
+                       text-right
+                       dark:border-slate-700
+                       dark:bg-slate-700"
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3">
+
+            <input
+                type="text"
+                value="0.00"
+                readonly
+                tabindex="-1"
+                class="purchase-line-total-input
+                       w-32 rounded-lg
+                       border border-slate-200
+                       bg-slate-100 px-2.5 py-2
+                       text-right font-semibold
+                       dark:border-slate-700
+                       dark:bg-slate-700"
+            >
+
+        </td>
+
+
+        <td class="px-3 py-3 text-center">
+
+            <button
+                type="button"
+                class="purchase-remove-row
+                       rounded-lg bg-red-50
+                       px-2.5 py-2
+                       text-xs font-semibold
+                       text-red-600
+                       hover:bg-red-100
+                       dark:bg-red-500/10
+                       dark:text-red-400"
+            >
+                Remove
+            </button>
+
+        </td>
+
+    </tr>
+
+</template>
+
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    /*
-    |--------------------------------------------------------------------------
-    | ELEMENTS
-    |--------------------------------------------------------------------------
-    */
-
     const body =
         document.getElementById('purchase-items-body');
 
-    const addBtn =
+    const addRowButton =
         document.getElementById('purchase-add-row');
 
-    const taxTypeInput =
+    const rowTemplate =
+        document.getElementById('purchase-row-template');
+
+    const taxType =
         document.getElementById('purchase-tax-type');
 
-    const supplierSelect =
-        document.getElementById('supplier_id');
 
-    const supplierModal =
-        document.getElementById('supplierModal');
-
-    const openSupplierBtn =
-        document.getElementById('open-supplier-modal-btn');
-
-    const closeSupplierBtn =
-        document.getElementById('close-supplier-modal-btn');
-
-    const cancelSupplierBtn =
-        document.getElementById('cancel-supplier-btn');
-
-    const saveSupplierBtn =
-        document.getElementById('save-supplier-btn');
-
-    const supplierError =
-        document.getElementById('supplier-error');
-
+    let nextIndex =
+        {{ count($oldItems) }};
 
 
     /*
     |--------------------------------------------------------------------------
-    | SUPPLIER MODAL
+    | Re-index new row
     |--------------------------------------------------------------------------
     */
-
-    function openSupplierModal()
+    function prepareNewRow(row, index)
     {
-        supplierError.innerHTML = '';
-        supplierError.classList.add('hidden');
+        row.querySelectorAll('[data-name]')
+            .forEach(function (field) {
 
-        supplierModal.classList.remove('hidden');
-        supplierModal.classList.add('flex');
+                const fieldName =
+                    field.dataset.name;
 
-        document.body.style.overflow = 'hidden';
+                field.name =
+                    `items[${index}][${fieldName}]`;
 
-        setTimeout(function () {
-            document
-                .getElementById('supplier-name')
-                ?.focus();
-        }, 100);
+            });
     }
-
-
-    function closeSupplierModal()
-    {
-        supplierModal.classList.add('hidden');
-        supplierModal.classList.remove('flex');
-
-        document.body.style.overflow = '';
-    }
-
-
-    function clearSupplierForm()
-    {
-        document.getElementById('supplier-name').value = '';
-        document.getElementById('supplier-mobile').value = '';
-        document.getElementById('supplier-email').value = '';
-        document.getElementById('supplier-gstin').value = '';
-        document.getElementById('supplier-address').value = '';
-    }
-
-
-    openSupplierBtn?.addEventListener(
-        'click',
-        openSupplierModal
-    );
-
-
-    closeSupplierBtn?.addEventListener(
-        'click',
-        closeSupplierModal
-    );
-
-
-    cancelSupplierBtn?.addEventListener(
-        'click',
-        closeSupplierModal
-    );
-
-
-    supplierModal?.addEventListener(
-        'click',
-        function (event) {
-
-            if (event.target === supplierModal) {
-                closeSupplierModal();
-            }
-
-        }
-    );
-
-
-    document.addEventListener(
-        'keydown',
-        function (event) {
-
-            if (
-                event.key === 'Escape' &&
-                supplierModal &&
-                !supplierModal.classList.contains('hidden')
-            ) {
-                closeSupplierModal();
-            }
-
-        }
-    );
-
 
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE SUPPLIER
+    | Number
     |--------------------------------------------------------------------------
     */
-
-    saveSupplierBtn?.addEventListener(
-        'click',
-        async function () {
-
-            const name =
-                document
-                    .getElementById('supplier-name')
-                    .value
-                    .trim();
-
-            const mobile =
-                document
-                    .getElementById('supplier-mobile')
-                    .value
-                    .trim();
-
-            const email =
-                document
-                    .getElementById('supplier-email')
-                    .value
-                    .trim();
-
-            const gstin =
-                document
-                    .getElementById('supplier-gstin')
-                    .value
-                    .trim();
-
-            const address =
-                document
-                    .getElementById('supplier-address')
-                    .value
-                    .trim();
-
-
-            supplierError.innerHTML = '';
-            supplierError.classList.add('hidden');
-
-
-            if (!name) {
-
-                supplierError.innerHTML =
-                    'Supplier name is required.';
-
-                supplierError.classList.remove('hidden');
-
-                document
-                    .getElementById('supplier-name')
-                    .focus();
-
-                return;
-            }
-
-
-            const originalText =
-                saveSupplierBtn.innerHTML;
-
-
-            saveSupplierBtn.disabled = true;
-            saveSupplierBtn.innerHTML = 'Saving...';
-
-
-            try {
-
-                const response = await fetch(
-                    "{{ route('purchases.suppliers.store') }}",
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                        },
-
-                        body: JSON.stringify({
-                            name: name,
-                            mobile: mobile,
-                            email: email,
-                            gstin: gstin,
-                            address: address
-                        })
-                    }
-                );
-
-
-                let result = null;
-
-
-                try {
-
-                    result = await response.json();
-
-                } catch (e) {
-
-                    throw new Error(
-                        'Server returned an invalid response.'
-                    );
-
-                }
-
-
-                if (!response.ok) {
-
-                    let messages = [];
-
-
-                    if (result?.errors) {
-
-                        Object.values(result.errors)
-                            .forEach(function (errors) {
-
-                                if (Array.isArray(errors)) {
-
-                                    errors.forEach(function (message) {
-                                        messages.push(message);
-                                    });
-
-                                } else {
-
-                                    messages.push(errors);
-
-                                }
-
-                            });
-
-                    } else {
-
-                        messages.push(
-                            result?.message ||
-                            'Supplier could not be created.'
-                        );
-
-                    }
-
-
-                    supplierError.innerHTML =
-                        messages.join('<br>');
-
-                    supplierError.classList.remove('hidden');
-
-                    return;
-                }
-
-
-                if (
-                    !result?.supplier ||
-                    !result.supplier.id
-                ) {
-
-                    throw new Error(
-                        'Supplier information missing from response.'
-                    );
-
-                }
-
-
-                const supplier =
-                    result.supplier;
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Remove duplicate option
-                |--------------------------------------------------------------------------
-                */
-
-                const oldOption =
-                    supplierSelect.querySelector(
-                        'option[value="' +
-                        supplier.id +
-                        '"]'
-                    );
-
-
-                if (oldOption) {
-                    oldOption.remove();
-                }
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Add new supplier in dropdown
-                |--------------------------------------------------------------------------
-                */
-
-                const option =
-                    document.createElement('option');
-
-
-                option.value =
-                    supplier.id;
-
-
-                option.textContent =
-                    supplier.name +
-                    (
-                        supplier.mobile
-                            ? ' - ' + supplier.mobile
-                            : ''
-                    );
-
-
-                option.selected = true;
-
-
-                supplierSelect.appendChild(option);
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Trigger change event
-                |--------------------------------------------------------------------------
-                */
-
-                supplierSelect.dispatchEvent(
-                    new Event(
-                        'change',
-                        {
-                            bubbles: true
-                        }
-                    )
-                );
-
-
-                clearSupplierForm();
-
-                closeSupplierModal();
-
-
-            } catch (error) {
-
-                console.error(
-                    'Supplier creation error:',
-                    error
-                );
-
-
-                supplierError.innerHTML =
-                    error.message ||
-                    'Something went wrong while creating supplier.';
-
-
-                supplierError.classList.remove('hidden');
-
-            } finally {
-
-                saveSupplierBtn.disabled = false;
-                saveSupplierBtn.innerHTML = originalText;
-
-            }
-
-        }
-    );
-
+    function toNumber(value)
+    {
+        const number =
+            parseFloat(value);
+
+        return Number.isFinite(number)
+            ? number
+            : 0;
+    }
 
 
     /*
     |--------------------------------------------------------------------------
-    | PURCHASE CALCULATIONS
+    | Calculate Row
     |--------------------------------------------------------------------------
     */
-
-    function numberValue(selector)
+    function calculateRow(row)
     {
-        const element =
-            document.querySelector(selector);
+        const qty =
+            toNumber(
+                row.querySelector(
+                    '.purchase-qty-input'
+                )?.value
+            );
 
-        return parseFloat(
-            element?.value || 0
-        );
+        const rate =
+            toNumber(
+                row.querySelector(
+                    '.purchase-rate-input'
+                )?.value
+            );
+
+        const gstRate =
+            toNumber(
+                row.querySelector(
+                    '.purchase-gst-input'
+                )?.value
+            );
+
+
+        const taxable =
+            qty * rate;
+
+
+        let cgst = 0;
+        let sgst = 0;
+        let igst = 0;
+
+
+        if (
+            taxType?.value ===
+            'inter_state'
+        ) {
+
+            igst =
+                taxable *
+                gstRate /
+                100;
+
+        } else {
+
+            cgst =
+                taxable *
+                (gstRate / 2) /
+                100;
+
+            sgst =
+                taxable *
+                (gstRate / 2) /
+                100;
+        }
+
+
+        const total =
+            taxable +
+            cgst +
+            sgst +
+            igst;
+
+
+        row.querySelector(
+            '.purchase-amount-input'
+        ).value =
+            taxable.toFixed(2);
+
+
+        row.querySelector(
+            '.purchase-cgst-input'
+        ).value =
+            cgst.toFixed(2);
+
+
+        row.querySelector(
+            '.purchase-sgst-input'
+        ).value =
+            sgst.toFixed(2);
+
+
+        row.querySelector(
+            '.purchase-igst-input'
+        ).value =
+            igst.toFixed(2);
+
+
+        row.querySelector(
+            '.purchase-line-total-input'
+        ).value =
+            total.toFixed(2);
+
+
+        return {
+            taxable,
+            cgst,
+            sgst,
+            igst,
+            total,
+        };
     }
 
 
-
-    function recalcPurchaseTotals()
+    /*
+    |--------------------------------------------------------------------------
+    | Calculate Purchase
+    |--------------------------------------------------------------------------
+    */
+    function calculatePurchase()
     {
         let subtotal = 0;
-
         let cgstTotal = 0;
-
         let sgstTotal = 0;
-
         let igstTotal = 0;
 
 
-        const taxType =
-            taxTypeInput?.value || 'intra_state';
-
-
         body
-            .querySelectorAll('.purchase-item-row')
+            ?.querySelectorAll(
+                '.purchase-item-row'
+            )
             .forEach(function (row) {
 
-                const qty =
-                    parseFloat(
-                        row
-                            .querySelector('.purchase-qty-input')
-                            ?.value || 0
-                    );
+                const values =
+                    calculateRow(row);
 
+                subtotal +=
+                    values.taxable;
 
-                const rate =
-                    parseFloat(
-                        row
-                            .querySelector('.purchase-rate-input')
-                            ?.value || 0
-                    );
+                cgstTotal +=
+                    values.cgst;
 
+                sgstTotal +=
+                    values.sgst;
 
-                const gstRate =
-                    parseFloat(
-                        row
-                            .querySelector('.purchase-gst-input')
-                            ?.value || 0
-                    );
-
-
-                const amount =
-                    qty * rate;
-
-
-                let cgst = 0;
-
-                let sgst = 0;
-
-                let igst = 0;
-
-
-                if (taxType === 'intra_state') {
-
-                    cgst =
-                        amount *
-                        (gstRate / 2) /
-                        100;
-
-
-                    sgst =
-                        amount *
-                        (gstRate / 2) /
-                        100;
-
-                } else {
-
-                    igst =
-                        amount *
-                        gstRate /
-                        100;
-
-                }
-
-
-                const lineTotal =
-                    amount +
-                    cgst +
-                    sgst +
-                    igst;
-
-
-                const amountInput =
-                    row.querySelector(
-                        '.purchase-amount-input'
-                    );
-
-
-                const cgstInput =
-                    row.querySelector(
-                        '.purchase-cgst-input'
-                    );
-
-
-                const sgstInput =
-                    row.querySelector(
-                        '.purchase-sgst-input'
-                    );
-
-
-                const igstInput =
-                    row.querySelector(
-                        '.purchase-igst-input'
-                    );
-
-
-                const lineTotalInput =
-                    row.querySelector(
-                        '.purchase-line-total-input'
-                    );
-
-
-                if (amountInput) {
-                    amountInput.value =
-                        amount.toFixed(2);
-                }
-
-
-                if (cgstInput) {
-                    cgstInput.value =
-                        cgst.toFixed(2);
-                }
-
-
-                if (sgstInput) {
-                    sgstInput.value =
-                        sgst.toFixed(2);
-                }
-
-
-                if (igstInput) {
-                    igstInput.value =
-                        igst.toFixed(2);
-                }
-
-
-                if (lineTotalInput) {
-                    lineTotalInput.value =
-                        lineTotal.toFixed(2);
-                }
-
-
-                subtotal += amount;
-
-                cgstTotal += cgst;
-
-                sgstTotal += sgst;
-
-                igstTotal += igst;
+                igstTotal +=
+                    values.igst;
 
             });
 
 
         const discount =
-            numberValue('#purchase-discount');
-
+            toNumber(
+                document.getElementById(
+                    'purchase-discount'
+                )?.value
+            );
 
         const roundOff =
-            numberValue('#purchase-round-off');
-
+            toNumber(
+                document.getElementById(
+                    'purchase-round-off'
+                )?.value
+            );
 
         const paid =
-            numberValue('#purchase-paid');
+            toNumber(
+                document.getElementById(
+                    'purchase-paid'
+                )?.value
+            );
 
 
         const grandTotal =
@@ -2138,117 +1796,96 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         const due =
-            grandTotal - paid;
+            grandTotal -
+            paid;
 
 
-        document
-            .getElementById('purchase-subtotal')
-            .value =
+        document.getElementById(
+            'summary-subtotal'
+        ).textContent =
             subtotal.toFixed(2);
 
 
-        document
-            .getElementById('purchase-cgst-total')
-            .value =
+        document.getElementById(
+            'summary-cgst'
+        ).textContent =
             cgstTotal.toFixed(2);
 
 
-        document
-            .getElementById('purchase-sgst-total')
-            .value =
+        document.getElementById(
+            'summary-sgst'
+        ).textContent =
             sgstTotal.toFixed(2);
 
 
-        document
-            .getElementById('purchase-igst-total')
-            .value =
+        document.getElementById(
+            'summary-igst'
+        ).textContent =
             igstTotal.toFixed(2);
 
 
-        document
-            .getElementById('purchase-grand-total')
-            .value =
+        document.getElementById(
+            'summary-grand-total'
+        ).textContent =
             grandTotal.toFixed(2);
 
 
-        document
-            .getElementById('purchase-due')
-            .value =
+        document.getElementById(
+            'summary-due'
+        ).textContent =
             due.toFixed(2);
     }
 
 
-
     /*
     |--------------------------------------------------------------------------
-    | ITEM INPUT CHANGE
+    | Add Item
     |--------------------------------------------------------------------------
     */
+    addRowButton?.addEventListener(
+        'click',
+        function () {
 
-    body?.addEventListener(
-        'input',
-        function (event) {
+            const fragment =
+                rowTemplate.content
+                    .cloneNode(true);
 
-            if (
-                event.target.classList.contains(
-                    'purchase-qty-input'
-                ) ||
-                event.target.classList.contains(
-                    'purchase-rate-input'
-                ) ||
-                event.target.classList.contains(
-                    'purchase-gst-input'
-                )
-            ) {
+            const row =
+                fragment.querySelector(
+                    '.purchase-item-row'
+                );
 
-                recalcPurchaseTotals();
+            prepareNewRow(
+                row,
+                nextIndex++
+            );
 
-            }
 
+            body.appendChild(
+                fragment
+            );
+
+
+            calculatePurchase();
         }
     );
 
 
-
-    taxTypeInput?.addEventListener(
-        'change',
-        recalcPurchaseTotals
-    );
-
-
-
-    [
-        '#purchase-discount',
-        '#purchase-round-off',
-        '#purchase-paid'
-    ].forEach(function (selector) {
-
-        document
-            .querySelector(selector)
-            ?.addEventListener(
-                'input',
-                recalcPurchaseTotals
-            );
-
-    });
-
-
-
     /*
     |--------------------------------------------------------------------------
-    | REMOVE ITEM
+    | Remove
     |--------------------------------------------------------------------------
     */
-
     body?.addEventListener(
         'click',
         function (event) {
 
-            if (
-                !event.target.classList.contains(
-                    'purchase-remove-row'
-                )
-            ) {
+            const button =
+                event.target.closest(
+                    '.purchase-remove-row'
+                );
+
+            if (!button) {
                 return;
             }
 
@@ -2258,10 +1895,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     '.purchase-item-row'
                 );
 
-
-            /*
-             * At least one item row should remain.
-             */
 
             if (rows.length <= 1) {
 
@@ -2273,348 +1906,566 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
 
-            event.target
-                .closest('.purchase-item-row')
+            button
+                .closest(
+                    '.purchase-item-row'
+                )
                 ?.remove();
 
 
-            recalcPurchaseTotals();
+            calculatePurchase();
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Item Change
+    |--------------------------------------------------------------------------
+    | Selected item:
+    |
+    | Unit       -> item.unit
+    | Rate       -> item.cost_price
+    | GST        -> item.tax_rate
+    |--------------------------------------------------------------------------
+    */
+    body?.addEventListener(
+        'change',
+        function (event) {
+
+            if (
+                !event.target.classList
+                    .contains(
+                        'purchase-item-select'
+                    )
+            ) {
+                return;
+            }
+
+
+            const select =
+                event.target;
+
+            const row =
+                select.closest(
+                    '.purchase-item-row'
+                );
+
+            const option =
+                select.options[
+                    select.selectedIndex
+                ];
+
+
+            if (!row || !option) {
+                return;
+            }
+
+
+            const itemUnit =
+                option.dataset.unit || '';
+
+            const itemRate =
+                option.dataset.rate || '0';
+
+            const itemGst =
+                option.dataset.gst || '0';
+
+
+            const unitSelect =
+                row.querySelector(
+                    '.purchase-unit-select'
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Unit auto select
+            |--------------------------------------------------------------------------
+            */
+            if (
+                unitSelect &&
+                itemUnit
+            ) {
+
+                const matchingOption =
+                    Array.from(
+                        unitSelect.options
+                    ).find(function (unitOption) {
+
+                        return (
+                            unitOption.value
+                                .trim()
+                                .toLowerCase()
+                            ===
+                            itemUnit
+                                .trim()
+                                .toLowerCase()
+                        );
+
+                    });
+
+
+                if (matchingOption) {
+
+                    unitSelect.value =
+                        matchingOption.value;
+
+                } else {
+
+                    /*
+                     * Old/legacy unit present on item
+                     * but Unit Master me missing hai.
+                     */
+                    const option =
+                        new Option(
+                            itemUnit,
+                            itemUnit,
+                            true,
+                            true
+                        );
+
+                    unitSelect.add(option);
+                }
+            }
+
+
+            const rateInput =
+                row.querySelector(
+                    '.purchase-rate-input'
+                );
+
+            const gstInput =
+                row.querySelector(
+                    '.purchase-gst-input'
+                );
+
+
+            if (rateInput) {
+                rateInput.value =
+                    toNumber(itemRate)
+                        .toFixed(2);
+            }
+
+
+            if (gstInput) {
+                gstInput.value =
+                    toNumber(itemGst);
+            }
+
+
+            calculatePurchase();
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Live Calculation
+    |--------------------------------------------------------------------------
+    */
+    body?.addEventListener(
+        'input',
+        function (event) {
+
+            if (
+                event.target.matches(
+                    '.purchase-qty-input, ' +
+                    '.purchase-rate-input, ' +
+                    '.purchase-gst-input'
+                )
+            ) {
+
+                calculatePurchase();
+
+            }
 
         }
     );
 
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | ADD NEW ITEM
-    |--------------------------------------------------------------------------
-    */
-
-    let nextRowIndex =
-        {{ count($oldItems) }};
+    taxType?.addEventListener(
+        'change',
+        calculatePurchase
+    );
 
 
-    addBtn?.addEventListener(
-        'click',
-        function () {
+    [
+        'purchase-discount',
+        'purchase-round-off',
+        'purchase-paid',
+    ].forEach(function (id) {
 
-            const index =
-                nextRowIndex++;
-
-
-            const template = `
-                <tr
-                    class="
-                        purchase-item-row
-                        bg-white
-                        dark:bg-neutral-900
-                    "
-                >
-
-                    <td class="px-3 py-2 w-[380px] min-w-[380px]">
-
-                        <select
-                            name="items[${index}][item_id]"
-                            class="
-                                w-full
-                                min-w-[350px]
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                bg-white
-                                text-gray-900
-                                dark:bg-neutral-800
-                                dark:text-white
-                                dark:border-neutral-600
-                            "
-                            required
-                        >
-
-                            <option value="">
-                                Select item...
-                            </option>
-
-                            @foreach ($items as $it)
-
-                                <option value="{{ $it->id }}">
-                                    {{ $it->name }}
-                                    @if ($it->sku)
-                                        ({{ $it->sku }})
-                                    @endif
-                                </option>
-
-                            @endforeach
-
-                        </select>
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            min="0.001"
-                            step="0.001"
-                            name="items[${index}][qty]"
-                            class="
-                                w-20
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-qty-input
-                                dark:bg-neutral-800
-                                dark:border-neutral-600
-                            "
-                            value="1"
-                            required
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <select
-                            name="items[${index}][qty_unit]"
-                            class="
-                                w-28
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                bg-white
-                                text-gray-900
-                                dark:bg-neutral-800
-                                dark:text-white
-                                dark:border-neutral-600
-                            "
-                            required
-                        >
-
-                            <option value="pcs">Pcs</option>
-                            <option value="gram">Gram</option>
-                            <option value="kg">Kg</option>
-                            <option value="carat">Carat</option>
-                            <option value="pair">Pair</option>
-                            <option value="set">Set</option>
-                            <option value="dozen">Dozen</option>
-
-                        </select>
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            name="items[${index}][rate]"
-                            class="
-                                w-24
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-rate-input
-                                dark:bg-neutral-800
-                                dark:border-neutral-600
-                            "
-                            value="0"
-                            required
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="items[${index}][amount]"
-                            class="
-                                w-28
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-amount-input
-                                bg-gray-100
-                                dark:bg-neutral-700
-                                dark:border-neutral-600
-                            "
-                            value="0.00"
-                            readonly
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            name="items[${index}][gst_rate]"
-                            class="
-                                w-20
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-gst-input
-                                dark:bg-neutral-800
-                                dark:border-neutral-600
-                            "
-                            value="3"
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="items[${index}][cgst_amount]"
-                            class="
-                                w-24
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-cgst-input
-                                bg-gray-100
-                                dark:bg-neutral-700
-                                dark:border-neutral-600
-                            "
-                            value="0.00"
-                            readonly
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="items[${index}][sgst_amount]"
-                            class="
-                                w-24
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-sgst-input
-                                bg-gray-100
-                                dark:bg-neutral-700
-                                dark:border-neutral-600
-                            "
-                            value="0.00"
-                            readonly
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="items[${index}][igst_amount]"
-                            class="
-                                w-24
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-igst-input
-                                bg-gray-100
-                                dark:bg-neutral-700
-                                dark:border-neutral-600
-                            "
-                            value="0.00"
-                            readonly
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2">
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="items[${index}][total_amount]"
-                            class="
-                                w-28
-                                border
-                                rounded
-                                px-2
-                                py-2
-                                purchase-line-total-input
-                                bg-gray-100
-                                dark:bg-neutral-700
-                                dark:border-neutral-600
-                            "
-                            value="0.00"
-                            readonly
-                        >
-
-                    </td>
-
-
-                    <td class="px-3 py-2 text-right">
-
-                        <button
-                            type="button"
-                            class="
-                                text-red-600
-                                hover:text-red-800
-                                text-xs
-                                font-medium
-                                purchase-remove-row
-                            "
-                        >
-                            Remove
-                        </button>
-
-                    </td>
-
-                </tr>
-            `;
-
-
-            body.insertAdjacentHTML(
-                'beforeend',
-                template
+        document
+            .getElementById(id)
+            ?.addEventListener(
+                'input',
+                calculatePurchase
             );
 
+    });
 
-            recalcPurchaseTotals();
-
-        }
-    );
 
 
     /*
     |--------------------------------------------------------------------------
-    | INITIAL CALCULATION
+    | SUPPLIER MODAL
     |--------------------------------------------------------------------------
     */
+    const supplierModal =
+        document.getElementById(
+            'supplier-modal'
+        );
 
-    recalcPurchaseTotals();
+    const openSupplierButton =
+        document.getElementById(
+            'open-supplier-modal-btn'
+        );
+
+    const closeSupplierButton =
+        document.getElementById(
+            'close-supplier-modal-btn'
+        );
+
+    const cancelSupplierButton =
+        document.getElementById(
+            'supplier-modal-cancel'
+        );
+
+    const saveSupplierButton =
+        document.getElementById(
+            'save-supplier-btn'
+        );
+
+    const supplierError =
+        document.getElementById(
+            'supplier-error'
+        );
+
+
+    function openSupplierModal()
+    {
+        supplierModal
+            ?.classList
+            .remove('hidden');
+
+        supplierModal
+            ?.classList
+            .add('flex');
+
+
+        setTimeout(function () {
+
+            document
+                .getElementById(
+                    'supplier-name'
+                )
+                ?.focus();
+
+        }, 100);
+    }
+
+
+    function closeSupplierModal()
+    {
+        supplierModal
+            ?.classList
+            .add('hidden');
+
+        supplierModal
+            ?.classList
+            .remove('flex');
+
+        supplierError
+            ?.classList
+            .add('hidden');
+    }
+
+
+    openSupplierButton
+        ?.addEventListener(
+            'click',
+            openSupplierModal
+        );
+
+
+    closeSupplierButton
+        ?.addEventListener(
+            'click',
+            closeSupplierModal
+        );
+
+
+    cancelSupplierButton
+        ?.addEventListener(
+            'click',
+            closeSupplierModal
+        );
+
+
+    supplierModal
+        ?.addEventListener(
+            'click',
+            function (event) {
+
+                if (
+                    event.target ===
+                    supplierModal
+                ) {
+                    closeSupplierModal();
+                }
+
+            }
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Save Supplier
+    |--------------------------------------------------------------------------
+    */
+    saveSupplierButton
+        ?.addEventListener(
+            'click',
+            async function () {
+
+                const name =
+                    document
+                        .getElementById(
+                            'supplier-name'
+                        )
+                        ?.value
+                        .trim() || '';
+
+                const mobile =
+                    document
+                        .getElementById(
+                            'supplier-mobile'
+                        )
+                        ?.value
+                        .trim() || '';
+
+                const email =
+                    document
+                        .getElementById(
+                            'supplier-email'
+                        )
+                        ?.value
+                        .trim() || '';
+
+                const gstin =
+                    document
+                        .getElementById(
+                            'supplier-gstin'
+                        )
+                        ?.value
+                        .trim() || '';
+
+                const address =
+                    document
+                        .getElementById(
+                            'supplier-address'
+                        )
+                        ?.value
+                        .trim() || '';
+
+
+                supplierError.innerHTML =
+                    '';
+
+                supplierError.classList
+                    .add('hidden');
+
+
+                if (!name) {
+
+                    supplierError.innerHTML =
+                        'Supplier name is required.';
+
+                    supplierError.classList
+                        .remove('hidden');
+
+                    return;
+                }
+
+
+                const oldButtonText =
+                    saveSupplierButton
+                        .innerHTML;
+
+
+                saveSupplierButton.disabled =
+                    true;
+
+                saveSupplierButton.innerHTML =
+                    'Saving...';
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "{{ route('purchases.suppliers.store') }}",
+                            {
+                                method: 'POST',
+
+                                headers: {
+                                    'Content-Type':
+                                        'application/json',
+
+                                    'Accept':
+                                        'application/json',
+
+                                    'X-Requested-With':
+                                        'XMLHttpRequest',
+
+                                    'X-CSRF-TOKEN':
+                                        "{{ csrf_token() }}",
+                                },
+
+                                body: JSON.stringify({
+                                    name,
+                                    mobile,
+                                    email,
+                                    gstin,
+                                    address,
+                                }),
+                            }
+                        );
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (!response.ok) {
+
+                        const messages = [];
+
+                        if (result.errors) {
+
+                            Object.values(
+                                result.errors
+                            ).forEach(function (errors) {
+
+                                errors.forEach(
+                                    function (error) {
+                                        messages.push(
+                                            error
+                                        );
+                                    }
+                                );
+
+                            });
+
+                        } else {
+
+                            messages.push(
+                                result.message
+                                ||
+                                'Unable to create supplier.'
+                            );
+                        }
+
+
+                        supplierError.innerHTML =
+                            messages.join('<br>');
+
+                        supplierError.classList
+                            .remove('hidden');
+
+                        return;
+                    }
+
+
+                    const supplier =
+                        result.supplier;
+
+
+                    const supplierSelect =
+                        document.getElementById(
+                            'supplier_id'
+                        );
+
+
+                    if (
+                        supplier &&
+                        supplierSelect
+                    ) {
+
+                        const option =
+                            new Option(
+                                supplier.name +
+                                (
+                                    supplier.mobile
+                                        ? ' - ' +
+                                            supplier.mobile
+                                        : ''
+                                ),
+                                supplier.id,
+                                true,
+                                true
+                            );
+
+
+                        supplierSelect.add(
+                            option
+                        );
+                    }
+
+
+                    document.getElementById(
+                        'supplier-name'
+                    ).value = '';
+
+                    document.getElementById(
+                        'supplier-mobile'
+                    ).value = '';
+
+                    document.getElementById(
+                        'supplier-email'
+                    ).value = '';
+
+                    document.getElementById(
+                        'supplier-gstin'
+                    ).value = '';
+
+                    document.getElementById(
+                        'supplier-address'
+                    ).value = '';
+
+
+                    closeSupplierModal();
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    supplierError.innerHTML =
+                        'Something went wrong while creating supplier.';
+
+                    supplierError.classList
+                        .remove('hidden');
+
+                } finally {
+
+                    saveSupplierButton.disabled =
+                        false;
+
+                    saveSupplierButton.innerHTML =
+                        oldButtonText;
+                }
+
+            }
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Initial Calculate
+    |--------------------------------------------------------------------------
+    */
+    calculatePurchase();
 
 });
 </script>
