@@ -426,8 +426,8 @@
                     <tr>
 
                         <th
-                            class="w-[300px] px-4 py-3
-                                   text-left font-semibold"
+                            class="w-[440px] min-w-[440px] px-4 py-3
+                                text-left font-semibold"
                         >
                             Item
                         </th>
@@ -505,14 +505,14 @@
                                 <select
                                     name="items[{{ $i }}][item_id]"
                                     class="purchase-item-select
-                                           w-full min-w-[270px]
-                                           rounded-lg border
-                                           border-slate-300
-                                           bg-white px-2.5 py-2
-                                           text-sm text-slate-900
-                                           dark:border-slate-600
-                                           dark:bg-slate-800
-                                           dark:text-white"
+                                        w-[420px] min-w-[420px]
+                                        rounded-lg border
+                                        border-slate-300
+                                        bg-white px-3 py-2
+                                        text-sm text-slate-900
+                                        dark:border-slate-600
+                                        dark:bg-slate-800
+                                        dark:text-white"
                                     required
                                 >
 
