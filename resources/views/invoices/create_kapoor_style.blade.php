@@ -3719,10 +3719,22 @@
                     });
                 },
 
-                getItemSearchLabel(itemId) {
-                    const it = (this.itemsData || []).find(x => String(x.id) === String(itemId));
-                    if (!it) return '';
-                    return it.sku ? `${it.name} (${it.sku})` : (it.name || '');
+                getItemSearchLabel(itemId, fallback = '') {
+                    if (!itemId) {
+                        return fallback || '';
+                    }
+
+                    const it = (this.itemsData || []).find(
+                        x => String(x.id) === String(itemId)
+                    );
+
+                    if (!it) {
+                        return fallback || '';
+                    }
+
+                    return it.sku
+                        ? `${it.name} (${it.sku})`
+                        : (it.name || fallback || '');
                 },
 
                 normalizeItemType(v) {
@@ -4097,6 +4109,7 @@
                     this.pay.cheque = Number(inv.pay_cheque || 0);
                     this.pay.credit_excess = Number(inv.credit_sales_excess || 0);
                     this.pay.advance = Number(inv.advance_amount || 0);
+
                     this.pay.online_mode = inv.online_mode || '';
                     this.pay.online_ref = inv.online_ref || '';
                     this.pay.upi_id = inv.upi_id || '';
@@ -4115,18 +4128,27 @@
                     this.payment.markFullyPaid = false;
                     this.payment.bank_account_id = inv.bank_account_id || '';
 
-                    if (Number(inv.pay_cash || 0) > 0) this.payment.mode = 'cash';
-                    else if (Number(inv.pay_upi || 0) > 0) this.payment.mode = 'upi';
-                    else if (Number(inv.pay_card || 0) > 0) this.payment.mode = 'card';
-                    else if (Number(inv.pay_cheque || 0) > 0) this.payment.mode = 'cheque';
-                    else this.payment.mode = 'cash';
+                    if (Number(inv.pay_cash || 0) > 0) {
+                        this.payment.mode = 'cash';
+                    } else if (Number(inv.pay_upi || 0) > 0) {
+                        this.payment.mode = 'upi';
+                    } else if (Number(inv.pay_card || 0) > 0) {
+                        this.payment.mode = 'card';
+                    } else if (Number(inv.pay_cheque || 0) > 0) {
+                        this.payment.mode = 'cheque';
+                    } else {
+                        this.payment.mode = 'cash';
+                    }
 
                     this.discount = {
                         type: 'flat',
                         value: Number(inv.discount_total || 0),
                     };
 
-                    const oldCharges = Array.isArray(inv.charges_json) ? inv.charges_json : [];
+                    const oldCharges = Array.isArray(inv.charges_json)
+                        ? inv.charges_json
+                        : [];
+
                     this.charges = oldCharges.length
                         ? oldCharges.map(c => ({
                             _k: Date.now() + Math.random(),
@@ -4137,56 +4159,287 @@
 
                     this.tcs.apply = Number(inv.tcs_percent || 0) > 0;
                     this.tcs.percent = Number(inv.tcs_percent || 0);
-                    this.roundOff.enabled = Number(inv.round_off || 0) !== 0;
 
-                    const oldItems = Array.isArray(inv.items) ? inv.items : [];
+                    this.roundOff.enabled =
+                        Number(inv.round_off || 0) !== 0;
+
+                    const oldItems = Array.isArray(inv.items)
+                        ? inv.items
+                        : [];
+
+                    /*
+                    * =========================================================
+                    * IMPORTANT FIX
+                    * Previous invoice ka item_id alag-alag key me aa sakta hai.
+                    *
+                    * Hum pehle ID se catalog item find karenge.
+                    * ID nahi mile to SKU / name / description se match karenge.
+                    * =========================================================
+                    */
+
                     this.items = oldItems.length
-                        ? oldItems.map(it => {
-                            const type = this.normalizeItemType(it.item_type);
+                        ? oldItems.map((it, index) => {
+
+                            /*
+                            * Possible previous invoice item IDs.
+                            */
+                            const previousItemId =
+                                it.item_id ??
+                                it.product_id ??
+                                it.inventory_item_id ??
+                                it.item?.id ??
+                                it.product?.id ??
+                                null;
+
+                            /*
+                            * Pehle ID ke basis par catalog item find karo.
+                            */
+                            let catalogItem = null;
+
+                            if (previousItemId) {
+                                catalogItem = (this.itemsData || []).find(item => {
+                                    return String(item.id) === String(previousItemId);
+                                }) || null;
+                            }
+
+                            /*
+                            * Agar ID se nahi mila to SKU se try karo.
+                            */
+                            if (!catalogItem) {
+                                const previousSku = String(
+                                    it.sku ??
+                                    it.item?.sku ??
+                                    it.product?.sku ??
+                                    ''
+                                ).trim().toLowerCase();
+
+                                if (previousSku) {
+                                    catalogItem = (this.itemsData || []).find(item => {
+                                        return String(item.sku || '')
+                                            .trim()
+                                            .toLowerCase() === previousSku;
+                                    }) || null;
+                                }
+                            }
+
+                            /*
+                            * Agar SKU bhi nahi mila to name / description se match.
+                            */
+                            if (!catalogItem) {
+                                const previousName = String(
+                                    it.item_name ??
+                                    it.name ??
+                                    it.product_name ??
+                                    it.item?.name ??
+                                    it.product?.name ??
+                                    it.description ??
+                                    ''
+                                ).trim().toLowerCase();
+
+                                if (previousName) {
+                                    catalogItem = (this.itemsData || []).find(item => {
+
+                                        const catalogName =
+                                            String(item.name || '')
+                                                .trim()
+                                                .toLowerCase();
+
+                                        const catalogDescription =
+                                            String(item.description || '')
+                                                .trim()
+                                                .toLowerCase();
+
+                                        return (
+                                            catalogName === previousName ||
+                                            catalogDescription === previousName
+                                        );
+                                    }) || null;
+                                }
+                            }
+
+                            /*
+                            * Final actual selected item ID.
+                            */
+                            const resolvedItemId =
+                                catalogItem?.id ??
+                                previousItemId ??
+                                null;
+
+                            /*
+                            * Item type.
+                            */
+                            let type = this.normalizeItemType(
+                                it.item_type ??
+                                catalogItem?.item_type ??
+                                catalogItem?.type ??
+                                ''
+                            );
+
+                            /*
+                            * Type missing ho to catalog item se infer karo.
+                            */
+                            if (!type && catalogItem) {
+                                type = this.inferItemType(catalogItem);
+                            }
+
+                            /*
+                            * Search field me actual selected item ka naam dikhao.
+                            */
+                            let searchLabel = '';
+
+                            if (catalogItem) {
+                                searchLabel = catalogItem.sku
+                                    ? `${catalogItem.name} (${catalogItem.sku})`
+                                    : (catalogItem.name || '');
+                            } else {
+                                searchLabel =
+                                    it.item_name ??
+                                    it.name ??
+                                    it.product_name ??
+                                    it.item?.name ??
+                                    it.product?.name ??
+                                    '';
+                            }
 
                             const row = {
-                                _k: Date.now() + Math.random(),
-                                item_id: it.item_id ?? null,
-                                item_type: type,
+                                _k: Date.now() + Math.random() + index,
 
-                                search: this.getItemSearchLabel(it.item_id),
+                                /*
+                                * MOST IMPORTANT
+                                */
+                                item_id: resolvedItemId,
+
+                                item_type: type || 'product',
+
+                                search: searchLabel,
+
                                 ddOpen: false,
                                 ddHi: 0,
                                 ddStyle: '',
                                 ddPreviewName: '',
                                 ddPreview: '',
 
-                                description: it.description || '',
-                                hsn: it.hsn || '',
-                                quantity: Number(it.quantity || 1),
+                                description:
+                                    it.description ??
+                                    catalogItem?.description ??
+                                    catalogItem?.name ??
+                                    '',
 
-                                making_rate: Number(it.making_rate || 0),
-                                gold_purity: it.gold_purity || null,
-                                silver_purity: it.silver_purity || null,
-                                gold_rate: Number(it.gold_rate || 0),
-                                silver_rate: Number(it.silver_rate || 0),
-                                silver_wt: Number(it.silver_wt || 0),
-                                gold_wt: Number(it.gold_wt || 0),
-                                gemstone_wt: Number(it.gemstone_wt || 0),
-                                diamond_wt: Number(it.diamond_wt || 0),
+                                hsn:
+                                    it.hsn ??
+                                    it.hsn_code ??
+                                    catalogItem?.hsn ??
+                                    catalogItem?.hsn_code ??
+                                    '',
 
-                                service_rate: Number(it.service_rate || 0),
-                                fixed_price: Number(it.fixed_price || it.price || 0),
-                                tax_percent: Number(it.tax_percent || 0),
+                                quantity: Math.max(
+                                    1,
+                                    Number(it.quantity || 1)
+                                ),
 
+                                making_charge_type:
+                                    it.making_charge_type ||
+                                    'percentage',
+
+                                making_rate: Number(
+                                    it.making_rate ??
+                                    it.making_charge ??
+                                    0
+                                ),
+
+                                gold_purity:
+                                    it.gold_purity ?? null,
+
+                                silver_purity:
+                                    it.silver_purity ?? null,
+
+                                gold_rate: Number(
+                                    it.gold_rate ?? 0
+                                ),
+
+                                silver_rate: Number(
+                                    it.silver_rate ?? 0
+                                ),
+
+                                gold_wt: Number(
+                                    it.gold_wt ?? 0
+                                ),
+
+                                silver_wt: Number(
+                                    it.silver_wt ?? 0
+                                ),
+
+                                gemstone_wt: Number(
+                                    it.gemstone_wt ?? 0
+                                ),
+
+                                gemstone_charge: Number(
+                                    it.gemstone_charge ?? 0
+                                ),
+
+                                diamond_wt: Number(
+                                    it.diamond_wt ?? 0
+                                ),
+
+                                diamond_charge: Number(
+                                    it.diamond_charge ?? 0
+                                ),
+
+                                service_rate: Number(
+                                    it.service_rate ??
+                                    catalogItem?.service_rate ??
+                                    0
+                                ),
+
+                                fixed_price: Number(
+                                    it.fixed_price ??
+                                    it.price ??
+                                    it.rate ??
+                                    catalogItem?.price ??
+                                    0
+                                ),
+
+                                tax_percent: Number(
+                                    it.tax_percent ??
+                                    it.tax_rate ??
+                                    catalogItem?.tax_rate ??
+                                    0
+                                ),
+
+                                /*
+                                * Previous invoice ki amount preserve karo.
+                                */
                                 amount_mode: 'manual',
-                                manual_amount: Number(it.manual_amount || 0),
+
+                                manual_amount: Number(
+                                    it.manual_amount ??
+                                    it.amount ??
+                                    0
+                                ),
                             };
 
-                            if (type === 'service') {
-                                this.resetRowForService(row);
-                            } else {
-                                this.resetRowForProduct(row);
-                            }
+                            /*
+                            * Important:
+                            * resetRowForService/Product yahan call mat karo,
+                            * warna previous invoice ke kuch loaded values zero ho sakte hain.
+                            */
 
                             return row;
                         })
                         : [rowTemplate()];
+
+                    /*
+                    * Debugging ke liye.
+                    * Browser console me check kar sakte hain.
+                    */
+                    console.log(
+                        'Previous invoice items resolved:',
+                        this.items.map(row => ({
+                            item_id: row.item_id,
+                            search: row.search,
+                            description: row.description,
+                        }))
+                    );
 
                     this.onReceivedInput();
                     this.calc();

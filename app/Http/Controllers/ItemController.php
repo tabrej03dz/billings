@@ -447,8 +447,9 @@ class ItemController extends Controller
         if ($isAllowed('stock_qty')) {
             $rules['stock_qty'] = [
                 $isRequired('stock_qty'),
-                'integer',
+                'numeric',
                 'min:0',
+                'decimal:0,4',
             ];
         }
 
@@ -655,7 +656,7 @@ class ItemController extends Controller
         | Opening Stock
         |--------------------------------------------------------------------------
         */
-        $openingQty = (int) ($data['stock_qty'] ?? 0);
+        $openingQty = (float) ($data['stock_qty'] ?? 0);
 
         /*
         |--------------------------------------------------------------------------
@@ -1119,7 +1120,9 @@ class ItemController extends Controller
 
                 'stock_qty' => [
                     'nullable',
+                    'numeric',
                     'min:0',
+                    'decimal:0,4',
                 ],
 
                 'unit' => [
@@ -1303,13 +1306,14 @@ class ItemController extends Controller
             | Final Stock Qty
             |--------------------------------------------------------------------------
             */
-            $finalQty =
-                (int) (
+            $finalQty = round(
+                (float) (
                     $data['stock_qty']
                     ?? $item->stock_qty
                     ?? 0
-                );
-
+                ),
+                4
+            );
             /*
             |--------------------------------------------------------------------------
             | Remove Stock + Image File Object
@@ -1796,8 +1800,9 @@ class ItemController extends Controller
         if ($isAllowed('stock_qty')) {
             $rules['stock_qty'] = [
                 $isRequired('stock_qty'),
-                'integer',
+                'numeric',
                 'min:0',
+                'decimal:0,4',
             ];
         }
 
@@ -1996,13 +2001,7 @@ class ItemController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $openingQty =
-            $isAllowed('stock_qty')
-                ? (int) (
-                    $data['stock_qty']
-                    ?? 0
-                )
-                : 0;
+        $openingQty = $isAllowed('stock_qty') ? round( (float) ($data['stock_qty'] ?? 0),4) : 0;
 
 
         /*

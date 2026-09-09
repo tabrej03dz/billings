@@ -541,7 +541,7 @@
                                 <label class="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-200">
                                     Stock Qty <span class="text-red-600">*</span>
                                 </label>
-                                <input id="stockQty" type="number" step="1" min="0" name="stock_qty"
+                                <input id="stockQty" type="number"  step="0.0001" min="0" name="stock_qty"
                                        value="{{ old('stock_qty', $item->stock_qty ?? 0) }}"
                                        class="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:bg-white focus:ring-4 focus:ring-teal-100 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:focus:border-teal-400 dark:focus:ring-teal-900/40">
                             </div>
