@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\Item;
 use App\Models\Purchase;
+use App\Models\Unit;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,65 +21,142 @@ class PurchaseController extends Controller
         $this->stock = $stock;
     }
 
-    public function index()
-    {
-        $businessId = auth()->user()->business_id ?? null;
+public function index()
+{
+    $businessId = auth()->user()->business_id ?? null;
 
-        $purchases = Purchase::with('supplier')
-            ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
-            ->latest('invoice_date')
-            ->paginate(20);
+    $baseQuery = Purchase::query()
+        ->when(
+            $businessId,
+            fn ($q) => $q->where('business_id', $businessId)
+        );
 
-        return view('purchases.index', compact('purchases'));
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Summary
+    |--------------------------------------------------------------------------
+    */
+    $summary = [
+        'total_purchases' => (clone $baseQuery)->count(),
+        'total_amount'    => (clone $baseQuery)->sum('total_amount'),
+        'paid_amount'     => (clone $baseQuery)->sum('paid_amount'),
+        'due_amount'      => (clone $baseQuery)->sum('due_amount'),
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Purchases
+    |--------------------------------------------------------------------------
+    */
+    $purchases = $baseQuery
+        ->with('supplier')
+        ->withCount('items')
+        ->latest('invoice_date')
+        ->latest('id')
+        ->paginate(20);
+
+    return view('purchases.index', compact(
+        'purchases',
+        'summary'
+    ));
+}
 
     // public function create()
     // {
     //     $businessId = auth()->user()->business_id ?? null;
 
-    //     $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //     $suppliers = Client::query()
+    //         ->when(
+    //             $businessId,
+    //             fn ($q) => $q->where('business_id', $businessId)
+    //         )
+    //         ->whereIn('party_type', ['supplier', 'both'])
     //         ->orderBy('name')
     //         ->get();
 
-    //     $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //     $items = Item::query()
+    //         ->when(
+    //             $businessId,
+    //             fn ($q) => $q->where('business_id', $businessId)
+    //         )
     //         ->where('is_active', true)
     //         ->orderBy('name')
     //         ->get();
 
     //     $purchase = new Purchase();
 
-    //     return view('purchases.create', compact('purchase', 'suppliers', 'items'));
+    //     return view(
+    //         'purchases.create',
+    //         compact('purchase', 'suppliers', 'items')
+    //     );
     // }
 
+
     public function create()
-    {
-        $businessId = auth()->user()->business_id ?? null;
+{
+    $businessId = auth()->user()->current_business_id
+        ?? session('active_business_id')
+        ?? auth()->user()->business_id
+        ?? null;
 
-        $suppliers = Client::query()
-            ->when(
-                $businessId,
-                fn ($q) => $q->where('business_id', $businessId)
-            )
-            ->whereIn('party_type', ['supplier', 'both'])
-            ->orderBy('name')
-            ->get();
+    $suppliers = Client::query()
+        ->when(
+            $businessId,
+            fn ($q) => $q->where('business_id', $businessId)
+        )
+        ->whereIn('party_type', ['supplier', 'both'])
+        ->orderBy('name')
+        ->get();
 
-        $items = Item::query()
-            ->when(
-                $businessId,
-                fn ($q) => $q->where('business_id', $businessId)
-            )
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+    $items = Item::query()
+        ->when(
+            $businessId,
+            fn ($q) => $q->where('business_id', $businessId)
+        )
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get();
 
-        $purchase = new Purchase();
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Units
+    |--------------------------------------------------------------------------
+    | business_id = null      => global unit
+    | business_id = current   => current business unit
+    */
+    $units = Unit::query()
+        ->withoutGlobalScope('business')
+        ->where(function ($query) use ($businessId) {
 
-        return view(
-            'purchases.create',
-            compact('purchase', 'suppliers', 'items')
-        );
-    }
+            $query->whereNull('business_id');
+
+            if ($businessId) {
+                $query->orWhere(
+                    'business_id',
+                    (int) $businessId
+                );
+            }
+        })
+        ->orderBy('name')
+        ->get([
+            'id',
+            'business_id',
+            'name',
+            'description',
+        ]);
+
+    $purchase = new Purchase();
+
+    return view(
+        'purchases.create',
+        compact(
+            'purchase',
+            'suppliers',
+            'items',
+            'units'
+        )
+    );
+}
 
     public function store(Request $request)
     {
@@ -135,57 +213,102 @@ class PurchaseController extends Controller
         }
     }
 
+
     // public function edit(Purchase $purchase)
     // {
     //     $this->authorizeBusiness($purchase);
 
     //     $businessId = $purchase->business_id;
 
-    //     $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //     $suppliers = Client::query()
+    //         ->when(
+    //             $businessId,
+    //             fn ($q) => $q->where('business_id', $businessId)
+    //         )
+    //         ->whereIn('party_type', ['supplier', 'both'])
     //         ->orderBy('name')
     //         ->get();
 
-    //     $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
+    //     $items = Item::query()
+    //         ->when(
+    //             $businessId,
+    //             fn ($q) => $q->where('business_id', $businessId)
+    //         )
     //         ->where('is_active', true)
     //         ->orderBy('name')
     //         ->get();
 
     //     $purchase->load('items.item');
 
-    //     return view('purchases.edit', compact('purchase', 'suppliers', 'items'));
+    //     return view(
+    //         'purchases.edit',
+    //         compact('purchase', 'suppliers', 'items')
+    //     );
     // }
 
+
     public function edit(Purchase $purchase)
-    {
-        $this->authorizeBusiness($purchase);
+{
+    $this->authorizeBusiness($purchase);
 
-        $businessId = $purchase->business_id;
+    $businessId = $purchase->business_id;
 
-        $suppliers = Client::query()
-            ->when(
-                $businessId,
-                fn ($q) => $q->where('business_id', $businessId)
-            )
-            ->whereIn('party_type', ['supplier', 'both'])
-            ->orderBy('name')
-            ->get();
+    $suppliers = Client::query()
+        ->when(
+            $businessId,
+            fn ($q) => $q->where('business_id', $businessId)
+        )
+        ->whereIn('party_type', ['supplier', 'both'])
+        ->orderBy('name')
+        ->get();
 
-        $items = Item::query()
-            ->when(
-                $businessId,
-                fn ($q) => $q->where('business_id', $businessId)
-            )
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+    $items = Item::query()
+        ->when(
+            $businessId,
+            fn ($q) => $q->where('business_id', $businessId)
+        )
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get();
 
-        $purchase->load('items.item');
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic Units
+    |--------------------------------------------------------------------------
+    */
+    $units = Unit::query()
+        ->withoutGlobalScope('business')
+        ->where(function ($query) use ($businessId) {
 
-        return view(
-            'purchases.edit',
-            compact('purchase', 'suppliers', 'items')
-        );
-    }
+            $query->whereNull('business_id');
+
+            if ($businessId) {
+                $query->orWhere(
+                    'business_id',
+                    (int) $businessId
+                );
+            }
+        })
+        ->orderBy('name')
+        ->get([
+            'id',
+            'business_id',
+            'name',
+            'description',
+        ]);
+
+    $purchase->load('items.item');
+
+    return view(
+        'purchases.edit',
+        compact(
+            'purchase',
+            'suppliers',
+            'items',
+            'units'
+        )
+    );
+}
 
     public function update(Request $request, Purchase $purchase)
     {
@@ -308,7 +431,11 @@ class PurchaseController extends Controller
             ],
 
             'items.*.qty'           => 'required|numeric|min:0.001',
-            'items.*.qty_unit'      => 'required|string|in:pcs,gram,kg,carat,pair,set,dozen',
+            'items.*.qty_unit' => [
+                'required',
+                'string',
+                'max:50',
+            ],
             'items.*.rate'          => 'required|numeric|min:0',
             'items.*.gst_rate'      => 'nullable|numeric|min:0',
 
