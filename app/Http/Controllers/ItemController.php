@@ -195,6 +195,63 @@ class ItemController extends Controller
 
         $showItemSuggestion = $currentItemCount < 5;
 
+        /*
+        |--------------------------------------------------------------------------
+        | Business Type Allowed Item Fields
+        |--------------------------------------------------------------------------
+        */
+        $business = Business::with('businessType.itemFields')
+            ->find($businessId);
+
+        $allowedFields = [];
+
+        if ($business?->businessType) {
+            $allowedFields = $business->businessType->itemFields
+                ->pluck('field_name')
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Fallback Item Fields
+        |--------------------------------------------------------------------------
+        | Business type configuration nahi mili to old/default behaviour.
+        */
+        if (empty($allowedFields)) {
+            $allowedFields = [
+                'name',
+                'huid',
+                'sku',
+                'category_id',
+                'type',
+                'sac',
+                'description',
+                'price',
+                'cost_price',
+                'making_charge_type',
+                'making_charge',
+                'stock_qty',
+                'unit',
+                'tax_rate',
+                'is_active',
+                'metal_type',
+                'purity',
+                'gross_weight',
+                'metal_weight',
+                'stone_weight',
+                'stone_charges',
+                'gold_weight',
+                'gold_purity',
+                'silver_weight',
+                'silver_purity',
+                'diamond_weight',
+                'diamond_charges',
+            ];
+        }
+
         return view('items.index', [
             'items'              => $items,
             'categories'         => $categories,
@@ -206,6 +263,7 @@ class ItemController extends Controller
             'currentItemCount'   => $currentItemCount,
             'showItemSuggestion' => $showItemSuggestion,
             'activeBusinessId'   => $businessId,
+            'allowedFields'      => $allowedFields,
         ]);
     }
 
