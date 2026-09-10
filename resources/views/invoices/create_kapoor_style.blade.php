@@ -3266,6 +3266,9 @@
             const ITEMS = readJSON('items-json', []);
             const METAL_RATES = readJSON('metal-rates-json', []);
             const BANKS = readJSON('banks-json', []);
+
+            const PRESELECT_ITEM_ID = @js(request('item_id'));
+
             // const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
             const CATEGORIES = readJSON('categories-json', []);
             const ALLOWED_FIELDS = readJSON('allowed-fields-json', []);
@@ -3830,57 +3833,176 @@
                     r.service_rate = 0;
                 },
 
+
                 // init() {
                 //     this.clientDD = createClientDD(this);
 
                 //     this.$watch('clientId', () => this.syncParty());
 
-                //     if (!this.items.length) this.items.push(rowTemplate());
-                //     if (!this.charges.length) this.charges.push(chargeTemplate());
+                //     if (!this.items.length) {
+                //         this.items.push(rowTemplate());
+                //     }
+
+                //     if (!this.charges.length) {
+                //         this.charges.push(chargeTemplate());
+                //     }
 
                 //     this.syncParty();
                 //     this.onReceivedInput();
                 //     this.calc();
 
                 //     const reposition = () => {
-                //         for (let idx = 0; idx < this.items.length; idx++) {
-                //             if (this.items[idx]?.ddOpen) this.setItemDDPos(idx);
+                //         for (
+                //             let index = 0;
+                //             index < this.items.length;
+                //             index++
+                //         ) {
+                //             if (this.items[index]?.ddOpen) {
+                //                 this.setItemDDPos(index);
+                //             }
                 //         }
                 //     };
 
-                //     window.addEventListener('scroll', reposition, true);
-                //     window.addEventListener('resize', reposition);
+                //     window.addEventListener(
+                //         'scroll',
+                //         reposition,
+                //         true
+                //     );
+
+                //     window.addEventListener(
+                //         'resize',
+                //         reposition
+                //     );
+
+                //     this.$nextTick(() => {
+                //         setTimeout(() => {
+                //             this.$refs.barcodeInput?.focus();
+                //         }, 300);
+                //     });
                 // },
 
 
                 init() {
+
                     this.clientDD = createClientDD(this);
 
-                    this.$watch('clientId', () => this.syncParty());
+                    this.$watch(
+                        'clientId',
+                        () => this.syncParty()
+                    );
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Ensure First Invoice Row
+                    |--------------------------------------------------------------------------
+                    */
 
                     if (!this.items.length) {
                         this.items.push(rowTemplate());
                     }
 
-                    if (!this.charges.length) {
-                        this.charges.push(chargeTemplate());
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Preselect Item From Item Index
+                    |--------------------------------------------------------------------------
+                    |
+                    | URL example:
+                    | /invoices/create/tax?item_id=25
+                    |
+                    */
+
+                    if (PRESELECT_ITEM_ID) {
+
+                        const selectedItem = (
+                            this.itemsData || []
+                        ).find(item => {
+
+                            return String(item.id) ===
+                                String(PRESELECT_ITEM_ID);
+
+                        });
+
+
+                        if (selectedItem) {
+
+                            /*
+                            | Existing pickItem() method complete
+                            | item data fill karega:
+                            |
+                            | item_id
+                            | name / search
+                            | description
+                            | price
+                            | tax
+                            | HSN/SAC
+                            | metal
+                            | weights
+                            | making charge
+                            | etc.
+                            */
+
+                            this.pickItem(
+                                0,
+                                selectedItem.id
+                            );
+
+                            /*
+                            | Default quantity
+                            */
+
+                            if (this.items[0]) {
+                                this.items[0].quantity = 1;
+                            }
+                        }
                     }
 
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Charges
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (!this.charges.length) {
+                        this.charges.push(
+                            chargeTemplate()
+                        );
+                    }
+
+
                     this.syncParty();
+
                     this.onReceivedInput();
+
                     this.calc();
 
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Dropdown Reposition
+                    |--------------------------------------------------------------------------
+                    */
+
                     const reposition = () => {
+
                         for (
                             let index = 0;
                             index < this.items.length;
                             index++
                         ) {
-                            if (this.items[index]?.ddOpen) {
-                                this.setItemDDPos(index);
+
+                            if (
+                                this.items[index]?.ddOpen
+                            ) {
+
+                                this.setItemDDPos(
+                                    index
+                                );
                             }
                         }
                     };
+
 
                     window.addEventListener(
                         'scroll',
@@ -3888,18 +4010,42 @@
                         true
                     );
 
+
                     window.addEventListener(
                         'resize',
                         reposition
                     );
 
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Initial Focus
+                    |--------------------------------------------------------------------------
+                    |
+                    | Normal invoice:
+                    | Barcode input focus.
+                    |
+                    | Sell / Invoice se aaye:
+                    | item already selected hai, isliye unnecessary
+                    | barcode focus nahi karenge.
+                    */
+
                     this.$nextTick(() => {
-                        setTimeout(() => {
-                            this.$refs.barcodeInput?.focus();
-                        }, 300);
+
+                        if (!PRESELECT_ITEM_ID) {
+
+                            setTimeout(() => {
+
+                                this.$refs
+                                    .barcodeInput
+                                    ?.focus();
+
+                            }, 300);
+
+                        }
+
                     });
                 },
-
 
                 filteredItems(query) {
                     const search = lower(query).trim();

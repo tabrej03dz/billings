@@ -680,6 +680,20 @@
                             </div>
 
                             <div class="flex items-center gap-2">
+                                @can('create invoice')
+                                    <a
+                                        href="{{ route('invoices.create', [
+                                            'type' => 'tax',
+                                            'item_id' => $it->id,
+                                        ]) }}"
+                                        class="inline-flex h-8 items-center justify-center
+                                            rounded-lg bg-emerald-600 px-3
+                                            text-xs font-bold text-white
+                                            hover:bg-emerald-700"
+                                    >
+                                        Sell / Invoice
+                                    </a>
+                                @endcan
                                 <a
                                     href="{{ route('items.edit', $it->id) }}"
                                     class="inline-flex h-8 items-center justify-center rounded-lg bg-amber-500 px-3 text-xs font-bold text-white hover:bg-amber-600"
