@@ -1331,7 +1331,8 @@
 
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
+    function initItemsIndexPage() {
 
     /*
     |--------------------------------------------------------------------------
@@ -1385,9 +1386,8 @@ document.addEventListener('DOMContentLoaded', function () {
         openAdvancedFilters();
     }
 
-    advancedFilterToggle?.addEventListener(
-        'click',
-        function () {
+    if (advancedFilterToggle) {
+        advancedFilterToggle.onclick = function () {
 
             if (!advancedFilterPanel) {
                 return;
@@ -1403,13 +1403,12 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 closeAdvancedFilters();
             }
-        }
-    );
+        };
+    }
 
-    advancedFilterClose?.addEventListener(
-        'click',
-        closeAdvancedFilters
-    );
+    if (advancedFilterClose) {
+        advancedFilterClose.onclick = closeAdvancedFilters;
+    }
 
 
     /*
@@ -1419,16 +1418,18 @@ document.addEventListener('DOMContentLoaded', function () {
     */
     const selectAll = document.getElementById('selectAllBarcodeItems');
 
-    selectAll?.addEventListener('change', function () {
+    if (selectAll) {
+        selectAll.onchange = function () {
 
-        document
-            .querySelectorAll('.barcode-item-checkbox')
-            .forEach(function (checkbox) {
+            document
+                .querySelectorAll('.barcode-item-checkbox')
+                .forEach(function (checkbox) {
 
-                checkbox.checked =
-                    selectAll.checked;
-            });
-    });
+                    checkbox.checked =
+                        selectAll.checked;
+                });
+        };
+    }
 
 
     /*
@@ -1438,20 +1439,22 @@ document.addEventListener('DOMContentLoaded', function () {
     */
     const bulkForm = document.getElementById('barcodeBulkForm');
 
-    bulkForm?.addEventListener('submit', function (event) {
+    if (bulkForm) {
+        bulkForm.onsubmit = function (event) {
 
-        const selected =
-            document.querySelectorAll(
-                '.barcode-item-checkbox:checked'
-            );
+            const selected =
+                document.querySelectorAll(
+                    '.barcode-item-checkbox:checked'
+                );
 
-        if (selected.length === 0) {
+            if (selected.length === 0) {
 
-            event.preventDefault();
+                event.preventDefault();
 
-            alert('Please select at least one item.');
-        }
-    });
+                alert('Please select at least one item.');
+            }
+        };
+    }
 
 
     /*
@@ -1586,59 +1589,58 @@ document.addEventListener('DOMContentLoaded', function () {
     );
 
 
-    chooserButton?.addEventListener(
-        'click',
-        function (event) {
+    if (chooserButton) {
+        chooserButton.onclick = function (event) {
 
             event.stopPropagation();
 
             chooserMenu?.classList.toggle(
                 'hidden'
             );
-        }
-    );
+        };
+    }
 
 
-    chooserMenu?.addEventListener(
-        'click',
-        function (event) {
-
+    if (chooserMenu) {
+        chooserMenu.onclick = function (event) {
             event.stopPropagation();
-        }
-    );
+        };
+    }
 
 
-    document.addEventListener(
-        'click',
-        function () {
+    if (!window.__itemsIndexOutsideClickBound) {
+        window.__itemsIndexOutsideClickBound = true;
 
-            chooserMenu?.classList.add(
-                'hidden'
-            );
-        }
-    );
+        document.addEventListener(
+            'click',
+            function () {
+
+                document
+                    .querySelectorAll('#columnChooserMenu')
+                    .forEach(function (menu) {
+                        menu.classList.add('hidden');
+                    });
+            }
+        );
+    }
 
 
     toggles.forEach(function (toggle) {
 
-        toggle.addEventListener(
-            'change',
-            function () {
+        toggle.onchange = function () {
 
-                const columns =
-                    selectedColumns();
+            const columns =
+                selectedColumns();
 
-                saveColumns(columns);
+            saveColumns(columns);
 
-                applyColumns(columns);
-            }
-        );
+            applyColumns(columns);
+        };
     });
 
 
-    showAllButton?.addEventListener(
-        'click',
-        function () {
+    if (showAllButton) {
+        showAllButton.onclick = function () {
 
             const columns =
                 [...availableColumns];
@@ -1646,13 +1648,12 @@ document.addEventListener('DOMContentLoaded', function () {
             saveColumns(columns);
 
             applyColumns(columns);
-        }
-    );
+        };
+    }
 
 
-    resetButton?.addEventListener(
-        'click',
-        function () {
+    if (resetButton) {
+        resetButton.onclick = function () {
 
             localStorage.removeItem(
                 storageKey
@@ -1661,17 +1662,53 @@ document.addEventListener('DOMContentLoaded', function () {
             applyColumns(
                 defaultColumns
             );
-        }
-    );
-});
+        };
+    }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMPORTANT: SPA / Livewire Navigation Fix
+    |--------------------------------------------------------------------------
+    | DOMContentLoaded sirf hard refresh par fire hota hai.
+    | Isliye initializer ko:
+    | 1) abhi turant call karte hain,
+    | 2) Livewire navigate ke baad dobara call karte hain,
+    | 3) Turbo/PJAX style navigation ke liye bhi hooks rakhte hain.
+    */
+    initItemsIndexPage();
+
+    if (!window.__itemsIndexNavigationHooksBound) {
+        window.__itemsIndexNavigationHooksBound = true;
+
+        document.addEventListener(
+            'DOMContentLoaded',
+            initItemsIndexPage
+        );
+
+        document.addEventListener(
+            'livewire:navigated',
+            initItemsIndexPage
+        );
+
+        document.addEventListener(
+            'turbo:load',
+            initItemsIndexPage
+        );
+
+        document.addEventListener(
+            'pjax:end',
+            initItemsIndexPage
+        );
+    }
+})();
 </script>
 
 
 @if($shouldShowItemSuggestion)
 <script>
-    document.addEventListener(
-        'DOMContentLoaded',
-        function () {
+    (function () {
+        function initItemSuggestionGuide() {
 
             const guide =
                 document.getElementById(
@@ -1700,7 +1737,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 );
             }
         }
-    );
+
+        initItemSuggestionGuide();
+
+        if (!window.__itemSuggestionGuideHooksBound) {
+            window.__itemSuggestionGuideHooksBound = true;
+
+            document.addEventListener(
+                'DOMContentLoaded',
+                initItemSuggestionGuide
+            );
+
+            document.addEventListener(
+                'livewire:navigated',
+                initItemSuggestionGuide
+            );
+
+            document.addEventListener(
+                'turbo:load',
+                initItemSuggestionGuide
+            );
+        }
+    })();
 
 
     function dismissItemGuide() {
