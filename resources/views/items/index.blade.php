@@ -33,6 +33,12 @@
     |
     */
     $tableGroups = [
+        'image' => [
+            'label' => 'Image',
+            'fields' => [],
+            'system' => true,
+        ],
+
         'item' => [
             'label' => 'Item Details',
             'fields' => [
@@ -115,7 +121,7 @@
         ->all();
 
     $columnStorageKey =
-        'item-table-groups-v2-user-'
+        'item-table-groups-v4-user-'
         . auth()->id()
         . '-business-'
         . ($activeBusinessId ?? 'default');
@@ -456,7 +462,7 @@
                     </div>
 
                     <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        Related details grouped hain, isliye horizontal scroll minimum rahega.
+                        Columns ab content ke hisaab se flexible width lenge; kam data wale columns compact aur zyada data wale columns wider rahenge.
                     </p>
                 </div>
 
@@ -559,7 +565,7 @@
             {{-- =====================================================
                  MOBILE / TABLET CARDS
             ====================================================== --}}
-            <div class="mobile-items-list divide-y divide-slate-200 dark:divide-slate-700 lg:hidden">
+            <div class="mobile-items-list divide-y divide-slate-200/80 dark:divide-slate-700/80 lg:hidden">
                 @forelse($items as $it)
                     <article class="p-3 sm:p-4">
 
@@ -723,45 +729,12 @@
                 <div class="w-full overflow-x-auto">
                     <table
                         id="itemsDynamicTable"
-                        class="w-full table-fixed text-left text-sm text-slate-700 dark:text-slate-300"
+                        class="min-w-full table-auto text-left text-sm text-slate-700 dark:text-slate-300"
                     >
-                        <colgroup>
-                            <col class="w-[42px]">
-
-                            @if(isset($availableGroups['item']))
-                                <col class="w-[24%]">
-                            @endif
-
-                            @if(isset($availableGroups['pricing']))
-                                <col class="w-[14%]">
-                            @endif
-
-                            @if(isset($availableGroups['stock']))
-                                <col class="w-[11%]">
-                            @endif
-
-                            @if(isset($availableGroups['metal']))
-                                <col class="w-[19%]">
-                            @endif
-
-                            @if(isset($availableGroups['stone']))
-                                <col class="w-[15%]">
-                            @endif
-
-                            @if(isset($availableGroups['barcode']))
-                                <col class="w-[13%]">
-                            @endif
-
-                            @if(isset($availableGroups['status']))
-                                <col class="w-[8%]">
-                            @endif
-
-                            <col class="w-[110px]">
-                        </colgroup>
 
                         <thead class="bg-slate-100 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                             <tr>
-                                <th class="px-3 py-3">
+                                <th class="w-px whitespace-nowrap px-3 py-3">
                                     <input
                                         type="checkbox"
                                         id="selectAllBarcodeItems"
@@ -778,18 +751,18 @@
                                     </th>
                                 @endforeach
 
-                                <th class="px-3 py-3 text-right">
+                                <th class="w-px whitespace-nowrap px-3 py-3 text-right">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
 
-                        <tbody class="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-[#171c22]">
+                        <tbody class="divide-y divide-slate-200/80 bg-white dark:divide-slate-700/80 dark:bg-[#171c22]">
                             @forelse($items as $it)
-                                <tr class="align-top transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <tr class="align-top border-b border-slate-200/70 transition last:border-b-0 hover:bg-slate-50 dark:border-slate-700/70 dark:hover:bg-slate-800/50">
 
                                     {{-- select --}}
-                                    <td class="px-3 py-4">
+                                    <td class="w-px whitespace-nowrap px-3 py-4">
                                         <input
                                             class="barcode-item-checkbox h-4 w-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
                                             type="checkbox"
@@ -800,28 +773,44 @@
                                     </td>
 
 
+                                    {{-- IMAGE --}}
+                                    @if(isset($availableGroups['image']))
+                                        <td
+                                            class="item-table-column px-3 py-4"
+                                            data-column="image"
+                                        >
+                                            @if($it->image)
+                                                <a
+                                                    href="{{ asset('storage/' . $it->image) }}"
+                                                    target="_blank"
+                                                    class="inline-block"
+                                                    title="Open image"
+                                                >
+                                                    <img
+                                                        src="{{ asset('storage/' . $it->image) }}"
+                                                        alt="{{ $it->name }}"
+                                                        class="h-14 w-14 rounded-xl border border-slate-200 object-cover shadow-sm transition hover:scale-105 dark:border-slate-700"
+                                                        loading="lazy"
+                                                    >
+                                                </a>
+                                            @else
+                                                <div
+                                                    class="flex h-14 w-14 items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-1 text-center text-[9px] font-medium leading-3 text-slate-400 dark:border-slate-600 dark:bg-slate-800"
+                                                >
+                                                    No Image
+                                                </div>
+                                            @endif
+                                        </td>
+                                    @endif
+
+
                                     {{-- ITEM DETAILS --}}
                                     @if(isset($availableGroups['item']))
                                         <td
                                             class="item-table-column px-3 py-4"
                                             data-column="item"
                                         >
-                                            <div class="flex gap-3">
-                                                <div class="shrink-0">
-                                                    @if($it->image)
-                                                        <img
-                                                            src="{{ asset('storage/' . $it->image) }}"
-                                                            alt="{{ $it->name }}"
-                                                            class="h-12 w-12 rounded-xl border border-slate-200 object-cover dark:border-slate-700"
-                                                        >
-                                                    @else
-                                                        <div class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-[9px] text-slate-400 dark:border-slate-700 dark:bg-slate-800">
-                                                            No Image
-                                                        </div>
-                                                    @endif
-                                                </div>
-
-                                                <div class="min-w-0">
+                                            <div class="min-w-0">
                                                     @if($showField('name'))
                                                         <div class="truncate font-bold text-slate-900 dark:text-white" title="{{ $it->name }}">
                                                             {{ $it->name ?? '—' }}
@@ -868,7 +857,6 @@
                                                             {{ $it->description }}
                                                         </div>
                                                     @endif
-                                                </div>
                                             </div>
                                         </td>
                                     @endif
@@ -1129,11 +1117,31 @@
 
 
                                     {{-- ACTIONS --}}
-                                    <td class="px-3 py-4">
+                                    <td class="w-px whitespace-nowrap px-3 py-4">
                                         <div class="flex justify-end gap-1.5">
+
+                                            @can('create invoice')
+                                                <a
+                                                    href="{{ route('invoices.create', [
+                                                        'type' => 'tax',
+                                                        'item_id' => $it->id,
+                                                    ]) }}"
+                                                    class="inline-flex h-8 items-center justify-center
+                                                        rounded-lg bg-emerald-600 px-2.5
+                                                        text-[10px] font-bold text-white
+                                                        hover:bg-emerald-700"
+                                                    title="Sell this item / Create invoice"
+                                                >
+                                                    Sell / Invoice
+                                                </a>
+                                            @endcan
+
                                             <a
                                                 href="{{ route('items.edit', $it->id) }}"
-                                                class="inline-flex h-8 items-center justify-center rounded-lg bg-amber-500 px-2.5 text-[10px] font-bold text-white hover:bg-amber-600"
+                                                class="inline-flex h-8 items-center justify-center
+                                                    rounded-lg bg-amber-500 px-2.5
+                                                    text-[10px] font-bold text-white
+                                                    hover:bg-amber-600"
                                             >
                                                 Edit
                                             </a>
@@ -1148,11 +1156,15 @@
 
                                                 <button
                                                     type="submit"
-                                                    class="inline-flex h-8 items-center justify-center rounded-lg bg-red-600 px-2.5 text-[10px] font-bold text-white hover:bg-red-700"
+                                                    class="inline-flex h-8 items-center justify-center
+                                                        rounded-lg bg-red-600 px-2.5
+                                                        text-[10px] font-bold text-white
+                                                        hover:bg-red-700"
                                                 >
                                                     Del
                                                 </button>
                                             </form>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -1196,18 +1208,103 @@
         animation: itemSuggestionBlink 1.4s ease-in-out infinite;
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Flexible Desktop Table
+    |--------------------------------------------------------------------------
+    | table-layout:auto browser ko content ke hisaab se width distribute
+    | karne deta hai. Compact columns sirf utni jagah lenge jitni zaroori hai,
+    | jabki Item / Metal jaise content-heavy columns remaining space use karenge.
+    */
+    #itemsDynamicTable {
+        table-layout: auto;
+        width: 100%;
+    }
+
     #itemsDynamicTable th,
     #itemsDynamicTable td {
         vertical-align: top;
     }
 
     #itemsDynamicTable td {
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
+        word-break: normal;
     }
 
+    /*
+    | Compact columns:
+    | width:1% + nowrap ka matlab fixed width nahi hai.
+    | Browser inhe content ke minimum required width tak rakhega.
+    */
+    #itemsDynamicTable [data-column="image"],
+    #itemsDynamicTable [data-column="stock"],
+    #itemsDynamicTable [data-column="barcode"],
+    #itemsDynamicTable [data-column="status"] {
+        width: 1%;
+        white-space: nowrap;
+    }
+
+    /*
+    | Medium content columns.
+    | Ye fixed nahi hain; sirf unnecessary squeezing ko rokne ke liye
+    | soft minimum diya gaya hai.
+    */
+    #itemsDynamicTable [data-column="pricing"] {
+        min-width: 120px;
+        white-space: nowrap;
+    }
+
+    #itemsDynamicTable [data-column="stone"] {
+        min-width: 135px;
+    }
+
+    #itemsDynamicTable [data-column="metal"] {
+        min-width: 155px;
+    }
+
+    /*
+    | Item Details ko sabse zyada flexible space milega.
+    */
+    #itemsDynamicTable [data-column="item"] {
+        min-width: 210px;
+        width: auto;
+    }
+
+    #itemsDynamicTable [data-column="item"] .truncate {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+    }
+
+    /*
+    | Small desktop par table horizontally scroll ho sakti hai,
+    | lekin columns fixed percentage width me congest nahi honge.
+    */
     @media (min-width: 1024px) {
         #itemsDynamicTable {
-            min-width: 980px;
+            min-width: max-content;
+        }
+
+        #itemsDynamicTable [data-column="item"] {
+            max-width: 360px;
+        }
+
+        #itemsDynamicTable [data-column="metal"] {
+            max-width: 260px;
+        }
+
+        #itemsDynamicTable [data-column="stone"] {
+            max-width: 220px;
+        }
+    }
+
+    @media (min-width: 1440px) {
+        #itemsDynamicTable {
+            min-width: 100%;
+        }
+
+        #itemsDynamicTable [data-column="item"] {
+            max-width: 460px;
         }
     }
 
