@@ -667,6 +667,9 @@ class InvoiceController extends Controller
         | Items / Services
         |--------------------------------------------------------------------------
         */
+
+        $preselectedItemId = $request->integer('item_id');
+
         $items = Item::query()
             ->where('items.business_id', $businessId)
             ->where('items.is_active', true)
@@ -726,6 +729,26 @@ class InvoiceController extends Controller
             ->orderBy('items.name')
             ->get();
 
+
+            if ($preselectedItemId) {
+
+                $alreadyLoaded = $items->contains(
+                    fn ($item) =>
+                        (int) $item->id === (int) $preselectedItemId
+                );
+
+                if (!$alreadyLoaded) {
+
+                    $preselectedItem = Item::query()
+                        ->where('business_id', $businessId)
+                        ->where('id', $preselectedItemId)
+                        ->first();
+
+                    if ($preselectedItem) {
+                        $items->push($preselectedItem);
+                    }
+                }
+            }
         /*
         |--------------------------------------------------------------------------
         | Categories
@@ -830,6 +853,8 @@ class InvoiceController extends Controller
         return view($viewName, [
             'today' => $today,
             'business' => $business,
+
+            'preselectedItemId' => $preselectedItemId,
 
             'clients' => $clients,
             'items' => $items,

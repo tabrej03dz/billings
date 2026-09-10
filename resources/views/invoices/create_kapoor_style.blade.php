@@ -3266,8 +3266,9 @@
             const ITEMS = readJSON('items-json', []);
             const METAL_RATES = readJSON('metal-rates-json', []);
             const BANKS = readJSON('banks-json', []);
-
-            const PRESELECT_ITEM_ID = @js(request('item_id'));
+            const PRESELECT_ITEM_ID = @js(
+                $preselectedItemId ?? null
+            );
 
             // const CATEGORIES = JSON.parse(document.getElementById('categories-json')?.textContent || '[]');
             const CATEGORIES = readJSON('categories-json', []);
@@ -3899,6 +3900,38 @@
 
                     if (!this.items.length) {
                         this.items.push(rowTemplate());
+                    }
+
+                    if (PRESELECT_ITEM_ID) {
+
+                        this.$nextTick(() => {
+
+                            const selectedItem = (
+                                this.itemsData || []
+                            ).find(item => {
+                                return String(item.id) ===
+                                    String(PRESELECT_ITEM_ID);
+                            });
+
+                            if (!selectedItem) {
+                                console.error(
+                                    'Preselected item not found:',
+                                    PRESELECT_ITEM_ID
+                                );
+                                return;
+                            }
+
+                            this.pickItem(
+                                0,
+                                selectedItem.id
+                            );
+
+                            if (this.items[0]) {
+                                this.items[0].quantity = 1;
+                            }
+
+                            this.calc();
+                        });
                     }
 
 
