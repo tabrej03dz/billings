@@ -114,7 +114,7 @@
 
                 <p class="text-sm leading-6 text-blue-800 dark:text-blue-300">
                     Category available nahi hone par <strong>Add Category</strong> button blink karega.
-                    Popup se category create hone ke baad page automatically refresh ho jayega.
+                    Popup se category create hone ke baad nayi category automatically select ho jayegi.
                 </p>
             </div>
 
@@ -203,6 +203,45 @@
 
                 <p
                     id="categoryNameError"
+                    class="hidden mt-1 text-xs font-medium text-red-600"
+                ></p>
+            </div>
+
+            {{-- Parent Category --}}
+            <div>
+                <label
+                    for="categoryParent"
+                    class="block text-sm font-medium text-gray-700
+                           dark:text-gray-200 mb-1"
+                >
+                    Parent Category
+                </label>
+
+                <select
+                    id="categoryParent"
+                    name="parent_id"
+                    class="w-full rounded-lg border border-gray-300
+                           bg-slate-100 px-3 py-2.5 text-gray-900
+                           outline-none focus:border-blue-500
+                           focus:ring-2 focus:ring-blue-200
+                           dark:border-gray-600 dark:bg-gray-800
+                           dark:text-white"
+                >
+                    <option value="">— Main Category —</option>
+
+                    @foreach($categories->whereNull('parent_id') as $parentCategory)
+                        <option value="{{ $parentCategory->id }}">
+                            {{ $parentCategory->name }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Main category banana ho to blank chhodein. Sub category ke liye parent select karein.
+                </p>
+
+                <p
+                    id="categoryParentError"
                     class="hidden mt-1 text-xs font-medium text-red-600"
                 ></p>
             </div>
@@ -298,9 +337,14 @@
 
         const categoryForm = document.getElementById('categoryCreateForm');
         const categoryName = document.getElementById('categoryName');
+        const categoryParent = document.getElementById('categoryParent');
         const categoryDescription = document.getElementById('categoryDescription');
 
+        // Main Item form ka Category dropdown
+        const itemCategorySelect = document.getElementById('categorySelect');
+
         const categoryNameError = document.getElementById('categoryNameError');
+        const categoryParentError = document.getElementById('categoryParentError');
         const categoryDescriptionError = document.getElementById(
             'categoryDescriptionError'
         );
@@ -352,12 +396,17 @@
 
         function clearCategoryErrors() {
             categoryNameError?.classList.add('hidden');
+            categoryParentError?.classList.add('hidden');
             categoryDescriptionError?.classList.add('hidden');
             categoryGeneralError?.classList.add('hidden');
             categorySuccessMessage?.classList.add('hidden');
 
             if (categoryNameError) {
                 categoryNameError.textContent = '';
+            }
+
+            if (categoryParentError) {
+                categoryParentError.textContent = '';
             }
 
             if (categoryDescriptionError) {
@@ -458,6 +507,13 @@
                             categoryNameError.classList.remove('hidden');
                         }
 
+                        if (result.errors.parent_id?.length) {
+                            categoryParentError.textContent =
+                                result.errors.parent_id[0];
+
+                            categoryParentError.classList.remove('hidden');
+                        }
+
                         if (result.errors.description?.length) {
                             categoryDescriptionError.textContent =
                                 result.errors.description[0];
@@ -476,16 +532,139 @@
                     );
                 }
 
+                /*
+                |--------------------------------------------------------------------------
+                | Category Successfully Created
+                |--------------------------------------------------------------------------
+                | Page reload nahi karenge.
+                | Nayi category ko item ke Category dropdown me append karke
+                | automatically select karenge.
+                */
+
+                const createdCategory = result.category;
+
+                if (
+                    !createdCategory ||
+                    !createdCategory.id ||
+                    !createdCategory.name
+                ) {
+                    throw new Error(
+                        'Category create hui, lekin response me category data nahi mila.'
+                    );
+                }
+
+                if (!itemCategorySelect) {
+                    throw new Error(
+                        'Item category dropdown nahi mila. categorySelect ID check karein.'
+                    );
+                }
+
+                const createdId = String(createdCategory.id);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Duplicate option avoid
+                |--------------------------------------------------------------------------
+                */
+                let newOption = Array.from(
+                    itemCategorySelect.options
+                ).find(function (option) {
+                    return String(option.value) === createdId;
+                });
+
+                if (!newOption) {
+                    newOption = document.createElement('option');
+
+                    newOption.value = createdId;
+
+                    const parentId =
+                        createdCategory.parent_id
+                            ? String(createdCategory.parent_id)
+                            : '';
+
+                    newOption.dataset.parentId = parentId;
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Dropdown Label
+                    |--------------------------------------------------------------------------
+                    | Sub category ho to:
+                    | Jewellery → Gold Ring
+                    |--------------------------------------------------------------------------
+                    */
+                    if (parentId) {
+                        const selectedParentOption =
+                            categoryParent?.options[
+                                categoryParent.selectedIndex
+                            ];
+
+                        const parentName =
+                            selectedParentOption?.textContent?.trim()
+                                ?.replace(/^—|—$/g, '')
+                                ?.trim() || '';
+
+                        newOption.textContent =
+                            parentName
+                                ? '↳ ' + parentName + ' → ' + createdCategory.name
+                                : '↳ ' + createdCategory.name;
+                    } else {
+                        newOption.textContent =
+                            createdCategory.name;
+                    }
+
+                    itemCategorySelect.appendChild(newOption);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | AUTO SELECT NEW CATEGORY
+                |--------------------------------------------------------------------------
+                */
+                itemCategorySelect.value = createdId;
+
+                newOption.selected = true;
+
+                // Kisi aur JS / Alpine / plugin ko change detect karna ho
+                itemCategorySelect.dispatchEvent(
+                    new Event('change', {
+                        bubbles: true
+                    })
+                );
+
                 categorySuccessMessage.textContent =
-                    result.message || 'Category successfully created.';
+                    (result.message || 'Category successfully created.') +
+                    ' Item me automatically select kar di gayi hai.';
 
                 categorySuccessMessage.classList.remove('hidden');
 
+                /*
+                |--------------------------------------------------------------------------
+                | Form reset baad me
+                |--------------------------------------------------------------------------
+                | Parent name read karne ke baad reset karna zaroori hai.
+                */
                 categoryForm.reset();
 
+                /*
+                |--------------------------------------------------------------------------
+                | Modal Close
+                |--------------------------------------------------------------------------
+                */
                 setTimeout(function () {
-                    window.location.reload();
-                }, 700);
+                    if (categoryModal) {
+                        categoryModal.classList.add('hidden');
+                        categoryModal.classList.remove('flex');
+                    }
+
+                    document.body.classList.remove(
+                        'category-modal-open'
+                    );
+
+                    clearCategoryErrors();
+
+                    // Item category dropdown ko visible/focus kara dein
+                    itemCategorySelect.focus();
+                }, 650);
 
             } catch (error) {
                 categoryGeneralError.textContent =

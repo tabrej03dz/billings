@@ -183,6 +183,7 @@
                     </div>
 
                     <select
+                        id="categorySelect"
                         name="category_id"
                         class="rv-select mt-1 w-full rounded-xl border border-slate-300
                             px-3.5 py-2.5 outline-none transition
@@ -193,8 +194,15 @@
                         <option value="">— None —</option>
 
                         @foreach($categories as $cat)
+                            @php
+                                $parentCategory = $cat->parent_id
+                                    ? $categories->firstWhere('id', $cat->parent_id)
+                                    : null;
+                            @endphp
+
                             <option
                                 value="{{ $cat->id }}"
+                                data-parent-id="{{ $cat->parent_id }}"
                                 @selected(
                                     (string) old(
                                         'category_id',
@@ -202,7 +210,11 @@
                                     ) === (string) $cat->id
                                 )
                             >
-                                {{ $cat->name }}
+                                @if($parentCategory)
+                                    ↳ {{ $parentCategory->name }} → {{ $cat->name }}
+                                @else
+                                    {{ $cat->name }}
+                                @endif
                             </option>
                         @endforeach
                     </select>

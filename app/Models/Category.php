@@ -25,4 +25,42 @@ class Category extends Model
     {
         return $this->hasMany(Item::class);
     }
+
+    public function parent()
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    /**
+     * Direct Sub Categories
+     */
+    public function children()
+    {
+        return $this->hasMany(Category::class, 'parent_id')
+            ->orderBy('name');
+    }
+
+    /**
+     * Nested Sub Categories
+     */
+    public function childrenRecursive()
+    {
+        return $this->children()->with('childrenRecursive');
+    }
+
+    /**
+     * Check Main Category
+     */
+    public function isParent(): bool
+    {
+        return is_null($this->parent_id);
+    }
+
+    /**
+     * Check Sub Category
+     */
+    public function isSubCategory(): bool
+    {
+        return ! is_null($this->parent_id);
+    }
 }

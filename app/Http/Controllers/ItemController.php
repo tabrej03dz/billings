@@ -267,24 +267,103 @@ class ItemController extends Controller
         ]);
     }
 
+    // public function create(Request $request)
+    // {
+    //     $businessId = session('active_business_id')
+    //         ?? $request->user()?->business_id;
+
+    //     $categories = Category::query()
+    //         ->orderBy('name')
+    //         ->get(['id', 'name']);
+
+    //     /*
+    //     * Business global scope ko remove karke:
+    //     *
+    //     * business_id = null       → sabhi businesses me
+    //     * business_id = current ID → sirf current business me
+    //     */
+    //     $units = Unit::query()
+    //         ->withoutGlobalScope('business')
+    //         ->where(function ($query) use ($businessId) {
+    //             $query->whereNull('business_id');
+
+    //             if ($businessId !== null) {
+    //                 $query->orWhere(
+    //                     'business_id',
+    //                     (int) $businessId
+    //                 );
+    //             }
+    //         })
+    //         ->orderBy('name')
+    //         ->get([
+    //             'id',
+    //             'business_id',
+    //             'name',
+    //             'description',
+    //         ]);
+
+    //     $business = Business::with('businessType.itemFields')
+    //         ->find($businessId);
+
+    //     $allowedFields = [];
+
+    //     if ($business?->businessType) {
+    //         $allowedFields = $business->businessType->itemFields
+    //             ->pluck('field_name')
+    //             ->toArray();
+    //     }
+
+    //     $generatedBarcode = $this->generateUniqueBarcode();
+
+    //     return view('items.create', compact(
+    //         'categories',
+    //         'units',
+    //         'allowedFields',
+    //         'generatedBarcode'
+    //     ));
+    // }
+
     public function create(Request $request)
     {
-        $businessId = session('active_business_id')
+        $businessId = $request->user()->current_business_id
+            ?? session('active_business_id')
             ?? $request->user()?->business_id;
 
-        $categories = Category::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        if (!$businessId) {
+            $businessId = $request->user()
+                ?->businesses()
+                ->pluck('businesses.id')
+                ->first();
+        }
+
+        abort_unless($businessId, 422, 'Active business not found.');
 
         /*
-        * Business global scope ko remove karke:
-        *
-        * business_id = null       → sabhi businesses me
-        * business_id = current ID → sirf current business me
+        |--------------------------------------------------------------------------
+        | Categories
+        |--------------------------------------------------------------------------
         */
+
+        $categories = Category::query()
+            ->where('business_id', $businessId)
+            ->orderByRaw('parent_id IS NOT NULL')
+            ->orderBy('name')
+            ->get([
+                'id',
+                'parent_id',
+                'name',
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Units
+        |--------------------------------------------------------------------------
+        */
+
         $units = Unit::query()
             ->withoutGlobalScope('business')
             ->where(function ($query) use ($businessId) {
+
                 $query->whereNull('business_id');
 
                 if ($businessId !== null) {
@@ -302,16 +381,30 @@ class ItemController extends Controller
                 'description',
             ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Business Type Fields
+        |--------------------------------------------------------------------------
+        */
+
         $business = Business::with('businessType.itemFields')
             ->find($businessId);
 
         $allowedFields = [];
 
         if ($business?->businessType) {
-            $allowedFields = $business->businessType->itemFields
+            $allowedFields = $business
+                ->businessType
+                ->itemFields
                 ->pluck('field_name')
                 ->toArray();
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode
+        |--------------------------------------------------------------------------
+        */
 
         $generatedBarcode = $this->generateUniqueBarcode();
 
@@ -321,7 +414,7 @@ class ItemController extends Controller
             'allowedFields',
             'generatedBarcode'
         ));
-    }
+}
 
 
     public function store(Request $request, StockService $stock)
