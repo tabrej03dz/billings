@@ -290,6 +290,7 @@
                 <input
                     type="file"
                     name="bill_file"
+                    id="purchase-bill-file"
                     accept=".jpg,.jpeg,.png,.pdf"
                     class="block w-full rounded-xl
                            border border-slate-300
@@ -306,6 +307,45 @@
                            dark:file:bg-slate-700
                            dark:file:text-white"
                 >
+
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                        type="button"
+                        id="scan-purchase-bill-btn"
+                        data-item-create-url="{{ \Illuminate\Support\Facades\Route::has('items.create') ? route('items.create') : '' }}"
+                        class="inline-flex items-center justify-center gap-2
+                               rounded-xl bg-violet-600 px-4 py-2.5
+                               text-sm font-semibold text-white shadow-sm
+                               transition hover:bg-violet-700
+                               disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             fill="none" viewBox="0 0 24 24"
+                             stroke-width="1.8" stroke="currentColor"
+                             class="h-4 w-4">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.456-2.456L14.25 6l1.035-.259a3.375 3.375 0 0 0 2.456-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423L16.5 15.75l.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+                        </svg>
+                        Scan Bill & Auto Fill
+                    </button>
+
+                    <span class="text-xs text-slate-500 dark:text-slate-400">
+                        JPG, PNG or PDF — details will be filled before saving.
+                    </span>
+                </div>
+
+                <div
+                    id="purchase-bill-scan-status"
+                    class="mt-3 hidden rounded-xl border px-4 py-3 text-sm"
+                ></div>
+
+                <div
+                    id="purchase-bill-suggestions"
+                    class="mt-3 hidden rounded-xl border border-amber-200
+                           bg-amber-50 p-4 text-sm text-amber-900
+                           dark:border-amber-900/60 dark:bg-amber-950/30
+                           dark:text-amber-200"
+                ></div>
 
                 @if(!empty($purchase->bill_file))
 
@@ -1577,6 +1617,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const taxType =
         document.getElementById('purchase-tax-type');
 
+    const billFileInput =
+        document.getElementById('purchase-bill-file');
+
+    const scanBillButton =
+        document.getElementById('scan-purchase-bill-btn');
+
+    const scanStatus =
+        document.getElementById('purchase-bill-scan-status');
+
+    const scanSuggestions =
+        document.getElementById('purchase-bill-suggestions');
+
 
     let nextIndex =
         {{ count($oldItems) }};
@@ -2105,6 +2157,492 @@ document.addEventListener('DOMContentLoaded', function () {
 
     });
 
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI PURCHASE BILL SCAN
+    |--------------------------------------------------------------------------
+    */
+    function escapeHtml(value)
+    {
+        const div = document.createElement('div');
+        div.textContent = value ?? '';
+        return div.innerHTML;
+    }
+
+
+    function showScanStatus(message, type = 'info')
+    {
+        if (!scanStatus) {
+            return;
+        }
+
+        scanStatus.className =
+            'mt-3 rounded-xl border px-4 py-3 text-sm';
+
+        const classes = {
+            info: [
+                'border-blue-200', 'bg-blue-50', 'text-blue-700',
+                'dark:border-blue-900/60', 'dark:bg-blue-950/30', 'dark:text-blue-300'
+            ],
+            success: [
+                'border-emerald-200', 'bg-emerald-50', 'text-emerald-700',
+                'dark:border-emerald-900/60', 'dark:bg-emerald-950/30', 'dark:text-emerald-300'
+            ],
+            error: [
+                'border-red-200', 'bg-red-50', 'text-red-700',
+                'dark:border-red-900/60', 'dark:bg-red-950/30', 'dark:text-red-300'
+            ],
+        };
+
+        scanStatus.classList.add(
+            ...(classes[type] || classes.info)
+        );
+
+        scanStatus.textContent = message;
+        scanStatus.classList.remove('hidden');
+    }
+
+
+    function hideScanSuggestions()
+    {
+        if (!scanSuggestions) {
+            return;
+        }
+
+        scanSuggestions.innerHTML = '';
+        scanSuggestions.classList.add('hidden');
+    }
+
+
+    function ensureUnitOption(unitSelect, unit)
+    {
+        if (!unitSelect || !unit) {
+            return;
+        }
+
+        const wanted = String(unit).trim();
+
+        if (!wanted) {
+            return;
+        }
+
+        const existing = Array.from(unitSelect.options)
+            .find(function (option) {
+                return option.value.trim().toLowerCase()
+                    === wanted.toLowerCase();
+            });
+
+        if (existing) {
+            unitSelect.value = existing.value;
+            return;
+        }
+
+        unitSelect.add(
+            new Option(wanted, wanted, true, true)
+        );
+    }
+
+
+    function setInputValue(selector, value)
+    {
+        const element = document.querySelector(selector);
+
+        if (!element || value === null || value === undefined) {
+            return;
+        }
+
+        element.value = value;
+    }
+
+
+    function createScannedRow(rowData)
+    {
+        const fragment = rowTemplate.content.cloneNode(true);
+        const row = fragment.querySelector('.purchase-item-row');
+
+        prepareNewRow(row, nextIndex++);
+
+        const itemSelect = row.querySelector('.purchase-item-select');
+        const qtyInput = row.querySelector('.purchase-qty-input');
+        const unitSelect = row.querySelector('.purchase-unit-select');
+        const rateInput = row.querySelector('.purchase-rate-input');
+        const gstInput = row.querySelector('.purchase-gst-input');
+
+        const matched = rowData.matched_item || null;
+
+        if (matched && itemSelect) {
+            itemSelect.value = String(matched.id);
+
+            // Safety: if the item was not present in current select for any reason,
+            // add it so the submitted value still points to the matched item.
+            if (itemSelect.value !== String(matched.id)) {
+                const option = new Option(
+                    matched.name + (matched.sku ? ` (${matched.sku})` : ''),
+                    matched.id,
+                    true,
+                    true
+                );
+
+                option.dataset.unit = matched.unit || '';
+                option.dataset.rate = matched.rate || 0;
+                option.dataset.gst = matched.gst_rate || 0;
+                itemSelect.add(option);
+            }
+        }
+
+        if (!matched && itemSelect) {
+            itemSelect.value = '';
+            itemSelect.classList.add(
+                'border-amber-400',
+                'ring-2',
+                'ring-amber-100'
+            );
+            itemSelect.title =
+                `Bill item not found in Item Master: ${rowData.bill_name || ''}`;
+        }
+
+        if (qtyInput) {
+            qtyInput.value = toNumber(rowData.qty) > 0
+                ? toNumber(rowData.qty)
+                : 1;
+        }
+
+        const unit = rowData.unit || matched?.unit || '';
+        ensureUnitOption(unitSelect, unit);
+
+        let rate = rowData.rate;
+
+        if (
+            (rate === null || rate === undefined)
+            && toNumber(rowData.taxable_amount) > 0
+            && toNumber(rowData.qty) > 0
+        ) {
+            rate = toNumber(rowData.taxable_amount) / toNumber(rowData.qty);
+        }
+
+        if (rate === null || rate === undefined) {
+            rate = matched?.rate || 0;
+        }
+
+        if (rateInput) {
+            rateInput.value = toNumber(rate).toFixed(2);
+        }
+
+        const gstRate =
+            rowData.gst_rate !== null && rowData.gst_rate !== undefined
+                ? rowData.gst_rate
+                : (matched?.gst_rate || 0);
+
+        if (gstInput) {
+            gstInput.value = toNumber(gstRate);
+        }
+
+        row.dataset.billItemName = rowData.bill_name || '';
+        row.dataset.billItemSku = rowData.bill_sku || '';
+
+        return fragment;
+    }
+
+
+    function applyScannedBill(result)
+    {
+        const purchase = result.purchase || {};
+        const supplier = result.supplier || {};
+        const scannedItems = Array.isArray(result.items)
+            ? result.items
+            : [];
+
+        setInputValue(
+            '[name="invoice_no"]',
+            purchase.invoice_no
+        );
+
+        if (purchase.invoice_date) {
+            setInputValue(
+                '[name="invoice_date"]',
+                purchase.invoice_date
+            );
+        }
+
+        if (
+            taxType
+            && ['intra_state', 'inter_state'].includes(purchase.tax_type)
+        ) {
+            taxType.value = purchase.tax_type;
+        }
+
+        setInputValue(
+            '#purchase-discount',
+            purchase.discount_amount ?? 0
+        );
+
+        setInputValue(
+            '#purchase-round-off',
+            purchase.round_off ?? 0
+        );
+
+        if (purchase.paid_amount !== null && purchase.paid_amount !== undefined) {
+            setInputValue(
+                '#purchase-paid',
+                purchase.paid_amount
+            );
+        }
+
+        const supplierSelect =
+            document.getElementById('supplier_id');
+
+        if (supplier.match?.id && supplierSelect) {
+            supplierSelect.value = String(supplier.match.id);
+        }
+
+        if (scannedItems.length > 0 && body && rowTemplate) {
+            body.innerHTML = '';
+            nextIndex = 0;
+
+            scannedItems.forEach(function (rowData) {
+                body.appendChild(
+                    createScannedRow(rowData)
+                );
+            });
+        }
+
+        renderScanSuggestions(result);
+        calculatePurchase();
+    }
+
+
+    function renderScanSuggestions(result)
+    {
+        if (!scanSuggestions) {
+            return;
+        }
+
+        const supplier = result.supplier || {};
+        const rows = Array.isArray(result.items)
+            ? result.items
+            : [];
+
+        const missingItems = rows.filter(
+            row => row.needs_item_creation
+        );
+
+        const parts = [];
+
+        if (supplier.needs_creation) {
+            parts.push(`
+                <div class="mb-3 rounded-lg border border-amber-300 bg-white/70 p-3 dark:bg-slate-900/40">
+                    <div class="font-semibold">Supplier not found in Supplier Master</div>
+                    <div class="mt-1 text-xs">
+                        ${escapeHtml(supplier.extracted_name || 'Unknown supplier')}
+                        ${supplier.extracted_gstin ? ' • GSTIN: ' + escapeHtml(supplier.extracted_gstin) : ''}
+                    </div>
+                    <button type="button"
+                            id="scan-create-supplier-btn"
+                            class="mt-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">
+                        + Add this Supplier
+                    </button>
+                </div>
+            `);
+        }
+
+        if (missingItems.length > 0) {
+            const createBaseUrl = scanBillButton?.dataset.itemCreateUrl || '';
+
+            const cards = missingItems.map(function (row) {
+                let createLink = '';
+
+                if (createBaseUrl) {
+                    const url = new URL(createBaseUrl, window.location.origin);
+                    url.searchParams.set('name', row.bill_name || '');
+
+                    if (row.bill_sku) {
+                        url.searchParams.set('sku', row.bill_sku);
+                    }
+
+                    if (row.unit) {
+                        url.searchParams.set('unit', row.unit);
+                    }
+
+                    if (row.rate !== null && row.rate !== undefined) {
+                        url.searchParams.set('cost_price', row.rate);
+                    }
+
+                    if (row.gst_rate !== null && row.gst_rate !== undefined) {
+                        url.searchParams.set('tax_rate', row.gst_rate);
+                    }
+
+                    createLink = `
+                        <a href="${url.toString()}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="mt-2 inline-flex rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700">
+                            Create Item ↗
+                        </a>
+                    `;
+                }
+
+                return `
+                    <div class="rounded-lg border border-amber-300 bg-white/70 p-3 dark:bg-slate-900/40">
+                        <div class="font-semibold">${escapeHtml(row.bill_name || 'Unnamed item')}</div>
+                        <div class="mt-1 text-xs">
+                            Qty: ${escapeHtml(String(row.qty ?? 1))}
+                            ${row.unit ? ' • Unit: ' + escapeHtml(row.unit) : ''}
+                            ${row.bill_sku ? ' • Code: ' + escapeHtml(row.bill_sku) : ''}
+                        </div>
+                        <div class="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                            Item not found — create it in Item Master or manually select the correct item.
+                        </div>
+                        ${createLink}
+                    </div>
+                `;
+            }).join('');
+
+            parts.push(`
+                <div>
+                    <div class="mb-2 font-bold">
+                        ${missingItems.length} item(s) need your attention
+                    </div>
+                    <div class="grid gap-2 md:grid-cols-2">
+                        ${cards}
+                    </div>
+                    <div class="mt-3 text-xs">
+                        If you create an item in a new tab, come back and scan the bill again so it can be matched automatically.
+                    </div>
+                </div>
+            `);
+        }
+
+        if (parts.length === 0) {
+            scanSuggestions.innerHTML = `
+                <div class="font-semibold text-emerald-700 dark:text-emerald-300">
+                    All bill items and supplier were matched successfully.
+                </div>
+            `;
+        } else {
+            scanSuggestions.innerHTML = parts.join('');
+        }
+
+        scanSuggestions.classList.remove('hidden');
+
+        const createSupplierButton =
+            document.getElementById('scan-create-supplier-btn');
+
+        createSupplierButton?.addEventListener('click', function () {
+            const nameInput = document.getElementById('supplier-name');
+            const mobileInput = document.getElementById('supplier-mobile');
+            const gstinInput = document.getElementById('supplier-gstin');
+
+            if (nameInput) {
+                nameInput.value = supplier.extracted_name || '';
+            }
+
+            if (mobileInput) {
+                mobileInput.value = supplier.extracted_mobile || '';
+            }
+
+            if (gstinInput) {
+                gstinInput.value = supplier.extracted_gstin || '';
+            }
+
+            openSupplierModal();
+        });
+    }
+
+
+    billFileInput?.addEventListener('change', function () {
+        hideScanSuggestions();
+
+        if (scanStatus) {
+            scanStatus.classList.add('hidden');
+        }
+    });
+
+
+    scanBillButton?.addEventListener('click', async function () {
+        const file = billFileInput?.files?.[0];
+
+        if (!file) {
+            showScanStatus(
+                'Please choose a purchase bill first.',
+                'error'
+            );
+            return;
+        }
+
+        const oldHtml = scanBillButton.innerHTML;
+
+        scanBillButton.disabled = true;
+        scanBillButton.innerHTML = 'Scanning bill...';
+        hideScanSuggestions();
+        showScanStatus(
+            'Reading invoice, matching supplier and checking Item Master...',
+            'info'
+        );
+
+        try {
+            const formData = new FormData();
+            formData.append('bill_file', file);
+
+            const response = await fetch(
+                "{{ route('purchases.scan-bill') }}",
+                {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    },
+                    body: formData,
+                }
+            );
+
+            let result = {};
+
+            try {
+                result = await response.json();
+            } catch (jsonError) {
+                throw new Error(
+                    'Server returned an invalid response while scanning the bill.'
+                );
+            }
+
+            if (!response.ok || !result.success) {
+                const validationMessages = result.errors
+                    ? Object.values(result.errors).flat().join(' ')
+                    : '';
+
+                throw new Error(
+                    validationMessages
+                    || result.message
+                    || 'Unable to scan the purchase bill.'
+                );
+            }
+
+            applyScannedBill(result);
+
+            const missing = toNumber(result.missing_items_count);
+
+            showScanStatus(
+                missing > 0
+                    ? `Bill scanned. ${missing} item(s) were not found in Item Master.`
+                    : 'Bill scanned successfully. Please review the filled details before saving.',
+                missing > 0 ? 'info' : 'success'
+            );
+
+        } catch (error) {
+            console.error(error);
+
+            showScanStatus(
+                error.message || 'Something went wrong while scanning the bill.',
+                'error'
+            );
+        } finally {
+            scanBillButton.disabled = false;
+            scanBillButton.innerHTML = oldHtml;
+        }
+    });
 
 
     /*
