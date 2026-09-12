@@ -738,6 +738,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('item/create', [\App\Http\Controllers\ItemController::class, 'create'])->name('items.create');
 
+
+    Route::post('/purchases/scan-bill', [PurchaseController::class, 'scanBill'])
+        ->name('purchases.scan-bill');
+        
     Route::post('/purchases/suppliers',[PurchaseController::class, 'storeSupplier'])->name('purchases.suppliers.store');
 
 

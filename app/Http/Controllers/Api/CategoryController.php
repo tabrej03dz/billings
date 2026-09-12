@@ -62,6 +62,9 @@ class CategoryController extends Controller
             'description' => ['nullable','string'],
             'is_active'   => ['sometimes','boolean'],
             'business_id' => ['required', 'integer'],
+            'parent_id'   => ['nullable', 'integer', Rule::exists('categories', 'id')->where(function ($query) use ($request) {
+                return $query->where('business_id', $request->input('business_id'));
+            })],
         ]);
 
         // default if not sent
@@ -73,6 +76,7 @@ class CategoryController extends Controller
             'is_active'   => $data['is_active'],
             'slug'        => Str::slug($data['name']),
             'business_id' => $data['business_id'],
+            'parent_id'   => $data['parent_id'] ?? null,
         ]);
 
         return response()->json([
@@ -90,6 +94,9 @@ class CategoryController extends Controller
             'description' => ['nullable','string'],
             'is_active'   => ['sometimes','boolean'],
             'business_id' => ['required', 'integer'],
+            'parent_id'   => ['nullable', 'integer', Rule::exists('categories', 'id')->where(function ($query) use ($request) {
+                return $query->where('business_id', $request->input('business_id'));
+            })],
         ]);
 
         $category->update([
@@ -98,6 +105,7 @@ class CategoryController extends Controller
             'is_active'   => array_key_exists('is_active', $data) ? (bool)$data['is_active'] : $category->is_active,
             'slug'        => Str::slug($data['name']),
             'business_id' => $data['business_id'],
+            'parent_id'   => $data['parent_id'] ?? null,
         ]);
 
         return response()->json([
