@@ -7,18 +7,24 @@ use App\Models\Item;
 use App\Models\Purchase;
 use App\Models\Unit;
 use App\Services\StockService;
+use App\Services\PurchaseBillAiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class PurchaseController extends Controller
 {
     protected StockService $stock;
+    protected PurchaseBillAiService $billAi;
 
-    public function __construct(StockService $stock)
-    {
+    public function __construct(
+        StockService $stock,
+        PurchaseBillAiService $billAi
+    ) {
         $this->stock = $stock;
+        $this->billAi = $billAi;
     }
 
 public function index()
@@ -568,6 +574,302 @@ public function index()
         ]);
 
         return view('purchases.show', compact('purchase'));
+    }
+
+    /**
+     * Scan purchase bill and return extracted + matched data.
+     * Existing purchase save flow is not changed by this method.
+     */
+    public function scanBill(Request $request)
+    {
+        $request->validate([
+            'bill_file' => [
+                'required',
+                'file',
+                'mimes:jpg,jpeg,png,pdf',
+                'max:5120',
+            ],
+        ]);
+
+        $businessId = auth()->user()->current_business_id
+            ?? session('active_business_id')
+            ?? auth()->user()->business_id
+            ?? null;
+
+        try {
+            $extracted = $this->billAi->extract(
+                $request->file('bill_file')
+            );
+
+            $items = Item::query()
+                ->when(
+                    $businessId,
+                    fn ($q) => $q->where('business_id', $businessId)
+                )
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+
+            $suppliers = Client::query()
+                ->when(
+                    $businessId,
+                    fn ($q) => $q->where('business_id', $businessId)
+                )
+                ->whereIn('party_type', ['supplier', 'both'])
+                ->orderBy('name')
+                ->get();
+
+            $supplierMatch = $this->matchSupplier(
+                $extracted,
+                $suppliers
+            );
+
+            $matchedRows = collect($extracted['items'] ?? [])
+                ->map(function (array $row) use ($items) {
+                    $match = $this->matchItem($row, $items);
+
+                    return [
+                        'bill_name' => $row['name'] ?? '',
+                        'bill_sku' => $row['sku'] ?? null,
+                        'hsn_sac' => $row['hsn_sac'] ?? null,
+                        'qty' => (float) ($row['qty'] ?? 1),
+                        'unit' => $row['unit'] ?? null,
+                        'rate' => $row['rate'] ?? null,
+                        'gst_rate' => $row['gst_rate'] ?? null,
+                        'taxable_amount' => $row['taxable_amount'] ?? null,
+                        'line_total' => $row['line_total'] ?? null,
+                        'matched_item' => $match,
+                        'needs_item_creation' => $match === null,
+                    ];
+                })
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bill scanned successfully.',
+                'purchase' => [
+                    'invoice_no' => $extracted['invoice_no'] ?? null,
+                    'invoice_date' => $extracted['invoice_date'] ?? null,
+                    'tax_type' => $extracted['tax_type'] ?? 'intra_state',
+                    'discount_amount' => $extracted['discount_amount'] ?? 0,
+                    'round_off' => $extracted['round_off'] ?? 0,
+                    'paid_amount' => $extracted['paid_amount'] ?? 0,
+                    'grand_total' => $extracted['grand_total'] ?? null,
+                ],
+                'supplier' => [
+                    'extracted_name' => $extracted['supplier_name'] ?? null,
+                    'extracted_gstin' => $extracted['supplier_gstin'] ?? null,
+                    'extracted_mobile' => $extracted['supplier_mobile'] ?? null,
+                    'match' => $supplierMatch,
+                    'needs_creation' => $supplierMatch === null
+                        && filled($extracted['supplier_name'] ?? null),
+                ],
+                'items' => $matchedRows,
+                'missing_items_count' => $matchedRows
+                    ->where('needs_item_creation', true)
+                    ->count(),
+            ]);
+
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+                    ?: 'Unable to scan the purchase bill.',
+            ], 422);
+        }
+    }
+
+    /**
+     * Match bill supplier to existing supplier master.
+     * GSTIN exact match gets highest priority, then fuzzy name match.
+     */
+    private function matchSupplier(array $extracted, $suppliers): ?array
+    {
+        $gstin = strtoupper(
+            preg_replace(
+                '/\s+/',
+                '',
+                (string) ($extracted['supplier_gstin'] ?? '')
+            )
+        );
+
+        if ($gstin !== '') {
+            foreach ($suppliers as $supplier) {
+                $existingGstin = strtoupper(
+                    preg_replace(
+                        '/\s+/',
+                        '',
+                        (string) ($supplier->gstin ?? '')
+                    )
+                );
+
+                if ($existingGstin !== '' && $existingGstin === $gstin) {
+                    return [
+                        'id' => $supplier->id,
+                        'name' => $supplier->name,
+                        'mobile' => $supplier->mobile,
+                        'gstin' => $supplier->gstin,
+                        'confidence' => 100,
+                        'matched_by' => 'gstin',
+                    ];
+                }
+            }
+        }
+
+        $needle = $this->normalizeForMatch(
+            $extracted['supplier_name'] ?? null
+        );
+
+        if ($needle === '') {
+            return null;
+        }
+
+        $best = null;
+        $bestScore = 0.0;
+
+        foreach ($suppliers as $supplier) {
+            $candidate = $this->normalizeForMatch($supplier->name);
+
+            if ($candidate === '') {
+                continue;
+            }
+
+            if ($candidate === $needle) {
+                $score = 100.0;
+            } else {
+                similar_text($needle, $candidate, $score);
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $supplier;
+            }
+        }
+
+        if (!$best || $bestScore < 78) {
+            return null;
+        }
+
+        return [
+            'id' => $best->id,
+            'name' => $best->name,
+            'mobile' => $best->mobile,
+            'gstin' => $best->gstin,
+            'confidence' => round($bestScore, 1),
+            'matched_by' => 'name',
+        ];
+    }
+
+    /**
+     * Match bill line to item master.
+     * Priority: SKU exact -> name exact -> fuzzy name.
+     */
+    private function matchItem(array $row, $items): ?array
+    {
+        $billSku = $this->normalizeForMatch($row['sku'] ?? null);
+        $billName = $this->normalizeForMatch($row['name'] ?? null);
+
+        if ($billSku !== '') {
+            foreach ($items as $item) {
+                $itemSku = $this->normalizeForMatch($item->sku ?? null);
+
+                if ($itemSku !== '' && $itemSku === $billSku) {
+                    return $this->itemMatchPayload(
+                        $item,
+                        100,
+                        'sku'
+                    );
+                }
+            }
+        }
+
+        if ($billName === '') {
+            return null;
+        }
+
+        foreach ($items as $item) {
+            if ($this->normalizeForMatch($item->name) === $billName) {
+                return $this->itemMatchPayload(
+                    $item,
+                    100,
+                    'name'
+                );
+            }
+        }
+
+        $best = null;
+        $bestScore = 0.0;
+
+        foreach ($items as $item) {
+            $candidate = $this->normalizeForMatch($item->name);
+
+            if ($candidate === '') {
+                continue;
+            }
+
+            similar_text($billName, $candidate, $score);
+
+            // Small boost when one normalized name contains the other.
+            if (
+                str_contains($candidate, $billName)
+                || str_contains($billName, $candidate)
+            ) {
+                $score = min(100, $score + 8);
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $item;
+            }
+        }
+
+        if (!$best || $bestScore < 72) {
+            return null;
+        }
+
+        return $this->itemMatchPayload(
+            $best,
+            $bestScore,
+            'fuzzy_name'
+        );
+    }
+
+    private function itemMatchPayload(
+        Item $item,
+        float $confidence,
+        string $matchedBy
+    ): array {
+        return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'sku' => $item->sku,
+            'unit' => $item->unit,
+            'rate' => $item->cost_price
+                ?? $item->price
+                ?? 0,
+            'gst_rate' => $item->tax_rate ?? 0,
+            'confidence' => round($confidence, 1),
+            'matched_by' => $matchedBy,
+        ];
+    }
+
+    private function normalizeForMatch(?string $value): string
+    {
+        $value = Str::ascii(
+            Str::lower(trim((string) $value))
+        );
+
+        $value = preg_replace(
+            '/[^a-z0-9]+/',
+            ' ',
+            $value
+        );
+
+        return trim(
+            preg_replace('/\s+/', ' ', $value)
+        );
     }
 
     public function storeSupplier(Request $request)
