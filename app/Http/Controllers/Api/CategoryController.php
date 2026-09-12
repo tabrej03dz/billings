@@ -231,9 +231,7 @@ class CategoryController extends Controller
             'description' => ['nullable','string'],
             'is_active'   => ['sometimes','boolean'],
             'business_id' => ['required', 'integer'],
-            'parent_id'   => ['nullable', 'integer', Rule::exists('categories', 'id')->where(function ($query) use ($request) {
-                return $query->where('business_id', $request->input('business_id'));
-            })],
+            'parent_id'   => ['nullable', 'integer', Rule::exists('categories', 'id')],
         ]);
 
         $category->update([
