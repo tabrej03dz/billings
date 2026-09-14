@@ -21,125 +21,88 @@ class PurchaseController extends Controller
         $this->stock = $stock;
     }
 
-    // public function index(Request $request)
-    // {
-    //     $businessId = $request->business_id ?? $request->user()->business_id ?? null;
-
-    //     $purchases = Purchase::with(['supplier', 'items.item'])
-    //         ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
-    //         ->latest('invoice_date')
-    //         ->paginate($request->get('per_page', 20));
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Purchases fetched successfully.',
-    //         'data' => $purchases,
-    //     ]);
-    // }
+    
 
     public function index(Request $request)
-{
-    $businessId = $request->business_id
-        ?? $request->user()->business_id
-        ?? null;
+    {
+        $businessId = $request->business_id
+            ?? $request->user()->business_id
+            ?? null;
 
-    $query = Purchase::withoutGlobalScopes()
-        ->with([
-            'supplier',
-            'items.item',
+        $query = Purchase::withoutGlobalScopes()
+            ->with([
+                'supplier',
+                'items.item',
+            ]);
+
+        if ($businessId) {
+            $query->where('business_id', $businessId);
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('supplier', function ($supplierQuery) use ($search) {
+                        $supplierQuery->where('name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('mobile', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('supplier_id')) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('invoice_date', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('invoice_date', '<=', $request->to_date);
+        }
+
+        $purchases = $query
+            ->orderByDesc('invoice_date')
+            ->orderByDesc('id')
+            ->paginate($request->get('per_page', 20));
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Purchases fetched successfully.',
+            'data' => $purchases,
         ]);
-
-    if ($businessId) {
-        $query->where('business_id', $businessId);
     }
-
-    if ($request->filled('search')) {
-        $search = $request->search;
-
-        $query->where(function ($q) use ($search) {
-            $q->where('invoice_no', 'like', "%{$search}%")
-                ->orWhereHas('supplier', function ($supplierQuery) use ($search) {
-                    $supplierQuery->where('name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('mobile', 'like', "%{$search}%");
-                });
-        });
-    }
-
-    if ($request->filled('supplier_id')) {
-        $query->where('supplier_id', $request->supplier_id);
-    }
-
-    if ($request->filled('from_date')) {
-        $query->whereDate('invoice_date', '>=', $request->from_date);
-    }
-
-    if ($request->filled('to_date')) {
-        $query->whereDate('invoice_date', '<=', $request->to_date);
-    }
-
-    $purchases = $query
-        ->orderByDesc('invoice_date')
-        ->orderByDesc('id')
-        ->paginate($request->get('per_page', 20));
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Purchases fetched successfully.',
-        'data' => $purchases,
-    ]);
-}
-
-    // public function formData(Request $request)
-    // {
-    //     $businessId = $request->user()->business_id ?? null;
-
-    //     $suppliers = Client::when($businessId, fn ($q) => $q->where('business_id', $businessId))
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     $items = Item::when($businessId, fn ($q) => $q->where('business_id', $businessId))
-    //         ->where('is_active', true)
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Purchase form data fetched successfully.',
-    //         'data' => [
-    //             'suppliers' => $suppliers,
-    //             'items' => $items,
-    //         ],
-    //     ]);
-    // }
 
 
     public function formData(Request $request)
-{
-    $businessId = $request->business_id
-        ?? $request->user()->business_id
-        ?? null;
+    {
+        $businessId = $request->business_id
+            ?? $request->user()->business_id
+            ?? null;
 
-    $suppliers = Client::withoutGlobalScopes()
-        ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
-        ->orderBy('name')
-        ->get();
+        $suppliers = Client::withoutGlobalScopes()
+            ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
+            ->orderBy('name')
+            ->get();
 
-    $items = Item::withoutGlobalScopes()
-        ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
-        ->where('is_active', true)
-        ->orderBy('name')
-        ->get();
+        $items = Item::withoutGlobalScopes()
+            ->when($businessId, fn ($q) => $q->where('business_id', $businessId))
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-    return response()->json([
-        'status' => true,
-        'message' => 'Purchase form data fetched successfully.',
-        'data' => [
-            'suppliers' => $suppliers,
-            'items' => $items,
-        ],
-    ]);
-}
+        return response()->json([
+            'status' => true,
+            'message' => 'Purchase form data fetched successfully.',
+            'data' => [
+                'suppliers' => $suppliers,
+                'items' => $items,
+            ],
+        ]);
+    }
 
     public function show(Request $request, Purchase $purchase)
     {
@@ -154,327 +117,74 @@ class PurchaseController extends Controller
         ]);
     }
 
-    // public function store(Request $request)
-    // {
-    //     $businessId = $request->user()->business_id ?? null;
-
-    //     $data = $request->validate([
-    //         'supplier_id' => 'nullable|exists:clients,id',
-    //         'invoice_no' => 'nullable|string|max:50',
-    //         'invoice_date' => 'required|date',
-
-    //         'items' => 'required|array|min:1',
-    //         'items.*.item_id' => 'required|exists:items,id',
-    //         'items.*.qty' => 'required|integer|min:1',
-    //         'items.*.rate' => 'required|numeric|min:0',
-    //         'items.*.amount' => 'required|numeric|min:0',
-    //         'items.*.gross_weight' => 'nullable|numeric',
-    //         'items.*.metal_weight' => 'nullable|numeric',
-    //         'items.*.stone_weight' => 'nullable|numeric',
-    //     ]);
-
-    //     $purchase = DB::transaction(function () use ($data, $businessId) {
-    //         $total = collect($data['items'])->sum('amount');
-
-    //         $purchase = Purchase::create([
-    //             'business_id' => $businessId,
-    //             'supplier_id' => $data['supplier_id'] ?? null,
-    //             'invoice_no' => $data['invoice_no'] ?? null,
-    //             'invoice_date' => $data['invoice_date'],
-    //             'total_amount' => $total,
-    //         ]);
-
-    //         foreach ($data['items'] as $row) {
-    //             $purchase->items()->create($row);
-    //         }
-
-    //         $purchase->load('items.item');
-
-    //         $this->stock->recordPurchase($purchase);
-
-    //         return $purchase->load(['supplier', 'items.item']);
-    //     });
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Purchase saved and stock increased successfully.',
-    //         'data' => $purchase,
-    //     ], 201);
-    // }
 
     public function store(Request $request)
-{
-    $businessId = $request->user()->business_id ?? null;
+    {
+        $businessId = $request->user()->business_id ?? null;
 
-    $data = $this->validatePurchase($request);
+        $data = $this->validatePurchase($request);
 
-    $billFilePath = null;
+        $billFilePath = null;
 
-    if ($request->hasFile('bill_file')) {
-        $billFilePath = $request->file('bill_file')->store('purchase-bills', 'public');
-    }
-
-    try {
-
-        $purchase = DB::transaction(function () use ($data, $businessId, $billFilePath) {
-
-            $calculated = $this->calculatePurchase($data);
-
-            $purchase = Purchase::create([
-                'business_id'       => $businessId,
-                'supplier_id'       => $data['supplier_id'] ?? null,
-                'invoice_no'        => $data['invoice_no'] ?? null,
-                'invoice_date'      => $data['invoice_date'],
-                'tax_type'          => $data['tax_type'] ?? 'intra_state',
-                'bill_file'         => $billFilePath,
-
-                'subtotal'          => $calculated['summary']['subtotal'],
-                'discount_amount'   => $calculated['summary']['discount_amount'],
-                'cgst_amount'       => $calculated['summary']['cgst_amount'],
-                'sgst_amount'       => $calculated['summary']['sgst_amount'],
-                'igst_amount'       => $calculated['summary']['igst_amount'],
-                'round_off'         => $calculated['summary']['round_off'],
-                'total_amount'      => $calculated['summary']['total_amount'],
-                'paid_amount'       => $calculated['summary']['paid_amount'],
-                'due_amount'        => $calculated['summary']['due_amount'],
-            ]);
-
-            foreach ($calculated['items'] as $row) {
-                $purchase->items()->create($row);
-            }
-
-            $purchase->load('items.item');
-
-            $this->stock->recordPurchase($purchase);
-
-            return $purchase->load([
-                'supplier',
-                'items.item'
-            ]);
-        });
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Purchase saved successfully.',
-            'data' => $purchase,
-        ], 201);
-
-    } catch (\Throwable $e) {
-
-        if ($billFilePath) {
-            Storage::disk('public')->delete($billFilePath);
+        if ($request->hasFile('bill_file')) {
+            $billFilePath = $request->file('bill_file')->store('purchase-bills', 'public');
         }
 
-        throw $e;
+        try {
+
+            $purchase = DB::transaction(function () use ($data, $businessId, $billFilePath) {
+
+                $calculated = $this->calculatePurchase($data);
+
+                $purchase = Purchase::create([
+                    'business_id'       => $businessId,
+                    'supplier_id'       => $data['supplier_id'] ?? null,
+                    'invoice_no'        => $data['invoice_no'] ?? null,
+                    'invoice_date'      => $data['invoice_date'],
+                    'tax_type'          => $data['tax_type'] ?? 'intra_state',
+                    'bill_file'         => $billFilePath,
+                    'making_charge'     => $calculated['summary']['making_charge'],
+
+                    'subtotal'           => $calculated['summary']['subtotal'],
+                    'discount_amount'   => $calculated['summary']['discount_amount'],
+                    'cgst_amount'       => $calculated['summary']['cgst_amount'],
+                    'sgst_amount'       => $calculated['summary']['sgst_amount'],
+                    'igst_amount'       => $calculated['summary']['igst_amount'],
+                    'round_off'         => $calculated['summary']['round_off'],
+                    'total_amount'      => $calculated['summary']['total_amount'],
+                    'paid_amount'       => $calculated['summary']['paid_amount'],
+                    'due_amount'        => $calculated['summary']['due_amount'],
+                ]);
+
+                foreach ($calculated['items'] as $row) {
+                    $purchase->items()->create($row);
+                }
+
+                $purchase->load('items.item');
+
+                $this->stock->recordPurchase($purchase);
+
+                return $purchase->load([
+                    'supplier',
+                    'items.item'
+                ]);
+            });
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Purchase saved successfully.',
+                'data' => $purchase,
+            ], 201);
+
+        } catch (\Throwable $e) {
+
+            if ($billFilePath) {
+                Storage::disk('public')->delete($billFilePath);
+            }
+
+            throw $e;
+        }
     }
-}
-
-    // public function update(Request $request, Purchase $purchase)
-    // {
-    //     $this->authorizeBusiness($request, $purchase);
-
-    //     $data = $request->validate([
-    //         'supplier_id' => 'nullable|exists:clients,id',
-    //         'invoice_no' => 'nullable|string|max:50',
-    //         'invoice_date' => 'required|date',
-
-    //         'items' => 'required|array|min:1',
-    //         'items.*.item_id' => 'required|exists:items,id',
-    //         'items.*.qty' => 'required|integer|min:1',
-    //         'items.*.rate' => 'required|numeric|min:0',
-    //         'items.*.amount' => 'required|numeric|min:0',
-    //         'items.*.gross_weight' => 'nullable|numeric',
-    //         'items.*.metal_weight' => 'nullable|numeric',
-    //         'items.*.stone_weight' => 'nullable|numeric',
-    //     ]);
-
-    //     $purchase = DB::transaction(function () use ($purchase, $data) {
-    //         $purchase->load('items.item');
-
-    //         $this->stock->rollbackReference($purchase);
-
-    //         $purchase->items()->delete();
-
-    //         $total = collect($data['items'])->sum('amount');
-
-    //         $purchase->update([
-    //             'supplier_id' => $data['supplier_id'] ?? null,
-    //             'invoice_no' => $data['invoice_no'] ?? null,
-    //             'invoice_date' => $data['invoice_date'],
-    //             'total_amount' => $total,
-    //         ]);
-
-    //         foreach ($data['items'] as $row) {
-    //             $purchase->items()->create($row);
-    //         }
-
-    //         $purchase->load('items.item');
-
-    //         $this->stock->recordPurchase($purchase);
-
-    //         return $purchase->load(['supplier', 'items.item']);
-    //     });
-
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Purchase updated and stock recalculated successfully.',
-    //         'data' => $purchase,
-    //     ]);
-    // }
-
-//     public function update(Request $request, Purchase $purchase)
-// {
-//     $this->authorizeBusiness($request, $purchase);
-
-//     $data = $this->validatePurchase($request);
-
-//     $oldBillPath = $purchase->bill_file;
-//     $newBillPath = null;
-//     $billFilePath = $oldBillPath;
-
-//     if ($request->hasFile('bill_file')) {
-//         $newBillPath = $request->file('bill_file')->store('purchase-bills', 'public');
-//         $billFilePath = $newBillPath;
-//     }
-
-//     try {
-
-//         $purchase = DB::transaction(function () use ($purchase, $data, $billFilePath) {
-
-//             $purchase->load('items.item');
-
-//             $this->stock->rollbackReference($purchase);
-
-//             $purchase->items()->delete();
-
-//             $calculated = $this->calculatePurchase($data);
-
-//             $purchase->update([
-//                 'supplier_id'       => $data['supplier_id'] ?? null,
-//                 'invoice_no'        => $data['invoice_no'] ?? null,
-//                 'invoice_date'      => $data['invoice_date'],
-//                 'tax_type'          => $data['tax_type'] ?? 'intra_state',
-//                 'bill_file'         => $billFilePath,
-
-//                 'subtotal'          => $calculated['summary']['subtotal'],
-//                 'discount_amount'   => $calculated['summary']['discount_amount'],
-//                 'cgst_amount'       => $calculated['summary']['cgst_amount'],
-//                 'sgst_amount'       => $calculated['summary']['sgst_amount'],
-//                 'igst_amount'       => $calculated['summary']['igst_amount'],
-//                 'round_off'         => $calculated['summary']['round_off'],
-//                 'total_amount'      => $calculated['summary']['total_amount'],
-//                 'paid_amount'       => $calculated['summary']['paid_amount'],
-//                 'due_amount'        => $calculated['summary']['due_amount'],
-//             ]);
-
-//             foreach ($calculated['items'] as $row) {
-//                 $purchase->items()->create($row);
-//             }
-
-//             $purchase->load('items.item');
-
-//             $this->stock->recordPurchase($purchase);
-
-//             return $purchase->load([
-//                 'supplier',
-//                 'items.item'
-//             ]);
-//         });
-
-//         if ($newBillPath && $oldBillPath) {
-//             Storage::disk('public')->delete($oldBillPath);
-//         }
-
-//         return response()->json([
-//             'status' => true,
-//             'message' => 'Purchase updated successfully.',
-//             'data' => $purchase,
-//         ]);
-
-//     } catch (\Throwable $e) {
-
-//         if ($newBillPath) {
-//             Storage::disk('public')->delete($newBillPath);
-//         }
-
-//         throw $e;
-//     }
-// }
-
-//     public function destroy(Request $request, Purchase $purchase)
-//     {
-//         $this->authorizeBusiness($request, $purchase);
-
-//         DB::transaction(function () use ($purchase) {
-//             $purchase->load('items.item');
-
-//             $this->stock->rollbackReference($purchase);
-
-//             $purchase->items()->delete();
-//             $purchase->delete();
-//         });
-
-//         return response()->json([
-//             'status' => true,
-//             'message' => 'Purchase deleted and stock reverted successfully.',
-//         ]);
-//     }
-
-//     protected function authorizeBusiness(Request $request, Purchase $purchase): void
-//     {
-//         $currentBusinessId = $request->user()->business_id ?? null;
-
-//         if ($currentBusinessId && $purchase->business_id !== $currentBusinessId) {
-//             abort(response()->json([
-//                 'status' => false,
-//                 'message' => 'Unauthorized business access.',
-//             ], 403));
-//         }
-//     }
-
-
-//     private function validatePurchase(Request $request): array
-//     {
-//         $businessId = $request->user()->business_id ?? null;
-
-//         return $request->validate([
-//             'supplier_id' => [
-//                 'nullable',
-//                 Rule::exists('clients', 'id')
-//                     ->when($businessId, fn ($rule) => $rule->where('business_id', $businessId)),
-//             ],
-
-//             'invoice_no'      => 'nullable|string|max:50',
-//             'invoice_date'    => 'required|date',
-
-//             'tax_type'        => 'nullable|in:intra_state,inter_state',
-//             'discount_amount' => 'nullable|numeric|min:0',
-//             'round_off'       => 'nullable|numeric',
-//             'paid_amount'     => 'nullable|numeric|min:0',
-
-//             'items' => 'required|array|min:1',
-
-//             'items.*.item_id' => [
-//                 'required',
-//                 Rule::exists('items', 'id')
-//                     ->when($businessId, fn ($rule) => $rule->where('business_id', $businessId)),
-//             ],
-
-//             'items.*.qty'           => 'required|numeric|min:0.001',
-//             'items.*.qty_unit'      => 'required|string|in:pcs,gram,kg,carat,pair,set,dozen',
-//             'items.*.rate'          => 'required|numeric|min:0',
-//             'items.*.gst_rate'      => 'nullable|numeric|min:0',
-
-//             'items.*.gross_weight'  => 'nullable|numeric',
-//             'items.*.metal_weight'  => 'nullable|numeric',
-//             'items.*.stone_weight'  => 'nullable|numeric',
-
-//             'bill_file'             => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-//         ]);
-//     }
-
-
-
 
     public function update(Request $request, $purchase)
     {
@@ -523,8 +233,9 @@ class PurchaseController extends Controller
                     'invoice_date'      => $data['invoice_date'],
                     'tax_type'          => $data['tax_type'] ?? 'intra_state',
                     'bill_file'         => $billFilePath,
+                    'making_charge'     => $calculated['summary']['making_charge'],
 
-                    'subtotal'          => $calculated['summary']['subtotal'],
+                    'subtotal'           => $calculated['summary']['subtotal'],
                     'discount_amount'   => $calculated['summary']['discount_amount'],
                     'cgst_amount'       => $calculated['summary']['cgst_amount'],
                     'sgst_amount'       => $calculated['summary']['sgst_amount'],
@@ -649,6 +360,7 @@ class PurchaseController extends Controller
             'invoice_date'    => 'required|date',
 
             'tax_type'        => 'nullable|in:intra_state,inter_state',
+            'making_charge'   => 'nullable|numeric|min:0',
             'discount_amount' => 'nullable|numeric|min:0',
             'round_off'       => 'nullable|numeric',
             'paid_amount'     => 'nullable|numeric|min:0',
@@ -748,12 +460,19 @@ class PurchaseController extends Controller
             ];
         }
 
+        $makingCharge = (float) ($data['making_charge'] ?? 0);
         $discountAmount = (float) ($data['discount_amount'] ?? 0);
         $roundOff = (float) ($data['round_off'] ?? 0);
         $paidAmount = (float) ($data['paid_amount'] ?? 0);
 
         $totalAmount = round(
-            $subtotal + $cgstTotal + $sgstTotal + $igstTotal - $discountAmount + $roundOff,
+            $subtotal
+            + $makingCharge
+            + $cgstTotal
+            + $sgstTotal
+            + $igstTotal
+            - $discountAmount
+            + $roundOff,
             2
         );
 
@@ -762,8 +481,9 @@ class PurchaseController extends Controller
         return [
             'items' => $items,
             'summary' => [
-                'subtotal'        => round($subtotal, 2),
-                'discount_amount' => round($discountAmount, 2),
+                'subtotal'         => round($subtotal, 2),
+                'making_charge'     => round($makingCharge, 2),
+                'discount_amount'   => round($discountAmount, 2),
                 'cgst_amount'     => round($cgstTotal, 2),
                 'sgst_amount'     => round($sgstTotal, 2),
                 'igst_amount'     => round($igstTotal, 2),

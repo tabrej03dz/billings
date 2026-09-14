@@ -1272,7 +1272,7 @@
         {{-- MANAGE E-WAY BILL --}}
         {{-- ============================================================= --}}
 
-        <flux:navlist variant="outline">
+        {{-- <flux:navlist variant="outline">
             <flux:navlist.group class="grid">
 
                 <flux:navlist.item
@@ -1358,7 +1358,7 @@
                 </flux:navlist.item>
 
             </flux:navlist.group>
-        </flux:navlist>
+        </flux:navlist> --}}
 
         {{-- ============================================================= --}}
         {{-- BILL REQUESTS --}}
