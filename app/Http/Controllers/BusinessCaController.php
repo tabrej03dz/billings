@@ -21,6 +21,9 @@ class BusinessCaController extends Controller
             ->where('business_id', $business->id)
             ->latest('id')
             ->get();
+            
+
+
 
         return view('ca.manage', compact('business', 'assignments'));
     }

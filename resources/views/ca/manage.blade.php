@@ -53,7 +53,7 @@
                         @forelse ($assignments as $assignment)
                             <tr>
                                 <td class="px-5 py-4 font-medium">{{ $assignment->ca?->name ?? 'User' }}</td>
-                                <td class="px-5 py-4"><div>{{ $assignment->ca?->email }}</div><div class="text-xs text-gray-500">{{ $assignment->ca?->mobile }}</div></td>
+                                <td class="px-5 py-4"><div>{{ $assignment->ca?->email }}</div><div class="text-xs text-gray-500">{{ $assignment->ca?->phone }}</div></td>
                                 <td class="px-5 py-4">
                                     <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $assignment->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
                                         {{ $assignment->is_active ? 'Active' : 'Revoked' }}
