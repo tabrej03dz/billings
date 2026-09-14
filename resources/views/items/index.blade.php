@@ -565,7 +565,7 @@
             {{-- =====================================================
                  MOBILE / TABLET CARDS
             ====================================================== --}}
-            <div class="mobile-items-list divide-y divide-slate-200/80 dark:divide-slate-700/80 lg:hidden">
+            <div class="mobile-items-list divide-y divide-slate-200/80 dark:divide-slate-700/80">
                 @forelse($items as $it)
                     <article class="p-3 sm:p-4">
 
@@ -739,11 +739,11 @@
             {{-- =====================================================
                  DESKTOP GROUPED TABLE
             ====================================================== --}}
-            <div class="desktop-items-table hidden lg:block">
+            <div class="desktop-items-table">
                 <div class="w-full overflow-x-auto">
                     <table
                         id="itemsDynamicTable"
-                        class="min-w-full table-auto text-left text-sm text-slate-700 dark:text-slate-300"
+                        class="w-full table-fixed text-left text-xs text-slate-700 dark:text-slate-300"
                     >
 
                         <thead class="bg-slate-100 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300">
@@ -1132,7 +1132,7 @@
 
                                     {{-- ACTIONS --}}
                                     <td class="w-px whitespace-nowrap px-3 py-4">
-                                        <div class="flex justify-end gap-1.5">
+                                        <div class="flex flex-wrap justify-end gap-1">
 
                                             @can('create invoice')
                                                 <a
@@ -1141,8 +1141,8 @@
                                                         'item_id' => $it->id,
                                                     ]) }}"
                                                     class="inline-flex h-8 items-center justify-center
-                                                        rounded-lg bg-emerald-600 px-2.5
-                                                        text-[10px] font-bold text-white
+                                                        rounded-lg bg-emerald-600 px-2
+                                                        text-[9px] font-bold text-white
                                                         hover:bg-emerald-700"
                                                     title="Sell this item / Create invoice"
                                                 >
@@ -1153,8 +1153,8 @@
                                             <a
                                                 href="{{ route('items.edit', $it->id) }}"
                                                 class="inline-flex h-8 items-center justify-center
-                                                    rounded-lg bg-amber-500 px-2.5
-                                                    text-[10px] font-bold text-white
+                                                    rounded-lg bg-amber-500 px-2
+                                                    text-[9px] font-bold text-white
                                                     hover:bg-amber-600"
                                             >
                                                 Edit
@@ -1171,8 +1171,8 @@
                                                 <button
                                                     type="submit"
                                                     class="inline-flex h-8 items-center justify-center
-                                                        rounded-lg bg-red-600 px-2.5
-                                                        text-[10px] font-bold text-white
+                                                        rounded-lg bg-red-600 px-2
+                                                        text-[9px] font-bold text-white
                                                         hover:bg-red-700"
                                                 >
                                                     Del
@@ -1224,101 +1224,317 @@
 
     /*
     |--------------------------------------------------------------------------
-    | Flexible Desktop Table
+    | ITEMS RESPONSIVE LAYOUT
     |--------------------------------------------------------------------------
-    | table-layout:auto browser ko content ke hisaab se width distribute
-    | karne deta hai. Compact columns sirf utni jagah lenge jitni zaroori hai,
-    | jabki Item / Metal jaise content-heavy columns remaining space use karenge.
+    | Important:
+    | Tailwind ke md/lg breakpoint par depend nahi kar rahe.
+    | 640px se upar hamesha table dikhegi.
+    | 639px tak cards dikhenge.
+    */
+    .mobile-items-list {
+        display: none;
+    }
+
+    .desktop-items-table {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | TABLE WRAPPER
+    |--------------------------------------------------------------------------
+    | Parent ko shrink karne dena zaroori hai, warna sidebar ke saath
+    | 100% browser zoom par content viewport se bahar push ho sakta hai.
+    */
+    .desktop-items-table > div {
+        width: 100%;
+        min-width: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | FORCE TABLE TO FIT AVAILABLE WIDTH
+    |--------------------------------------------------------------------------
+    | max-content hata diya gaya hai.
+    | table-layout: fixed ke saath browser available width ke andar
+    | columns distribute karega.
     */
     #itemsDynamicTable {
-        table-layout: auto;
-        width: 100%;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        table-layout: fixed !important;
+        border-collapse: collapse;
     }
 
     #itemsDynamicTable th,
     #itemsDynamicTable td {
+        min-width: 0 !important;
+        max-width: none;
         vertical-align: top;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | COMPACT CELL SPACING
+    |--------------------------------------------------------------------------
+    */
+    #itemsDynamicTable th {
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+        padding-top: 9px !important;
+        padding-bottom: 9px !important;
+        font-size: 10px;
+        line-height: 1.2;
     }
 
     #itemsDynamicTable td {
-        overflow-wrap: break-word;
-        word-break: normal;
+        padding-left: 6px !important;
+        padding-right: 6px !important;
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        font-size: 11px;
+        line-height: 1.35;
     }
 
     /*
-    | Compact columns:
-    | width:1% + nowrap ka matlab fixed width nahi hai.
-    | Browser inhe content ke minimum required width tak rakhega.
+    |--------------------------------------------------------------------------
+    | COLUMN WIDTHS
+    |--------------------------------------------------------------------------
+    | Fixed table layout me ye preferred widths hain.
+    | Agar kuch groups hidden hon, remaining columns automatically space lete hain.
     */
-    #itemsDynamicTable [data-column="image"],
-    #itemsDynamicTable [data-column="stock"],
-    #itemsDynamicTable [data-column="barcode"],
-    #itemsDynamicTable [data-column="status"] {
-        width: 1%;
+    #itemsDynamicTable th:first-child,
+    #itemsDynamicTable td:first-child {
+        width: 34px;
         white-space: nowrap;
     }
 
-    /*
-    | Medium content columns.
-    | Ye fixed nahi hain; sirf unnecessary squeezing ko rokne ke liye
-    | soft minimum diya gaya hai.
-    */
+    #itemsDynamicTable [data-column="image"] {
+        width: 66px;
+        white-space: normal;
+    }
+
+    #itemsDynamicTable [data-column="item"] {
+        width: 20%;
+    }
+
     #itemsDynamicTable [data-column="pricing"] {
-        min-width: 120px;
-        white-space: nowrap;
+        width: 12%;
+        white-space: normal;
     }
 
-    #itemsDynamicTable [data-column="stone"] {
-        min-width: 135px;
+    #itemsDynamicTable [data-column="stock"] {
+        width: 8%;
+        white-space: normal;
     }
 
     #itemsDynamicTable [data-column="metal"] {
-        min-width: 155px;
+        width: 16%;
     }
 
-    /*
-    | Item Details ko sabse zyada flexible space milega.
-    */
-    #itemsDynamicTable [data-column="item"] {
-        min-width: 210px;
-        width: auto;
+    #itemsDynamicTable [data-column="stone"] {
+        width: 14%;
     }
 
-    #itemsDynamicTable [data-column="item"] .truncate {
+    #itemsDynamicTable [data-column="barcode"] {
+        width: 11%;
         white-space: normal;
-        overflow: visible;
-        text-overflow: clip;
+    }
+
+    #itemsDynamicTable [data-column="status"] {
+        width: 8%;
+        white-space: normal;
+    }
+
+    #itemsDynamicTable th:last-child,
+    #itemsDynamicTable td:last-child {
+        width: 130px;
+        white-space: normal !important;
     }
 
     /*
-    | Small desktop par table horizontally scroll ho sakti hai,
-    | lekin columns fixed percentage width me congest nahi honge.
+    |--------------------------------------------------------------------------
+    | ITEM DETAILS
+    |--------------------------------------------------------------------------
     */
-    @media (min-width: 1024px) {
-        #itemsDynamicTable {
-            min-width: max-content;
+    #itemsDynamicTable [data-column="item"] .truncate {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        overflow-wrap: anywhere;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | METAL GRID
+    |--------------------------------------------------------------------------
+    | Narrow desktop width par 2-column metal grid extra squeeze karta tha.
+    | Isliye default me single column rakha hai.
+    */
+    #itemsDynamicTable [data-column="metal"] .grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 2px !important;
+    }
+
+    #itemsDynamicTable [data-column="metal"] .col-span-2 {
+        grid-column: auto !important;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | BARCODE
+    |--------------------------------------------------------------------------
+    */
+    #itemsDynamicTable [data-column="barcode"] .break-all {
+        word-break: break-all;
+        overflow-wrap: anywhere;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | IMAGE SIZE
+    |--------------------------------------------------------------------------
+    */
+    #itemsDynamicTable [data-column="image"] img,
+    #itemsDynamicTable [data-column="image"] > div {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ACTIONS
+    |--------------------------------------------------------------------------
+    */
+    #itemsDynamicTable td:last-child > div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 4px;
+    }
+
+    #itemsDynamicTable td:last-child a,
+    #itemsDynamicTable td:last-child button {
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 100% ZOOM / NORMAL LAPTOP WIDTH
+    |--------------------------------------------------------------------------
+    | 640–1199 CSS px par aur compact mode.
+    */
+    @media (min-width: 640px) and (max-width: 1199px) {
+        #itemsDynamicTable th {
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+            font-size: 9px;
+        }
+
+        #itemsDynamicTable td {
+            padding-left: 4px !important;
+            padding-right: 4px !important;
+            font-size: 10px;
+        }
+
+        #itemsDynamicTable [data-column="image"] {
+            width: 54px;
         }
 
         #itemsDynamicTable [data-column="item"] {
-            max-width: 360px;
+            width: 19%;
+        }
+
+        #itemsDynamicTable [data-column="pricing"] {
+            width: 11%;
+        }
+
+        #itemsDynamicTable [data-column="stock"] {
+            width: 7%;
         }
 
         #itemsDynamicTable [data-column="metal"] {
-            max-width: 260px;
+            width: 15%;
         }
 
         #itemsDynamicTable [data-column="stone"] {
-            max-width: 220px;
+            width: 13%;
+        }
+
+        #itemsDynamicTable [data-column="barcode"] {
+            width: 10%;
+        }
+
+        #itemsDynamicTable [data-column="status"] {
+            width: 7%;
+        }
+
+        #itemsDynamicTable th:last-child,
+        #itemsDynamicTable td:last-child {
+            width: 110px;
+        }
+
+        #itemsDynamicTable [data-column="image"] img,
+        #itemsDynamicTable [data-column="image"] > div {
+            width: 38px !important;
+            height: 38px !important;
         }
     }
 
-    @media (min-width: 1440px) {
-        #itemsDynamicTable {
-            min-width: 100%;
+    /*
+    |--------------------------------------------------------------------------
+    | LARGE DESKTOP
+    |--------------------------------------------------------------------------
+    */
+    @media (min-width: 1400px) {
+        #itemsDynamicTable th {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+            font-size: 11px;
         }
 
-        #itemsDynamicTable [data-column="item"] {
-            max-width: 460px;
+        #itemsDynamicTable td {
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+            font-size: 12px;
+        }
+
+        #itemsDynamicTable [data-column="image"] {
+            width: 78px;
+        }
+
+        #itemsDynamicTable th:last-child,
+        #itemsDynamicTable td:last-child {
+            width: 155px;
+        }
+
+        #itemsDynamicTable [data-column="image"] img,
+        #itemsDynamicTable [data-column="image"] > div {
+            width: 52px !important;
+            height: 52px !important;
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOBILE
+    |--------------------------------------------------------------------------
+    */
+    @media (max-width: 639px) {
+        .mobile-items-list {
+            display: block;
+        }
+
+        .desktop-items-table {
+            display: none;
         }
     }
 
