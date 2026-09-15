@@ -35,7 +35,7 @@ class BusinessCaController extends Controller
         $data = $request->validate([
             'name'   => ['nullable', 'string', 'max:255'],
             'email'  => ['required', 'email', 'max:255'],
-            'mobile' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         $email = strtolower(trim($data['email']));
@@ -60,8 +60,8 @@ class BusinessCaController extends Controller
 
                 'email' => $email,
 
-                'mobile' => !empty($data['mobile'])
-                    ? trim($data['mobile'])
+                'phone' => !empty($data['phone'])
+                    ? trim($data['phone'])
                     : null,
 
                 'password' => bcrypt(Str::random(40)),
@@ -71,8 +71,8 @@ class BusinessCaController extends Controller
         } else {
             $updates = [];
 
-            if (empty($ca->mobile) && !empty($data['mobile'])) {
-                $updates['mobile'] = trim($data['mobile']);
+            if (empty($ca->phone) && !empty($data['phone'])) {
+                $updates['phone'] = trim($data['phone']);
             }
 
             if (empty($ca->name) && !empty($data['name'])) {

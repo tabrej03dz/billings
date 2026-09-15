@@ -32,8 +32,8 @@
                     <input type="email" name="email" required value="{{ old('email') }}" class="w-full rounded-xl border-gray-300 text-sm dark:border-neutral-700 dark:bg-neutral-800" placeholder="ca@example.com">
                 </div>
                 <div>
-                    <label class="mb-1 block text-xs font-medium">Mobile</label>
-                    <input name="mobile" value="{{ old('mobile') }}" class="w-full rounded-xl border-gray-300 text-sm dark:border-neutral-700 dark:bg-neutral-800" placeholder="Mobile number">
+                    <label class="mb-1 block text-xs font-medium">Phone</label>
+                    <input name="phone" value="{{ old('phone') }}" class="w-full rounded-xl border-gray-300 text-sm dark:border-neutral-700 dark:bg-neutral-800" placeholder="Phone number">
                 </div>
                 <div class="flex items-end">
                     <button class="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Assign CA</button>
