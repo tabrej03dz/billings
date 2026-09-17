@@ -4896,206 +4896,329 @@ class InvoiceController extends Controller
 
 
 
-    public function convertToTax(Request $r, \App\Models\Invoice $invoice, \App\Services\StockService $stock)
-    {
-        $invoice = $invoice->load(['items', 'client', 'business']);
+    // public function convertToTax(Request $r, \App\Models\Invoice $invoice, \App\Services\StockService $stock)
+    // {
+    //     $invoice = $invoice->load(['items', 'client', 'business']);
 
-        // ✅ same business safety
-        $bid = $r->user()->current_business_id ?? session('active_business_id') ?? $invoice->business_id;
-        if ((int)$invoice->business_id !== (int)$bid) abort(403);
+    //     // ✅ same business safety
+    //     $bid = $r->user()->current_business_id ?? session('active_business_id') ?? $invoice->business_id;
+    //     if ((int)$invoice->business_id !== (int)$bid) abort(403);
 
-        $fromType = strtolower(trim((string)($invoice->invoice_type ?? '')));
-        if (!in_array($fromType, ['quotation','proforma'], true)) {
-            return back()->withErrors(['convert' => 'Only Quotation/Proforma can be converted to Tax invoice.']);
-        }
+    //     $fromType = strtolower(trim((string)($invoice->invoice_type ?? '')));
+    //     if (!in_array($fromType, ['quotation','proforma'], true)) {
+    //         return back()->withErrors(['convert' => 'Only Quotation/Proforma can be converted to Tax invoice.']);
+    //     }
 
-        // ✅ already tax?
-        if (strtolower((string)$invoice->invoice_type) === 'tax') {
-            return back()->withErrors(['convert' => 'This invoice is already a Tax invoice.']);
-        }
+    //     // ✅ already tax?
+    //     if (strtolower((string)$invoice->invoice_type) === 'tax') {
+    //         return back()->withErrors(['convert' => 'This invoice is already a Tax invoice.']);
+    //     }
 
-        // ✅ prevent double conversion (if column exists)
-        if (!empty($invoice->converted_at)) {
-            return back()->withErrors(['convert' => 'This invoice is already converted once.']);
-        }
+    //     // ✅ prevent double conversion (if column exists)
+    //     if (!empty($invoice->converted_at)) {
+    //         return back()->withErrors(['convert' => 'This invoice is already converted once.']);
+    //     }
 
-        // ✅ items_json is source of truth (NO 0 amounts issue)
-        $rows = [];
-        if (!empty($invoice->items_json)) {
-            $rows = json_decode($invoice->items_json, true) ?: [];
-        }
-        if (!is_array($rows) || count($rows) < 1) {
-            return back()->withErrors(['convert' => 'Items not found (items_json missing).']);
-        }
+    //     // ✅ items_json is source of truth (NO 0 amounts issue)
+    //     $rows = [];
+    //     if (!empty($invoice->items_json)) {
+    //         $rows = json_decode($invoice->items_json, true) ?: [];
+    //     }
+    //     if (!is_array($rows) || count($rows) < 1) {
+    //         return back()->withErrors(['convert' => 'Items not found (items_json missing).']);
+    //     }
 
-        // ✅ Convert date: today (agar same date rakhna ho to $invoice->invoice_date use kar lo)
-        $invoiceDate = now()->toDateString();
+    //     // ✅ Convert date: today (agar same date rakhna ho to $invoice->invoice_date use kar lo)
+    //     $invoiceDate = now()->toDateString();
 
-        // ===== TAX prefix series =====
-        $taxBase = optional(
-                $r->user()->businesses()->where('businesses.id', $bid)->first()
-            )->invoice_base_prefix ?? 'RV/SL';
+    //     // ===== TAX prefix series =====
+    //     $taxBase = optional(
+    //             $r->user()->businesses()->where('businesses.id', $bid)->first()
+    //         )->invoice_base_prefix ?? 'RV/SL';
 
-        $taxSeries = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase); // RV/SL/25-26/
-        $alloc     = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $taxSeries, 3, 'tax');
+    //     $taxSeries = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase); // RV/SL/25-26/
+    //     $alloc     = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $taxSeries, 3, 'tax');
 
-        DB::transaction(function () use ($invoice, $invoiceDate, $taxSeries, $alloc, $rows, $stock) {
+    //     DB::transaction(function () use ($invoice, $invoiceDate, $taxSeries, $alloc, $rows, $stock) {
 
-            // ✅ Update main invoice only (keep totals/charges/notes etc. unchanged)
-            $invoice->update([
-                'client_id'      => $data['client_id'],
-                'invoice_date'   => $invoiceDate,
-                'invoice_prefix' => $prefix,
+    //         // ✅ Update main invoice only (keep totals/charges/notes etc. unchanged)
+    //         $invoice->update([
+    //             'client_id'      => $data['client_id'],
+    //             'invoice_date'   => $invoiceDate,
+    //             'invoice_prefix' => $prefix,
 
-                'subtotal'        => $subtotal,
-                'discount_total'  => $discountTotal,
-                'charge_total'    => $chargeTotal,
-                'less_amount'     => $lessAmount,
+    //             'subtotal'        => $subtotal,
+    //             'discount_total'  => $discountTotal,
+    //             'charge_total'    => $chargeTotal,
+    //             'less_amount'     => $lessAmount,
 
-                'tax_amount'      => $taxAmount,
+    //             'tax_amount'      => $taxAmount,
 
-                'cgst_percent'    => $cgstPercent,
-                'cgst_amount'     => $cgst,
+    //             'cgst_percent'    => $cgstPercent,
+    //             'cgst_amount'     => $cgst,
 
-                'sgst_percent'    => $sgstPercent,
-                'sgst_amount'     => $sgst,
+    //             'sgst_percent'    => $sgstPercent,
+    //             'sgst_amount'     => $sgst,
 
-                'igst_percent'    => $igstPercent,
-                'igst_amount'     => $igst,
+    //             'igst_percent'    => $igstPercent,
+    //             'igst_amount'     => $igst,
 
-                'tcs_percent'     => $tcsPercent,
-                'tcs_amount'      => $tcsAmount,
+    //             'tcs_percent'     => $tcsPercent,
+    //             'tcs_amount'      => $tcsAmount,
 
-                'round_off'       => $roundOff,
+    //             'round_off'       => $roundOff,
 
-                'total'           => $grandTotal,
+    //             'total'           => $grandTotal,
 
-                'received_amount' => $docType === 'tax'
-                    ? $receivedTotal
-                    : 0,
+    //             'received_amount' => $docType === 'tax'
+    //                 ? $receivedTotal
+    //                 : 0,
 
-                'balance' => $docType === 'tax'
-                    ? $balance
-                    : $grandTotal,
+    //             'balance' => $docType === 'tax'
+    //                 ? $balance
+    //                 : $grandTotal,
 
-                'payment_method' => $data['payment_method'] ?? null,
+    //             'payment_method' => $data['payment_method'] ?? null,
 
-                'gst_no' => $data['gst_no'] ?? null,
+    //             'gst_no' => $data['gst_no'] ?? null,
 
-                'transport_mode' => $data['transport_mode'] ?? null,
+    //             'transport_mode' => $data['transport_mode'] ?? null,
 
-                'reverse_charge' => !empty($data['reverse_charge'])
-                    ? 1
-                    : 0,
+    //             'reverse_charge' => !empty($data['reverse_charge'])
+    //                 ? 1
+    //                 : 0,
 
-                'place_of_supply_state' => $client->state ?? null,
+    //             'place_of_supply_state' => $client->state ?? null,
 
-                'place_of_supply_code' => $client->state_code ?? null,
+    //             'place_of_supply_code' => $client->state_code ?? null,
 
-                'notes' => $data['notes'] ?? null,
+    //             'notes' => $data['notes'] ?? null,
 
-                'terms' => $data['terms'] ?? null,
+    //             'terms' => $data['terms'] ?? null,
 
-                'charges_json' => json_encode($chargesArr),
+    //             'charges_json' => json_encode($chargesArr),
 
-                'items_json' => json_encode($cleanRows),
+    //             'items_json' => json_encode($cleanRows),
 
-                'signature_path' => $signaturePath,
+    //             'signature_path' => $signaturePath,
 
-                'updated_by' => auth()->id(),
-            ]);
+    //             'updated_by' => auth()->id(),
+    //         ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | IMPORTANT: Selected bank ko separately force save karo
-            |--------------------------------------------------------------------------
-            |
-            | Isse $fillable me bank_account_id missing hone par bhi selected bank
-            | invoice ke andar save ho jayega.
-            |
-            */
-            $selectedBankAccountId = !empty($data['bank_account_id'])
-                ? (int) $data['bank_account_id']
-                : null;
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | IMPORTANT: Selected bank ko separately force save karo
+    //         |--------------------------------------------------------------------------
+    //         |
+    //         | Isse $fillable me bank_account_id missing hone par bhi selected bank
+    //         | invoice ke andar save ho jayega.
+    //         |
+    //         */
+    //         $selectedBankAccountId = !empty($data['bank_account_id'])
+    //             ? (int) $data['bank_account_id']
+    //             : null;
 
+    //         $invoice->forceFill([
+    //             'payment_method'  => $data['payment_method'] ?? null,
+    //             'bank_account_id' => $selectedBankAccountId,
+    //         ])->save();
+
+    //         /*
+    //         |--------------------------------------------------------------------------
+    //         | Fresh invoice attributes
+    //         |--------------------------------------------------------------------------
+    //         */
+    //         $invoice->refresh();
+
+    //         /**
+    //          * ✅ IMPORTANT:
+    //          * invoice_items rows ko update mat karo agar already correct hai.
+    //          * BUT: agar aapke invoice_items me amount/rate 0 ho jate hain kabhi,
+    //          * to below sync ON kar do (safe).
+    //          */
+    //         foreach ($rows as $row) {
+    //             $itemId = (int)($row['item_id'] ?? 0);
+    //             if (!$itemId) continue;
+
+    //             $qty = (int)($row['qty'] ?? $row['quantity'] ?? 1);
+    //             $qty = $qty < 1 ? 1 : $qty;
+
+    //             $rate   = (float)($row['rate'] ?? 0);
+    //             $amount = (float)($row['amount'] ?? 0);
+
+    //             $type = strtolower(trim((string)($row['item_type'] ?? 'product')));
+
+    //             // match by item_id (agar multiple same item_id ho sakte hain to index based match karo)
+    //             $it = $invoice->items->firstWhere('item_id', $itemId);
+    //             if ($it) {
+    //                 $it->update([
+    //                     'quantity' => $qty,
+    //                     'tax_percent' => (float)($row['tax_percent'] ?? 0),
+    //                     'rate'     => $rate,     // base
+    //                     'amount'   => $amount,   // base+tax
+
+    //                     // product fields
+    //                     'gold_wt'     => (float)($row['gold_wt'] ?? 0),
+    //                     'silver_wt'   => (float)($row['silver_wt'] ?? 0),
+    //                     'gold_rate'   => (float)($row['gold_rate'] ?? 0),
+    //                     'silver_rate' => (float)($row['silver_rate'] ?? 0),
+    //                     'making_rate' => (float)($row['making_rate'] ?? 0),
+
+    //                     // service field
+    //                     'making_charge' => ($type === 'service')
+    //                         ? (float)($row['service_rate'] ?? $row['making_charge'] ?? 0)
+    //                         : null,
+    //                 ]);
+    //             }
+    //         }
+
+    //         // ✅ stock cut ONE time (tax invoice banne ke baad)
+    //         $invoice->load(['items']);
+    //         $stock->recordSale($invoice);
+
+    //         // ✅ stock flag (if column exists)
+    //         // $invoice->update(['stock_posted_at' => now()]);
+    //     });
+
+    //     // ✅ regenerate pdf (optional but recommended)
+    //     // $pdf = $this->simplePdfBuild($invoice->fresh(['items','client','business']));
+    //     // $dir = "invoices/{$bid}/" . now()->format('Y-m');
+    //     // $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
+    //     // $path = $dir . "/" . $safeName . ".pdf";
+    //     // \Storage::disk('public')->put($path, $pdf->output());
+    //     // $invoice->update(['pdf_url' => $path]);
+
+    //     $billRequest = BillRequest::find($invoice->bil_request_id);
+    //     if($billRequest){
+    //         $billRequest->update(['status' => 'processed']);
+    //     }
+
+    //     return redirect()->route('invoices.edit', $invoice->id)
+    //         ->with('success', 'Converted to Tax invoice successfully.');
+    // }
+
+
+public function convertToTax(Request $r, \App\Models\Invoice $invoice, \App\Services\StockService $stock)
+{
+    $invoice = $invoice->load(['items', 'client', 'business']);
+
+    // ✅ Same business safety
+    $bid = $r->user()->current_business_id ?? session('active_business_id') ?? $invoice->business_id;
+    if ((int)$invoice->business_id !== (int)$bid) {
+        abort(403);
+    }
+
+    $fromType = strtolower(trim((string)($invoice->invoice_type ?? '')));
+    if (!in_array($fromType, ['quotation', 'proforma'], true)) {
+        return back()->withErrors(['convert' => 'Only Quotation/Proforma can be converted to Tax invoice.']);
+    }
+
+    // ✅ Already tax check
+    if (strtolower((string)$invoice->invoice_type) === 'tax') {
+        return back()->withErrors(['convert' => 'This invoice is already a Tax invoice.']);
+    }
+
+    // ✅ Prevent double conversion
+    if (!empty($invoice->converted_at)) {
+        return back()->withErrors(['convert' => 'This invoice is already converted once.']);
+    }
+
+    // ✅ Validate items_json
+    $rows = [];
+    if (!empty($invoice->items_json)) {
+        $rows = json_decode($invoice->items_json, true) ?: [];
+    }
+    if (!is_array($rows) || count($rows) < 1) {
+        return back()->withErrors(['convert' => 'Items not found (items_json missing).']);
+    }
+
+    // ✅ Date for Tax Invoice
+    $invoiceDate = now()->toDateString();
+
+    // ===== TAX prefix & series numbering =====
+    $taxBase = optional(
+        $r->user()->businesses()->where('businesses.id', $bid)->first()
+    )->invoice_base_prefix ?? 'RV/SL';
+
+    $taxSeries = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase); // e.g. RV/SL/25-26/
+    $alloc     = \App\Services\InvoiceNumber::next((int)$bid, $invoiceDate, $taxSeries, 3, 'tax');
+
+    // Extract correct number ($alloc array ho ya scalar value)
+    $newInvoiceNumber = is_array($alloc) 
+        ? ($alloc['number'] ?? $alloc['invoice_number'] ?? reset($alloc)) 
+        : $alloc;
+
+    \DB::transaction(function () use ($invoice, $invoiceDate, $taxSeries, $newInvoiceNumber, $rows, $stock) {
+
+        // ✅ Main invoice update
+        $invoice->update([
+            'invoice_type'   => 'tax',
+            'invoice_prefix' => $taxSeries,
+            'invoice_number' => $newInvoiceNumber,
+            'invoice_date'   => $invoiceDate,
+            'converted_at'   => now(),
+            'updated_by'     => auth()->id(),
+        ]);
+
+        // ✅ Force save payment & bank details if present
+        if (!empty($invoice->bank_account_id) || !empty($invoice->payment_method)) {
             $invoice->forceFill([
-                'payment_method'  => $data['payment_method'] ?? null,
-                'bank_account_id' => $selectedBankAccountId,
+                'payment_method'  => $invoice->payment_method,
+                'bank_account_id' => $invoice->bank_account_id,
             ])->save();
+        }
 
-            /*
-            |--------------------------------------------------------------------------
-            | Fresh invoice attributes
-            |--------------------------------------------------------------------------
-            */
-            $invoice->refresh();
+        $invoice->refresh();
 
-            /**
-             * ✅ IMPORTANT:
-             * invoice_items rows ko update mat karo agar already correct hai.
-             * BUT: agar aapke invoice_items me amount/rate 0 ho jate hain kabhi,
-             * to below sync ON kar do (safe).
-             */
-            foreach ($rows as $row) {
-                $itemId = (int)($row['item_id'] ?? 0);
-                if (!$itemId) continue;
+        // ✅ Sync items data safely
+        foreach ($rows as $row) {
+            $itemId = (int)($row['item_id'] ?? 0);
+            if (!$itemId) continue;
 
-                $qty = (int)($row['qty'] ?? $row['quantity'] ?? 1);
-                $qty = $qty < 1 ? 1 : $qty;
+            $qty = (int)($row['qty'] ?? $row['quantity'] ?? 1);
+            $qty = $qty < 1 ? 1 : $qty;
 
-                $rate   = (float)($row['rate'] ?? 0);
-                $amount = (float)($row['amount'] ?? 0);
+            $rate   = (float)($row['rate'] ?? 0);
+            $amount = (float)($row['amount'] ?? 0);
+            $type   = strtolower(trim((string)($row['item_type'] ?? 'product')));
 
-                $type = strtolower(trim((string)($row['item_type'] ?? 'product')));
+            $it = $invoice->items->firstWhere('item_id', $itemId);
+            if ($it) {
+                $it->update([
+                    'quantity'    => $qty,
+                    'tax_percent' => (float)($row['tax_percent'] ?? 0),
+                    'rate'        => $rate,
+                    'amount'      => $amount,
 
-                // match by item_id (agar multiple same item_id ho sakte hain to index based match karo)
-                $it = $invoice->items->firstWhere('item_id', $itemId);
-                if ($it) {
-                    $it->update([
-                        'quantity' => $qty,
-                        'tax_percent' => (float)($row['tax_percent'] ?? 0),
-                        'rate'     => $rate,     // base
-                        'amount'   => $amount,   // base+tax
+                    'gold_wt'     => (float)($row['gold_wt'] ?? 0),
+                    'silver_wt'   => (float)($row['silver_wt'] ?? 0),
+                    'gold_rate'   => (float)($row['gold_rate'] ?? 0),
+                    'silver_rate' => (float)($row['silver_rate'] ?? 0),
+                    'making_rate' => (float)($row['making_rate'] ?? 0),
 
-                        // product fields
-                        'gold_wt'     => (float)($row['gold_wt'] ?? 0),
-                        'silver_wt'   => (float)($row['silver_wt'] ?? 0),
-                        'gold_rate'   => (float)($row['gold_rate'] ?? 0),
-                        'silver_rate' => (float)($row['silver_rate'] ?? 0),
-                        'making_rate' => (float)($row['making_rate'] ?? 0),
-
-                        // service field
-                        'making_charge' => ($type === 'service')
-                            ? (float)($row['service_rate'] ?? $row['making_charge'] ?? 0)
-                            : null,
-                    ]);
-                }
+                    'making_charge' => ($type === 'service')
+                        ? (float)($row['service_rate'] ?? $row['making_charge'] ?? 0)
+                        : null,
+                ]);
             }
+        }
 
-            // ✅ stock cut ONE time (tax invoice banne ke baad)
-            $invoice->load(['items']);
-            $stock->recordSale($invoice);
+        // ✅ Record stock cut one time
+        $invoice->load(['items']);
+        $stock->recordSale($invoice);
+    });
 
-            // ✅ stock flag (if column exists)
-            // $invoice->update(['stock_posted_at' => now()]);
-        });
-
-        // ✅ regenerate pdf (optional but recommended)
-        // $pdf = $this->simplePdfBuild($invoice->fresh(['items','client','business']));
-        // $dir = "invoices/{$bid}/" . now()->format('Y-m');
-        // $safeName = preg_replace('/[^A-Za-z0-9\-_\.]/', '-', (string)$invoice->invoice_number);
-        // $path = $dir . "/" . $safeName . ".pdf";
-        // \Storage::disk('public')->put($path, $pdf->output());
-        // $invoice->update(['pdf_url' => $path]);
-
-        $billRequest = BillRequest::find($invoice->bil_request_id);
-        if($billRequest){
+    // ✅ Update Bill Request status if attached
+    if (!empty($invoice->bil_request_id)) {
+        $billRequest = \App\Models\BillRequest::find($invoice->bil_request_id);
+        if ($billRequest) {
             $billRequest->update(['status' => 'processed']);
         }
-
-        return redirect()->route('invoices.edit', $invoice->id)
-            ->with('success', 'Converted to Tax invoice successfully.');
     }
+
+    return redirect()->route('invoices.edit', $invoice->id)
+        ->with('success', 'Converted to Tax invoice successfully.');
+}
 
 
 
