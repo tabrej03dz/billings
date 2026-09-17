@@ -12,29 +12,29 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
-            $table->foreignId('patient_visit_id')
-                ->nullable()
-                ->after('client_id')
-                ->constrained('patient_visits')
-                ->nullOnDelete();
+            // $table->foreignId('patient_visit_id')
+            //     ->nullable()
+            //     ->after('client_id')
+            //     ->constrained('patient_visits')
+            //     ->nullOnDelete();
 
-            $table->foreignId('doctor_id')
-                ->nullable()
-                ->after('patient_visit_id')
-                ->constrained('doctors')
-                ->nullOnDelete();
+            // $table->foreignId('doctor_id')
+            //     ->nullable()
+            //     ->after('patient_visit_id')
+            //     ->constrained('doctors')
+            //     ->nullOnDelete();
 
-            $table->string('billing_category')
-                ->nullable()
-                ->after('doctor_id');
+            // $table->string('billing_category')
+            //     ->nullable()
+            //     ->after('doctor_id');
 
-            $table->string('hospital_bill_type')
-                ->nullable()
-                ->after('billing_category');
+            // $table->string('hospital_bill_type')
+            //     ->nullable()
+            //     ->after('billing_category');
 
-            $table->json('hospital_details_json')
-                ->nullable()
-                ->after('hospital_bill_type');
+            // $table->json('hospital_details_json')
+            //     ->nullable()
+            //     ->after('hospital_bill_type');
         });
     }
 
