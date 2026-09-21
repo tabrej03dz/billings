@@ -160,7 +160,7 @@
                         </td> --}}
 
 
-                        <td class="px-6 py-3">{{ $u->phone }}</td>
+                        <td class="px-6 py-3">{{ $u->created_at->format('Y-m-d H:i:s') }}</td>
 
                         <td class="px-6 py-3 space-x-2">
 
