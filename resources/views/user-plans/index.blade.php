@@ -1,5 +1,4 @@
 <x-layouts.app :title="__('User Plans')">
-
     <div class="flex flex-col gap-4">
 
         {{-- ============================================================

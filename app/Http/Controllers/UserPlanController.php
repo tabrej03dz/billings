@@ -61,15 +61,20 @@ public function index(Request $request)
     $businessId = $request->get('business_id');
     $tab = $request->get('tab', 'regular');
 
+    /*
+    |--------------------------------------------------------------------------
+    | Valid Tab
+    |--------------------------------------------------------------------------
+    */
     if (!in_array($tab, ['regular', 'trial'], true)) {
         $tab = 'regular';
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Trial Condition
+    | Trial Plan Condition
     |--------------------------------------------------------------------------
-    | Duration 31 दिन या उससे कम
+    | 31 din ya usse kam duration wala plan Trial hoga.
     */
     $applyTrialFilter = function ($query) {
         $query->whereNotNull('start_date')
@@ -81,9 +86,9 @@ public function index(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | Regular Condition
+    | Regular Plan Condition
     |--------------------------------------------------------------------------
-    | Duration 31 दिन से ज्यादा
+    | 31 din se zyada duration wala plan Regular hoga.
     */
     $applyRegularFilter = function ($query) {
         $query->whereNotNull('start_date')
@@ -113,26 +118,44 @@ public function index(Request $request)
     |--------------------------------------------------------------------------
     | Search Filter
     |--------------------------------------------------------------------------
+    | Search by:
+    | - User name
+    | - User email
+    | - User phone
+    | - Plan name
+    | - Business name
     */
     if ($q !== '') {
         $baseQuery->where(function ($query) use ($q) {
-            $query->whereHas('user', function ($userQuery) use ($q) {
-                $userQuery->where('name', 'like', "%{$q}%")
-                    ->orWhere('email', 'like', "%{$q}%");
-            })
-            ->orWhereHas('plan', function ($planQuery) use ($q) {
-                $planQuery->where('name', 'like', "%{$q}%");
-            })
-            ->orWhereHas('business', function ($businessQuery) use ($q) {
-                $businessQuery->where('name', 'like', "%{$q}%")
-                    ->orWhere('business_name', 'like', "%{$q}%");
-            });
+            $query
+                ->whereHas('user', function ($userQuery) use ($q) {
+                    $userQuery->where(function ($subQuery) use ($q) {
+                        $subQuery
+                            ->where('name', 'like', "%{$q}%")
+                            ->orWhere('email', 'like', "%{$q}%")
+                            ->orWhere('phone', 'like', "%{$q}%");
+                    });
+                })
+                ->orWhereHas('plan', function ($planQuery) use ($q) {
+                    $planQuery->where(
+                        'name',
+                        'like',
+                        "%{$q}%"
+                    );
+                })
+                ->orWhereHas('business', function ($businessQuery) use ($q) {
+                    $businessQuery->where(
+                        'name',
+                        'like',
+                        "%{$q}%"
+                    );
+                });
         });
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Trial Count
+    | Trial Plans Count
     |--------------------------------------------------------------------------
     */
     $trialCount = (clone $baseQuery)
@@ -141,7 +164,7 @@ public function index(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | Regular Count
+    | Regular Plans Count
     |--------------------------------------------------------------------------
     */
     $regularCount = (clone $baseQuery)
@@ -177,13 +200,18 @@ public function index(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | Businesses
+    | Business Filter Options
     |--------------------------------------------------------------------------
     */
     $businesses = Business::query()
         ->orderBy('name')
         ->get();
 
+    /*
+    |--------------------------------------------------------------------------
+    | Return View
+    |--------------------------------------------------------------------------
+    */
     return view('user-plans.index', compact(
         'userPlans',
         'q',
