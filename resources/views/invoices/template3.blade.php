@@ -679,439 +679,199 @@
 
     <style>
         @page {
-            size: A4 portrait;
-            margin: 5mm 5mm 6mm 5mm;
+            size: A4;
+            margin: 5mm;
         }
 
         * {
             box-sizing: border-box;
         }
 
-        html,
         body {
-            padding: 0;
             margin: 0;
-        }
-
-        body {
-            font-family: "DejaVu Sans", Arial, sans-serif;
+            padding: 0;
+            font-family: "DejaVu Sans", sans-serif;
             font-size: 10px;
-            color: #000000;
-            background: #ffffff;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Main Page
-        |--------------------------------------------------------------------------
-        */
-
-        .page-frame {
-            width: 100%;
-            min-height: 285mm;
-            border: 0.7px solid #111111;
-            padding: 3mm;
-        }
-
-        /*
-         * Image jaisa upper blank area.
-         */
-        .top-blank-space {
-            height: 36mm;
-        }
-
-        .invoice-box {
-            width: 100%;
-            border: 0.7px solid #111111;
+            color: #000;
+            background: #fff;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            border-spacing: 0;
         }
 
-        td,
-        th {
-            color: #000000;
+        .page-frame {
+            width: 100%;
+            border: 1px solid #000;
+            padding: 3mm;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Invoice Heading
-        |--------------------------------------------------------------------------
-        */
+        .top-space {
+            height: 35mm;
+        }
 
-        .title-table td {
-            height: 13mm;
+        .invoice-main {
+            width: 100%;
+            border: 1px solid #000;
+        }
+
+        .invoice-title {
             text-align: center;
-            vertical-align: middle;
             font-size: 17px;
             font-weight: bold;
-            border-bottom: 0.7px solid #111111;
+            padding: 4mm 2mm;
+            border-bottom: 1px solid #000;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Party & Invoice Meta
-        |--------------------------------------------------------------------------
-        */
-
-        .party-meta-table {
-            table-layout: fixed;
+        .party-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .party-meta-table td {
+        .party-table > tbody > tr > td {
             vertical-align: top;
+            padding: 0;
         }
 
-        .seller-buyer {
+        .party-left {
             width: 51%;
-            border-right: 0.7px solid #111111;
+            border-right: 1px solid #000;
         }
 
-        .meta-area {
+        .party-right {
             width: 49%;
         }
 
-        .seller-section {
-            min-height: 39mm;
-            padding: 3mm 2mm 2mm 2mm;
-            border-bottom: 0.7px solid #111111;
-            font-size: 10.5px;
-            line-height: 1.35;
+        .seller-box {
+            padding: 3mm;
+            border-bottom: 1px solid #000;
+            line-height: 1.4;
         }
 
-        .buyer-section {
-            min-height: 56mm;
-            padding: 2mm;
-            font-size: 10.5px;
-            line-height: 1.35;
+        .buyer-box {
+            padding: 3mm;
+            line-height: 1.4;
         }
 
         .business-name {
-            font-size: 11.5px;
+            font-size: 12px;
             font-weight: bold;
-        }
-
-        .buyer-label {
-            font-size: 10px;
-            margin-bottom: 1mm;
         }
 
         .buyer-name {
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: bold;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Right Side Metadata
-        |--------------------------------------------------------------------------
-        */
-
-        .meta-grid {
-            table-layout: fixed;
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .meta-grid td {
+        .meta-table td {
             width: 50%;
-            height: 15.7mm;
-            padding: 2mm 2.2mm;
+            padding: 2mm;
             vertical-align: top;
-            border-bottom: 0.7px solid #111111;
-            font-size: 10px;
-            line-height: 1.2;
+            border-bottom: 1px solid #000;
+            font-size: 9.5px;
         }
 
-        .meta-grid td:first-child {
-            border-right: 0.7px solid #111111;
+        .meta-table td:first-child {
+            border-right: 1px solid #000;
         }
 
-        .meta-grid .large-meta-row td {
-            height: 20mm;
-        }
-
-        .meta-grid .terms-row td {
-            height: 18mm;
+        .meta-table tr:last-child td {
             border-bottom: 0;
         }
 
         .meta-label {
-            display: block;
-            font-size: 10px;
-            font-weight: normal;
+            font-size: 9px;
         }
 
         .meta-value {
-            display: block;
-            margin-top: 1mm;
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: bold;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Items Table
-        |--------------------------------------------------------------------------
-        */
-
-        .items-wrap {
-            margin-top: 3mm;
+            margin-top: 1mm;
         }
 
         .items-table {
+            margin-top: 3mm;
             width: 100%;
-            table-layout: fixed;
+            border-collapse: collapse;
         }
 
         .items-table th,
         .items-table td {
-            border: 0.7px solid #111111;
+            border: 1px solid #000;
+            padding: 2mm 1.5mm;
+            vertical-align: top;
         }
 
         .items-table th {
-            height: 14mm;
-            padding: 1.5mm 1mm;
-            font-size: 10px;
+            text-align: center;
             font-weight: normal;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        .items-table td {
-            padding: 1.7mm 1.5mm;
-            font-size: 10px;
-            vertical-align: top;
-        }
-
-        .col-sl {
-            width: 6%;
-        }
-
-        .col-description {
-            width: 35.5%;
-        }
-
-        .col-hsn {
-            width: 14%;
-        }
-
-        .col-qty {
-            width: 13%;
-        }
-
-        .col-rate {
-            width: 11%;
-        }
-
-        .col-per {
-            width: 6%;
-        }
-
-        .col-amount {
-            width: 14.5%;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .text-left {
-            text-align: left;
-        }
-
-        .nowrap {
-            white-space: nowrap;
-        }
-
-        .item-name {
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-
-        .item-extra {
-            font-size: 8px;
-            line-height: 1.35;
-            margin-top: 1mm;
-        }
-
-        .amount-cell {
-            font-weight: bold;
-            text-align: right;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Empty Body Space
-        |--------------------------------------------------------------------------
-        */
-
-        .items-empty-area td {
-            height: 35mm;
-            border-top: 0;
-            border-bottom: 0;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Tax Rows
-        |--------------------------------------------------------------------------
-        */
-
-        .subtotal-row td,
-        .tax-row td,
-        .grand-row td,
-        .discount-row td,
-        .round-row td {
-            height: 8mm;
-            vertical-align: middle;
-        }
-
-        .subtotal-row td {
-            font-size: 10px;
-        }
-
-        .tax-title {
-            text-align: right;
-            font-weight: bold;
-            font-style: italic;
-            font-size: 10.5px;
-            padding-right: 8mm !important;
-        }
-
-        .tax-rate {
-            text-align: right;
-        }
-
-        .grand-row td {
-            font-weight: bold;
-            font-size: 11px;
-        }
-
-        .grand-label {
-            text-align: right;
-            padding-right: 4mm !important;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Bottom Information
-        |--------------------------------------------------------------------------
-        */
-
-        .bottom-section {
-            page-break-inside: avoid;
-        }
-
-        .words-table td {
-            border: 0.7px solid #111111;
-            border-top: 0;
-            padding: 2mm;
             font-size: 9.5px;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .small {
+            font-size: 8px;
             line-height: 1.4;
         }
 
-        .section-label {
-            font-size: 8.5px;
-        }
-
-        .section-value {
+        .tax-label {
+            text-align: right;
             font-weight: bold;
-            margin-top: 1mm;
+            font-style: italic;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Payment / Bank
-        |--------------------------------------------------------------------------
-        */
-
-        .bank-payment-table {
-            table-layout: fixed;
-        }
-
-        .bank-payment-table td {
-            width: 50%;
-            min-height: 28mm;
-            padding: 2mm;
-            vertical-align: top;
-            border: 0.7px solid #111111;
+        .amount-words {
+            border: 1px solid #000;
             border-top: 0;
-            font-size: 8.5px;
-            line-height: 1.45;
-        }
-
-        .bank-payment-table td:first-child {
-            border-right: 0;
-        }
-
-        .small-heading {
+            padding: 2mm;
             font-size: 9px;
-            font-weight: bold;
-            text-decoration: underline;
-            margin-bottom: 1mm;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Declaration / Signature
-        |--------------------------------------------------------------------------
-        */
-
-        .footer-info-table {
-            table-layout: fixed;
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
         }
 
-        .footer-info-table td {
-            border: 0.7px solid #111111;
-            border-top: 0;
+        .footer-table td {
+            width: 50%;
             vertical-align: top;
+            border: 1px solid #000;
+            border-top: 0;
             padding: 2mm;
             font-size: 8.5px;
-            line-height: 1.35;
+            line-height: 1.4;
         }
 
-        .footer-left {
-            width: 58%;
-        }
-
-        .footer-right {
-            width: 42%;
+        .signature {
             text-align: right;
         }
 
-        .signature-area {
-            height: 27mm;
-            position: relative;
+        .signature img {
+            max-height: 35px;
+            max-width: 120px;
         }
-
-        .signature-image {
-            max-width: 35mm;
-            max-height: 13mm;
-            margin-top: 2mm;
-        }
-
-        .signature-text {
-            margin-top: 7mm;
-            font-weight: bold;
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Footer
-        |--------------------------------------------------------------------------
-        */
 
         .computer-generated {
             text-align: center;
-            font-size: 7.5px;
-            margin-top: 1.5mm;
+            font-size: 7px;
+            margin-top: 2mm;
         }
     </style>
 </head>
@@ -1120,343 +880,257 @@
 
 <div class="page-frame">
 
-    {{-- ============================================================= --}}
-    {{-- TOP BLANK SPACE LIKE REFERENCE IMAGE --}}
-    {{-- ============================================================= --}}
+    <div class="top-space"></div>
 
-    <div class="top-blank-space"></div>
+    <div class="invoice-main">
 
-    <div class="invoice-box">
+        <div class="invoice-title">
+            {{ $docLabel }}
+        </div>
 
-        {{-- ========================================================= --}}
-        {{-- TITLE --}}
-        {{-- ========================================================= --}}
-
-        <table class="title-table">
-            <tr>
-                <td>
-                    {{ $docLabel }}
-                </td>
-            </tr>
-        </table>
-
-
-        {{-- ========================================================= --}}
-        {{-- SELLER / BUYER + META INFORMATION --}}
-        {{-- ========================================================= --}}
-
-        <table class="party-meta-table">
+        <table class="party-table">
             <tr>
 
-                {{-- LEFT SIDE --}}
-                <td class="seller-buyer">
+                <td class="party-left">
 
-                    {{-- SELLER --}}
-                    <div class="seller-section">
+                    <div class="seller-box">
 
                         <div class="business-name">
                             {{ strtoupper($bName) }}
                         </div>
 
-                        @if($bAddr !== '')
-                            <div>
-                                {{ strtoupper($bAddr) }}
-                            </div>
+                        @if($bAddr)
+                            {{ strtoupper($bAddr) }}<br>
                         @endif
 
-                        @if($bCity !== '')
-                            <div>
-                                {{ strtoupper($bCity) }}
-                            </div>
+                        @if($bCity)
+                            {{ strtoupper($bCity) }}<br>
                         @endif
 
-                        @if($bMobile !== '')
-                            <div>
-                                Mob : {{ $bMobile }}
-                            </div>
+                        @if($bGstin)
+                            GSTIN/UIN: {{ strtoupper($bGstin) }}<br>
                         @endif
 
-                        @if($bGstin !== '')
-                            <div>
-                                GSTIN/UIN:
-                                {{ strtoupper($bGstin) }}
-                            </div>
+                        @if($bState)
+                            State Name : {{ $bState }}
+
+                            @if($bStateCode)
+                                , Code : {{ $bStateCode }}
+                            @endif
+
+                            <br>
                         @endif
 
-                        @if($bState !== '')
-                            <div>
-                                State Name :
-                                &nbsp;&nbsp;
-                                {{ $bState }}
-
-                                @if($bStateCode !== '')
-                                    , Code : {{ $bStateCode }}
-                                @endif
-                            </div>
-                        @endif
-
-                        @if($bEmail !== '')
-                            <div>
-                                E-Mail :
-                                {{ $bEmail }}
-                            </div>
+                        @if($bEmail)
+                            E-Mail : {{ $bEmail }}
                         @endif
 
                     </div>
 
+                    <div class="buyer-box">
 
-                    {{-- BUYER --}}
-                    <div class="buyer-section">
+                        Buyer<br>
 
-                        <div class="buyer-label">
-                            Buyer
-                        </div>
-
-                        @if($cBusinessName !== '')
+                        @if($cBusinessName)
                             <div class="buyer-name">
                                 {{ strtoupper($cBusinessName) }}
                             </div>
                         @endif
 
-                        <div
-                            class="{{ $cBusinessName === '' ? 'buyer-name' : '' }}"
-                        >
+                        <div class="buyer-name">
                             {{ strtoupper($cName) }}
                         </div>
 
-                        @if($cAddr !== '')
-                            <div>
-                                {{ strtoupper($cAddr) }}
-                            </div>
+                        @if($cAddr)
+                            {{ strtoupper($cAddr) }}<br>
                         @endif
 
-                        @if($cCity !== '')
-                            <div>
-                                {{ strtoupper($cCity) }}
-                            </div>
+                        @if($cCity)
+                            {{ strtoupper($cCity) }}<br>
                         @endif
 
-                        @if($cMobile !== '')
-                            <div>
-                                MOB---{{ $cMobile }}
-                            </div>
+                        @if($cMobile)
+                            MOB---{{ $cMobile }}<br>
                         @endif
 
-                        @if($cGstin !== '')
-                            <div>
-                                GSTIN/UIN:
-                                {{ strtoupper($cGstin) }}
-                            </div>
+                        @if($cGstin)
+                            GSTIN/UIN: {{ strtoupper($cGstin) }}<br>
                         @endif
 
-                        @if($cPan !== '')
-                            <div>
-                                PAN:
-                                {{ strtoupper($cPan) }}
-                            </div>
-                        @endif
+                        @if($cState)
+                            State Name : {{ $cState }}
 
-                        @if($cState !== '')
-                            <div>
-                                State Name :
-                                &nbsp;&nbsp;
-                                {{ $cState }}
-
-                                @if($cStateCode !== '')
-                                    , Code : {{ $cStateCode }}
-                                @endif
-                            </div>
+                            @if($cStateCode)
+                                , Code : {{ $cStateCode }}
+                            @endif
                         @endif
 
                     </div>
 
                 </td>
 
+                <td class="party-right">
 
-                {{-- RIGHT SIDE --}}
-                <td class="meta-area">
+                    <table class="meta-table">
 
-                    <table class="meta-grid">
-
-                        {{-- Invoice No / Date --}}
                         <tr>
                             <td>
-                                <span class="meta-label">
-                                    Invoice No.
-                                </span>
+                                <div class="meta-label">Invoice No.</div>
 
-                                <span class="meta-value">
+                                <div class="meta-value">
                                     {{ $invoiceNo }}
-                                </span>
+                                </div>
                             </td>
 
                             <td>
-                                <span class="meta-label">
-                                    Dated
-                                </span>
+                                <div class="meta-label">Dated</div>
 
-                                <span class="meta-value">
+                                <div class="meta-value">
                                     {{ $invoiceDateFormat($invoiceDate) }}
-                                </span>
+                                </div>
                             </td>
                         </tr>
 
-
-                        {{-- Delivery / Payment --}}
                         <tr>
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Delivery Note
-                                </span>
+                                </div>
 
-                                @if($deliveryNote !== '')
-                                    <span class="meta-value">
+                                @if($deliveryNote)
+                                    <div class="meta-value">
                                         {{ $deliveryNote }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
 
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Mode/Terms of Payment
-                                </span>
+                                </div>
 
-                                @if($paymentTerms !== '')
-                                    <span class="meta-value">
+                                @if($paymentTerms)
+                                    <div class="meta-value">
                                         {{ $paymentTerms }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
 
-
-                        {{-- Supplier Ref / Other Ref --}}
                         <tr>
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Supplier's Ref.
-                                </span>
+                                </div>
 
-                                @if($supplierRef !== '')
-                                    <span class="meta-value">
+                                @if($supplierRef)
+                                    <div class="meta-value">
                                         {{ $supplierRef }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
 
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Other Reference(s)
-                                </span>
+                                </div>
 
-                                @if($otherReference !== '')
-                                    <span class="meta-value">
+                                @if($otherReference)
+                                    <div class="meta-value">
                                         {{ $otherReference }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
 
-
-                        {{-- Buyer Order --}}
                         <tr>
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Buyer's Order No.
-                                </span>
+                                </div>
 
-                                @if($buyerOrderNo !== '')
-                                    <span class="meta-value">
+                                @if($buyerOrderNo)
+                                    <div class="meta-value">
                                         {{ $buyerOrderNo }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
 
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Dated
-                                </span>
+                                </div>
 
                                 @if($buyerOrderDate)
-                                    <span class="meta-value">
+                                    <div class="meta-value">
                                         {{ $invoiceDateFormat($buyerOrderDate) }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
 
-
-                        {{-- Dispatch --}}
                         <tr>
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Despatch Document No.
-                                </span>
+                                </div>
 
-                                @if($dispatchDocumentNo !== '')
-                                    <span class="meta-value">
+                                @if($dispatchDocumentNo)
+                                    <div class="meta-value">
                                         {{ $dispatchDocumentNo }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
 
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Delivery Note Date
-                                </span>
+                                </div>
 
                                 @if($deliveryNoteDate)
-                                    <span class="meta-value">
+                                    <div class="meta-value">
                                         {{ $invoiceDateFormat($deliveryNoteDate) }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
 
-
-                        {{-- Through / Destination --}}
                         <tr>
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Despatched through
-                                </span>
+                                </div>
 
-                                @if($dispatchedThrough !== '')
-                                    <span class="meta-value">
+                                @if($dispatchedThrough)
+                                    <div class="meta-value">
                                         {{ $dispatchedThrough }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
 
                             <td>
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Destination
-                                </span>
+                                </div>
 
-                                @if($destination !== '')
-                                    <span class="meta-value">
+                                @if($destination)
+                                    <div class="meta-value">
                                         {{ $destination }}
-                                    </span>
-                                @elseif($cCity !== '')
-                                    <span class="meta-value">
-                                        {{ $cCity }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
 
-
-                        {{-- Terms --}}
-                        <tr class="terms-row">
+                        <tr>
                             <td colspan="2">
-                                <span class="meta-label">
+                                <div class="meta-label">
                                     Terms of Delivery
-                                </span>
+                                </div>
 
-                                @if($termsOfDelivery !== '')
-                                    <span class="meta-value">
+                                @if($termsOfDelivery)
+                                    <div class="meta-value">
                                         {{ $termsOfDelivery }}
-                                    </span>
+                                    </div>
                                 @endif
                             </td>
                         </tr>
@@ -1470,875 +1144,67 @@
 
     </div>
 
-
-    {{-- ============================================================= --}}
-    {{-- PRODUCT TABLE --}}
-    {{-- ============================================================= --}}
-
-    <div class="items-wrap">
-
-        <table class="items-table">
-
-            <colgroup>
-                <col class="col-sl">
-                <col class="col-description">
-                <col class="col-hsn">
-                <col class="col-qty">
-                <col class="col-rate">
-                <col class="col-per">
-                <col class="col-amount">
-            </colgroup>
-
-            <thead>
-            <tr>
-                <th>
-                    Sl<br>No.
-                </th>
-
-                <th>
-                    Description of Goods
-                </th>
-
-                <th>
-                    HSN/SAC
-                </th>
-
-                <th>
-                    Quantity
-                </th>
-
-                <th>
-                    Rate
-                </th>
-
-                <th>
-                    per
-                </th>
-
-                <th>
-                    Amount
-                </th>
-            </tr>
-            </thead>
-
-            <tbody>
-
-            @forelse($items as $index => $it)
-
-                @php
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Item Name
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $itemName = trim((string) (
-                        $it->item->name
-                        ?? $it->name
-                        ?? $it->item_name
-                        ?? 'Jewellery Product'
-                    ));
-
-                    $description = trim((string) (
-                        $it->description
-                        ?? ''
-                    ));
-
-                    $hsn = trim((string) (
-                        $it->hsn_code
-                        ?? $it->sac_code
-                        ?? $it->hsn
-                        ?? ''
-                    ));
-
-                    $purity = trim((string) (
-                        $it->purity
-                        ?? $it->karat
-                        ?? ''
-                    ));
-
-                    $huid = trim((string) (
-                        $it->huid
-                        ?? $it->hallmark_uid
-                        ?? ''
-                    ));
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Weights
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $netWeight = $firstPositive([
-                        $it->net_weight ?? null,
-                        $it->net_wt ?? null,
-                        $it->silver_wt ?? null,
-                        $it->gold_wt ?? null,
-                    ]);
-
-                    $normalQty = $firstPositive([
-                        $it->quantity ?? null,
-                        $it->qty ?? null,
-                    ]);
-
-                    if ($netWeight > 0) {
-                        $quantity = $netWeight;
-                    } elseif ($normalQty > 0) {
-                        $quantity = $normalQty;
-                    } else {
-                        $quantity = 1;
-                    }
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Metal Rate
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $goldRate = (float) (
-                        $it->gold_rate
-                        ?? 0
-                    );
-
-                    $silverRate = (float) (
-                        $it->silver_rate
-                        ?? 0
-                    );
-
-                    $genericRate = (float) (
-                        $it->rate
-                        ?? $it->unit_price
-                        ?? $it->price
-                        ?? 0
-                    );
-
-                    $rate = $firstPositive([
-                        $silverRate,
-                        $goldRate,
-                        $genericRate,
-                    ]);
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Unit
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $unit = strtoupper(
-                        trim((string) (
-                            $it->unit
-                            ?? ''
-                        ))
-                    );
-
-                    if ($unit === '') {
-                        $unit = $netWeight > 0
-                            ? 'GMS'
-                            : 'NOS';
-                    }
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Item Amount
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $lineTotal = (float) (
-                        $it->amount
-                        ?? $it->line_total
-                        ?? $it->total
-                        ?? 0
-                    );
-
-                    if ($lineTotal <= 0 && $quantity > 0 && $rate > 0) {
-                        $lineTotal = $quantity * $rate;
-                    }
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Extra Jewellery Info
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $grossWeight = $firstPositive([
-                        $it->gross_weight ?? null,
-                        $it->gross_wt ?? null,
-                    ]);
-
-                    $lessWeight = $firstPositive([
-                        $it->less_weight ?? null,
-                        $it->less_wt ?? null,
-                    ]);
-
-                    $makingCharge = (float) (
-                        $it->making_charge
-                        ?? $it->making_amount
-                        ?? 0
-                    );
-
-                    $makingRate = (float) (
-                        $it->making_rate
-                        ?? 0
-                    );
-
-                    $makingType = trim((string) (
-                        $it->making_charge_type
-                        ?? ''
-                    ));
-                @endphp
-
-                <tr>
-
-                    {{-- SL --}}
-                    <td class="text-center">
-                        {{ $index + 1 }}
-                    </td>
-
-
-                    {{-- DESCRIPTION --}}
-                    <td>
-                        <div class="item-name">
-                            {{ $itemName }}
-                        </div>
-
-                        @if($description !== '')
-                            <div class="item-extra">
-                                {{ $description }}
-                            </div>
-                        @endif
-
-                        @if(
-                            $purity !== ''
-                            || $huid !== ''
-                            || $grossWeight > 0
-                            || $lessWeight > 0
-                            || $makingCharge > 0
-                            || $makingRate > 0
-                        )
-                            <div class="item-extra">
-
-                                @if($purity !== '')
-                                    Purity:
-                                    {{ $purity }}
-                                @endif
-
-                                @if($huid !== '')
-                                    @if($purity !== '')
-                                        |
-                                    @endif
-
-                                    HUID:
-                                    {{ $huid }}
-                                @endif
-
-                                @if($grossWeight > 0)
-                                    <br>
-                                    Gross Wt:
-                                    {{ $fmt3($grossWeight) }}
-                                    GMS
-                                @endif
-
-                                @if($lessWeight > 0)
-                                    |
-                                    Less Wt:
-                                    {{ $fmt3($lessWeight) }}
-                                    GMS
-                                @endif
-
-                                @if($makingCharge > 0)
-                                    <br>
-                                    Making:
-                                    ₹{{ $fmt2($makingCharge) }}
-                                @elseif($makingRate > 0)
-                                    <br>
-                                    Making Rate:
-                                    {{ $fmt2($makingRate) }}
-
-                                    @if(
-                                        strtolower($makingType)
-                                        === 'percentage'
-                                    )
-                                        %
-                                    @endif
-                                @endif
-
-                            </div>
-                        @endif
-                    </td>
-
-
-                    {{-- HSN --}}
-                    <td class="text-center">
-                        {{ $hsn !== '' ? $hsn : '-' }}
-                    </td>
-
-
-                    {{-- QUANTITY --}}
-                    <td class="text-right nowrap">
-                        {{ $fmt3($quantity) }}
-                        {{ $unit }}
-                    </td>
-
-
-                    {{-- RATE --}}
-                    <td class="text-right nowrap">
-                        {{ $rate > 0 ? $fmt2($rate) : '-' }}
-                    </td>
-
-
-                    {{-- PER --}}
-                    <td class="text-center">
-                        {{ $rate > 0 ? $unit : '' }}
-                    </td>
-
-
-                    {{-- AMOUNT --}}
-                    <td class="amount-cell nowrap">
-                        {{ $fmt2($lineTotal) }}
-                    </td>
-
-                </tr>
-
-            @empty
-
-                <tr>
-                    <td
-                        colspan="7"
-                        class="text-center"
-                        style="height:15mm; vertical-align:middle;"
-                    >
-                        No item found
-                    </td>
-                </tr>
-
-            @endforelse
-
-
-            {{-- ===================================================== --}}
-            {{-- SUBTOTAL --}}
-            {{-- ===================================================== --}}
-
-            @if($taxable > 0)
-
-                <tr class="subtotal-row">
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td class="text-right">
-                        {{ $fmt2($taxable) }}
-                    </td>
-
-                </tr>
-
+    <div class="amount-words">
+    Amount Chargeable (in words)<br>
+
+    <strong>
+        INR
+        {{
+            $inv->amount_in_words
+            ?: tally_invoice_amount_words($grandTotal)
+        }}
+    </strong>
+</div>
+
+<table class="footer-table">
+    <tr>
+
+        <td>
+            <strong>Declaration</strong><br>
+
+            @if(!empty($inv->terms))
+                {!! nl2br(e($inv->terms)) !!}
+            @elseif(!empty($inv->notes))
+                {!! nl2br(e($inv->notes)) !!}
+            @else
+                We declare that this invoice shows the actual
+                price of the goods described and that all
+                particulars are true and correct.
+            @endif
+        </td>
+
+        <td class="signature">
+
+            <strong>
+                for {{ strtoupper($bName) }}
+            </strong>
+
+            <br><br>
+
+            @if(!empty($sign))
+                <img src="{{ $sign }}">
+                <br>
             @endif
 
+            <br>
 
-            {{-- ===================================================== --}}
-            {{-- DISCOUNT --}}
-            {{-- ===================================================== --}}
+            <strong>
+                Authorised Signatory
+            </strong>
 
-            @if($discount > 0)
+        </td>
 
-                <tr class="discount-row">
+    </tr>
+</table>
 
-                    <td></td>
-
-                    <td
-                        colspan="3"
-                        class="tax-title"
-                    >
-                        Discount
-                    </td>
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td class="amount-cell">
-                        -{{ $fmt2($discount) }}
-                    </td>
-
-                </tr>
-
-            @endif
-
-
-            {{-- ===================================================== --}}
-            {{-- CGST --}}
-            {{-- ===================================================== --}}
-
-            @if($cgstAmount > 0)
-
-                <tr class="tax-row">
-
-                    <td></td>
-
-                    <td
-                        colspan="3"
-                        class="tax-title"
-                    >
-                        CGST
-                        {{ $fmt2($cgstPercent) }}
-                        %
-                    </td>
-
-                    <td class="tax-rate">
-                        {{ $fmt2($cgstPercent) }}
-                    </td>
-
-                    <td class="text-center">
-                        %
-                    </td>
-
-                    <td class="amount-cell">
-                        {{ $fmt2($cgstAmount) }}
-                    </td>
-
-                </tr>
-
-            @endif
-
-
-            {{-- ===================================================== --}}
-            {{-- SGST --}}
-            {{-- ===================================================== --}}
-
-            @if($sgstAmount > 0)
-
-                <tr class="tax-row">
-
-                    <td></td>
-
-                    <td
-                        colspan="3"
-                        class="tax-title"
-                    >
-                        SGST
-                        {{ $fmt2($sgstPercent) }}
-                        %
-                    </td>
-
-                    <td class="tax-rate">
-                        {{ $fmt2($sgstPercent) }}
-                    </td>
-
-                    <td class="text-center">
-                        %
-                    </td>
-
-                    <td class="amount-cell">
-                        {{ $fmt2($sgstAmount) }}
-                    </td>
-
-                </tr>
-
-            @endif
-
-
-            {{-- ===================================================== --}}
-            {{-- IGST --}}
-            {{-- ===================================================== --}}
-
-            @if($igstAmount > 0)
-
-                <tr class="tax-row">
-
-                    <td></td>
-
-                    <td
-                        colspan="3"
-                        class="tax-title"
-                    >
-                        IGST
-                        {{ $fmt2($igstPercent) }}
-                        %
-                    </td>
-
-                    <td class="tax-rate">
-                        {{ $fmt2($igstPercent) }}
-                    </td>
-
-                    <td class="text-center">
-                        %
-                    </td>
-
-                    <td class="amount-cell">
-                        {{ $fmt2($igstAmount) }}
-                    </td>
-
-                </tr>
-
-            @endif
-
-
-            {{-- ===================================================== --}}
-            {{-- ROUND OFF --}}
-            {{-- ===================================================== --}}
-
-            @if(abs($roundOff) > 0.0001)
-
-                <tr class="round-row">
-
-                    <td></td>
-
-                    <td
-                        colspan="3"
-                        class="tax-title"
-                    >
-                        Round Off
-                    </td>
-
-                    <td></td>
-
-                    <td></td>
-
-                    <td class="amount-cell">
-                        {{ $fmt2($roundOff) }}
-                    </td>
-
-                </tr>
-
-            @endif
-
-
-            {{-- ===================================================== --}}
-            {{-- GRAND TOTAL --}}
-            {{-- ===================================================== --}}
-
-            <tr class="grand-row">
-
-                <td></td>
-
-                <td
-                    colspan="2"
-                    class="grand-label"
-                >
-                    Total
-                </td>
-
-                <td class="text-right nowrap">
-                    @if($totalQty > 0)
-                        {{ $fmt3($totalQty) }}
-                    @endif
-                </td>
-
-                <td></td>
-
-                <td></td>
-
-                <td class="amount-cell">
-                    ₹ {{ $fmt2($grandTotal) }}
-                </td>
-
-            </tr>
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-
-    {{-- ============================================================= --}}
-    {{-- BOTTOM SECTIONS --}}
-    {{-- ============================================================= --}}
-
-    <div class="bottom-section">
-
-        {{-- AMOUNT IN WORDS --}}
-        <table class="words-table">
-            <tr>
-                <td>
-
-                    <div class="section-label">
-                        Amount Chargeable (in words)
-                    </div>
-
-                    <div class="section-value">
-                        INR
-                        {{
-                            $inv->amount_in_words
-                            ?: tally_invoice_amount_words($grandTotal)
-                        }}
-                    </div>
-
-                </td>
-            </tr>
-        </table>
-
-
-        {{-- ========================================================= --}}
-        {{-- PAYMENT + BANK --}}
-        {{-- ========================================================= --}}
-
-        @if(
-            $paymentMethod !== ''
-            || $payCash > 0
-            || $payOnline > 0
-            || $payCard > 0
-            || $payCheque > 0
-            || $payAdvance > 0
-            || $payCredit > 0
-            || $bankName !== ''
-            || $bankAccountNumber !== ''
-            || $bankIfsc !== ''
-            || $bankUpi !== ''
-        )
-
-            <table class="bank-payment-table">
-                <tr>
-
-                    {{-- PAYMENT --}}
-                    <td>
-
-                        <div class="small-heading">
-                            Payment Details
-                        </div>
-
-                        @if($paymentMethod !== '')
-                            Payment Mode:
-                            <strong>
-                                {{ strtoupper($paymentMethod) }}
-                            </strong>
-                            <br>
-                        @endif
-
-                        @if($payCash > 0)
-                            Cash:
-                            ₹ {{ $fmt2($payCash) }}
-                            <br>
-                        @endif
-
-                        @if($payOnline > 0)
-                            Online/UPI:
-                            ₹ {{ $fmt2($payOnline) }}
-                            <br>
-                        @endif
-
-                        @if($onlineMode !== '')
-                            Online Mode:
-                            {{ strtoupper($onlineMode) }}
-                            <br>
-                        @endif
-
-                        @if($onlineRef !== '')
-                            Ref:
-                            {{ $onlineRef }}
-                            <br>
-                        @endif
-
-                        @if($upiId !== '')
-                            UPI ID:
-                            {{ $upiId }}
-                            <br>
-                        @endif
-
-                        @if($payCard > 0)
-                            Card:
-                            ₹ {{ $fmt2($payCard) }}
-                            <br>
-                        @endif
-
-                        @if($cardLast4 !== '')
-                            Card Last 4:
-                            {{ $cardLast4 }}
-                            <br>
-                        @endif
-
-                        @if($cardRef !== '')
-                            Card Ref:
-                            {{ $cardRef }}
-                            <br>
-                        @endif
-
-                        @if($payCheque > 0)
-                            Cheque:
-                            ₹ {{ $fmt2($payCheque) }}
-                            <br>
-                        @endif
-
-                        @if($chequeNo !== '')
-                            Cheque No:
-                            {{ $chequeNo }}
-                            <br>
-                        @endif
-
-                        @if($payAdvance > 0)
-                            Advance:
-                            ₹ {{ $fmt2($payAdvance) }}
-                            <br>
-                        @endif
-
-                        @if($payCredit > 0)
-                            Credit:
-                            ₹ {{ $fmt2($payCredit) }}
-                            <br>
-                        @endif
-
-                        @if($payReceivedTotal > 0)
-                            Total Received:
-                            ₹ {{ $fmt2($payReceivedTotal) }}
-                            <br>
-                        @endif
-
-                        @if($balance > 0)
-                            Balance:
-                            ₹ {{ $fmt2($balance) }}
-                            <br>
-                        @endif
-
-                        @if($paymentNotes !== '')
-                            Notes:
-                            {{ $paymentNotes }}
-                        @endif
-
-                    </td>
-
-
-                    {{-- BANK --}}
-                    <td>
-
-                        <div class="small-heading">
-                            Company's Bank Details
-                        </div>
-
-                        @if($bankAccountHolder !== '')
-                            A/c Holder's Name :
-                            <strong>
-                                {{ $bankAccountHolder }}
-                            </strong>
-                            <br>
-                        @endif
-
-                        @if($bankName !== '')
-                            Bank Name :
-                            <strong>
-                                {{ $bankName }}
-                            </strong>
-                            <br>
-                        @endif
-
-                        @if($bankAccountNumber !== '')
-                            A/c No. :
-                            <strong>
-                                {{ $bankAccountNumber }}
-                            </strong>
-                            <br>
-                        @endif
-
-                        @if($bankBranch !== '')
-                            Branch :
-                            {{ $bankBranch }}
-                            <br>
-                        @endif
-
-                        @if($bankIfsc !== '')
-                            IFS Code :
-                            <strong>
-                                {{ $bankIfsc }}
-                            </strong>
-                            <br>
-                        @endif
-
-                        @if($bankUpi !== '')
-                            UPI ID :
-                            {{ $bankUpi }}
-                        @endif
-
-                    </td>
-
-                </tr>
-            </table>
-
-        @endif
-
-
-        {{-- ========================================================= --}}
-        {{-- DECLARATION + SIGNATURE --}}
-        {{-- ========================================================= --}}
-
-        <table class="footer-info-table">
-            <tr>
-
-                <td class="footer-left">
-
-                    @if(!empty($inv->terms))
-
-                        <div class="small-heading">
-                            Terms & Conditions
-                        </div>
-
-                        {!! nl2br(e($inv->terms)) !!}
-
-                    @elseif(!empty($inv->notes))
-
-                        <div class="small-heading">
-                            Declaration
-                        </div>
-
-                        {!! nl2br(e($inv->notes)) !!}
-
-                    @else
-
-                        <div class="small-heading">
-                            Declaration
-                        </div>
-
-                        We declare that this invoice shows
-                        the actual price of the goods
-                        described and that all particulars
-                        are true and correct.
-
-                    @endif
-
-                </td>
-
-
-                <td class="footer-right">
-
-                    <strong>
-                        for {{ strtoupper($bName) }}
-                    </strong>
-
-                    <div class="signature-area">
-
-                        @if(!empty($sign))
-                            <img
-                                src="{{ $sign }}"
-                                class="signature-image"
-                                alt="Signature"
-                            >
-                        @endif
-
-                        <div class="signature-text">
-                            Authorised Signatory
-                        </div>
-
-                    </div>
-
-                </td>
-
-            </tr>
-        </table>
-
-    </div>
-
-
-    <div class="computer-generated">
-        This is a Computer Generated Invoice
-    </div>
+<div class="computer-generated">
+    This is a Computer Generated Invoice
+</div>
 
 </div>
+
+</body>
+</html>
 
 </body>
 </html>
