@@ -11,7 +11,7 @@ class UserPlan extends Model
     protected $casts = [
         'start_date' => 'date',
         'expiry_date' => 'date',
-        'status' => 'boolean',
+        // 'status' => 'boolean',
     ];
 
     public function user()

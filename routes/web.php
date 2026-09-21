@@ -43,6 +43,7 @@ use App\Http\Controllers\UnitController;
 use App\Http\Controllers\BusinessCaController;
 use App\Http\Controllers\CaReportController;
 use App\Http\Controllers\EwayBillController;
+use App\Http\Controllers\PlanPaymentLinkController;
 
 // frontend web routes:::::
 
@@ -87,9 +88,22 @@ Route::post(
 |--------------------------------------------------------------------------
 */
 
+
+    // payment routes for plans
+    Route::get(
+        '/payment-link/callback',
+        [PlanPaymentLinkController::class, 'callback']
+    )->name('plan-payment-links.callback');
+
 Route::middleware('auth')->group(function () {
 
 
+
+    // payemtn link
+    Route::post(
+        '/plans/{plan}/generate-payment-link',
+        [PlanPaymentLinkController::class, 'generate']
+    )->name('plans.generate-payment-link');
 
 
 
