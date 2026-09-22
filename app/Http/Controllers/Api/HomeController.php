@@ -244,7 +244,10 @@ class HomeController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'business' => $user->businesses,
+                // 'business' => $user->businesses,
+                'business' => $user->businesses->makeHidden([
+                    'business_type_id',
+                ]),
             ],
         ], 200);
     }
