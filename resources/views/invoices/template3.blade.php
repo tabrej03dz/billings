@@ -389,7 +389,7 @@
         <th style="width:13%;">Quantity</th>
         <th style="width:11%;">Rate</th>
         <th style="width:6%;">per</th>
-        <th style="width:15%;">Amount</th>
+        <th style="width:15%;">Amount<br><span class="small">Without GST</span></th>
     </tr>
     </thead>
 
@@ -428,14 +428,76 @@
 
             $unit = strtoupper(trim((string)($it->unit ?? '')));
             if ($unit === '') {
-                $unit = $netWeight > 0 ? 'GMS' : 'NOS';
+                $unit = $netWeight > 0 ? 'GMS' : 'GMS';
             }
 
-            $lineTotal = (float)($it->amount ?? $it->line_total ?? $it->total ?? 0);
+            /*
+             |------------------------------------------------------------------
+             | Item Amount WITHOUT GST
+             |------------------------------------------------------------------
+             | Priority:
+             | 1. If taxable/base amount is already stored, use it directly.
+             | 2. Otherwise, if tax amount is stored, remove tax from gross amount.
+             | 3. Otherwise, remove GST using item GST rate.
+             | 4. If no stored amount exists, use quantity x rate as base amount.
+             */
 
-            if ($lineTotal <= 0 && $quantity > 0 && $rate > 0) {
-                $lineTotal = $quantity * $rate;
+            $grossLineTotal = (float)($it->amount ?? $it->line_total ?? $it->total ?? 0);
+
+            $itemTaxableAmount = (float)(
+                $it->taxable_amount
+                ?? $it->taxable_value
+                ?? $it->base_amount
+                ?? $it->amount_before_tax
+                ?? $it->subtotal
+                ?? 0
+            );
+
+            $itemTaxAmount = (float)(
+                $it->tax_amount
+                ?? $it->gst_amount
+                ?? 0
+            );
+
+            if ($itemTaxAmount <= 0) {
+                $itemTaxAmount =
+                    (float)($it->cgst_amount ?? 0)
+                    + (float)($it->sgst_amount ?? 0)
+                    + (float)($it->igst_amount ?? 0);
             }
+
+            $itemGstPercent = (float)(
+                $it->tax_percent
+                ?? $it->tax_rate
+                ?? $it->gst_percent
+                ?? $it->gst_rate
+                ?? 0
+            );
+
+            // If item GST rate is not saved, use invoice GST percentage.
+            if ($itemGstPercent <= 0) {
+                $itemGstPercent = $igstPercent > 0
+                    ? $igstPercent
+                    : ($cgstPercent + $sgstPercent);
+            }
+
+            if ($itemTaxableAmount <= 0) {
+                if ($grossLineTotal > 0 && $itemTaxAmount > 0 && $grossLineTotal >= $itemTaxAmount) {
+                    // Example: 1030 inclusive - 30 GST = 1000 taxable amount.
+                    $itemTaxableAmount = $grossLineTotal - $itemTaxAmount;
+                } elseif ($grossLineTotal > 0 && $itemGstPercent > 0) {
+                    // Gross amount is GST inclusive, so reverse-calculate base amount.
+                    $itemTaxableAmount = $grossLineTotal / (1 + ($itemGstPercent / 100));
+                } elseif ($grossLineTotal > 0) {
+                    // No GST data available; treat stored amount as base amount.
+                    $itemTaxableAmount = $grossLineTotal;
+                } elseif ($quantity > 0 && $rate > 0) {
+                    // Rate is treated as GST-exclusive base rate.
+                    $itemTaxableAmount = $quantity * $rate;
+                }
+            }
+
+            $lineTotal = $itemTaxableAmount;
         @endphp
 
         <tr>
@@ -492,8 +554,8 @@
 
     @if($taxable > 0)
         <tr>
-            <td colspan="6"></td>
-            <td class="text-right">{{ $fmt2($taxable) }}</td>
+            <td colspan="6" class="text-right bold">Taxable Amount</td>
+            <td class="text-right bold">{{ $fmt2($taxable) }}</td>
         </tr>
     @endif
 

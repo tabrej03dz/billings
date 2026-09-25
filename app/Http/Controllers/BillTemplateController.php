@@ -37,26 +37,6 @@ class BillTemplateController extends Controller
         return view('bill_templates.create', compact('businessTypes'));
     }
 
-    // public function store(Request $request)
-    // {
-    //     $validated = $request->validate([
-    //         'name'        => ['required', 'string', 'max:255'],
-    //         'page_name'   => ['required', 'string', 'max:255'],
-    //         'description' => ['nullable', 'string'],
-    //         'preview'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
-    //     ]);
-
-    //     if ($request->hasFile('preview')) {
-    //         $validated['preview'] = $request->file('preview')->store('bill_templates/previews', 'public');
-    //     }
-
-    //     BillTemplate::create($validated);
-
-    //     return redirect()
-    //         ->route('bill-templates.index')
-    //         ->with('success', 'Bill template created successfully.');
-    // }
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -126,12 +106,6 @@ class BillTemplateController extends Controller
         return view('bill_templates.show', compact('billTemplate'));
     }
 
-    // public function edit($id)
-    // {
-    //     $billTemplate = BillTemplate::findOrFail($id);
-
-    //     return view('bill_templates.edit', compact('billTemplate'));
-    // }
 
 
     public function edit($id)
@@ -142,32 +116,6 @@ class BillTemplateController extends Controller
 
         return view('bill_templates.edit', compact('billTemplate', 'businessTypes'));
     }
-
-    // public function update(Request $request, $id)
-    // {
-    //     $billTemplate = BillTemplate::findOrFail($id);
-
-    //     $validated = $request->validate([
-    //         'name'        => ['required', 'string', 'max:255'],
-    //         'page_name'   => ['required', 'string', 'max:255'],
-    //         'description' => ['nullable', 'string'],
-    //         'preview'     => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
-    //     ]);
-
-    //     if ($request->hasFile('preview')) {
-    //         if ($billTemplate->preview && \Storage::disk('public')->exists($billTemplate->preview)) {
-    //             Storage::disk('public')->delete($billTemplate->preview);
-    //         }
-
-    //         $validated['preview'] = $request->file('preview')->store('bill_templates/previews', 'public');
-    //     }
-
-    //     $billTemplate->update($validated);
-
-    //     return redirect()
-    //         ->route('bill-templates.index')
-    //         ->with('success', 'Bill template updated successfully.');
-    // }
 
     public function update(Request $request, $id)
     {
@@ -239,75 +187,35 @@ class BillTemplateController extends Controller
     }
 
 
-    // public function customize(BillTemplate $template, Request $request)
-    // {
 
-    //     $businessId = $request->user()->current_business_id
-    //         ?? session('active_business_id')
-    //         ?? $request->user()->businesses()->pluck('businesses.id')->first();
+    public function customize(BillTemplate $template, Request $request)
+    {
+        $businessId = $request->user()->current_business_id
+            ?? session('active_business_id')
+            ?? $request->user()->businesses()->pluck('businesses.id')->first();
 
-    //     $business = $businessId ? Business::find($businessId) : null;
+        $business = $businessId ? Business::find($businessId) : null;
 
-    //     if (!$business) {
-    //         return redirect()
-    //             ->route('bill-templates.choose')
-    //             ->with('error', 'Please select business first.');
-    //     }
+        if (!$business) {
+            return redirect()
+                ->route('bill-templates.choose')
+                ->with('error', 'Please select business first.');
+        }
 
-    //     $setting = BusinessBillTemplateSetting::firstOrCreate(
-    //         [
-    //             'business_id' => $business->id,
-    //             'bill_template_id' => $template->id,
-    //         ],
-    //         [
+        $setting = BusinessBillTemplateSetting::where('business_id', $business->id)
+            ->where('bill_template_id', $template->id)
+            ->first();
 
-    //             'primary_color' => '#d60000',
-    //             'secondary_color' => '#dbd9d6',
-    //             'text_color' => '#111111',
-    //             'font_family' => 'DejaVu Sans',
-    //             'show_logo' => true,
-    //             'show_tagline' => true,
-    //             'show_signature' => true,
-    //             'show_terms' => true,
-    //         ]
-    //     );
-
-    //     return view('invoices.customize.'.$template->page_name, compact(
-    //         'template',
-    //         'business',
-    //         'setting'
-    //     ));
-    // }
+        $billTemplate = $template;
 
 
-public function customize(BillTemplate $template, Request $request)
-{
-    $businessId = $request->user()->current_business_id
-        ?? session('active_business_id')
-        ?? $request->user()->businesses()->pluck('businesses.id')->first();
-
-    $business = $businessId ? Business::find($businessId) : null;
-
-    if (!$business) {
-        return redirect()
-            ->route('bill-templates.choose')
-            ->with('error', 'Please select business first.');
+        return view('invoices.customize.' . $template->page_name, compact(
+            'template',
+            'billTemplate',
+            'business',
+            'setting'
+        ));
     }
-
-    $setting = BusinessBillTemplateSetting::where('business_id', $business->id)
-        ->where('bill_template_id', $template->id)
-        ->first();
-
-    $billTemplate = $template;
-
-
-    return view('invoices.customize.' . $template->page_name, compact(
-        'template',
-        'billTemplate',
-        'business',
-        'setting'
-    ));
-}
 
 
     public function saveChosen(Request $request)
