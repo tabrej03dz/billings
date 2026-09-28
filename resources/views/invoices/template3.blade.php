@@ -416,13 +416,17 @@
 
             $goldRate   = (float)($it->gold_rate ?? 0);
             $silverRate = (float)($it->silver_rate ?? 0);
+            $metalRate = (float)($it->metalRate ?? 0);
             $normalRate = (float)($it->rate ?? $it->unit_price ?? $it->price ?? 0);
 
-            if ($silverWeight > 0 && $silverRate > 0) {
+            if ($silverWeight > 0 && $silverRate > 0 && $metalRate > 0) {
                 $rate = $silverRate;
             } elseif ($goldRate > 0) {
                 $rate = $goldRate;
-            } else {
+            }elseif ($metalRate > 0) {
+                $rate = $metalRate;
+            }
+             else {
                 $rate = $normalRate;
             }
 
