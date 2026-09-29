@@ -1628,6 +1628,31 @@
                                 <input type="hidden" name="invoice_prefix" :value="computedPrefix">
                             </div>
 
+                            @if($activeDocType === 'quotation')
+                                <div class="md:col-span-2">
+                                    <label
+                                        class="flex items-center gap-2 cursor-pointer
+                                            rounded-lg border border-gray-200
+                                            dark:border-neutral-700
+                                            bg-gray-50 dark:bg-[#242833]
+                                            px-3 py-2"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            name="is_rough_estimate"
+                                            value="1"
+                                            @checked(old('is_rough_estimate'))
+                                            class="h-4 w-4 rounded border-gray-300
+                                                text-blue-600 focus:ring-blue-500"
+                                        >
+
+                                        <span class="text-xs font-medium text-gray-700 dark:text-neutral-200">
+                                            Rough Estimate
+                                        </span>
+                                    </label>
+                                </div>
+                            @endif
+
                             @if(Str::contains(strtolower($businessName), 'krinoscco'))
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 dark:text-[#9AA0AC]">
@@ -3833,55 +3858,6 @@
                 resetRowForProduct(r) {
                     r.service_rate = 0;
                 },
-
-
-                // init() {
-                //     this.clientDD = createClientDD(this);
-
-                //     this.$watch('clientId', () => this.syncParty());
-
-                //     if (!this.items.length) {
-                //         this.items.push(rowTemplate());
-                //     }
-
-                //     if (!this.charges.length) {
-                //         this.charges.push(chargeTemplate());
-                //     }
-
-                //     this.syncParty();
-                //     this.onReceivedInput();
-                //     this.calc();
-
-                //     const reposition = () => {
-                //         for (
-                //             let index = 0;
-                //             index < this.items.length;
-                //             index++
-                //         ) {
-                //             if (this.items[index]?.ddOpen) {
-                //                 this.setItemDDPos(index);
-                //             }
-                //         }
-                //     };
-
-                //     window.addEventListener(
-                //         'scroll',
-                //         reposition,
-                //         true
-                //     );
-
-                //     window.addEventListener(
-                //         'resize',
-                //         reposition
-                //     );
-
-                //     this.$nextTick(() => {
-                //         setTimeout(() => {
-                //             this.$refs.barcodeInput?.focus();
-                //         }, 300);
-                //     });
-                // },
-
 
                 init() {
 

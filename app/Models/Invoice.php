@@ -23,6 +23,7 @@ class Invoice extends Model
         'visit_at' => 'datetime',
         'admitted_at' => 'datetime',
         'discharged_at' => 'datetime',
+        'is_rough_estimate' => 'boolean',
     ];
 
 

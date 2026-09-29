@@ -567,11 +567,33 @@
         .sign-box img {
             max-height: 45px;
         }
+
+
+        .rough-estimate-label {
+            position: absolute;
+            text-align: right;
+            top: 8px;
+            right: 10px;
+            padding: 5px 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #111;
+        }
+
+        .invoice-wrapper {
+            position: relative;
+        }
     </style>
 </head>
 
 <body>
 <div class="invoice-wrapper">
+
+     @if((bool) ($inv->is_rough_estimate ?? false))
+        <div class="rough-estimate-label">
+            Rough Estimate
+        </div>
+    @endif
 
     <div class="header">
         @if(!empty($logo))

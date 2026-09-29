@@ -1754,6 +1754,11 @@ class InvoiceController extends Controller
                 'boolean',
             ],
 
+            'is_rough_estimate' => [
+                'nullable',
+                'boolean',
+            ],
+
             'notes' => [
                 'nullable',
                 'string',
@@ -3142,6 +3147,9 @@ class InvoiceController extends Controller
                     'invoice_prefix' => $prefix,
                     'invoice_number' => $invoiceNumber,
                     'invoice_type' => $docType,
+                    'is_rough_estimate' => $docType === 'quotation'
+                        ? $request->boolean('is_rough_estimate')
+                        : false,
 
                     'subtotal' => $subtotal,
                     'discount_total' => $discountTotal,
