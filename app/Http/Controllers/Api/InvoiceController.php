@@ -1216,7 +1216,7 @@ class InvoiceController extends Controller
 
 
 
-        /\*
+        /*
 
         |--------------------------------------------------------------------------
 
@@ -1240,7 +1240,7 @@ class InvoiceController extends Controller
 
         |--------------------------------------------------------------------------
 
-        \*/
+        */
 
 
 
@@ -1248,7 +1248,7 @@ class InvoiceController extends Controller
 
 
 
-            /\*
+            /*
 
             |--------------------------------------------------------------------------
 
@@ -1256,7 +1256,7 @@ class InvoiceController extends Controller
 
             |--------------------------------------------------------------------------
 
-            \*/
+            */
 
             $businessUserIds = DB::table('business_user')
 
@@ -1270,11 +1270,11 @@ class InvoiceController extends Controller
 
 
 
-            /\*
+            /*
 
-            \* Logged-in user ko bhi safety ke liye include kar do.
+            * Logged-in user ko bhi safety ke liye include kar do.
 
-            \*/
+            */
 
             if (!in_array((int) $user->id, $businessUserIds, true)) {
 
@@ -1284,7 +1284,7 @@ class InvoiceController extends Controller
 
 
 
-            /\*
+            /*
 
             |--------------------------------------------------------------------------
 
@@ -1292,7 +1292,7 @@ class InvoiceController extends Controller
 
             |--------------------------------------------------------------------------
 
-            \*/
+            */
 
             $activePlan = UserPlan::withoutGlobalScopes()
 
@@ -1300,25 +1300,25 @@ class InvoiceController extends Controller
 
 
 
-                    /\*
+                    /*
 
-                    \* Case 1:
+                    * Case 1:
 
-                    \* Business ka directly assigned plan
+                    * Business ka directly assigned plan
 
-                    \*/
+                    */
 
                     $query->where('business_id', $bid);
 
 
 
-                    /\*
+                    /*
 
-                    \* Case 2:
+                    * Case 2:
 
-                    \* Business ke kisi attached user ka plan
+                    * Business ke kisi attached user ka plan
 
-                    \*/
+                    */
 
                     if (!empty($businessUserIds)) {
 
@@ -1330,11 +1330,11 @@ class InvoiceController extends Controller
 
 
 
-                /\*
+                /*
 
-                \* Active aur Trial dono valid
+                * Active aur Trial dono valid
 
-                \*/
+                */
 
                 // ->whereIn('status', [
 
@@ -1346,11 +1346,11 @@ class InvoiceController extends Controller
 
 
 
-                /\*
+                /*
 
-                \* Start date null ho ya plan start ho chuka ho
+                * Start date null ho ya plan start ho chuka ho
 
-                \*/
+                */
 
                 ->where(function ($query) {
 
@@ -1362,11 +1362,11 @@ class InvoiceController extends Controller
 
 
 
-                /\*
+                /*
 
-                \* Expiry null ho ya expiry aaj/future ki ho
+                * Expiry null ho ya expiry aaj/future ki ho
 
-                \*/
+                */
 
                 ->where(function ($query) {
 
@@ -1388,7 +1388,7 @@ class InvoiceController extends Controller
 
 
 
-            /\*
+            /*
 
             |--------------------------------------------------------------------------
 
@@ -1396,7 +1396,7 @@ class InvoiceController extends Controller
 
             |--------------------------------------------------------------------------
 
-            \*/
+            */
 
             if (!$activePlan) {
 
@@ -1973,7 +1973,7 @@ class InvoiceController extends Controller
 
 
 
-            $metalBase = ($goldWeight \* $goldRate) + ($silverWeight \* $silverRate);
+            $metalBase = ($goldWeight * $goldRate) + ($silverWeight * $silverRate);
 
             $basePrice = $fixedPrice > 0 ? $fixedPrice : $metalBase;
 
@@ -1985,11 +1985,11 @@ class InvoiceController extends Controller
 
                 $makingAmount = match ($makingChargeType) {
 
-                    'percentage' => round($basePrice \* ($makingRate / 100), 2),
+                    'percentage' => round($basePrice * ($makingRate / 100), 2),
 
                     'fixed' => round($makingRate, 2),
 
-                    'per_gram' => round(($goldWeight + $silverWeight) \* $makingRate, 2),
+                    'per_gram' => round(($goldWeight + $silverWeight) * $makingRate, 2),
 
                     'per_product' => round($makingRate, 2),
 
@@ -2005,11 +2005,11 @@ class InvoiceController extends Controller
 
                 $basePrice + $makingAmount + $stoneCharges + $diamondCharges
 
-            ) \* $quantity, 2);
+            ) * $quantity, 2);
 
 
 
-            $lineTax = round($lineBase \* ($taxPercent / 100), 2);
+            $lineTax = round($lineBase * ($taxPercent / 100), 2);
 
             $lineTotal = round($lineBase + $lineTax, 2);
 
@@ -2017,7 +2017,7 @@ class InvoiceController extends Controller
 
             $subtotal += $lineBase;
 
-            $weightedTax += $lineBase \* $taxPercent;
+            $weightedTax += $lineBase * $taxPercent;
 
             $itemsTaxTotal += $lineTax;
 
@@ -2110,7 +2110,7 @@ class InvoiceController extends Controller
 
         if ($tcsPercent > 0) {
 
-            $tcsAmount = round($taxableAmount \* ($tcsPercent / 100), 2);
+            $tcsAmount = round($taxableAmount * ($tcsPercent / 100), 2);
 
         }
 
