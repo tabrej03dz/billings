@@ -1086,1768 +1086,1768 @@ class InvoiceController extends Controller
 
     public function store(Request $request, $type = 'tax')
 
-    {
+    {
 
-        $user = $request->user();
+        $user = $request->user();
 
-        $bid = $this->selectedBusinessId($request);
+        $bid = $this->selectedBusinessId($request);
 
-        $docType = $this->normalizeDocType((string) $type);
+        $docType = $this->normalizeDocType((string) $type);
 
 
 
-        if (!$user->can($this->requiredPerm($docType))) {
+        if (!$user->can($this->requiredPerm($docType))) {
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => 'Permission denied',
+                'message' => 'Permission denied',
 
-            ], 403);
+            ], 403);
 
-        }
+        }
 
 
 
-        $business = Business::withoutGlobalScopes()
+        $business = Business::withoutGlobalScopes()
 
-            ->with('businessType')
+            ->with('businessType')
 
-            ->whereKey($bid)
+            ->whereKey($bid)
 
-            ->first();
+            ->first();
 
 
 
-        if (!$business) {
+        if (!$business) {
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => 'Business not found',
+                'message' => 'Business not found',
 
-            ], 404);
+            ], 404);
 
-        }
+        }
 
 
 
-        $businessType = strtolower(trim((string) (
+        $businessType = strtolower(trim((string) (
 
-            $business->businessType?->slug
+            $business->businessType?->slug
 
-            ?? $business->businessType?->name
+            ?? $business->businessType?->name
 
-            ?? ''
+            ?? ''
 
-        )));
+        )));
 
 
 
-        $isHospitalBusiness = method_exists($business, 'isHospitalBusiness')
+        $isHospitalBusiness = method_exists($business, 'isHospitalBusiness')
 
-            ? $business->isHospitalBusiness()
+            ? $business->isHospitalBusiness()
 
-            : in_array($businessType, [
+            : in_array($businessType, [
 
-                'hospital',
+                'hospital',
 
-                'clinic',
+                'clinic',
 
-                'nursing home',
+                'nursing home',
 
-                'nursing_home',
+                'nursing_home',
 
-                'diagnostic center',
+                'diagnostic center',
 
-                'diagnostic_center',
+                'diagnostic_center',
 
-                'pathology lab',
+                'pathology lab',
 
-                'pathology_lab',
+                'pathology_lab',
 
-            ], true);
+            ], true);
 
 
 
-        // if (!$user->hasAnyRole(['super_admin', 'admin'])) {
+        // if (!$user->hasAnyRole(['super_admin', 'admin'])) {
 
-        //     $activePlan = UserPlan::withoutGlobalScopes()
+        //     $activePlan = UserPlan::withoutGlobalScopes()
 
-        //         ->where('business_id', $bid)
+        //         ->where('business_id', $bid)
 
-        //         ->where(function ($q) {
+        //         ->where(function ($q) {
 
-        //             $q->where('status', 'active')->orWhere('status', 1);
+        //             $q->where('status', 'active')->orWhere('status', 1);
 
-        //         })
+        //         })
 
-        //         ->whereDate('start_date', '<=', today())
+        //         ->whereDate('start_date', '<=', today())
 
-        //         ->where(function ($q) {
+        //         ->where(function ($q) {
 
-        //             $q->whereNull('expiry_date')->orWhereDate('expiry_date', '>=', today());
+        //             $q->whereNull('expiry_date')->orWhereDate('expiry_date', '>=', today());
 
-        //         })
+        //         })
 
-        //         ->latest('id')
+        //         ->latest('id')
 
-        //         ->first();
+        //         ->first();
 
 
 
-        //     if (!$activePlan) {
+        //     if (!$activePlan) {
 
-        //         return response()->json([
+        //         return response()->json([
 
-        //             'ok' => false,
+        //             'ok' => false,
 
-        //             'message' => 'Is business ka active plan available nahi hai ya plan expire ho chuka hai.',
+        //             'message' => 'Is business ka active plan available nahi hai ya plan expire ho chuka hai.',
 
-        //         ], 422);
+        //         ], 422);
 
-        //     }
+        //     }
 
-        // }
+        // }
 
 
 
 
 
-        /\*
+        /\*
 
-        |--------------------------------------------------------------------------
+        |--------------------------------------------------------------------------
 
-        | Active Business / Business User Plan Check
+        | Active Business / Business User Plan Check
 
-        |--------------------------------------------------------------------------
+        |--------------------------------------------------------------------------
 
-        |
+        |
 
-        | Invoice allow hogi agar:
+        | Invoice allow hogi agar:
 
-        |
+        |
 
-        | 1. Current business ka valid plan ho
+        | 1. Current business ka valid plan ho
 
-        |                    OR
+        |                    OR
 
-        | 2. Current business ke kisi attached user ka valid plan ho
+        | 2. Current business ke kisi attached user ka valid plan ho
 
-        |
+        |
 
-        |--------------------------------------------------------------------------
+        |--------------------------------------------------------------------------
 
-        \*/
+        \*/
 
 
 
-        if (!$user->hasAnyRole(['super_admin'])) {
+        if (!$user->hasAnyRole(['super_admin'])) {
 
 
 
-            /\*
+            /\*
 
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------------------
 
-            | Current business ke saare attached users
+            | Current business ke saare attached users
 
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------------------
 
-            \*/
+            \*/
 
-            $businessUserIds = DB::table('business_user')
+            $businessUserIds = DB::table('business_user')
 
-                ->where('business_id', $bid)
+                ->where('business_id', $bid)
 
-                ->pluck('user_id')
+                ->pluck('user_id')
 
-                ->map(fn ($id) => (int) $id)
+                ->map(fn ($id) => (int) $id)
 
-                ->toArray();
+                ->toArray();
 
 
 
-            /\*
+            /\*
 
-            \* Logged-in user ko bhi safety ke liye include kar do.
+            \* Logged-in user ko bhi safety ke liye include kar do.
 
-            \*/
+            \*/
 
-            if (!in_array((int) $user->id, $businessUserIds, true)) {
+            if (!in_array((int) $user->id, $businessUserIds, true)) {
 
-                $businessUserIds[] = (int) $user->id;
+                $businessUserIds[] = (int) $user->id;
 
-            }
+            }
 
 
 
-            /\*
+            /\*
 
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------------------
 
-            | Find valid plan
+            | Find valid plan
 
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------------------
 
-            \*/
+            \*/
 
-            $activePlan = UserPlan::withoutGlobalScopes()
+            $activePlan = UserPlan::withoutGlobalScopes()
 
-                ->where(function ($query) use ($bid, $businessUserIds) {
+                ->where(function ($query) use ($bid, $businessUserIds) {
 
 
 
-                    /\*
+                    /\*
 
-                    \* Case 1:
+                    \* Case 1:
 
-                    \* Business ka directly assigned plan
+                    \* Business ka directly assigned plan
 
-                    \*/
+                    \*/
 
-                    $query->where('business_id', $bid);
+                    $query->where('business_id', $bid);
 
 
 
-                    /\*
+                    /\*
 
-                    \* Case 2:
+                    \* Case 2:
 
-                    \* Business ke kisi attached user ka plan
+                    \* Business ke kisi attached user ka plan
 
-                    \*/
+                    \*/
 
-                    if (!empty($businessUserIds)) {
+                    if (!empty($businessUserIds)) {
 
-                        $query->orWhereIn('user_id', $businessUserIds);
+                        $query->orWhereIn('user_id', $businessUserIds);
 
-                    }
+                    }
 
-                })
+                })
 
 
 
-                /\*
+                /\*
 
-                \* Active aur Trial dono valid
+                \* Active aur Trial dono valid
 
-                \*/
+                \*/
 
-                // ->whereIn('status', [
+                // ->whereIn('status', [
 
-                //     'active',
+                //     'active',
 
-                //     'trial',
+                //     'trial',
 
-                // ])
+                // ])
 
 
 
-                /\*
+                /\*
 
-                \* Start date null ho ya plan start ho chuka ho
+                \* Start date null ho ya plan start ho chuka ho
 
-                \*/
+                \*/
 
-                ->where(function ($query) {
+                ->where(function ($query) {
 
-                    $query->whereNull('start_date')
+                    $query->whereNull('start_date')
 
-                        ->orWhereDate('start_date', '<=', today());
+                        ->orWhereDate('start_date', '<=', today());
 
-                })
+                })
 
 
 
-                /\*
+                /\*
 
-                \* Expiry null ho ya expiry aaj/future ki ho
+                \* Expiry null ho ya expiry aaj/future ki ho
 
-                \*/
+                \*/
 
-                ->where(function ($query) {
+                ->where(function ($query) {
 
-                    $query->whereNull('expiry_date')
+                    $query->whereNull('expiry_date')
 
-                        ->orWhereDate('expiry_date', '>=', today());
+                        ->orWhereDate('expiry_date', '>=', today());
 
-                })
+                })
 
 
 
-                ->orderByDesc('expiry_date')
+                ->orderByDesc('expiry_date')
 
-                ->orderByDesc('id')
+                ->orderByDesc('id')
 
-                ->first();
+                ->first();
 
 
 
 
 
-            /\*
+            /\*
 
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------------------
 
-            | No valid plan
+            | No valid plan
 
-            |--------------------------------------------------------------------------
+            |--------------------------------------------------------------------------
 
-            \*/
+            \*/
 
-            if (!$activePlan) {
+            if (!$activePlan) {
 
-                return response()->json([
+                return response()->json([
 
-                    'ok' => false,
+                    'ok' => false,
 
-                    'message' => 'Is business ya is business ke kisi user ka active plan available nahi hai, ya plan expire ho chuka hai.',
+                    'message' => 'Is business ya is business ke kisi user ka active plan available nahi hai, ya plan expire ho chuka hai.',
 
-                ], 422);
+                ], 422);
 
-            }
+            }
 
-        }
+        }
 
 
 
-        $gstInvoiceAllowed = (bool) $business->gst_enabled
+        $gstInvoiceAllowed = (bool) $business->gst_enabled
 
-            && filled(trim((string) $business->gstin));
+            && filled(trim((string) $business->gstin));
 
 
 
-        if (in_array($docType, ['tax', 'proforma'], true) && !$gstInvoiceAllowed) {
+        if (in_array($docType, ['tax', 'proforma'], true) && !$gstInvoiceAllowed) {
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => 'GST Enabled aur GSTIN ke bina Tax/Proforma invoice nahi ban sakta. Sirf quotation bana sakte hain.',
+                'message' => 'GST Enabled aur GSTIN ke bina Tax/Proforma invoice nahi ban sakta. Sirf quotation bana sakte hain.',
 
-            ], 422);
+            ], 422);
 
-        }
+        }
 
 
 
-        $rules = [
+        $rules = [
 
-            'client_id' => [
+            'client_id' => [
 
-                'required',
+                'required',
 
-                'integer',
+                'integer',
 
-                Rule::exists('clients', 'id')->where('business_id', $bid),
+                Rule::exists('clients', 'id')->where('business_id', $bid),
 
-            ],
+            ],
 
-            'invoice_date' => ['required', 'date'],
+            'invoice_date' => ['required', 'date'],
 
-            'invoice_prefix' => ['nullable', 'string', 'max:255'],
+            'invoice_prefix' => ['nullable', 'string', 'max:255'],
 
-            'invoice_number' => ['nullable', 'string', 'max:255'],
+            'invoice_number' => ['nullable', 'string', 'max:255'],
 
-            'transport_mode' => ['nullable', 'string', 'max:255'],
+            'transport_mode' => ['nullable', 'string', 'max:255'],
 
-            'gst_no' => ['nullable', 'string', 'max:50'],
+            'gst_no' => ['nullable', 'string', 'max:50'],
 
-            'reverse_charge' => ['nullable', 'boolean'],
+            'reverse_charge' => ['nullable', 'boolean'],
 
-            'notes' => ['nullable', 'string', 'max:5000'],
+            'notes' => ['nullable', 'string', 'max:5000'],
 
-            'terms' => ['nullable', 'string', 'max:5000'],
+            'terms' => ['nullable', 'string', 'max:5000'],
 
 
 
-            // API can send either items_json or items[]
+            // API can send either items_json or items[]
 
-            'items_json' => ['nullable'],
+            'items_json' => ['nullable'],
 
-            'items' => ['nullable', 'array', 'min:1'],
+            'items' => ['nullable', 'array', 'min:1'],
 
 
 
-            'charges_json' => ['nullable'],
+            'charges_json' => ['nullable'],
 
-            'discount_total' => ['nullable', 'numeric', 'min:0'],
+            'discount_total' => ['nullable', 'numeric', 'min:0'],
 
-            'charge_total' => ['nullable', 'numeric', 'min:0'],
+            'charge_total' => ['nullable', 'numeric', 'min:0'],
 
-            'tcs_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'tcs_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
 
-            'tcs_amount' => ['nullable', 'numeric', 'min:0'],
+            'tcs_amount' => ['nullable', 'numeric', 'min:0'],
 
-            'round_off' => ['nullable', 'numeric'],
+            'round_off' => ['nullable', 'numeric'],
 
-            'less_amount' => ['nullable', 'numeric', 'min:0'],
+            'less_amount' => ['nullable', 'numeric', 'min:0'],
 
 
 
-            'payment_method' => ['nullable', 'string', 'max:255'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
 
-            'bank_account_id' => [
+            'bank_account_id' => [
 
-                'nullable',
+                'nullable',
 
-                'integer',
+                'integer',
 
-                Rule::exists('bank_accounts', 'id')->where('business_id', $bid),
+                Rule::exists('bank_accounts', 'id')->where('business_id', $bid),
 
-            ],
+            ],
 
-        ];
+        ];
 
 
 
-        if ($isHospitalBusiness) {
+        if ($isHospitalBusiness) {
 
-            $rules = array_merge($rules, [
+            $rules = array_merge($rules, [
 
-                'patient_uhid' => ['nullable', 'string', 'max:100'],
+                'patient_uhid' => ['nullable', 'string', 'max:100'],
 
-                'patient_age' => ['nullable', 'integer', 'min:0', 'max:150'],
+                'patient_age' => ['nullable', 'integer', 'min:0', 'max:150'],
 
-                'patient_gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
+                'patient_gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
 
-                'blood_group' => ['nullable', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])],
+                'blood_group' => ['nullable', Rule::in(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'])],
 
-                'guardian_name' => ['nullable', 'string', 'max:255'],
+                'guardian_name' => ['nullable', 'string', 'max:255'],
 
 
 
-                'visit_type' => ['required', Rule::in([
+                'visit_type' => ['required', Rule::in([
 
-                    'opd', 'ipd', 'emergency', 'day_care', 'diagnostic', 'pharmacy',
+                    'opd', 'ipd', 'emergency', 'day_care', 'diagnostic', 'pharmacy',
 
-                ])],
+                ])],
 
-                'visit_number' => ['nullable', 'string', 'max:100'],
+                'visit_number' => ['nullable', 'string', 'max:100'],
 
-                'visit_at' => ['required', 'date'],
+                'visit_at' => ['required', 'date'],
 
 
 
-                'doctor_id' => [
+                'doctor_id' => [
 
-                    'nullable', 'integer',
+                    'nullable', 'integer',
 
-                    Rule::exists('doctors', 'id')->where('business_id', $bid),
+                    Rule::exists('doctors', 'id')->where('business_id', $bid),
 
-                ],
+                ],
 
-                'department_id' => [
+                'department_id' => [
 
-                    'nullable', 'integer',
+                    'nullable', 'integer',
 
-                    Rule::exists('hospital_departments', 'id')->where('business_id', $bid),
+                    Rule::exists('hospital_departments', 'id')->where('business_id', $bid),
 
-                ],
+                ],
 
-                'referred_by' => ['nullable', 'string', 'max:255'],
+                'referred_by' => ['nullable', 'string', 'max:255'],
 
 
 
-                'billing_category' => ['required', Rule::in([
+                'billing_category' => ['required', Rule::in([
 
-                    'cash', 'credit', 'insurance', 'corporate', 'government_scheme', 'charity',
+                    'cash', 'credit', 'insurance', 'corporate', 'government_scheme', 'charity',
 
-                ])],
+                ])],
 
 
 
-                'ward_id' => [
+                'ward_id' => [
 
-                    'nullable', 'integer',
+                    'nullable', 'integer',
 
-                    Rule::exists('hospital_wards', 'id')->where('business_id', $bid),
+                    Rule::exists('hospital_wards', 'id')->where('business_id', $bid),
 
-                ],
+                ],
 
-                'room_id' => [
+                'room_id' => [
 
-                    'nullable', 'integer',
+                    'nullable', 'integer',
 
-                    Rule::exists('hospital_rooms', 'id')->where('business_id', $bid),
+                    Rule::exists('hospital_rooms', 'id')->where('business_id', $bid),
 
-                ],
+                ],
 
-                'bed_id' => [
+                'bed_id' => [
 
-                    'nullable', 'integer',
+                    'nullable', 'integer',
 
-                    Rule::exists('hospital_beds', 'id')->where('business_id', $bid),
+                    Rule::exists('hospital_beds', 'id')->where('business_id', $bid),
 
-                ],
+                ],
 
 
 
-                'admitted_at' => ['nullable', 'date'],
+                'admitted_at' => ['nullable', 'date'],
 
-                'discharged_at' => ['nullable', 'date', 'after_or_equal:admitted_at'],
+                'discharged_at' => ['nullable', 'date', 'after_or_equal:admitted_at'],
 
 
 
-                'insurance_provider' => ['nullable', 'string', 'max:255'],
+                'insurance_provider' => ['nullable', 'string', 'max:255'],
 
-                'insurance_policy_number' => ['nullable', 'string', 'max:255'],
+                'insurance_policy_number' => ['nullable', 'string', 'max:255'],
 
-                'chief_complaint' => ['nullable', 'string', 'max:5000'],
+                'chief_complaint' => ['nullable', 'string', 'max:5000'],
 
-                'diagnosis' => ['nullable', 'string', 'max:5000'],
+                'diagnosis' => ['nullable', 'string', 'max:5000'],
 
-                'hospital_notes' => ['nullable', 'string', 'max:5000'],
+                'hospital_notes' => ['nullable', 'string', 'max:5000'],
 
-            ]);
+            ]);
 
-        }
+        }
 
 
 
-        $data = $request->validate($rules);
+        $data = $request->validate($rules);
 
 
 
-        $pay = [];
+        $pay = [];
 
-        if ($docType === 'tax') {
+        if ($docType === 'tax') {
 
-            $pay = $request->validate([
+            $pay = $request->validate([
 
-                'pay_cash' => ['nullable', 'numeric', 'min:0'],
+                'pay_cash' => ['nullable', 'numeric', 'min:0'],
 
-                'pay_upi' => ['nullable', 'numeric', 'min:0'],
+                'pay_upi' => ['nullable', 'numeric', 'min:0'],
 
-                'pay_card' => ['nullable', 'numeric', 'min:0'],
+                'pay_card' => ['nullable', 'numeric', 'min:0'],
 
-                'pay_cheque' => ['nullable', 'numeric', 'min:0'],
+                'pay_cheque' => ['nullable', 'numeric', 'min:0'],
 
-                'credit_sales_excess' => ['nullable', 'numeric', 'min:0'],
+                'credit_sales_excess' => ['nullable', 'numeric', 'min:0'],
 
-                'advance_amount' => ['nullable', 'numeric', 'min:0'],
+                'advance_amount' => ['nullable', 'numeric', 'min:0'],
 
-                'online_mode' => ['nullable', 'string', 'max:30'],
+                'online_mode' => ['nullable', 'string', 'max:30'],
 
-                'online_ref' => ['nullable', 'string', 'max:100'],
+                'online_ref' => ['nullable', 'string', 'max:100'],
 
-                'upi_id' => ['nullable', 'string', 'max:100'],
+                'upi_id' => ['nullable', 'string', 'max:100'],
 
-                'card_last4' => ['nullable', 'digits:4'],
+                'card_last4' => ['nullable', 'digits:4'],
 
-                'card_ref' => ['nullable', 'string', 'max:100'],
+                'card_ref' => ['nullable', 'string', 'max:100'],
 
-                'cheque_no' => ['nullable', 'string', 'max:50'],
+                'cheque_no' => ['nullable', 'string', 'max:50'],
 
-                'bank_name' => ['nullable', 'string', 'max:100'],
+                'bank_name' => ['nullable', 'string', 'max:100'],
 
-                'pay_notes' => ['nullable', 'string', 'max:2000'],
+                'pay_notes' => ['nullable', 'string', 'max:2000'],
 
-                'payment_notes' => ['nullable', 'string', 'max:2000'],
+                'payment_notes' => ['nullable', 'string', 'max:2000'],
 
-            ]);
+            ]);
 
-        }
+        }
 
 
 
-        $client = Client::withoutGlobalScopes()
+        $client = Client::withoutGlobalScopes()
 
-            ->where('business_id', $bid)
+            ->where('business_id', $bid)
 
-            ->whereKey((int) $data['client_id'])
+            ->whereKey((int) $data['client_id'])
 
-            ->first();
+            ->first();
 
 
 
-        if (!$client) {
+        if (!$client) {
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => 'Client/Patient not found for this business',
+                'message' => 'Client/Patient not found for this business',
 
-            ], 404);
+            ], 404);
 
-        }
+        }
 
 
 
-        $toNumber = static function ($value, float $default = 0.0): ?float {
+        $toNumber = static function ($value, float $default = 0.0): ?float {
 
-            if ($value === null || $value === '') return $default;
+            if ($value === null || $value === '') return $default;
 
-            if (is_int($value) || is_float($value)) return (float) $value;
+            if (is_int($value) || is_float($value)) return (float) $value;
 
-            if (is_string($value)) {
+            if (is_string($value)) {
 
-                $value = str_replace(',', '', trim($value));
+                $value = str_replace(',', '', trim($value));
 
-                if ($value === '') return $default;
+                if ($value === '') return $default;
 
-            }
+            }
 
-            return is_numeric($value) ? (float) $value : null;
+            return is_numeric($value) ? (float) $value : null;
 
-        };
+        };
 
 
 
-        $decodeArrayInput = static function ($value, string $fieldName): array {
+        $decodeArrayInput = static function ($value, string $fieldName): array {
 
-            if ($value === null || $value === '') return [];
+            if ($value === null || $value === '') return [];
 
-            if (is_array($value)) return $value;
+            if (is_array($value)) return $value;
 
-            if (is_string($value)) {
+            if (is_string($value)) {
 
-                $decoded = json_decode($value, true);
+                $decoded = json_decode($value, true);
 
-                if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
 
-                    throw new \InvalidArgumentException("{$fieldName} invalid JSON hai: " . json_last_error_msg());
+                    throw new \InvalidArgumentException("{$fieldName} invalid JSON hai: " . json_last_error_msg());
 
-                }
+                }
 
-                return $decoded;
+                return $decoded;
 
-            }
+            }
 
-            throw new \InvalidArgumentException("{$fieldName} array ya JSON string hona chahiye.");
+            throw new \InvalidArgumentException("{$fieldName} array ya JSON string hona chahiye.");
 
-        };
+        };
 
 
 
-        try {
+        try {
 
-            $rows = $decodeArrayInput($request->input('items_json'), 'items_json');
+            $rows = $decodeArrayInput($request->input('items_json'), 'items_json');
 
-        } catch (\InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $e) {
 
-            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
 
-        }
+        }
 
 
 
-        if (!$rows && is_array($request->input('items'))) {
+        if (!$rows && is_array($request->input('items'))) {
 
-            $rows = $request->input('items');
+            $rows = $request->input('items');
 
-        }
+        }
 
 
 
-        if ($rows && !array_is_list($rows)) {
+        if ($rows && !array_is_list($rows)) {
 
-            $rows = [$rows];
+            $rows = [$rows];
 
-        }
+        }
 
 
 
-        if (!$rows) {
+        if (!$rows) {
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => $isHospitalBusiness
+                'message' => $isHospitalBusiness
 
-                    ? 'Kam se kam 1 hospital service/charge zaroori hai.'
+                    ? 'Kam se kam 1 hospital service/charge zaroori hai.'
 
-                    : 'items_json or items is required.',
+                    : 'items_json or items is required.',
 
-            ], 422);
+            ], 422);
 
-        }
+        }
 
 
 
-        $subtotal = 0.0;
+        $subtotal = 0.0;
 
-        $weightedTax = 0.0;
+        $weightedTax = 0.0;
 
-        $itemsTaxTotal = 0.0;
+        $itemsTaxTotal = 0.0;
 
-        $cleanRows = [];
+        $cleanRows = [];
 
 
 
-        foreach ($rows as $index => $row) {
+        foreach ($rows as $index => $row) {
 
-            $rowNo = $index + 1;
+            $rowNo = $index + 1;
 
 
 
-            if (!is_array($row)) {
+            if (!is_array($row)) {
 
-                return response()->json(['ok' => false, 'message' => "Row {$rowNo} invalid hai."], 422);
+                return response()->json(['ok' => false, 'message' => "Row {$rowNo} invalid hai."], 422);
 
-            }
+            }
 
 
 
-            $itemId = (int) ($row['item_id'] ?? 0);
+            $itemId = (int) ($row['item_id'] ?? 0);
 
-            if ($itemId <= 0) {
+            if ($itemId <= 0) {
 
-                return response()->json([
+                return response()->json([
 
-                    'ok' => false,
+                    'ok' => false,
 
-                    'message' => $isHospitalBusiness
+                    'message' => $isHospitalBusiness
 
-                        ? "Row {$rowNo} me service select nahi hai."
+                        ? "Row {$rowNo} me service select nahi hai."
 
-                        : "Row {$rowNo} item_id missing hai.",
+                        : "Row {$rowNo} item_id missing hai.",
 
-                ], 422);
+                ], 422);
 
-            }
+            }
 
 
 
-            $item = Item::withoutGlobalScopes()
+            $item = Item::withoutGlobalScopes()
 
-                ->where('business_id', $bid)
+                ->where('business_id', $bid)
 
-                ->whereKey($itemId)
+                ->whereKey($itemId)
 
-                ->where('is_active', true)
+                ->where('is_active', true)
 
-                ->first();
+                ->first();
 
 
 
-            if (!$item) {
+            if (!$item) {
 
-                return response()->json([
+                return response()->json([
 
-                    'ok' => false,
+                    'ok' => false,
 
-                    'message' => "Row {$rowNo} ka item/service invalid ya inactive hai.",
+                    'message' => "Row {$rowNo} ka item/service invalid ya inactive hai.",
 
-                ], 422);
+                ], 422);
 
-            }
+            }
 
 
 
-            $description = trim((string) (
+            $description = trim((string) (
 
-                $row['description'] ?? $item->description ?? $item->name ?? ''
+                $row['description'] ?? $item->description ?? $item->name ?? ''
 
-            ));
+            ));
 
 
 
-            if ($description === '') {
+            if ($description === '') {
 
-                return response()->json(['ok' => false, 'message' => "Row {$rowNo} description missing hai."], 422);
+                return response()->json(['ok' => false, 'message' => "Row {$rowNo} description missing hai."], 422);
 
-            }
+            }
 
 
 
-            $hsn = trim((string) (
+            $hsn = trim((string) (
 
-                $row['hsn'] ?? $row['sac'] ?? $item->sac ?? $item->hsn ?? ''
+                $row['hsn'] ?? $row['sac'] ?? $item->sac ?? $item->hsn ?? ''
 
-            ));
+            ));
 
 
 
-            $quantity = $toNumber($row['qty'] ?? $row['quantity'] ?? 1, 1);
+            $quantity = $toNumber($row['qty'] ?? $row['quantity'] ?? 1, 1);
 
-            if ($quantity === null || $quantity <= 0) {
+            if ($quantity === null || $quantity <= 0) {
 
-                return response()->json(['ok' => false, 'message' => "Row {$rowNo} quantity invalid hai."], 422);
+                return response()->json(['ok' => false, 'message' => "Row {$rowNo} quantity invalid hai."], 422);
 
-            }
+            }
 
 
 
-            $taxPercent = $toNumber($row['tax_percent'] ?? $item->tax_rate ?? 0, 0);
+            $taxPercent = $toNumber($row['tax_percent'] ?? $item->tax_rate ?? 0, 0);
 
-            if ($taxPercent === null || $taxPercent < 0 || $taxPercent > 100) {
+            if ($taxPercent === null || $taxPercent < 0 || $taxPercent > 100) {
 
-                return response()->json(['ok' => false, 'message' => "Row {$rowNo} tax percentage invalid hai."], 422);
+                return response()->json(['ok' => false, 'message' => "Row {$rowNo} tax percentage invalid hai."], 422);
 
-            }
+            }
 
-            $taxPercent = round($taxPercent, 2);
+            $taxPercent = round($taxPercent, 2);
 
 
 
-            $fixedPrice = $toNumber(
+            $fixedPrice = $toNumber(
 
-                $row['fixed_price']
+                $row['fixed_price']
 
-                ?? $row['service_rate']
+                ?? $row['service_rate']
 
-                ?? $row['price']
+                ?? $row['price']
 
-                ?? $row['unit_rate']
+                ?? $row['unit_rate']
 
-                ?? 0,
+                ?? 0,
 
-                0
+                0
 
-            );
+            );
 
 
 
-            if ($fixedPrice === null || $fixedPrice < 0) {
+            if ($fixedPrice === null || $fixedPrice < 0) {
 
-                return response()->json(['ok' => false, 'message' => "Row {$rowNo} rate invalid hai."], 422);
+                return response()->json(['ok' => false, 'message' => "Row {$rowNo} rate invalid hai."], 422);
 
-            }
+            }
 
-            $fixedPrice = round($fixedPrice, 2);
+            $fixedPrice = round($fixedPrice, 2);
 
 
 
-            $goldWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['gold_wt'] ?? $row['gold_weight'] ?? 0, 0);
+            $goldWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['gold_wt'] ?? $row['gold_weight'] ?? 0, 0);
 
-            $silverWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_wt'] ?? $row['silver_weight'] ?? 0, 0);
+            $silverWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_wt'] ?? $row['silver_weight'] ?? 0, 0);
 
-            $goldRate = $isHospitalBusiness ? 0.0 : $toNumber($row['gold_rate'] ?? 0, 0);
+            $goldRate = $isHospitalBusiness ? 0.0 : $toNumber($row['gold_rate'] ?? 0, 0);
 
-            $silverRate = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_rate'] ?? 0, 0);
+            $silverRate = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_rate'] ?? 0, 0);
+
             $metalRate = $isHospitalBusiness ? 0.0 : $toNumber($row['metal_rate'] ?? 0, 0);
+            $makingRate = $isHospitalBusiness ? 0.0 : $toNumber($row['making_rate'] ?? 0, 0);
 
-            $makingRate = $isHospitalBusiness ? 0.0 : $toNumber($row['making_rate'] ?? 0, 0);
+            $gemstoneWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['gemstone_wt'] ?? $row['gemstone_wt_ct'] ?? 0, 0);
 
-            $gemstoneWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['gemstone_wt'] ?? $row['gemstone_wt_ct'] ?? 0, 0);
+            $diamondWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['diamond_wt'] ?? $row['diamond_wt_ct'] ?? 0, 0);
 
-            $diamondWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['diamond_wt'] ?? $row['diamond_wt_ct'] ?? 0, 0);
+            $stoneCharges = $isHospitalBusiness ? 0.0 : $toNumber($row['gemstone_charge'] ?? $row['stone_charges'] ?? 0, 0);
 
-            $stoneCharges = $isHospitalBusiness ? 0.0 : $toNumber($row['gemstone_charge'] ?? $row['stone_charges'] ?? 0, 0);
+            $diamondCharges = $isHospitalBusiness ? 0.0 : $toNumber($row['diamond_charge'] ?? $row['diamond_charges'] ?? 0, 0);
 
-            $diamondCharges = $isHospitalBusiness ? 0.0 : $toNumber($row['diamond_charge'] ?? $row['diamond_charges'] ?? 0, 0);
 
 
+            foreach ([
 
-            foreach ([
+                $goldWeight, $silverWeight, $goldRate, $silverRate, $metalRate, $makingRate,
 
-                $goldWeight, $silverWeight, $goldRate, $silverRate, $metalRate, $makingRate,
+                $gemstoneWeight, $diamondWeight, $stoneCharges, $diamondCharges,
 
-                $gemstoneWeight, $diamondWeight, $stoneCharges, $diamondCharges,
+            ] as $numericValue) {
 
-            ] as $numericValue) {
+                if ($numericValue === null || $numericValue < 0) {
 
-                if ($numericValue === null || $numericValue < 0) {
+                    return response()->json(['ok' => false, 'message' => "Row {$rowNo} me invalid numeric value hai."], 422);
 
-                    return response()->json(['ok' => false, 'message' => "Row {$rowNo} me invalid numeric value hai."], 422);
+                }
 
-                }
+            }
 
-            }
 
 
+            $makingChargeType = strtolower(trim((string) ($row['making_charge_type'] ?? 'percentage')));
 
-            $makingChargeType = strtolower(trim((string) ($row['making_charge_type'] ?? 'percentage')));
+            $makingChargeType = str_replace([' ', '-'], '\_', $makingChargeType);
 
-            $makingChargeType = str_replace([' ', '-'], '\_', $makingChargeType);
 
 
+            if (in_array($makingChargeType, ['percent', 'percentage_based'], true)) $makingChargeType = 'percentage';
 
-            if (in_array($makingChargeType, ['percent', 'percentage_based'], true)) $makingChargeType = 'percentage';
+            if (in_array($makingChargeType, ['pergram', 'gram'], true)) $makingChargeType = 'per_gram';
 
-            if (in_array($makingChargeType, ['pergram', 'gram'], true)) $makingChargeType = 'per_gram';
 
 
+            if ($isHospitalBusiness || !in_array($makingChargeType, ['percentage', 'fixed', 'per_gram', 'per_product'], true)) {
 
-            if ($isHospitalBusiness || !in_array($makingChargeType, ['percentage', 'fixed', 'per_gram', 'per_product'], true)) {
+                $makingChargeType = 'percentage';
 
-                $makingChargeType = 'percentage';
+            }
 
-            }
 
 
+            $metalBase = ($goldWeight \* $goldRate) + ($silverWeight \* $silverRate);
 
-            $metalBase = ($goldWeight \* $goldRate) + ($silverWeight \* $silverRate);
+            $basePrice = $fixedPrice > 0 ? $fixedPrice : $metalBase;
 
-            $basePrice = $fixedPrice > 0 ? $fixedPrice : $metalBase;
 
 
+            $makingAmount = 0.0;
 
-            $makingAmount = 0.0;
+            if (!$isHospitalBusiness) {
 
-            if (!$isHospitalBusiness) {
+                $makingAmount = match ($makingChargeType) {
 
-                $makingAmount = match ($makingChargeType) {
+                    'percentage' => round($basePrice \* ($makingRate / 100), 2),
 
-                    'percentage' => round($basePrice \* ($makingRate / 100), 2),
+                    'fixed' => round($makingRate, 2),
 
-                    'fixed' => round($makingRate, 2),
+                    'per_gram' => round(($goldWeight + $silverWeight) \* $makingRate, 2),
 
-                    'per_gram' => round(($goldWeight + $silverWeight) \* $makingRate, 2),
+                    'per_product' => round($makingRate, 2),
 
-                    'per_product' => round($makingRate, 2),
+                    default => 0.0,
 
-                    default => 0.0,
+                };
 
-                };
+            }
 
-            }
 
 
+            $lineBase = round((
 
-            $lineBase = round((
+                $basePrice + $makingAmount + $stoneCharges + $diamondCharges
 
-                $basePrice + $makingAmount + $stoneCharges + $diamondCharges
+            ) \* $quantity, 2);
 
-            ) \* $quantity, 2);
 
 
+            $lineTax = round($lineBase \* ($taxPercent / 100), 2);
 
-            $lineTax = round($lineBase \* ($taxPercent / 100), 2);
+            $lineTotal = round($lineBase + $lineTax, 2);
 
-            $lineTotal = round($lineBase + $lineTax, 2);
 
 
+            $subtotal += $lineBase;
 
-            $subtotal += $lineBase;
+            $weightedTax += $lineBase \* $taxPercent;
 
-            $weightedTax += $lineBase \* $taxPercent;
+            $itemsTaxTotal += $lineTax;
 
-            $itemsTaxTotal += $lineTax;
 
 
+            $rowItemType = strtolower(trim((string) ($row['item_type'] ?? $item->type ?? '')));
 
-            $rowItemType = strtolower(trim((string) ($row['item_type'] ?? $item->type ?? '')));
+            if ($isHospitalBusiness) $rowItemType = 'service';
 
-            if ($isHospitalBusiness) $rowItemType = 'service';
+            if (!in_array($rowItemType, ['product', 'service'], true)) $rowItemType = 'product';
 
-            if (!in_array($rowItemType, ['product', 'service'], true)) $rowItemType = 'product';
 
 
+            $cleanRows[] = [
 
-            $cleanRows[] = [
+                'item_id' => $itemId,
 
-                'item_id' => $itemId,
+                'item_type' => $rowItemType,
 
-                'item_type' => $rowItemType,
+                'description' => $description,
 
-                'description' => $description,
+                'hsn' => $hsn,
 
-                'hsn' => $hsn,
+                'qty' => round($quantity, 3),
 
-                'qty' => round($quantity, 3),
+                'tax_percent' => $taxPercent,
 
-                'tax_percent' => $taxPercent,
+                'fixed_price' => $fixedPrice,
 
-                'fixed_price' => $fixedPrice,
+                'service_rate' => $fixedPrice,
 
-                'service_rate' => $fixedPrice,
+                'gold_wt' => round($goldWeight, 3),
 
-                'gold_wt' => round($goldWeight, 3),
+                'silver_wt' => round($silverWeight, 3),
 
-                'silver_wt' => round($silverWeight, 3),
+                'gold_rate' => round($goldRate, 2),
 
-                'gold_rate' => round($goldRate, 2),
-
-                'silver_rate' => round($silverRate, 2),
+                'silver_rate' => round($silverRate, 2),
                 'metal_rate' => round($metalRate, 2),
 
-                'gemstone_wt' => round($gemstoneWeight, 3),
+                'gemstone_wt' => round($gemstoneWeight, 3),
 
-                'diamond_wt' => round($diamondWeight, 3),
+                'diamond_wt' => round($diamondWeight, 3),
 
-                'making_charge_type' => $makingChargeType,
+                'making_charge_type' => $makingChargeType,
 
-                'making_rate' => round($makingRate, 2),
+                'making_rate' => round($makingRate, 2),
 
-                'making_charge' => round($makingAmount, 2),
+                'making_charge' => round($makingAmount, 2),
 
-                'stone_charges' => round($stoneCharges, 2),
+                'stone_charges' => round($stoneCharges, 2),
 
-                'diamond_charges' => round($diamondCharges, 2),
+                'diamond_charges' => round($diamondCharges, 2),
 
-                'rate' => $lineBase,
+                'rate' => $lineBase,
 
-                'unit_rate' => $fixedPrice,
+                'unit_rate' => $fixedPrice,
 
-                'tax_amount' => $lineTax,
+                'tax_amount' => $lineTax,
 
-                'amount' => $lineTotal,
+                'amount' => $lineTotal,
 
-            ];
+            ];
 
-        }
+        }
 
 
 
-        $subtotal = round($subtotal, 2);
+        $subtotal = round($subtotal, 2);
 
-        $itemsTaxTotal = round($itemsTaxTotal, 2);
+        $itemsTaxTotal = round($itemsTaxTotal, 2);
 
-        $averageTaxPercent = $subtotal > 0 ? round($weightedTax / $subtotal, 2) : 0.0;
+        $averageTaxPercent = $subtotal > 0 ? round($weightedTax / $subtotal, 2) : 0.0;
 
 
 
-        $discountTotal = round((float) ($data['discount_total'] ?? 0), 2);
+        $discountTotal = round((float) ($data['discount_total'] ?? 0), 2);
 
-        $chargeTotal = round((float) ($data['charge_total'] ?? 0), 2);
+        $chargeTotal = round((float) ($data['charge_total'] ?? 0), 2);
 
-        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
+        $taxableAmount = round(max(0, $subtotal - $discountTotal + $chargeTotal), 2);
 
-        $taxAmount = $itemsTaxTotal;
+        $taxAmount = $itemsTaxTotal;
 
 
 
-        $tcsPercent = round((float) ($data['tcs_percent'] ?? 0), 2);
+        $tcsPercent = round((float) ($data['tcs_percent'] ?? 0), 2);
 
-        $tcsAmount = round((float) ($data['tcs_amount'] ?? 0), 2);
+        $tcsAmount = round((float) ($data['tcs_amount'] ?? 0), 2);
 
-        if ($tcsPercent > 0) {
+        if ($tcsPercent > 0) {
 
-            $tcsAmount = round($taxableAmount \* ($tcsPercent / 100), 2);
+            $tcsAmount = round($taxableAmount \* ($tcsPercent / 100), 2);
 
-        }
+        }
 
 
 
-        $roundOff = round((float) ($data['round_off'] ?? 0), 2);
+        $roundOff = round((float) ($data['round_off'] ?? 0), 2);
 
-        $lessAmount = round((float) ($data['less_amount'] ?? $discountTotal), 2);
+        $lessAmount = round((float) ($data['less_amount'] ?? $discountTotal), 2);
 
-        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
+        $grandTotal = round($taxableAmount + $taxAmount + $tcsAmount + $roundOff, 2);
 
 
 
-        $cash = $online = $card = $cheque = $credit = $advance = 0.0;
+        $cash = $online = $card = $cheque = $credit = $advance = 0.0;
 
-        $receivedTotal = 0.0;
+        $receivedTotal = 0.0;
 
-        $balance = $grandTotal;
+        $balance = $grandTotal;
 
 
 
-        if ($docType === 'tax') {
+        if ($docType === 'tax') {
 
-            $cash = (float) ($pay['pay_cash'] ?? 0);
+            $cash = (float) ($pay['pay_cash'] ?? 0);
 
-            $online = (float) ($pay['pay_upi'] ?? 0);
+            $online = (float) ($pay['pay_upi'] ?? 0);
 
-            $card = (float) ($pay['pay_card'] ?? 0);
+            $card = (float) ($pay['pay_card'] ?? 0);
 
-            $cheque = (float) ($pay['pay_cheque'] ?? 0);
+            $cheque = (float) ($pay['pay_cheque'] ?? 0);
 
-            $credit = (float) ($pay['credit_sales_excess'] ?? 0);
+            $credit = (float) ($pay['credit_sales_excess'] ?? 0);
 
-            $advance = (float) ($pay['advance_amount'] ?? 0);
+            $advance = (float) ($pay['advance_amount'] ?? 0);
 
 
 
-            $receivedTotal = round($cash + $online + $card + $cheque, 2);
+            $receivedTotal = round($cash + $online + $card + $cheque, 2);
 
-            $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
+            $balance = round(max(0, $grandTotal - $receivedTotal - $advance - $credit), 2);
 
-        }
+        }
 
 
 
-        try {
+        try {
 
-            $chargesArr = $decodeArrayInput($request->input('charges_json'), 'charges_json');
+            $chargesArr = $decodeArrayInput($request->input('charges_json'), 'charges_json');
 
-        } catch (\InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $e) {
 
-            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
 
-        }
+        }
 
 
 
-        if ($chargesArr && !array_is_list($chargesArr)) $chargesArr = [$chargesArr];
+        if ($chargesArr && !array_is_list($chargesArr)) $chargesArr = [$chargesArr];
 
 
 
-        $additionalCharges = [];
+        $additionalCharges = [];
 
-        foreach ($chargesArr as $charge) {
+        foreach ($chargesArr as $charge) {
 
-            if (!is_array($charge)) continue;
+            if (!is_array($charge)) continue;
 
-            $name = trim((string) ($charge['name'] ?? ''));
+            $name = trim((string) ($charge['name'] ?? ''));
 
-            $amount = round((float) ($charge['amount'] ?? 0), 2);
+            $amount = round((float) ($charge['amount'] ?? 0), 2);
 
-            if ($name !== '' && $amount != 0) {
+            if ($name !== '' && $amount != 0) {
 
-                $additionalCharges[] = ['name' => $name, 'amount' => $amount];
+                $additionalCharges[] = ['name' => $name, 'amount' => $amount];
 
-            }
+            }
 
-        }
+        }
 
 
 
-        $invoiceDate = Carbon::parse($data['invoice_date'])->toDateString();
+        $invoiceDate = Carbon::parse($data['invoice_date'])->toDateString();
 
 
 
-        $prefix = trim((string) ($data['invoice_prefix'] ?? ''));
+        $prefix = trim((string) ($data['invoice_prefix'] ?? ''));
 
-        if ($prefix === '') {
+        if ($prefix === '') {
 
-            $defaultBase = match ($docType) {
+            $defaultBase = match ($docType) {
 
-                'proforma' => 'PF',
+                'proforma' => 'PF',
 
-                'quotation' => 'QT',
+                'quotation' => 'QT',
 
-                default => $isHospitalBusiness
+                default => $isHospitalBusiness
 
-                    ? 'HSP'
+                    ? 'HSP'
 
-                    : ($business->invoice_base_prefix ?: 'INV'),
+                    : ($business->invoice_base_prefix ?: 'INV'),
 
-            };
+            };
 
 
 
-            $prefix = InvoiceNumber::previewPrefix($invoiceDate, $defaultBase)
+            $prefix = InvoiceNumber::previewPrefix($invoiceDate, $defaultBase)
 
-                ?: $this->computePrefix($invoiceDate, $defaultBase);
+                ?: $this->computePrefix($invoiceDate, $defaultBase);
 
-        }
+        }
 
 
 
-        $invoiceNumber = trim((string) ($data['invoice_number'] ?? ''));
+        $invoiceNumber = trim((string) ($data['invoice_number'] ?? ''));
 
-        if ($invoiceNumber === '') {
+        if ($invoiceNumber === '') {
 
-            $allocation = InvoiceNumber::next($bid, $invoiceDate, $prefix, 3, $docType);
+            $allocation = InvoiceNumber::next($bid, $invoiceDate, $prefix, 3, $docType);
 
-            $invoiceNumber = $allocation['full'] ?? '';
+            $invoiceNumber = $allocation['full'] ?? '';
 
-        }
+        }
 
 
 
-        if ($invoiceNumber === '') {
+        if ($invoiceNumber === '') {
 
-            return response()->json(['ok' => false, 'message' => 'Invoice number generate failed'], 422);
+            return response()->json(['ok' => false, 'message' => 'Invoice number generate failed'], 422);
 
-        }
+        }
 
 
 
-        if (Invoice::withoutGlobalScopes()
+        if (Invoice::withoutGlobalScopes()
 
-            ->where('business_id', $bid)
+            ->where('business_id', $bid)
 
-            ->where('invoice_number', $invoiceNumber)
+            ->where('invoice_number', $invoiceNumber)
 
-            ->exists()) {
+            ->exists()) {
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => 'Invoice number already exists',
+                'message' => 'Invoice number already exists',
 
-                'invoice_number' => $invoiceNumber,
+                'invoice_number' => $invoiceNumber,
 
-            ], 409);
+            ], 409);
 
-        }
+        }
 
 
 
-        $normalizeStateCode = static function ($value): string {
+        $normalizeStateCode = static function ($value): string {
 
-            $code = preg_replace('/\D+/', '', trim((string) $value));
+            $code = preg_replace('/\D+/', '', trim((string) $value));
 
-            return ltrim($code, '0');
+            return ltrim($code, '0');
 
-        };
+        };
 
 
 
-        $businessStateCode = $normalizeStateCode($business->state_code ?? '');
+        $businessStateCode = $normalizeStateCode($business->state_code ?? '');
 
-        $clientStateCode = $normalizeStateCode($client->state_code ?? '');
+        $clientStateCode = $normalizeStateCode($client->state_code ?? '');
 
-        $isIntraState = $businessStateCode !== '' && $clientStateCode !== ''
+        $isIntraState = $businessStateCode !== '' && $clientStateCode !== ''
 
-            ? $businessStateCode === $clientStateCode
+            ? $businessStateCode === $clientStateCode
 
-            : false;
+            : false;
 
 
 
-        $cgstPercent = $isIntraState ? round($averageTaxPercent / 2, 2) : 0;
+        $cgstPercent = $isIntraState ? round($averageTaxPercent / 2, 2) : 0;
 
-        $sgstPercent = $isIntraState ? round($averageTaxPercent / 2, 2) : 0;
+        $sgstPercent = $isIntraState ? round($averageTaxPercent / 2, 2) : 0;
 
-        $igstPercent = $isIntraState ? 0 : round($averageTaxPercent, 2);
+        $igstPercent = $isIntraState ? 0 : round($averageTaxPercent, 2);
 
-        $cgstAmount = $isIntraState ? round($taxAmount / 2, 2) : 0;
+        $cgstAmount = $isIntraState ? round($taxAmount / 2, 2) : 0;
 
-        $sgstAmount = $isIntraState ? round($taxAmount / 2, 2) : 0;
+        $sgstAmount = $isIntraState ? round($taxAmount / 2, 2) : 0;
 
-        $igstAmount = $isIntraState ? 0 : round($taxAmount, 2);
+        $igstAmount = $isIntraState ? 0 : round($taxAmount, 2);
 
 
 
-        $hospitalSnapshot = null;
+        $hospitalSnapshot = null;
 
-        if ($isHospitalBusiness) {
+        if ($isHospitalBusiness) {
 
-            $hospitalSnapshot = [
+            $hospitalSnapshot = [
 
-                'patient_uhid' => $data['patient_uhid'] ?? null,
+                'patient_uhid' => $data['patient_uhid'] ?? null,
 
-                'patient_age' => $data['patient_age'] ?? null,
+                'patient_age' => $data['patient_age'] ?? null,
 
-                'patient_gender' => $data['patient_gender'] ?? null,
+                'patient_gender' => $data['patient_gender'] ?? null,
 
-                'blood_group' => $data['blood_group'] ?? null,
+                'blood_group' => $data['blood_group'] ?? null,
 
-                'guardian_name' => $data['guardian_name'] ?? null,
+                'guardian_name' => $data['guardian_name'] ?? null,
 
-                'visit_type' => $data['visit_type'],
+                'visit_type' => $data['visit_type'],
 
-                'visit_number' => $data['visit_number'] ?? null,
+                'visit_number' => $data['visit_number'] ?? null,
 
-                'visit_at' => $data['visit_at'],
+                'visit_at' => $data['visit_at'],
 
-                'doctor_id' => $data['doctor_id'] ?? null,
+                'doctor_id' => $data['doctor_id'] ?? null,
 
-                'department_id' => $data['department_id'] ?? null,
+                'department_id' => $data['department_id'] ?? null,
 
-                'referred_by' => $data['referred_by'] ?? null,
+                'referred_by' => $data['referred_by'] ?? null,
 
-                'billing_category' => $data['billing_category'],
+                'billing_category' => $data['billing_category'],
 
-                'ward_id' => $data['ward_id'] ?? null,
+                'ward_id' => $data['ward_id'] ?? null,
 
-                'room_id' => $data['room_id'] ?? null,
+                'room_id' => $data['room_id'] ?? null,
 
-                'bed_id' => $data['bed_id'] ?? null,
+                'bed_id' => $data['bed_id'] ?? null,
 
-                'admitted_at' => $data['admitted_at'] ?? null,
+                'admitted_at' => $data['admitted_at'] ?? null,
 
-                'discharged_at' => $data['discharged_at'] ?? null,
+                'discharged_at' => $data['discharged_at'] ?? null,
 
-                'insurance_provider' => $data['insurance_provider'] ?? null,
+                'insurance_provider' => $data['insurance_provider'] ?? null,
 
-                'insurance_policy_number' => $data['insurance_policy_number'] ?? null,
+                'insurance_policy_number' => $data['insurance_policy_number'] ?? null,
 
-                'chief_complaint' => $data['chief_complaint'] ?? null,
+                'chief_complaint' => $data['chief_complaint'] ?? null,
 
-                'diagnosis' => $data['diagnosis'] ?? null,
+                'diagnosis' => $data['diagnosis'] ?? null,
 
-                'notes' => $data['hospital_notes'] ?? $data['notes'] ?? null,
+                'notes' => $data['hospital_notes'] ?? $data['notes'] ?? null,
 
-            ];
+            ];
 
-        }
+        }
 
 
 
-        try {
+        try {
 
-            $createdInvoice = DB::transaction(function () use (
+            $createdInvoice = DB::transaction(function () use (
 
-                $request, $user, $bid, $business, $client, $isHospitalBusiness,
+                $request, $user, $bid, $business, $client, $isHospitalBusiness,
 
-                $data, $docType, $invoiceDate, $prefix, $invoiceNumber,
+                $data, $docType, $invoiceDate, $prefix, $invoiceNumber,
 
-                $subtotal, $discountTotal, $chargeTotal, $lessAmount,
+                $subtotal, $discountTotal, $chargeTotal, $lessAmount,
 
-                $taxAmount, $cgstPercent, $cgstAmount, $sgstPercent, $sgstAmount,
+                $taxAmount, $cgstPercent, $cgstAmount, $sgstPercent, $sgstAmount,
 
-                $igstPercent, $igstAmount, $tcsPercent, $tcsAmount, $roundOff,
+                $igstPercent, $igstAmount, $tcsPercent, $tcsAmount, $roundOff,
 
-                $grandTotal, $receivedTotal, $balance, $cleanRows,
+                $grandTotal, $receivedTotal, $balance, $cleanRows,
 
-                $cash, $online, $card, $cheque, $credit, $advance, $pay,
+                $cash, $online, $card, $cheque, $credit, $advance, $pay,
 
-                $additionalCharges, $hospitalSnapshot
+                $additionalCharges, $hospitalSnapshot
 
-            ) {
+            ) {
 
-                $patientVisit = null;
+                $patientVisit = null;
 
 
 
-                if ($isHospitalBusiness) {
+                if ($isHospitalBusiness) {
 
-                    $visitNumber = trim((string) ($data['visit_number'] ?? ''));
+                    $visitNumber = trim((string) ($data['visit_number'] ?? ''));
 
 
 
-                    if ($visitNumber === '') {
+                    if ($visitNumber === '') {
 
-                        $visitPrefix = match ($data['visit_type']) {
+                        $visitPrefix = match ($data['visit_type']) {
 
-                            'ipd' => 'IPD',
+                            'ipd' => 'IPD',
 
-                            'emergency' => 'EMR',
+                            'emergency' => 'EMR',
 
-                            'day_care' => 'DAY',
+                            'day_care' => 'DAY',
 
-                            'diagnostic' => 'DIA',
+                            'diagnostic' => 'DIA',
 
-                            'pharmacy' => 'PHA',
+                            'pharmacy' => 'PHA',
 
-                            default => 'OPD',
+                            default => 'OPD',
 
-                        };
+                        };
 
 
 
-                        $nextVisitSequence = PatientVisit::withoutGlobalScopes()
+                        $nextVisitSequence = PatientVisit::withoutGlobalScopes()
 
-                            ->where('business_id', $bid)
+                            ->where('business_id', $bid)
 
-                            ->lockForUpdate()
+                            ->lockForUpdate()
 
-                            ->count() + 1;
+                            ->count() + 1;
 
 
 
-                        $visitNumber = sprintf(
+                        $visitNumber = sprintf(
 
-                            '%s-%s-%05d',
+                            '%s-%s-%05d',
 
-                            $visitPrefix,
+                            $visitPrefix,
 
-                            Carbon::parse($data['visit_at'])->format('Y'),
+                            Carbon::parse($data['visit_at'])->format('Y'),
 
-                            $nextVisitSequence
+                            $nextVisitSequence
 
-                        );
+                        );
 
-                    }
+                    }
 
 
 
-                    $visitStatus = match ($data['visit_type']) {
+                    $visitStatus = match ($data['visit_type']) {
 
-                        'ipd' => 'admitted',
+                        'ipd' => 'admitted',
 
-                        'emergency' => !empty($data['admitted_at']) ? 'admitted' : 'registered',
+                        'emergency' => !empty($data['admitted_at']) ? 'admitted' : 'registered',
 
-                        default => 'registered',
+                        default => 'registered',
 
-                    };
+                    };
 
 
 
-                    if (!empty($data['discharged_at'])) {
+                    if (!empty($data['discharged_at'])) {
 
-                        $visitStatus = 'discharged';
+                        $visitStatus = 'discharged';
 
-                    }
+                    }
 
 
 
-                    $patientVisit = PatientVisit::withoutGlobalScopes()->create([
+                    $patientVisit = PatientVisit::withoutGlobalScopes()->create([
 
-                        'business_id' => $bid,
+                        'business_id' => $bid,
 
-                        'client_id' => $client->id,
+                        'client_id' => $client->id,
 
-                        'doctor_id' => $data['doctor_id'] ?? null,
+                        'doctor_id' => $data['doctor_id'] ?? null,
 
-                        'department_id' => $data['department_id'] ?? null,
+                        'department_id' => $data['department_id'] ?? null,
 
-                        'visit_number' => $visitNumber,
+                        'visit_number' => $visitNumber,
 
-                        'visit_type' => $data['visit_type'],
+                        'visit_type' => $data['visit_type'],
 
-                        'visit_at' => Carbon::parse($data['visit_at']),
+                        'visit_at' => Carbon::parse($data['visit_at']),
 
-                        'chief_complaint' => $data['chief_complaint'] ?? null,
+                        'chief_complaint' => $data['chief_complaint'] ?? null,
 
-                        'diagnosis' => $data['diagnosis'] ?? null,
+                        'diagnosis' => $data['diagnosis'] ?? null,
 
-                        'remarks' => $data['hospital_notes'] ?? $data['notes'] ?? null,
+                        'remarks' => $data['hospital_notes'] ?? $data['notes'] ?? null,
 
-                        'ward_id' => $data['ward_id'] ?? null,
+                        'ward_id' => $data['ward_id'] ?? null,
 
-                        'room_id' => $data['room_id'] ?? null,
+                        'room_id' => $data['room_id'] ?? null,
 
-                        'bed_id' => $data['bed_id'] ?? null,
+                        'bed_id' => $data['bed_id'] ?? null,
 
-                        'admitted_at' => !empty($data['admitted_at']) ? Carbon::parse($data['admitted_at']) : null,
+                        'admitted_at' => !empty($data['admitted_at']) ? Carbon::parse($data['admitted_at']) : null,
 
-                        'discharged_at' => !empty($data['discharged_at']) ? Carbon::parse($data['discharged_at']) : null,
+                        'discharged_at' => !empty($data['discharged_at']) ? Carbon::parse($data['discharged_at']) : null,
 
-                        'status' => $visitStatus,
+                        'status' => $visitStatus,
 
-                    ]);
+                    ]);
 
 
 
-                    if (!empty($data['bed_id']) && Schema::hasColumn('hospital_beds', 'status')) {
+                    if (!empty($data['bed_id']) && Schema::hasColumn('hospital_beds', 'status')) {
 
-                        HospitalBed::withoutGlobalScopes()
+                        HospitalBed::withoutGlobalScopes()
 
-                            ->where('business_id', $bid)
+                            ->where('business_id', $bid)
 
-                            ->whereKey($data['bed_id'])
+                            ->whereKey($data['bed_id'])
 
-                            ->update([
+                            ->update([
 
-                                'status' => !empty($data['discharged_at']) ? 'available' : 'occupied',
+                                'status' => !empty($data['discharged_at']) ? 'available' : 'occupied',
 
-                            ]);
+                            ]);
 
-                    }
+                    }
 
-                }
+                }
 
 
 
-                $payload = [
+                $payload = [
 
-                    'business_id' => $bid,
+                    'business_id' => $bid,
 
-                    'client_id' => $client->id,
+                    'client_id' => $client->id,
 
-                    'invoice_date' => $invoiceDate,
+                    'invoice_date' => $invoiceDate,
 
-                    'invoice_prefix' => $prefix,
+                    'invoice_prefix' => $prefix,
 
-                    'invoice_number' => $invoiceNumber,
+                    'invoice_number' => $invoiceNumber,
 
-                    'invoice_type' => $docType,
+                    'invoice_type' => $docType,
 
-                    'subtotal' => $subtotal,
+                    'subtotal' => $subtotal,
 
-                    'discount_total' => $discountTotal,
+                    'discount_total' => $discountTotal,
 
-                    'charge_total' => $chargeTotal,
+                    'charge_total' => $chargeTotal,
 
-                    'less_amount' => $lessAmount,
+                    'less_amount' => $lessAmount,
 
-                    'tax_amount' => $taxAmount,
+                    'tax_amount' => $taxAmount,
 
-                    'cgst_percent' => $cgstPercent,
+                    'cgst_percent' => $cgstPercent,
 
-                    'cgst_amount' => $cgstAmount,
+                    'cgst_amount' => $cgstAmount,
 
-                    'sgst_percent' => $sgstPercent,
+                    'sgst_percent' => $sgstPercent,
 
-                    'sgst_amount' => $sgstAmount,
+                    'sgst_amount' => $sgstAmount,
 
-                    'igst_percent' => $igstPercent,
+                    'igst_percent' => $igstPercent,
 
-                    'igst_amount' => $igstAmount,
+                    'igst_amount' => $igstAmount,
 
-                    'tcs_percent' => $tcsPercent,
+                    'tcs_percent' => $tcsPercent,
 
-                    'tcs_amount' => $tcsAmount,
+                    'tcs_amount' => $tcsAmount,
 
-                    'round_off' => $roundOff,
+                    'round_off' => $roundOff,
 
-                    'total' => $grandTotal,
+                    'total' => $grandTotal,
 
-                    'received_amount' => $docType === 'tax' ? $receivedTotal : 0,
+                    'received_amount' => $docType === 'tax' ? $receivedTotal : 0,
 
-                    'balance' => $docType === 'tax' ? $balance : $grandTotal,
+                    'balance' => $docType === 'tax' ? $balance : $grandTotal,
 
-                    'payment_method' => $data['payment_method'] ?? null,
+                    'payment_method' => $data['payment_method'] ?? null,
 
-                    'gst_no' => $data['gst_no'] ?? null,
+                    'gst_no' => $data['gst_no'] ?? null,
 
-                    'transport_mode' => $data['transport_mode'] ?? null,
+                    'transport_mode' => $data['transport_mode'] ?? null,
 
-                    'reverse_charge' => !empty($data['reverse_charge']) ? 1 : 0,
+                    'reverse_charge' => !empty($data['reverse_charge']) ? 1 : 0,
 
-                    'place_of_supply_state' => $client->state ?? null,
+                    'place_of_supply_state' => $client->state ?? null,
 
-                    'place_of_supply_code' => $client->state_code ?? null,
+                    'place_of_supply_code' => $client->state_code ?? null,
 
-                    'notes' => $data['notes'] ?? null,
+                    'notes' => $data['notes'] ?? null,
 
-                    'terms' => $data['terms'] ?? null,
+                    'terms' => $data['terms'] ?? null,
 
-                    'charges_json' => json_encode($additionalCharges, JSON_UNESCAPED_UNICODE),
+                    'charges_json' => json_encode($additionalCharges, JSON_UNESCAPED_UNICODE),
 
-                    'items_json' => json_encode($cleanRows, JSON_UNESCAPED_UNICODE),
+                    'items_json' => json_encode($cleanRows, JSON_UNESCAPED_UNICODE),
 
-                    'amount_in_words' => '',
+                    'amount_in_words' => '',
 
-                    'created_by' => $user->id,
+                    'created_by' => $user->id,
 
-                    'updated_by' => $user->id,
+                    'updated_by' => $user->id,
 
-                ];
+                ];
 
 
 
-                if ($isHospitalBusiness) {
+                if ($isHospitalBusiness) {
 
-                    $payload['patient_visit_id'] = $patientVisit?->id;
+                    $payload['patient_visit_id'] = $patientVisit?->id;
 
-                    $payload['doctor_id'] = $data['doctor_id'] ?? null;
+                    $payload['doctor_id'] = $data['doctor_id'] ?? null;
 
-                    $payload['billing_category'] = $data['billing_category'];
+                    $payload['billing_category'] = $data['billing_category'];
 
-                    $payload['hospital_bill_type'] = $data['visit_type'];
+                    $payload['hospital_bill_type'] = $data['visit_type'];
 
-                    $payload['hospital_details_json'] = json_encode(array_merge(
+                    $payload['hospital_details_json'] = json_encode(array_merge(
 
-                        $hospitalSnapshot ?? [],
+                        $hospitalSnapshot ?? [],
 
-                        ['visit_number' => $patientVisit?->visit_number]
+                        ['visit_number' => $patientVisit?->visit_number]
 
-                    ), JSON_UNESCAPED_UNICODE);
+                    ), JSON_UNESCAPED_UNICODE);
 
-                }
+                }
 
 
 
-                $invoice = Invoice::withoutGlobalScopes()->create($payload);
+                $invoice = Invoice::withoutGlobalScopes()->create($payload);
 
 
 
-                foreach ($additionalCharges as $charge) {
+                foreach ($additionalCharges as $charge) {
 
-                    InvoiceAdditionalCharge::withoutGlobalScopes()->create([
+                    InvoiceAdditionalCharge::withoutGlobalScopes()->create([
 
-                        'invoice_id' => $invoice->id,
+                        'invoice_id' => $invoice->id,
 
-                        'additional_charge_id' => null,
+                        'additional_charge_id' => null,
 
-                        'name' => $charge['name'],
+                        'name' => $charge['name'],
 
-                        'amount' => $charge['amount'],
+                        'amount' => $charge['amount'],
 
-                    ]);
+                    ]);
 
-                }
+                }
 
 
 
-                foreach ($cleanRows as $row) {
+                foreach ($cleanRows as $row) {
 
-                    InvoiceItem::withoutGlobalScopes()->create([
+                    InvoiceItem::withoutGlobalScopes()->create([
 
-                        'invoice_id' => $invoice->id,
+                        'invoice_id' => $invoice->id,
 
-                        'item_id' => $row['item_id'],
+                        'item_id' => $row['item_id'],
 
-                        'description' => $row['description'],
+                        'description' => $row['description'],
 
-                        'sac_code' => $row['hsn'] ?: null,
+                        'sac_code' => $row['hsn'] ?: null,
 
-                        'hsn_code' => $row['hsn'] ?: null,
+                        'hsn_code' => $row['hsn'] ?: null,
 
-                        'quantity' => $row['qty'],
+                        'quantity' => $row['qty'],
 
-                        'gold_wt' => (float) ($row['gold_wt'] ?? 0),
+                        'gold_wt' => (float) ($row['gold_wt'] ?? 0),
 
-                        'silver_wt' => (float) ($row['silver_wt'] ?? 0),
+                        'silver_wt' => (float) ($row['silver_wt'] ?? 0),
 
-                        'gold_rate' => (float) ($row['gold_rate'] ?? 0),
+                        'gold_rate' => (float) ($row['gold_rate'] ?? 0),
 
-                        'silver_rate' => (float) ($row['silver_rate'] ?? 0),
+                        'silver_rate' => (float) ($row['silver_rate'] ?? 0),
                         'metal_rate' => (float) ($row['metal_rate'] ?? 0),
 
-                        'gemstone_wt_ct' => (float) ($row['gemstone_wt'] ?? 0),
+                        'gemstone_wt_ct' => (float) ($row['gemstone_wt'] ?? 0),
 
-                        'diamond_wt_ct' => (float) ($row['diamond_wt'] ?? 0),
+                        'diamond_wt_ct' => (float) ($row['diamond_wt'] ?? 0),
 
-                        'stone_charges' => (float) ($row['stone_charges'] ?? 0),
+                        'stone_charges' => (float) ($row['stone_charges'] ?? 0),
 
-                        'diamond_charges' => (float) ($row['diamond_charges'] ?? 0),
+                        'diamond_charges' => (float) ($row['diamond_charges'] ?? 0),
 
-                        'making_charge' => (float) ($row['making_charge'] ?? 0),
+                        'making_charge' => (float) ($row['making_charge'] ?? 0),
 
-                        'making_rate' => (float) ($row['making_rate'] ?? 0),
+                        'making_rate' => (float) ($row['making_rate'] ?? 0),
 
-                        'making_charge_type' => $row['making_charge_type'] ?? 'percentage',
+                        'making_charge_type' => $row['making_charge_type'] ?? 'percentage',
 
-                        'discount' => 0,
+                        'discount' => 0,
 
-                        'tax_percent' => (float) ($row['tax_percent'] ?? 0),
+                        'tax_percent' => (float) ($row['tax_percent'] ?? 0),
 
-                        'rate' => round((float) ($row['rate'] ?? 0), 2),
+                        'rate' => round((float) ($row['rate'] ?? 0), 2),
 
-                        'amount' => round((float) ($row['amount'] ?? 0), 2),
+                        'amount' => round((float) ($row['amount'] ?? 0), 2),
 
-                    ]);
+                    ]);
 
-                }
+                }
 
 
 
-                if ($docType === 'tax') {
+                if ($docType === 'tax') {
 
-                    InvoicePayment::withoutGlobalScopes()->create([
+                    InvoicePayment::withoutGlobalScopes()->create([
 
-                        'business_id' => $bid,
+                        'business_id' => $bid,
 
-                        'invoice_id' => $invoice->id,
+                        'invoice_id' => $invoice->id,
 
-                        'client_id' => $client->id,
+                        'client_id' => $client->id,
 
-                        'total_value' => $grandTotal,
+                        'total_value' => $grandTotal,
 
-                        'cash_amount' => $cash,
+                        'cash_amount' => $cash,
 
-                        'online_amount' => $online,
+                        'online_amount' => $online,
 
-                        'card_amount' => $card,
+                        'card_amount' => $card,
 
-                        'cheque_amount' => $cheque,
+                        'cheque_amount' => $cheque,
 
-                        'online_mode' => $pay['online_mode'] ?? null,
+                        'online_mode' => $pay['online_mode'] ?? null,
 
-                        'online_ref' => $pay['online_ref'] ?? null,
+                        'online_ref' => $pay['online_ref'] ?? null,
 
-                        'upi_id' => $pay['upi_id'] ?? null,
+                        'upi_id' => $pay['upi_id'] ?? null,
 
-                        'card_last4' => $pay['card_last4'] ?? null,
+                        'card_last4' => $pay['card_last4'] ?? null,
 
-                        'card_ref' => $pay['card_ref'] ?? null,
+                        'card_ref' => $pay['card_ref'] ?? null,
 
-                        'cheque_no' => $pay['cheque_no'] ?? null,
+                        'cheque_no' => $pay['cheque_no'] ?? null,
 
-                        'bank_name' => $pay['bank_name'] ?? null,
+                        'bank_name' => $pay['bank_name'] ?? null,
 
-                        'credit_sales_excess_amount' => $credit,
+                        'credit_sales_excess_amount' => $credit,
 
-                        'advance_amount' => $advance,
+                        'advance_amount' => $advance,
 
-                        'received_total' => $receivedTotal,
+                        'received_total' => $receivedTotal,
 
-                        'notes' => $pay['payment_notes'] ?? $pay['pay_notes'] ?? null,
+                        'notes' => $pay['payment_notes'] ?? $pay['pay_notes'] ?? null,
 
-                        'meta' => $isHospitalBusiness ? json_encode([
+                        'meta' => $isHospitalBusiness ? json_encode([
 
-                            'patient_visit_id' => $patientVisit?->id,
+                            'patient_visit_id' => $patientVisit?->id,
 
-                            'visit_type' => $data['visit_type'] ?? null,
+                            'visit_type' => $data['visit_type'] ?? null,
 
-                        ]) : null,
+                        ]) : null,
 
-                        'paid_at' => $receivedTotal > 0 ? now() : null,
+                        'paid_at' => $receivedTotal > 0 ? now() : null,
 
-                    ]);
+                    ]);
 
 
 
-                    $invoice->load('items');
+                    $invoice->load('items');
 
-                    $this->stock->recordSale($invoice);
+                    $this->stock->recordSale($invoice);
 
 
 
-                    $bankAccountId = $data['bank_account_id'] ?? null;
+                    $bankAccountId = $data['bank_account_id'] ?? null;
 
-                    $paymentMode = strtolower(trim((string) ($data['payment_method'] ?? '')));
+                    $paymentMode = strtolower(trim((string) ($data['payment_method'] ?? '')));
 
 
 
-                    if ($bankAccountId
+                    if ($bankAccountId
 
-                        && in_array($paymentMode, ['upi', 'bank', 'card', 'cheque'], true)
+                        && in_array($paymentMode, ['upi', 'bank', 'card', 'cheque'], true)
 
-                        && $receivedTotal > 0) {
+                        && $receivedTotal > 0) {
 
-                        $bankAccount = BankAccount::withoutGlobalScopes()
+                        $bankAccount = BankAccount::withoutGlobalScopes()
 
-                            ->where('business_id', $bid)
+                            ->where('business_id', $bid)
 
-                            ->whereKey($bankAccountId)
+                            ->whereKey($bankAccountId)
 
-                            ->lockForUpdate()
+                            ->lockForUpdate()
 
-                            ->first();
+                            ->first();
 
 
 
-                        if ($bankAccount) {
+                        if ($bankAccount) {
 
-                            $bankAccount->balance = round((float) $bankAccount->balance + $receivedTotal, 2);
+                            $bankAccount->balance = round((float) $bankAccount->balance + $receivedTotal, 2);
 
-                            $bankAccount->save();
+                            $bankAccount->save();
 
-                        }
+                        }
 
-                    }
+                    }
 
-                }
+                }
 
 
 
-                return $invoice;
+                return $invoice;
 
-            });
+            });
 
 
 
-            InvoiceNumber::syncNextSeqIfMatches($bid, $invoiceDate, $invoiceNumber, 3, $docType);
+            InvoiceNumber::syncNextSeqIfMatches($bid, $invoiceDate, $invoiceNumber, 3, $docType);
 
 
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => true,
+                'ok' => true,
 
-                'message' => $isHospitalBusiness
+                'message' => $isHospitalBusiness
 
-                    ? 'Hospital bill created successfully.'
+                    ? 'Hospital bill created successfully.'
 
-                    : ucfirst($docType) . ' created successfully.',
+                    : ucfirst($docType) . ' created successfully.',
 
-                'invoice' => Invoice::withoutGlobalScopes()
+                'invoice' => Invoice::withoutGlobalScopes()
 
-                    ->with(['client', 'items', 'business'])
+                    ->with(['client', 'items', 'business'])
 
-                    ->whereKey($createdInvoice->id)
+                    ->whereKey($createdInvoice->id)
 
-                    ->first(),
+                    ->first(),
 
-            ], 201);
+            ], 201);
 
-        } catch (\Throwable $e) {
+        } catch (\Throwable $e) {
 
-            Log::error('API Invoice create failed', [
+            Log::error('API Invoice create failed', [
 
-                'business_id' => $bid,
+                'business_id' => $bid,
 
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage(),
 
-                'line' => $e->getLine(),
+                'line' => $e->getLine(),
 
-                'file' => $e->getFile(),
+                'file' => $e->getFile(),
 
-            ]);
+            ]);
 
 
 
-            return response()->json([
+            return response()->json([
 
-                'ok' => false,
+                'ok' => false,
 
-                'message' => 'Invoice create failed',
+                'message' => 'Invoice create failed',
 
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage(),
 
-            ], 500);
+            ], 500);
 
-        }
+        }
 
-    }
+    }
 
     public function update(Request $request, $invoice)
     {
