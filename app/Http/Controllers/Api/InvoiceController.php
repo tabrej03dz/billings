@@ -1922,7 +1922,10 @@ class InvoiceController extends Controller
 
             $silverRate = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_rate'] ?? 0, 0);
 
-            $metalRate = $isHospitalBusiness ? 0.0 : $toNumber($row['metal_rate'] ?? 0, 0);
+            $metalRate = $isHospitalBusiness ? 0.0 : $toNumber($row['metal_rate']
+                ?? $row['rate_per_gram']
+                ?? 0,
+                0);
             $makingRate = $isHospitalBusiness ? 0.0 : $toNumber($row['making_rate'] ?? 0, 0);
 
             $gemstoneWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['gemstone_wt'] ?? $row['gemstone_wt_ct'] ?? 0, 0);
