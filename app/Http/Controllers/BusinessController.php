@@ -63,16 +63,6 @@ class BusinessController extends Controller
         return view('businesses.index', compact('businesses', 'search', 'status', 'perPage'));
     }
 
-    // public function create()
-    // {
-    //     $billTemplates = BillTemplate::all();
-
-    //     $businessTypes = BusinessType::query()
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     return view('businesses.create', compact('billTemplates', 'businessTypes'));
-    // }
 
 
     public function create()

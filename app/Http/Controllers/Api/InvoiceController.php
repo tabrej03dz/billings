@@ -1085,6 +1085,7 @@ class InvoiceController extends Controller
     // }
 
     public function store(Request $request, $type = 'tax')
+
     {
 
         $user = $request->user();
@@ -1917,84 +1918,14 @@ class InvoiceController extends Controller
 
             $silverWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_wt'] ?? $row['silver_weight'] ?? 0, 0);
 
-            // $goldRate = $isHospitalBusiness ? 0.0 : $toNumber($row['gold_rate'] ?? 0, 0);
+            $goldRate = $isHospitalBusiness ? 0.0 : $toNumber($row['gold_rate'] ?? 0, 0);
 
-            // $silverRate = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_rate'] ?? 0, 0);
+            $silverRate = $isHospitalBusiness ? 0.0 : $toNumber($row['silver_rate'] ?? 0, 0);
 
-            // $metalRate = $isHospitalBusiness ? 0.0 : $toNumber($row['metal_rate']
-            //     ?? $row['rate_per_gram']
-            //     ?? 0,
-            //     0);
-
-
-            $goldWeight = $isHospitalBusiness
-                ? 0.0
-                : $toNumber(
-                    $row['gold_wt']
-                    ?? $row['gold_weight']
-                    ?? 0,
-                    0
-                );
-
-            $silverWeight = $isHospitalBusiness
-                ? 0.0
-                : $toNumber(
-                    $row['silver_wt']
-                    ?? $row['silver_weight']
-                    ?? 0,
-                    0
-                );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Metal Rate / Rate Per Gram
-            |--------------------------------------------------------------------------
-            | Flutter se metal_rate ya rate_per_gram dono me aa sakta hai.
-            */
-            $metalRate = $isHospitalBusiness
-                ? 0.0
-                : $toNumber(
-                    $row['metal_rate']
-                    ?? $row['rate_per_gram']
-                    ?? 0,
-                    0
-                );
-
-            /*
-            |--------------------------------------------------------------------------
-            | Gold / Silver Rate
-            |--------------------------------------------------------------------------
-            | Agar Flutter direct gold_rate/silver_rate bhej raha hai to wahi use hoga.
-            |
-            | Agar sirf metal_rate/rate_per_gram bhej raha hai:
-            | - gold weight hai => gold_rate = metalRate
-            | - silver weight hai => silver_rate = metalRate
-            |--------------------------------------------------------------------------
-            */
-
-            $goldRate = $isHospitalBusiness
-                ? 0.0
-                : $toNumber(
-                    $row['gold_rate']
-                    ?? (
-                        $goldWeight > 0
-                            ? $metalRate
-                            : 0
-                    ),
-                    0
-                );
-
-            $silverRate = $isHospitalBusiness
-                ? 0.0
-                : $toNumber(
-                    $row['silver_rate']
-                    ?? (
-                        $silverWeight > 0
-                            ? $metalRate
-                            : 0
-                    ),
-                    0
-                );
+            $metalRate = $isHospitalBusiness ? 0.0 : $toNumber($row['metal_rate']
+                ?? $row['rate_per_gram']
+                ?? 0,
+                0);
             $makingRate = $isHospitalBusiness ? 0.0 : $toNumber($row['making_rate'] ?? 0, 0);
 
             $gemstoneWeight = $isHospitalBusiness ? 0.0 : $toNumber($row['gemstone_wt'] ?? $row['gemstone_wt_ct'] ?? 0, 0);
