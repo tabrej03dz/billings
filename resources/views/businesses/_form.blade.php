@@ -49,37 +49,53 @@
         !empty($business?->state_code) &&
         !empty($business?->state)
     ) {
-        $selectedState = $business->state_code . ',' . $business->state;
+        $selectedState =
+            $business->state_code .
+            ',' .
+            $business->state;
     }
-@endphp
 
+    $selectedUserMode =
+        old('user_mode', 'new');
+@endphp
 
 <div class="space-y-8">
 
-    {{-- ========================= --}}
+    {{-- ====================================================== --}}
     {{-- VALIDATION ERRORS --}}
-    {{-- ========================= --}}
+    {{-- ====================================================== --}}
 
     @if ($errors->any())
 
-        <div
-            class="rounded-xl border border-red-300 bg-red-50 p-4 text-left
-                   dark:border-red-700 dark:bg-red-950/40"
-        >
+        <div class="rounded-xl border border-red-300 bg-red-50 p-4 text-left dark:border-red-700 dark:bg-red-950/40">
+
             <p class="mb-2 font-semibold text-red-700 dark:text-red-300">
                 Please fix the following errors:
             </p>
 
             <ul class="list-disc space-y-1 pl-5 text-sm text-red-600 dark:text-red-300">
+
                 @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+
+                    <li>
+                        {{ $error }}
+                    </li>
+
                 @endforeach
+
             </ul>
 
         </div>
 
     @endif
 
+    @if(session('error'))
+
+        <div class="rounded-xl border border-red-300 bg-red-50 p-4 text-red-700 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
+            {{ session('error') }}
+        </div>
+
+    @endif
 
     {{-- ====================================================== --}}
     {{-- BUSINESS DETAILS --}}
@@ -88,23 +104,29 @@
     <div class="rounded-xl border border-gray-300 dark:border-gray-700 overflow-hidden">
 
         <div class="bg-cyan-700 text-white px-5 py-3">
+
             <h2 class="font-bold text-lg">
                 1. Business Details
             </h2>
+
         </div>
 
         <div class="p-5 space-y-5">
 
             <div class="grid md:grid-cols-2 gap-4">
 
-
                 {{-- BUSINESS NAME --}}
 
                 <div>
 
                     <label class="block text-sm font-medium mb-1">
+
                         Business Name
-                        <span class="text-red-600">*</span>
+
+                        <span class="text-red-600">
+                            *
+                        </span>
+
                     </label>
 
                     <input
@@ -116,13 +138,14 @@
                     >
 
                     @error('name')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
-
 
                 {{-- SLUG --}}
 
@@ -141,15 +164,16 @@
                     >
 
                     @error('slug')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
 
-
-                {{-- PREFIX --}}
+                {{-- INVOICE PREFIX --}}
 
                 <div>
 
@@ -166,21 +190,27 @@
                     >
 
                     @error('invoice_base_prefix')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
-
 
                 {{-- BUSINESS EMAIL --}}
 
                 <div>
 
                     <label class="block text-sm font-medium mb-1">
+
                         Business Email
-                        <span class="text-red-600">*</span>
+
+                        <span class="text-red-600">
+                            *
+                        </span>
+
                     </label>
 
                     <input
@@ -192,13 +222,14 @@
                     >
 
                     @error('email')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
-
 
                 {{-- BUSINESS MOBILE --}}
 
@@ -215,14 +246,22 @@
                         class="mt-1 w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
                     >
 
+                    <p
+                        id="business-mobile-help"
+                        class="text-xs text-gray-500 mt-1 hidden"
+                    >
+                        Existing user ke case me same business mobile allowed hai.
+                    </p>
+
                     @error('mobile')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
-
 
                 {{-- GSTIN --}}
 
@@ -240,29 +279,33 @@
                     >
 
                     @error('gstin')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
-
 
                 {{-- BUSINESS TYPE --}}
 
                 <div>
 
                     <label class="block text-sm font-medium mb-1">
+
                         Business Type
-                        <span class="text-red-600">*</span>
+
+                        <span class="text-red-600">
+                            *
+                        </span>
+
                     </label>
 
                     <select
                         name="type"
                         required
-                        class="mt-1 w-full border rounded px-3 py-2
-                               bg-gray-300 dark:bg-[#242833]
-                               text-gray-700 dark:text-gray-300"
+                        class="mt-1 w-full border rounded px-3 py-2 bg-gray-300 dark:bg-[#242833] text-gray-700 dark:text-gray-300"
                     >
 
                         <option value="">
@@ -292,21 +335,27 @@
                     </select>
 
                     @error('type')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
-
 
                 {{-- STATE --}}
 
                 <div>
 
                     <label class="block text-sm font-medium mb-1">
+
                         State (GST Code)
-                        <span class="text-red-600">*</span>
+
+                        <span class="text-red-600">
+                            *
+                        </span>
+
                     </label>
 
                     <select
@@ -322,14 +371,22 @@
                         @foreach($states as $st)
 
                             @php
-                                $value = $st['code'].','.$st['name'];
+                                $value =
+                                    $st['code'] .
+                                    ',' .
+                                    $st['name'];
                             @endphp
 
                             <option
                                 value="{{ $value }}"
-                                {{ $selectedState === $value ? 'selected' : '' }}
+                                {{
+                                    $selectedState === $value
+                                    ? 'selected'
+                                    : ''
+                                }}
                             >
-                                {{ $st['name'] }} ({{ $st['code'] }})
+                                {{ $st['name'] }}
+                                ({{ $st['code'] }})
                             </option>
 
                         @endforeach
@@ -337,33 +394,38 @@
                     </select>
 
                     @error('state')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
 
-
                 {{-- BILL TEMPLATE --}}
 
-                @if(isset($billTemplates) && $billTemplates->count())
+                @if(
+                    isset($billTemplates) &&
+                    $billTemplates->count()
+                )
 
                     <div class="md:col-span-2">
 
                         <label class="block text-sm font-semibold mb-1">
+
                             PDF Bill Template
-                            <span class="text-red-600">*</span>
+
+                            <span class="text-red-600">
+                                *
+                            </span>
+
                         </label>
 
                         <select
                             name="pdf_template_id"
                             required
-                            class="w-full rounded-xl border border-gray-300
-                                   dark:border-neutral-700
-                                   bg-white dark:bg-neutral-800
-                                   text-gray-900 dark:text-white
-                                   px-4 py-2"
+                            class="w-full rounded-xl border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white px-4 py-2"
                         >
 
                             <option value="">
@@ -371,19 +433,27 @@
                             </option>
 
                             @foreach($billTemplates as $template)
-
                                 <option
                                     value="{{ $template->id }}"
                                     {{
                                         old(
                                             'pdf_template_id',
                                             $business->pdf_template_id ?? ''
-                                        ) == $template->id
+                                        )
+                                        ==
+                                        $template->id
                                         ? 'selected'
                                         : ''
                                     }}
                                 >
-                                    {{ $template->name ?? 'Template '.$template->id }}
+
+                                    {{
+                                        $template->name
+                                        ??
+                                        'Template ' .
+                                        $template->id
+                                    }}
+
                                 </option>
 
                             @endforeach
@@ -391,15 +461,16 @@
                         </select>
 
                         @error('pdf_template_id')
+
                             <p class="text-red-600 text-xs mt-1">
                                 {{ $message }}
                             </p>
+
                         @enderror
 
                     </div>
 
                 @endif
-
 
                 {{-- ADDRESS --}}
 
@@ -417,20 +488,22 @@
                     >{{ old('address', $business->address ?? '') }}</textarea>
 
                     @error('address')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
                 </div>
 
             </div>
 
-
+            {{-- ====================================================== --}}
             {{-- FILES --}}
+            {{-- ====================================================== --}}
 
             <div class="grid md:grid-cols-3 gap-4">
-
 
                 {{-- LOGO --}}
 
@@ -448,13 +521,17 @@
                     >
 
                     @error('logo')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
-
-                    @if($isEdit && $business->logo)
+                    @if(
+                        $isEdit &&
+                        $business->logo
+                    )
 
                         <div class="mt-3 flex items-center gap-3">
 
@@ -464,12 +541,15 @@
                             >
 
                             <label class="text-sm">
+
                                 <input
                                     type="checkbox"
                                     name="remove_logo"
                                     value="1"
                                 >
+
                                 Remove
+
                             </label>
 
                         </div>
@@ -477,7 +557,6 @@
                     @endif
 
                 </div>
-
 
                 {{-- SIGNATURE --}}
 
@@ -495,13 +574,17 @@
                     >
 
                     @error('signature')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
-
-                    @if($isEdit && $business->signature)
+                    @if(
+                        $isEdit &&
+                        $business->signature
+                    )
 
                         <div class="mt-3 flex items-center gap-3">
 
@@ -511,12 +594,15 @@
                             >
 
                             <label class="text-sm">
+
                                 <input
                                     type="checkbox"
                                     name="remove_signature"
                                     value="1"
                                 >
+
                                 Remove
+
                             </label>
 
                         </div>
@@ -524,7 +610,6 @@
                     @endif
 
                 </div>
-
 
                 {{-- LETTER HEAD --}}
 
@@ -542,13 +627,17 @@
                     >
 
                     @error('letter_head')
+
                         <p class="text-red-600 text-xs mt-1">
                             {{ $message }}
                         </p>
+
                     @enderror
 
-
-                    @if($isEdit && $business->letter_head)
+                    @if(
+                        $isEdit &&
+                        $business->letter_head
+                    )
 
                         <div class="mt-3 flex items-center gap-3">
 
@@ -558,12 +647,15 @@
                             >
 
                             <label class="text-sm">
+
                                 <input
                                     type="checkbox"
                                     name="remove_letter_head"
                                     value="1"
                                 >
+
                                 Remove
+
                             </label>
 
                         </div>
@@ -573,7 +665,6 @@
                 </div>
 
             </div>
-
 
             {{-- TERMS --}}
 
@@ -591,9 +682,11 @@
                 >{{ old('terms', $business->terms ?? '') }}</textarea>
 
                 @error('terms')
+
                     <p class="text-red-600 text-xs mt-1">
                         {{ $message }}
                     </p>
+
                 @enderror
 
             </div>
@@ -602,10 +695,8 @@
 
     </div>
 
-
     {{-- ====================================================== --}}
-    {{-- CREATE USER --}}
-    {{-- ONLY CREATE BUSINESS PAGE --}}
+    {{-- CREATE PAGE USER SECTION --}}
     {{-- ====================================================== --}}
 
     @if(!$isEdit)
@@ -615,228 +706,401 @@
             <div class="bg-purple-700 text-white px-5 py-3">
 
                 <h2 class="font-bold text-lg">
-                    2. Create Business User
+                    2. Business User
                 </h2>
 
                 <p class="text-xs mt-1 text-purple-100">
-                    Ye user automatically is business se attach ho jayega.
+                    Naya user create karein ya existing user ko is business se attach karein.
                 </p>
 
             </div>
 
+            <div class="p-5 space-y-6">
 
-            <div class="p-5">
+                {{-- ====================================================== --}}
+                {{-- USER MODE --}}
+                {{-- ====================================================== --}}
 
-                <div class="grid md:grid-cols-2 gap-4">
+                <div>
 
+                    <label class="block text-sm font-semibold mb-2">
 
-                    {{-- USER NAME --}}
+                        User Option
 
-                    <div>
+                        <span class="text-red-600">
+                            *
+                        </span>
 
-                        <label class="block text-sm font-medium mb-1">
-                            User Name
-                            <span class="text-red-600">*</span>
+                    </label>
+
+                    <div class="grid sm:grid-cols-2 gap-4">
+
+                        {{-- CREATE NEW USER --}}
+
+                        <label class="flex items-start gap-3 border rounded-xl p-4 bg-white dark:bg-[#242833] cursor-pointer">
+
+                            <input
+                                type="radio"
+                                name="user_mode"
+                                value="new"
+                                class="mt-1"
+                                {{
+                                    $selectedUserMode === 'new'
+                                    ? 'checked'
+                                    : ''
+                                }}
+                            >
+
+                            <div>
+
+                                <div class="font-semibold">
+                                    Create New User
+                                </div>
+
+                                <div class="text-xs text-gray-500 mt-1">
+                                    Naya login user create hoga.
+                                </div>
+
+                            </div>
+
                         </label>
 
-                        <input
-                            type="text"
-                            name="user_name"
-                            value="{{ old('user_name') }}"
-                            class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
-                            required
-                        >
+                        {{-- EXISTING USER --}}
 
-                        @error('user_name')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                        <label class="flex items-start gap-3 border rounded-xl p-4 bg-white dark:bg-[#242833] cursor-pointer">
+
+                            <input
+                                type="radio"
+                                name="user_mode"
+                                value="existing"
+                                class="mt-1"
+                                {{
+                                    $selectedUserMode === 'existing'
+                                    ? 'checked'
+                                    : ''
+                                }}
+                            >
+
+                            <div>
+
+                                <div class="font-semibold">
+                                    Select Existing User
+                                </div>
+
+                                <div class="text-xs text-gray-500 mt-1">
+                                    Purana user naye business se attach hoga.
+                                </div>
+
+                            </div>
+
+                        </label>
 
                     </div>
 
+                    @error('user_mode')
 
-                    {{-- USER PHONE --}}
+                        <p class="text-red-600 text-xs mt-1">
+                            {{ $message }}
+                        </p>
 
-                    <div>
+                    @enderror
 
-                        <label class="block text-sm font-medium mb-1">
-                            User Phone
-                            <span class="text-red-600">*</span>
-                        </label>
+                </div>
 
-                        <input
-                            type="text"
-                            name="user_phone"
-                            value="{{ old('user_phone') }}"
-                            class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
-                            required
-                        >
+                {{-- ====================================================== --}}
+                {{-- EXISTING USER --}}
+                {{-- ====================================================== --}}
 
-                        @error('user_phone')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                <div
+                    id="existing-user-section"
+                    class="{{
+                        $selectedUserMode === 'existing'
+                        ? ''
+                        : 'hidden'
+                    }}"
+                >
 
-                    </div>
+                    <label class="block text-sm font-medium mb-1">
 
+                        Existing User
 
-                    {{-- USER EMAIL --}}
+                        <span class="text-red-600">
+                            *
+                        </span>
 
-                    <div>
+                    </label>
 
-                        <label class="block text-sm font-medium mb-1">
-                            Login Email
-                            <span class="text-red-600">*</span>
-                        </label>
+                    <select
+                        name="existing_user_id"
+                        id="existing_user_id"
+                        class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
+                    >
 
-                        <input
-                            type="email"
-                            name="user_email"
-                            value="{{ old('user_email') }}"
-                            class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
-                            required
-                        >
+                        <option value="">
+                            -- Select Existing User --
+                        </option>
 
-                        @error('user_email')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                        @foreach($users ?? [] as $existingUser)
 
-                    </div>
+                            <option
+                                value="{{ $existingUser->id }}"
+                                {{
+                                    old('existing_user_id')
+                                    ==
+                                    $existingUser->id
+                                    ? 'selected'
+                                    : ''
+                                }}
+                            >
 
+                                {{ $existingUser->name }}
 
-                    {{-- GOOGLE DRIVE --}}
+                                @if($existingUser->phone)
 
-                    <div>
+                                    | {{ $existingUser->phone }}
 
-                        <label class="block text-sm font-medium mb-1">
-                            Google Drive Folder ID
-                        </label>
+                                @endif
 
-                        <input
-                            type="text"
-                            name="user_google_drive_folder_id"
-                            value="{{ old('user_google_drive_folder_id') }}"
-                            class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
-                            placeholder="Optional"
-                        >
+                                @if($existingUser->email)
 
-                        @error('user_google_drive_folder_id')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                                    | {{ $existingUser->email }}
 
-                    </div>
+                                @endif
 
+                            </option>
 
-                    {{-- PASSWORD --}}
+                        @endforeach
 
-                    <div>
+                    </select>
 
-                        <label class="block text-sm font-medium mb-1">
-                            Password
-                            <span class="text-red-600">*</span>
-                        </label>
+                    @error('existing_user_id')
 
-                        <input
-                            type="password"
-                            name="user_password"
-                            class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
-                            required
-                        >
+                        <p class="text-red-600 text-xs mt-1">
+                            {{ $message }}
+                        </p>
 
-                        @error('user_password')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                    @enderror
+
+                    <div class="mt-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-sm text-blue-700 dark:text-blue-300">
+
+                        Existing user ka password, email, phone aur role change nahi hoga.
+                        Uske purane businesses bhi connected rahenge.
 
                     </div>
 
+                </div>
 
-                    {{-- PASSWORD CONFIRMATION --}}
+                {{-- ====================================================== --}}
+                {{-- NEW USER --}}
+                {{-- ====================================================== --}}
 
-                    <div>
+                <div
+                    id="new-user-section"
+                    class="{{
+                        $selectedUserMode === 'existing'
+                        ? 'hidden'
+                        : ''
+                    }}"
+                >
 
-                        <label class="block text-sm font-medium mb-1">
-                            Confirm Password
-                            <span class="text-red-600">*</span>
-                        </label>
+                    <div class="grid md:grid-cols-2 gap-4">
 
-                        <input
-                            type="password"
-                            name="user_password_confirmation"
-                            class="w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
-                            required
-                        >
+                        {{-- USER NAME --}}
 
-                    </div>
+                        <div>
 
+                            <label class="block text-sm font-medium mb-1">
 
-                    {{-- ROLES --}}
+                                User Name
 
-                    <div class="md:col-span-2">
+                                <span class="text-red-600">
+                                    *
+                                </span>
 
-                        <label class="block text-sm font-medium mb-2">
-                            User Role
-                            <span class="text-red-600">*</span>
-                        </label>
+                            </label>
 
-                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <input
+                                type="text"
+                                name="user_name"
+                                value="{{ old('user_name') }}"
+                                class="new-user-field new-user-required w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
+                            >
 
-                            @forelse($roles ?? [] as $role)
+                            @error('user_name')
 
-                                <label
-                                    class="flex items-center gap-2 border rounded-lg px-3 py-2
-                                           bg-white dark:bg-[#242833]
-                                           cursor-pointer"
-                                >
-
-                                    <input
-                                        type="checkbox"
-                                        name="roles[]"
-                                        value="{{ $role->name }}"
-                                        {{
-                                            in_array(
-                                                $role->name,
-                                                old('roles', [])
-                                            )
-                                            ? 'checked'
-                                            : ''
-                                        }}
-                                    >
-
-                                    <span>
-                                        {{ ucwords($role->name) }}
-                                    </span>
-
-                                </label>
-
-                            @empty
-
-                                <p class="text-red-600 text-sm">
-                                    No roles found.
+                                <p class="text-red-600 text-xs mt-1">
+                                    {{ $message }}
                                 </p>
 
-                            @endforelse
+                            @enderror
 
                         </div>
 
-                        @error('roles')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                        {{-- USER PHONE --}}
 
-                        @error('roles.*')
-                            <p class="text-red-600 text-xs mt-1">
-                                {{ $message }}
-                            </p>
-                        @enderror
+                        <div>
+
+                            <label class="block text-sm font-medium mb-1">
+
+                                User Phone
+
+                                <span class="text-red-600">
+                                    *
+                                </span>
+
+                            </label>
+
+                            <input
+                                type="text"
+                                name="user_phone"
+                                value="{{ old('user_phone') }}"
+                                class="new-user-field new-user-required w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
+                            >
+
+                            @error('user_phone')
+
+                                <p class="text-red-600 text-xs mt-1">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+                        {{-- LOGIN EMAIL --}}
+
+                        <div>
+
+                            <label class="block text-sm font-medium mb-1">
+
+                                Login Email
+
+                                <span class="text-red-600">
+                                    *
+                                </span>
+
+                            </label>
+
+                            <input
+                                type="email"
+                                name="user_email"
+                                value="{{ old('user_email') }}"
+                                class="new-user-field new-user-required w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
+                            >
+
+                            @error('user_email')
+
+                                <p class="text-red-600 text-xs mt-1">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+                        {{-- GOOGLE DRIVE --}}
+
+                        <div>
+
+                            <label class="block text-sm font-medium mb-1">
+                                Google Drive Folder ID
+                            </label>
+
+                            <input
+                                type="text"
+                                name="user_google_drive_folder_id"
+                                value="{{ old('user_google_drive_folder_id') }}"
+                                class="new-user-field w-full border rounded px-3 py-2 bg-slate-200 dark:bg-[#242833]"
+                                placeholder="Optional"
+                            >
+
+                            @error('user_google_drive_folder_id')
+
+                                <p class="text-red-600 text-xs mt-1">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
+
+
+
+                        {{-- ROLES --}}
+
+                        <div class="md:col-span-2">
+
+                            <label class="block text-sm font-medium mb-2">
+
+                                User Role
+
+                                <span class="text-red-600">
+                                    *
+                                </span>
+
+                            </label>
+
+                            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+                                @forelse( $roles ?? [] as $role)
+
+                                    <label class="flex items-center gap-2 border rounded-lg px-3 py-2 bg-white dark:bg-[#242833] cursor-pointer">
+
+                                        <input
+                                            type="checkbox"
+                                            name="roles[]"
+                                            value="{{ $role->name }}"
+                                            class="new-user-field role-checkbox"
+                                            {{
+                                                in_array(
+                                                    $role->name,
+                                                    old(
+                                                        'roles',
+                                                        []
+                                                    )
+                                                )
+                                                ? 'checked'
+                                                : ''
+                                            }}
+                                        >
+
+                                        <span>
+                                            {{
+                                                ucwords(
+                                                    $role->name
+                                                )
+                                            }}
+                                        </span>
+
+                                    </label>
+
+                                @empty
+
+                                    <p class="text-red-600 text-sm">
+                                        No roles found.
+                                    </p>
+
+                                @endforelse
+
+                            </div>
+
+                            @error('roles')
+
+                                <p class="text-red-600 text-xs mt-1">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                            @error('roles.*')
+
+                                <p class="text-red-600 text-xs mt-1">
+                                    {{ $message }}
+                                </p>
+
+                            @enderror
+
+                        </div>
 
                     </div>
 
@@ -845,7 +1109,6 @@
             </div>
 
         </div>
-
 
         {{-- ====================================================== --}}
         {{-- PLAN DETAILS --}}
@@ -860,24 +1123,27 @@
                 </h2>
 
                 <p class="text-xs mt-1 text-green-100">
-                    Selected plan ki permissions automatically user ko assign hongi.
+                    Selected plan ki permissions selected user ko assign hongi.
                 </p>
 
             </div>
 
-
             <div class="p-5">
 
                 <div class="grid md:grid-cols-2 gap-4">
-
 
                     {{-- PLAN --}}
 
                     <div class="md:col-span-2">
 
                         <label class="block text-sm font-medium mb-1">
+
                             Select Plan
-                            <span class="text-red-600">*</span>
+
+                            <span class="text-red-600">
+                                *
+                            </span>
+
                         </label>
 
                         <select
@@ -894,13 +1160,31 @@
 
                                 <option
                                     value="{{ $plan->id }}"
-                                    {{ old('plan_id') == $plan->id ? 'selected' : '' }}
+                                    {{
+                                        old('plan_id')
+                                        ==
+                                        $plan->id
+                                        ? 'selected'
+                                        : ''
+                                    }}
                                 >
 
                                     {{ $plan->name }}
 
-                                    @if(isset($plan->price))
-                                        - ₹{{ number_format($plan->price, 2) }}
+                                    @if(
+                                        isset(
+                                            $plan->price
+                                        )
+                                    )
+
+                                        -
+                                        ₹{{
+                                            number_format(
+                                                $plan->price,
+                                                2
+                                            )
+                                        }}
+
                                     @endif
 
                                 </option>
@@ -910,21 +1194,27 @@
                         </select>
 
                         @error('plan_id')
+
                             <p class="text-red-600 text-xs mt-1">
                                 {{ $message }}
                             </p>
+
                         @enderror
 
                     </div>
-
 
                     {{-- NUMBER OF OFFICES --}}
 
                     <div>
 
                         <label class="block text-sm font-medium mb-1">
+
                             Number of Offices
-                            <span class="text-red-600">*</span>
+
+                            <span class="text-red-600">
+                                *
+                            </span>
+
                         </label>
 
                         <input
@@ -937,21 +1227,27 @@
                         >
 
                         @error('number_of_office')
+
                             <p class="text-red-600 text-xs mt-1">
                                 {{ $message }}
                             </p>
+
                         @enderror
 
                     </div>
-
 
                     {{-- NUMBER OF USERS --}}
 
                     <div>
 
                         <label class="block text-sm font-medium mb-1">
+
                             Number of Users
-                            <span class="text-red-600">*</span>
+
+                            <span class="text-red-600">
+                                *
+                            </span>
+
                         </label>
 
                         <input
@@ -964,13 +1260,14 @@
                         >
 
                         @error('number_of_user')
+
                             <p class="text-red-600 text-xs mt-1">
                                 {{ $message }}
                             </p>
+
                         @enderror
 
                     </div>
-
 
                     {{-- START DATE --}}
 
@@ -988,13 +1285,14 @@
                         >
 
                         @error('start_date')
+
                             <p class="text-red-600 text-xs mt-1">
                                 {{ $message }}
                             </p>
+
                         @enderror
 
                     </div>
-
 
                     {{-- EXPIRY DATE --}}
 
@@ -1016,15 +1314,16 @@
                         </p>
 
                         @error('expiry_date')
+
                             <p class="text-red-600 text-xs mt-1">
                                 {{ $message }}
                             </p>
+
                         @enderror
 
                     </div>
 
-
-                    {{-- STATUS --}}
+                    {{-- PLAN STATUS --}}
 
                     <div class="md:col-span-2">
 
@@ -1034,7 +1333,14 @@
                                 type="checkbox"
                                 name="plan_status"
                                 value="1"
-                                {{ old('plan_status', 1) ? 'checked' : '' }}
+                                {{
+                                    old(
+                                        'plan_status',
+                                        1
+                                    )
+                                    ? 'checked'
+                                    : ''
+                                }}
                             >
 
                             <span class="font-medium">
@@ -1052,7 +1358,6 @@
         </div>
 
     @endif
-
 
     {{-- ====================================================== --}}
     {{-- BUTTONS --}}
@@ -1072,7 +1377,11 @@
             class="px-6 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 font-semibold"
         >
 
-            {{ $isEdit ? 'Update Business' : 'Create Business + User + Plan' }}
+            {{
+                $isEdit
+                ? 'Update Business'
+                : 'Create Business + User + Plan'
+            }}
 
         </button>
 
@@ -1080,45 +1389,279 @@
 
 </div>
 
-
 {{-- ====================================================== --}}
-{{-- AUTO SLUG --}}
+{{-- JAVASCRIPT --}}
 {{-- ====================================================== --}}
 
 <script>
+document.addEventListener('DOMContentLoaded', function () {
 
-    document.addEventListener('DOMContentLoaded', function () {
+    /*
+    |--------------------------------------------------------------------------
+    | AUTO SLUG
+    |--------------------------------------------------------------------------
+    */
 
-        const nameInput = document.querySelector('input[name="name"]');
-        const slugInput = document.querySelector('input[name="slug"]');
+    const nameInput =
+        document.querySelector(
+            'input[name="name"]'
+        );
 
-        if (!nameInput || !slugInput) {
+    const slugInput =
+        document.querySelector(
+            'input[name="slug"]'
+        );
+
+    if (
+        nameInput &&
+        slugInput
+    ) {
+        let slugEdited =
+            slugInput.value.length > 0;
+
+        slugInput.addEventListener(
+            'input',
+            function () {
+                slugEdited =
+                    slugInput.value.length > 0;
+            }
+        );
+
+        nameInput.addEventListener(
+            'input',
+            function () {
+
+                if (slugEdited) {
+                    return;
+                }
+
+                slugInput.value =
+                    nameInput.value
+                        .trim()
+                        .toLowerCase()
+                        .replace(
+                            /[^a-z0-9]+/g,
+                            '-'
+                        )
+                        .replace(
+                            /(^-|-$)/g,
+                            ''
+                        );
+            }
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CREATE / EXISTING USER SWITCH
+    |--------------------------------------------------------------------------
+    */
+
+    const userModeInputs =
+        document.querySelectorAll(
+            'input[name="user_mode"]'
+        );
+
+    const newUserSection =
+        document.getElementById(
+            'new-user-section'
+        );
+
+    const existingUserSection =
+        document.getElementById(
+            'existing-user-section'
+        );
+
+    const existingUserSelect =
+        document.getElementById(
+            'existing_user_id'
+        );
+
+    const businessMobileHelp =
+        document.getElementById(
+            'business-mobile-help'
+        );
+
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE USER MODE
+    |--------------------------------------------------------------------------
+    */
+
+    function updateUserMode() {
+
+        const checked =
+            document.querySelector(
+                'input[name="user_mode"]:checked'
+            );
+
+        if (!checked) {
             return;
         }
 
-        let slugEdited = slugInput.value.length > 0;
+        const mode =
+            checked.value;
 
-        slugInput.addEventListener('input', function () {
+        const newUserFields =
+            newUserSection
+                ? newUserSection.querySelectorAll(
+                    'input, select, textarea'
+                )
+                : [];
 
-            slugEdited = slugInput.value.length > 0;
+        /*
+        |--------------------------------------------------------------------------
+        | EXISTING USER
+        |--------------------------------------------------------------------------
+        */
 
-        });
+        if (mode === 'existing') {
 
-
-        nameInput.addEventListener('input', function () {
-
-            if (slugEdited) {
-                return;
+            if (newUserSection) {
+                newUserSection.classList.add(
+                    'hidden'
+                );
             }
 
-            slugInput.value = nameInput.value
-                .trim()
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)/g, '');
+            if (existingUserSection) {
+                existingUserSection.classList.remove(
+                    'hidden'
+                );
+            }
 
-        });
+            /*
+            | Disable all new user fields.
+            |
+            | Isse:
+            | - password submit nahi hoga
+            | - confirm password submit nahi hoga
+            | - roles submit nahi honge
+            | - new user email/phone submit nahi hoga
+            */
 
-    });
+            newUserFields.forEach(
+                function (field) {
+                    field.disabled = true;
+                    field.required = false;
+                }
+            );
 
+            /*
+            | Existing user required
+            */
+
+            if (existingUserSelect) {
+                existingUserSelect.disabled = false;
+                existingUserSelect.required = true;
+            }
+
+            /*
+            | Mobile help show
+            */
+
+            if (businessMobileHelp) {
+                businessMobileHelp.classList.remove(
+                    'hidden'
+                );
+            }
+
+            return;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NEW USER
+        |--------------------------------------------------------------------------
+        */
+
+        if (newUserSection) {
+            newUserSection.classList.remove(
+                'hidden'
+            );
+        }
+
+        if (existingUserSection) {
+            existingUserSection.classList.add(
+                'hidden'
+            );
+        }
+
+        /*
+        | Enable new user fields
+        */
+
+        newUserFields.forEach(
+            function (field) {
+                field.disabled = false;
+            }
+        );
+
+        /*
+        | Required fields
+        */
+
+        const requiredNames = [
+            'user_name',
+            'user_phone',
+            'user_email',
+        ];
+
+        newUserFields.forEach(
+            function (field) {
+
+                if (
+                    requiredNames.includes(
+                        field.name
+                    )
+                ) {
+                    field.required = true;
+                }
+            }
+        );
+
+        /*
+        | Existing user disabled
+        */
+
+        if (existingUserSelect) {
+            existingUserSelect.disabled = true;
+            existingUserSelect.required = false;
+        }
+
+        /*
+        | Mobile help hide
+        */
+
+        if (businessMobileHelp) {
+            businessMobileHelp.classList.add(
+                'hidden'
+            );
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | EVENT
+    |--------------------------------------------------------------------------
+    */
+
+    userModeInputs.forEach(
+        function (input) {
+
+            input.addEventListener(
+                'change',
+                updateUserMode
+            );
+        }
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | INITIAL STATE
+    |--------------------------------------------------------------------------
+    */
+
+    updateUserMode();
+
+});
 </script>

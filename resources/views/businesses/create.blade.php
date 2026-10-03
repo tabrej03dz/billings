@@ -20,6 +20,7 @@
                 'businessTypes' => $businessTypes,
                 'plans'         => $plans,
                 'roles'         => $roles,
+                'users'         => $users,
             ])
 
         </form>
