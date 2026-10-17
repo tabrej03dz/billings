@@ -27,49 +27,49 @@ class HomeController extends Controller
 {
 
     // SKIP OTP LOGIN FOR TESTING PURPOSES
-    // public function login(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'phone'       => ['required', 'digits:10'],
-    //         'device_name' => ['nullable', 'string', 'max:100'],
-    //     ]);
+    public function login(Request $request)
+    {
+        $data = $request->validate([
+            'phone'       => ['required', 'digits:10'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
 
-    //     $user = User::where('phone', $data['phone'])->first();
+        $user = User::where('phone', $data['phone'])->first();
 
-    //     if (!$user) {
-    //         throw ValidationException::withMessages([
-    //             'phone' => ['Mobile number not registered.'],
-    //         ]);
-    //     }
+        if (!$user) {
+            throw ValidationException::withMessages([
+                'phone' => ['Mobile number not registered.'],
+            ]);
+        }
 
-    //     // Single-device login chahiye to is line ko uncomment karein
-    //     // $user->tokens()->delete();
+        // Single-device login chahiye to is line ko uncomment karein
+        // $user->tokens()->delete();
 
-    //     $deviceName = $data['device_name'] ?? 'authToken';
+        $deviceName = $data['device_name'] ?? 'authToken';
 
-    //     // OTP ke bina direct login token
-    //     $token = $user->createToken($deviceName)->plainTextToken;
+        // OTP ke bina direct login token
+        $token = $user->createToken($deviceName)->plainTextToken;
 
-    //     // Purana OTP pada ho to clear kar denge
-    //     $user->update([
-    //         'otp' => null,
-    //         'otp_expires_at' => null,
-    //     ]);
+        // Purana OTP pada ho to clear kar denge
+        $user->update([
+            'otp' => null,
+            'otp_expires_at' => null,
+        ]);
 
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Login successful',
-    //         'token_type' => 'Bearer',
-    //         'token' => $token,
-    //         'user' => [
-    //             'id' => $user->id,
-    //             'name' => $user->name,
-    //             'email' => $user->email,
-    //             'phone' => $user->phone,
-    //             'business' => $user->businesses,
-    //         ],
-    //     ], 200);
-    // }
+        return response()->json([
+            'status' => true,
+            'message' => 'Login successful',
+            'token_type' => 'Bearer',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'business' => $user->businesses,
+            ],
+        ], 200);
+    }
 
     public function login(Request $request)
     {
