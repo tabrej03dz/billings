@@ -71,51 +71,51 @@ class HomeController extends Controller
         ], 200);
     }
 
-    public function login(Request $request)
-    {
-        $data = $request->validate([
-            'phone'       => ['required', 'digits:10'],
-            'device_name' => ['nullable', 'string', 'max:100'],
-        ]);
+    // public function login(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'phone'       => ['required', 'digits:10'],
+    //         'device_name' => ['nullable', 'string', 'max:100'],
+    //     ]);
 
-        $user = User::where('phone', $data['phone'])->first();
+    //     $user = User::where('phone', $data['phone'])->first();
 
-        if (!$user) {
-            throw ValidationException::withMessages([
-                'phone' => ['Mobile number not registered.'],
-            ]);
-        }
+    //     if (!$user) {
+    //         throw ValidationException::withMessages([
+    //             'phone' => ['Mobile number not registered.'],
+    //         ]);
+    //     }
 
-        $otp = $user->phone == '7753800444' || $user->phone == '8948467535'
-            ? 111111
-            : rand(100000, 999999);
+    //     $otp = $user->phone == '7753800444' || $user->phone == '8948467535'
+    //         ? 111111
+    //         : rand(100000, 999999);
 
-        $user->update([
-            'otp' => $otp,
-            'otp_expires_at' => now()->addMinutes(10),
-        ]);
+    //     $user->update([
+    //         'otp' => $otp,
+    //         'otp_expires_at' => now()->addMinutes(10),
+    //     ]);
 
-        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
 
-        $response = Http::get('https://kutility.org/app/smsapi/index.php', [
-            'key'         => '5620360CF8C9B4',
-            'campaign'    => '12754',
-            'routeid'     => '7',
-            'type'        => 'text',
-            'contacts'    => $user->phone,
-            'senderid'    => 'RVGRPS',
-            'msg'         => $msg,
-            'template_id' => '1707178057481157648',
-            'pe_id'       => '1701164032595209992',
-        ]);
+    //     $response = Http::get('https://kutility.org/app/smsapi/index.php', [
+    //         'key'         => '5620360CF8C9B4',
+    //         'campaign'    => '12754',
+    //         'routeid'     => '7',
+    //         'type'        => 'text',
+    //         'contacts'    => $user->phone,
+    //         'senderid'    => 'RVGRPS',
+    //         'msg'         => $msg,
+    //         'template_id' => '1707178057481157648',
+    //         'pe_id'       => '1701164032595209992',
+    //     ]);
 
-        return response()->json([
-            'status' => true,
-            'message' => 'OTP sent successfully on your mobile number.',
-            'phone' => $user->phone,
-            'sms_response' => $response->body(),
-        ], 200);
-    }
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'OTP sent successfully on your mobile number.',
+    //         'phone' => $user->phone,
+    //         'sms_response' => $response->body(),
+    //     ], 200);
+    // }
 
 
     // SKIP VERIFY
