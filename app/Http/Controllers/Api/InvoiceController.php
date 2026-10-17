@@ -3831,25 +3831,226 @@ class InvoiceController extends Controller
         return "data:{$mime};base64," . base64_encode($data);
     }
 
-    protected function simplePdfBuild(Invoice $invoice): string
-    {
-        /*
-        |--------------------------------------------------------------------------
-        | Safe relations loading without global scope issue
-        |--------------------------------------------------------------------------
-        | client, items, business teeno PDF ke liye required hain.
-        | Isliye yaha normal $invoice->load(['client','items','business'])
-        | ki jagah manual safe loading use kar rahe hain.
-        */
+    // protected function simplePdfBuild(Invoice $invoice): string
+    // {
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Safe relations loading without global scope issue
+    //     |--------------------------------------------------------------------------
+    //     | client, items, business teeno PDF ke liye required hain.
+    //     | Isliye yaha normal $invoice->load(['client','items','business'])
+    //     | ki jagah manual safe loading use kar rahe hain.
+    //     */
 
+    //     $inv = $invoice;
+
+    //     // ✅ Business required - without global scopes
+    //     $biz = Business::withoutGlobalScopes()
+    //         ->where('id', $invoice->business_id)
+    //         ->first();
+
+    //     // ✅ Client required - without global scopes if Client model has scope
+    //     $client = null;
+
+    //     if (!empty($invoice->client_id)) {
+    //         $client = Client::withoutGlobalScopes()
+    //             ->where('id', $invoice->client_id)
+    //             ->first();
+    //     }
+
+    //     // ✅ Items required - without global scopes if InvoiceItem model has scope
+    //     // $items = InvoiceItem::withoutGlobalScopes()
+    //     //     ->where('invoice_id', $invoice->id)
+    //     //     ->orderBy('id')
+    //     //     ->get();
+
+    //     $items = InvoiceItem::withoutGlobalScopes()
+    //         ->with('item')
+    //         ->where('invoice_id', $invoice->id)
+    //         ->orderBy('id')
+    //         ->get();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Payment row
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $payRow = InvoicePayment::withoutGlobalScopes()
+    //         ->where('invoice_id', $inv->id)
+    //         ->latest('id')
+    //         ->first();
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Additional charges
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     if (method_exists($invoice, 'additionalCharges')) {
+    //         try {
+    //             $charges = $invoice->additionalCharges()
+    //                 ->withoutGlobalScopes()
+    //                 ->get(['name', 'amount']);
+    //         } catch (\Throwable $e) {
+    //             $charges = collect();
+    //         }
+    //     } else {
+    //         $arr = [];
+
+    //         if (!empty($invoice->charges_json)) {
+    //             $decoded = json_decode($invoice->charges_json, true);
+
+    //             if (is_array($decoded)) {
+    //                 foreach ($decoded as $c) {
+    //                     $arr[] = (object) [
+    //                         'name'   => (string) ($c['name'] ?? ''),
+    //                         'amount' => (float) ($c['amount'] ?? 0),
+    //                     ];
+    //                 }
+    //             }
+    //         }
+
+    //         $charges = collect($arr);
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Totals
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $subtotal       = (float) ($inv->subtotal ?? 0);
+    //     $tax_total      = (float) ($inv->tax_amount ?? 0);
+    //     $discount_total = (float) ($inv->discount_total ?? 0);
+    //     $charges_total  = (float) ($inv->charge_total ?? 0);
+
+    //     $tcs_percent    = (float) ($inv->tcs_percent ?? 0);
+    //     $tcs_amount     = (float) ($inv->tcs_amount ?? 0);
+    //     $round_off      = (float) ($inv->round_off ?? 0);
+    //     $less_amount    = (float) ($inv->less_amount ?? 0);
+
+    //     $received       = (float) ($inv->received_amount ?? 0);
+    //     $grand_total    = (float) ($inv->total ?? 0);
+    //     $balance        = (float) ($inv->balance ?? 0);
+
+    //     $cgst_amount    = (float) ($inv->cgst_amount ?? 0);
+    //     $sgst_amount    = (float) ($inv->sgst_amount ?? 0);
+    //     $igst_amount    = (float) ($inv->igst_amount ?? 0);
+
+    //     // ✅ Correct total tax amount
+    //     $taxAmount = (float) ($cgst_amount + $sgst_amount + $igst_amount);
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Logo and signature
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $logoDataUri = $this->imageDataUri($biz?->logo);
+    //     $signDataUri = $this->imageDataUri($biz?->signature);
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Invoice type
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $type = strtolower((string) ($invoice->invoice_type ?? 'tax'));
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | View data
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     $vm = compact(
+    //         'inv',
+    //         'invoice',
+    //         'biz',
+    //         'client',
+    //         'items',
+    //         'charges',
+    //         'type',
+    //         'taxAmount',
+    //         'logoDataUri',
+    //         'signDataUri',
+    //         'subtotal',
+    //         'tax_total',
+    //         'discount_total',
+    //         'charges_total',
+    //         'tcs_percent',
+    //         'tcs_amount',
+    //         'round_off',
+    //         'less_amount',
+    //         'grand_total',
+    //         'received',
+    //         'balance',
+    //         'cgst_amount',
+    //         'sgst_amount',
+    //         'igst_amount',
+    //         'payRow'
+    //     );
+
+    //     // ✅ aliases for old blade templates
+    //     $vm['logo'] = $logoDataUri;
+    //     $vm['sign'] = $signDataUri;
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Template resolve
+    //     |--------------------------------------------------------------------------
+    //     | billTemplate relation direct use nahi karenge kyuki usme bhi global scope
+    //     | issue aa sakta hai. Isliye business ko manually load kiya hai.
+    //     */
+
+    //     $templatePage = 'pdf_simple';
+
+    //     try {
+    //         if ($biz && method_exists($biz, 'billTemplate')) {
+    //             $billTemplate = $biz->billTemplate()->first();
+
+    //             if ($billTemplate && !empty($billTemplate->page_name)) {
+    //                 $templatePage = $billTemplate->page_name;
+    //             }
+    //         }
+    //     } catch (\Throwable $e) {
+    //         $templatePage = 'pdf_simple';
+    //     }
+
+    //     $view = 'invoices.' . $templatePage;
+
+    //     if (!view()->exists($view)) {
+    //         $view = 'invoices.pdf_simple';
+    //     }
+
+    //     /*
+    //     |--------------------------------------------------------------------------
+    //     | Generate PDF
+    //     |--------------------------------------------------------------------------
+    //     */
+    //     // return Pdf::loadView($view, $vm)
+    //     //     ->setPaper('a4');
+
+    //     return $this->renderMpdfOutput(
+    //         $view,
+    //         $vm
+    //     );
+    // }
+
+
+     protected function simplePdfBuild(Invoice $invoice): string
+    {
         $inv = $invoice;
 
-        // ✅ Business required - without global scopes
+        /*
+        |--------------------------------------------------------------------------
+        | Business (without global scopes)
+        |--------------------------------------------------------------------------
+        */
         $biz = Business::withoutGlobalScopes()
             ->where('id', $invoice->business_id)
             ->first();
 
-        // ✅ Client required - without global scopes if Client model has scope
+        /*
+        |--------------------------------------------------------------------------
+        | Client (without global scopes)
+        |--------------------------------------------------------------------------
+        */
         $client = null;
 
         if (!empty($invoice->client_id)) {
@@ -3858,27 +4059,92 @@ class InvoiceController extends Controller
                 ->first();
         }
 
-        // ✅ Items required - without global scopes if InvoiceItem model has scope
-        // $items = InvoiceItem::withoutGlobalScopes()
-        //     ->where('invoice_id', $invoice->id)
-        //     ->orderBy('id')
-        //     ->get();
-
+        /*
+        |--------------------------------------------------------------------------
+        | Items (item relation bhi without global scopes)
+        |--------------------------------------------------------------------------
+        */
         $items = InvoiceItem::withoutGlobalScopes()
-            ->with('item')
+            ->with([
+                'item' => function ($query) {
+                    $query->withoutGlobalScopes();
+                },
+            ])
             ->where('invoice_id', $invoice->id)
             ->orderBy('id')
             ->get();
 
         /*
         |--------------------------------------------------------------------------
-        | Payment row
+        | Latest payment row
         |--------------------------------------------------------------------------
         */
         $payRow = InvoicePayment::withoutGlobalScopes()
             ->where('invoice_id', $inv->id)
             ->latest('id')
             ->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Selected bank account
+        |--------------------------------------------------------------------------
+        */
+        $bankAccountId = null;
+
+        if (!empty($inv->bank_account_id)) {
+            $bankAccountId = (int) $inv->bank_account_id;
+        } elseif (request()->filled('bank_account_id')) {
+            $bankAccountId = (int) request()->input('bank_account_id');
+        }
+
+        $selectedBank = null;
+
+        if ($bankAccountId > 0) {
+            try {
+                $selectedBank = BankAccount::withoutGlobalScopes()
+                    ->where('business_id', (int) $inv->business_id)
+                    ->where('id', $bankAccountId)
+                    ->first();
+            } catch (\Throwable $e) {
+                $selectedBank = null;
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment details
+        |--------------------------------------------------------------------------
+        */
+        $paymentDetails = [
+            'payment_method' => $inv->payment_method ?? null,
+
+            'cash_amount' => (float) ($payRow->cash_amount ?? 0),
+
+            'online_amount' => (float) ($payRow->online_amount ?? 0),
+            'online_mode'   => $payRow->online_mode ?? null,
+            'online_ref'    => $payRow->online_ref ?? null,
+            'upi_id'        => $payRow->upi_id ?? null,
+
+            'card_amount' => (float) ($payRow->card_amount ?? 0),
+            'card_last4'  => $payRow->card_last4 ?? null,
+            'card_ref'    => $payRow->card_ref ?? null,
+
+            'cheque_amount' => (float) ($payRow->cheque_amount ?? 0),
+            'cheque_no'     => $payRow->cheque_no ?? null,
+            'bank_name'     => $payRow->bank_name ?? null,
+
+            'credit_sales_excess_amount' => (float) ($payRow->credit_sales_excess_amount ?? 0),
+            'advance_amount'             => (float) ($payRow->advance_amount ?? 0),
+
+            'received_total' => (float) (
+                $payRow->received_total
+                    ?? $inv->received_amount
+                    ?? 0
+            ),
+
+            'notes'   => $payRow->notes ?? null,
+            'paid_at' => $payRow->paid_at ?? null,
+        ];
 
         /*
         |--------------------------------------------------------------------------
@@ -3935,16 +4201,22 @@ class InvoiceController extends Controller
         $sgst_amount    = (float) ($inv->sgst_amount ?? 0);
         $igst_amount    = (float) ($inv->igst_amount ?? 0);
 
-        // ✅ Correct total tax amount
         $taxAmount = (float) ($cgst_amount + $sgst_amount + $igst_amount);
 
         /*
         |--------------------------------------------------------------------------
         | Logo and signature
         |--------------------------------------------------------------------------
+        | IMPORTANT:
+        | Pehle yahan base64 data URI use ho rahi thi. Badi image ki wajah se HTML
+        | bahut bada ho jata tha aur mPDF fail hota tha.
+        | Ab web controller ki tarah server ka actual file path pass hota hai.
         */
-        $logoDataUri = $this->imageDataUri($biz?->logo);
-        $signDataUri = $this->imageDataUri($biz?->signature);
+        $logo = $this->resolvePdfImagePath($biz?->logo ?? $biz?->business_logo ?? null);
+        $sign = $this->resolvePdfImagePath($biz?->signature ?? null);
+
+        $logoDataUri = $logo;
+        $signDataUri = $sign;
 
         /*
         |--------------------------------------------------------------------------
@@ -3955,61 +4227,89 @@ class InvoiceController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | View data
+        | Bill template + template setting
         |--------------------------------------------------------------------------
         */
-        $vm = compact(
-            'inv',
-            'invoice',
-            'biz',
-            'client',
-            'items',
-            'charges',
-            'type',
-            'taxAmount',
-            'logoDataUri',
-            'signDataUri',
-            'subtotal',
-            'tax_total',
-            'discount_total',
-            'charges_total',
-            'tcs_percent',
-            'tcs_amount',
-            'round_off',
-            'less_amount',
-            'grand_total',
-            'received',
-            'balance',
-            'cgst_amount',
-            'sgst_amount',
-            'igst_amount',
-            'payRow'
-        );
+        $billTemplate    = null;
+        $templateSetting = null;
 
-        // ✅ aliases for old blade templates
-        $vm['logo'] = $logoDataUri;
-        $vm['sign'] = $signDataUri;
+        try {
+            if ($biz && method_exists($biz, 'billTemplate')) {
+                $billTemplate = $biz->billTemplate()
+                    ->withoutGlobalScopes()
+                    ->first();
+            }
+
+            if ($biz && $billTemplate) {
+                $templateSetting = \App\Models\BusinessBillTemplateSetting::query()
+                    ->withoutGlobalScopes()
+                    ->where('business_id', $biz->id)
+                    ->where('bill_template_id', $billTemplate->id)
+                    ->first();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('API PDF template lookup failed', [
+                'invoice_id' => $invoice->id ?? null,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | View data (web controller + API dono ke variables)
+        |--------------------------------------------------------------------------
+        */
+        $vm = [
+            'inv'      => $inv,
+            'invoice'  => $invoice,
+
+            'business' => $biz,
+            'biz'      => $biz,
+
+            'client'   => $client,
+            'items'    => $items,
+            'charges'  => $charges,
+            'type'     => $type,
+
+            'payRow'         => $payRow,
+            'selectedBank'   => $selectedBank,
+            'bankAccountId'  => $bankAccountId,
+            'paymentDetails' => $paymentDetails,
+
+            'billTemplate'    => $billTemplate,
+            'templateSetting' => $templateSetting,
+
+            'taxAmount'      => $taxAmount,
+            'subtotal'       => $subtotal,
+            'tax_total'      => $tax_total,
+            'discount_total' => $discount_total,
+            'charges_total'  => $charges_total,
+            'tcs_percent'    => $tcs_percent,
+            'tcs_amount'     => $tcs_amount,
+            'round_off'      => $round_off,
+            'less_amount'    => $less_amount,
+            'grand_total'    => $grand_total,
+            'received'       => $received,
+            'balance'        => $balance,
+            'cgst_amount'    => $cgst_amount,
+            'sgst_amount'    => $sgst_amount,
+            'igst_amount'    => $igst_amount,
+
+            'logo'        => $logo,
+            'sign'        => $sign,
+            'logoDataUri' => $logoDataUri,
+            'signDataUri' => $signDataUri,
+        ];
 
         /*
         |--------------------------------------------------------------------------
         | Template resolve
         |--------------------------------------------------------------------------
-        | billTemplate relation direct use nahi karenge kyuki usme bhi global scope
-        | issue aa sakta hai. Isliye business ko manually load kiya hai.
         */
-
         $templatePage = 'pdf_simple';
 
-        try {
-            if ($biz && method_exists($biz, 'billTemplate')) {
-                $billTemplate = $biz->billTemplate()->first();
-
-                if ($billTemplate && !empty($billTemplate->page_name)) {
-                    $templatePage = $billTemplate->page_name;
-                }
-            }
-        } catch (\Throwable $e) {
-            $templatePage = 'pdf_simple';
+        if ($billTemplate && !empty($billTemplate->page_name)) {
+            $templatePage = $billTemplate->page_name;
         }
 
         $view = 'invoices.' . $templatePage;
@@ -4022,14 +4322,26 @@ class InvoiceController extends Controller
         |--------------------------------------------------------------------------
         | Generate PDF
         |--------------------------------------------------------------------------
+        | Agar selected template render me fail ho jaye to default pdf_simple
+        | template se PDF bana denge, taaki user ko 500 error na mile.
         */
-        // return Pdf::loadView($view, $vm)
-        //     ->setPaper('a4');
+        try {
+            return $this->renderMpdfOutput($view, $vm);
+        } catch (\Throwable $e) {
+            if ($view === 'invoices.pdf_simple') {
+                throw $e;
+            }
 
-        return $this->renderMpdfOutput(
-            $view,
-            $vm
-        );
+            Log::warning('API PDF template failed, fallback to pdf_simple', [
+                'invoice_id' => $invoice->id ?? null,
+                'view'       => $view,
+                'error'      => $e->getMessage(),
+                'line'       => $e->getLine(),
+                'file'       => $e->getFile(),
+            ]);
+
+            return $this->renderMpdfOutput('invoices.pdf_simple', $vm);
+        }
     }
 
 
@@ -4100,245 +4412,322 @@ class InvoiceController extends Controller
         return $invoice;
     }
 
-    // protected function renderMpdfOutput(string $view, array $vm): string
-    // {
-    //     $tempDir = storage_path('app/mpdf-temp');
+//     protected function renderMpdfOutput(string $view, array $vm): string
+// {
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Temp directory
+//     |--------------------------------------------------------------------------
+//     */
+//     $tempDir = storage_path('app/mpdf-temp');
 
-    //     if (!is_dir($tempDir)) {
-    //         mkdir($tempDir, 0775, true);
-    //     }
+//     if (!is_dir($tempDir)) {
+//         mkdir($tempDir, 0775, true);
+//     }
 
-    //     if (!is_writable($tempDir)) {
-    //         @chmod($tempDir, 0775);
-    //     }
+//     if (!is_writable($tempDir)) {
+//         @chmod($tempDir, 0775);
+//     }
 
-    //     $mpdf = new Mpdf([
-    //         'mode'   => 'utf-8',
-    //         'format' => 'A4',
+//     /*
+//     |--------------------------------------------------------------------------
+//     | mPDF
+//     |--------------------------------------------------------------------------
+//     */
+//     $mpdf = new \Mpdf\Mpdf([
+//         'mode'   => 'utf-8',
+//         'format' => 'A4',
 
-    //         'margin_left'   => 8,
-    //         'margin_right'  => 8,
-    //         'margin_top'    => 8,
-    //         'margin_bottom' => 8,
+//         'margin_left'   => 8,
+//         'margin_right'  => 8,
+//         'margin_top'    => 8,
+//         'margin_bottom' => 8,
 
-    //         'tempDir' => $tempDir,
+//         'tempDir' => $tempDir,
 
-    //         // Custom NotoSansDevanagari font remove किया गया
-    //         'default_font' => 'freeserif',
+//         'default_font' => 'freeserif',
 
-    //         'autoScriptToLang' => true,
-    //         'autoLangToFont'   => true,
-    //     ]);
+//         'autoScriptToLang' => true,
+//         'autoLangToFont'   => true,
+//     ]);
 
-    //     $html = view($view, $vm)->render();
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Render Blade HTML
+//     |--------------------------------------------------------------------------
+//     */
+//     $html = view($view, $vm)->render();
 
-    //     $mpdf->WriteHTML($html);
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Important:
+//     | mPDF poora huge HTML ek WriteHTML() me lene par
+//     | pcre.backtrack_limit error de raha tha.
+//     |--------------------------------------------------------------------------
+//     */
 
-    //     return $mpdf->Output('', 'S');
-    // }
+//     // <style>...</style> ko alag extract karo.
+//     $css = '';
 
-    protected function renderMpdfOutput(string $view, array $vm): string
-{
-    /*
-    |--------------------------------------------------------------------------
-    | Temp directory
-    |--------------------------------------------------------------------------
-    */
-    $tempDir = storage_path('app/mpdf-temp');
+//     if (
+//         preg_match(
+//             '/<style\b[^>]*>(.*?)<\/style>/is',
+//             $html,
+//             $matches
+//         )
+//     ) {
+//         $css = $matches[1] ?? '';
 
-    if (!is_dir($tempDir)) {
-        mkdir($tempDir, 0775, true);
-    }
+//         // Original HTML se style tag remove
+//         $html = preg_replace(
+//             '/<style\b[^>]*>.*?<\/style>/is',
+//             '',
+//             $html
+//         );
+//     }
 
-    if (!is_writable($tempDir)) {
-        @chmod($tempDir, 0775);
-    }
+//     /*
+//     |--------------------------------------------------------------------------
+//     | CSS first
+//     |--------------------------------------------------------------------------
+//     */
+//     if (trim($css) !== '') {
+//         $mpdf->WriteHTML(
+//             $css,
+//             \Mpdf\HTMLParserMode::HEADER_CSS
+//         );
+//     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | mPDF
-    |--------------------------------------------------------------------------
-    */
-    $mpdf = new \Mpdf\Mpdf([
-        'mode'   => 'utf-8',
-        'format' => 'A4',
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Body HTML in smaller chunks
+//     |--------------------------------------------------------------------------
+//     |
+//     | 50 KB chunks generally safe hain.
+//     | Direct str_split HTML tag ke beech cut kar sakta hai,
+//     | isliye pehle logical tags par split karenge.
+//     |--------------------------------------------------------------------------
+//     */
 
-        'margin_left'   => 8,
-        'margin_right'  => 8,
-        'margin_top'    => 8,
-        'margin_bottom' => 8,
+//     $parts = preg_split(
+//         '/(?=<\/?(?:div|table|thead|tbody|tfoot|tr|section|header|footer)\b)/i',
+//         $html,
+//         -1,
+//         PREG_SPLIT_NO_EMPTY
+//     );
 
-        'tempDir' => $tempDir,
+//     $buffer = '';
+//     $maxChunkSize = 50000; // 50 KB
 
-        'default_font' => 'freeserif',
+//     foreach ($parts as $part) {
 
-        'autoScriptToLang' => true,
-        'autoLangToFont'   => true,
-    ]);
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Agar current buffer limit cross karne wala hai
+//         |--------------------------------------------------------------------------
+//         */
+//         if (
+//             $buffer !== ''
+//             && strlen($buffer) + strlen($part) > $maxChunkSize
+//         ) {
+//             $mpdf->WriteHTML(
+//                 $buffer,
+//                 \Mpdf\HTMLParserMode::HTML_BODY
+//             );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Render Blade HTML
-    |--------------------------------------------------------------------------
-    */
-    $html = view($view, $vm)->render();
+//             $buffer = '';
+//         }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Important:
-    | mPDF poora huge HTML ek WriteHTML() me lene par
-    | pcre.backtrack_limit error de raha tha.
-    |--------------------------------------------------------------------------
-    */
+//         /*
+//         |--------------------------------------------------------------------------
+//         | Agar ek individual part hi bahut bada hai
+//         |--------------------------------------------------------------------------
+//         */
+//         if (strlen($part) > $maxChunkSize) {
 
-    // <style>...</style> ko alag extract karo.
-    $css = '';
+//             if ($buffer !== '') {
+//                 $mpdf->WriteHTML(
+//                     $buffer,
+//                     \Mpdf\HTMLParserMode::HTML_BODY
+//                 );
 
-    if (
-        preg_match(
-            '/<style\b[^>]*>(.*?)<\/style>/is',
-            $html,
-            $matches
-        )
-    ) {
-        $css = $matches[1] ?? '';
+//                 $buffer = '';
+//             }
 
-        // Original HTML se style tag remove
-        $html = preg_replace(
-            '/<style\b[^>]*>.*?<\/style>/is',
-            '',
-            $html
-        );
-    }
+//             /*
+//             | Large part ko paragraphs / lines ke around split karo.
+//             */
+//             $subParts = preg_split(
+//                 '/(?=<\/?(?:p|span|br|td|th|li)\b)/i',
+//                 $part,
+//                 -1,
+//                 PREG_SPLIT_NO_EMPTY
+//             );
 
-    /*
-    |--------------------------------------------------------------------------
-    | CSS first
-    |--------------------------------------------------------------------------
-    */
-    if (trim($css) !== '') {
-        $mpdf->WriteHTML(
-            $css,
-            \Mpdf\HTMLParserMode::HEADER_CSS
-        );
-    }
+//             $subBuffer = '';
 
-    /*
-    |--------------------------------------------------------------------------
-    | Body HTML in smaller chunks
-    |--------------------------------------------------------------------------
-    |
-    | 50 KB chunks generally safe hain.
-    | Direct str_split HTML tag ke beech cut kar sakta hai,
-    | isliye pehle logical tags par split karenge.
-    |--------------------------------------------------------------------------
-    */
+//             foreach ($subParts as $subPart) {
 
-    $parts = preg_split(
-        '/(?=<\/?(?:div|table|thead|tbody|tfoot|tr|section|header|footer)\b)/i',
-        $html,
-        -1,
-        PREG_SPLIT_NO_EMPTY
-    );
+//                 if (
+//                     $subBuffer !== ''
+//                     && strlen($subBuffer) + strlen($subPart) > $maxChunkSize
+//                 ) {
+//                     $mpdf->WriteHTML(
+//                         $subBuffer,
+//                         \Mpdf\HTMLParserMode::HTML_BODY
+//                     );
 
-    $buffer = '';
-    $maxChunkSize = 50000; // 50 KB
+//                     $subBuffer = '';
+//                 }
 
-    foreach ($parts as $part) {
+//                 $subBuffer .= $subPart;
+//             }
+
+//             if ($subBuffer !== '') {
+//                 $mpdf->WriteHTML(
+//                     $subBuffer,
+//                     \Mpdf\HTMLParserMode::HTML_BODY
+//                 );
+//             }
+
+//             continue;
+//         }
+
+//         $buffer .= $part;
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Remaining HTML
+//     |--------------------------------------------------------------------------
+//     */
+//     if ($buffer !== '') {
+//         $mpdf->WriteHTML(
+//             $buffer,
+//             \Mpdf\HTMLParserMode::HTML_BODY
+//         );
+//     }
+
+//     /*
+//     |--------------------------------------------------------------------------
+//     | Return PDF binary
+//     |--------------------------------------------------------------------------
+//     */
+//     return $mpdf->Output('', 'S');
+// }
+
+protected function renderMpdfOutput(string $view, array $vm): string
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Safety limit for big HTML (regex backtrack)
+        |--------------------------------------------------------------------------
+        */
+        @ini_set('pcre.backtrack_limit', '5000000');
+        @ini_set('pcre.recursion_limit', '5000000');
 
         /*
         |--------------------------------------------------------------------------
-        | Agar current buffer limit cross karne wala hai
+        | Temp directory
         |--------------------------------------------------------------------------
         */
-        if (
-            $buffer !== ''
-            && strlen($buffer) + strlen($part) > $maxChunkSize
-        ) {
-            $mpdf->WriteHTML(
-                $buffer,
-                \Mpdf\HTMLParserMode::HTML_BODY
-            );
+        $tempDir = storage_path('app/mpdf-temp');
 
-            $buffer = '';
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0775, true);
+        }
+
+        if (!is_writable($tempDir)) {
+            @chmod($tempDir, 0775);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Agar ek individual part hi bahut bada hai
+        | mPDF (same config as web controller)
         |--------------------------------------------------------------------------
         */
-        if (strlen($part) > $maxChunkSize) {
+        $mpdf = new \Mpdf\Mpdf([
+            'mode'   => 'utf-8',
+            'format' => 'A4',
 
-            if ($buffer !== '') {
-                $mpdf->WriteHTML(
-                    $buffer,
-                    \Mpdf\HTMLParserMode::HTML_BODY
-                );
+            'margin_left'   => 8,
+            'margin_right'  => 8,
+            'margin_top'    => 8,
+            'margin_bottom' => 8,
 
-                $buffer = '';
-            }
+            'tempDir' => $tempDir,
 
-            /*
-            | Large part ko paragraphs / lines ke around split karo.
-            */
-            $subParts = preg_split(
-                '/(?=<\/?(?:p|span|br|td|th|li)\b)/i',
-                $part,
-                -1,
-                PREG_SPLIT_NO_EMPTY
-            );
+            'default_font' => 'freeserif',
 
-            $subBuffer = '';
+            'autoScriptToLang' => true,
+            'autoLangToFont'   => true,
+        ]);
 
-            foreach ($subParts as $subPart) {
+        /*
+        |--------------------------------------------------------------------------
+        | Render Blade HTML and write in ONE go
+        |--------------------------------------------------------------------------
+        | Pehle HTML ko chhote tukdon me todkar likha ja raha tha. Isse table/div
+        | tags beech me cut ho jate the aur kuch invoices fail hote the.
+        */
+        $html = view($view, $vm)->render();
 
-                if (
-                    $subBuffer !== ''
-                    && strlen($subBuffer) + strlen($subPart) > $maxChunkSize
-                ) {
-                    $mpdf->WriteHTML(
-                        $subBuffer,
-                        \Mpdf\HTMLParserMode::HTML_BODY
-                    );
+        $mpdf->WriteHTML($html);
 
-                    $subBuffer = '';
-                }
+        return $mpdf->Output('', 'S');
+    }
 
-                $subBuffer .= $subPart;
-            }
 
-            if ($subBuffer !== '') {
-                $mpdf->WriteHTML(
-                    $subBuffer,
-                    \Mpdf\HTMLParserMode::HTML_BODY
-                );
-            }
-
-            continue;
+    protected function resolvePdfImagePath(?string $value): ?string
+    {
+        if (!$value) {
+            return null;
         }
 
-        $buffer .= $part;
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        // Already data URI
+        if (str_starts_with($value, 'data:image/')) {
+            return $value;
+        }
+
+        // Full URL -> sirf /storage/ ke baad ka relative path lo
+        if (preg_match('~^https?://~i', $value)) {
+            $pos = stripos($value, '/storage/');
+
+            if ($pos === false) {
+                return null;
+            }
+
+            $value = substr($value, $pos + strlen('/storage/'));
+        }
+
+        $value = ltrim(str_replace('\\', '/', $value), '/');
+
+        // Known prefixes hatao
+        foreach (['public/storage/', 'storage/', 'public/'] as $prefix) {
+            if (str_starts_with($value, $prefix)) {
+                $value = substr($value, strlen($prefix));
+                break;
+            }
+        }
+
+        $candidates = [
+            storage_path('app/public/' . $value),
+            public_path('storage/' . $value),
+            public_path($value),
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate) && is_readable($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Remaining HTML
-    |--------------------------------------------------------------------------
-    */
-    if ($buffer !== '') {
-        $mpdf->WriteHTML(
-            $buffer,
-            \Mpdf\HTMLParserMode::HTML_BODY
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Return PDF binary
-    |--------------------------------------------------------------------------
-    */
-    return $mpdf->Output('', 'S');
-}
-
 }
