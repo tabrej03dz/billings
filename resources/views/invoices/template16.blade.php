@@ -564,8 +564,14 @@
             text-align: right;
         }
 
+        /*
+         | Signature image size (mPDF friendly).
+         | mPDF max-height / max-width ko reliably nahi maanta, isliye fixed
+         | height di gayi hai. Width auto-scale hoti hai (aspect ratio same).
+         */
         .sign-box img {
-            max-height: 45px;
+            height: 40px;
+            width: auto;
         }
 
 
@@ -1192,7 +1198,7 @@
 
             <td style="width:50%;" class="sign-box">
                 @if(!empty($sign))
-                    <img src="{{ $sign }}"><br>
+                    <img src="{{ $sign }}" style="height:40px; width:auto;"><br>
                 @endif
 
                 <strong>Authorised Signatory</strong><br>
