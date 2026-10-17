@@ -9,6 +9,45 @@
 
         <div class="flex items-center justify-between mb-4 bg-[#BFE0E0] dark:bg-[#354A54] p-6">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Businesses</h1>
+
+            <form method="GET" action="{{ route('businesses.index') }}"
+                class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white dark:bg-neutral-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+
+                <input type="text"
+                    name="search"
+                    value="{{ request('search') }}"
+                    placeholder="Search name, email, mobile, GSTIN..."
+                    class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-neutral-800 dark:text-white">
+
+                <select name="status"
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-neutral-800 dark:text-white">
+                    <option value="">All Status</option>
+                    <option value="active" @selected(request('status') === 'active')>Active</option>
+                    <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
+                </select>
+
+                <select name="per_page"
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-neutral-800 dark:text-white">
+                    @foreach([10, 15, 25, 50, 100] as $limit)
+                        <option value="{{ $limit }}" @selected(request('per_page', 15) == $limit)>
+                            {{ $limit }} Per Page
+                        </option>
+                    @endforeach
+                </select>
+
+                <div class="flex gap-2">
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Filter
+                    </button>
+
+                    <a href="{{ route('businesses.index') }}"
+                    class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
+                        Reset
+                    </a>
+                </div>
+            </form>
+
             @can('create business')
                 <a href="{{ route('businesses.create') }}"
                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-700">
@@ -48,24 +87,61 @@
                         <td class="px-6 py-4">{{ $business->mobile }}</td>
                         <td class="px-6 py-4">{{ $business->gstin ?? 'N/A' }}</td>
                         <td class="px-6 py-4">{{ $business->address ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 space-x-2">
-                            @can('edit business')
-                                <a href="{{ route('businesses.edit', $business->id) }}" class=" bg-yellow-500 text-white p-2 hover:underline m-3">Edit</a>
-                            @endcan
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
 
-                            @can('delete business')
-                                <form action="{{ route('businesses.delete', $business->id) }}" method="POST" class="inline-block"
-                                      onsubmit="return confirm('Are you sure?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="bg-red-600 p-2 m-3 text-white hover:underline">Delete</button>
-                                </form>
+                                @can('edit business')
+                                    <a
+                                        href="{{ route('businesses.edit', $business->id) }}"
+                                        class="inline-flex items-center justify-center rounded-lg
+                                            bg-yellow-500 px-3 py-2
+                                            text-sm font-medium text-white
+                                            transition hover:bg-yellow-600
+                                            focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                    >
+                                        Edit
+                                    </a>
+                                @endcan
 
-                            @endcan
 
-                            @can('edit business')
-                                <a href="{{ route('user-plans.index1', $business->id) }}" class=" bg-yellow-500 text-white p-2 hover:underline m-3">Edit</a>
-                            @endcan
+                                @can('edit business')
+                                    <a
+                                        href="{{ route('user-plans.index1', $business->id) }}"
+                                        class="inline-flex items-center justify-center rounded-lg
+                                            bg-purple-600 px-3 py-2
+                                            text-sm font-medium text-white
+                                            transition hover:bg-purple-700
+                                            focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                    >
+                                        Plans
+                                    </a>
+                                @endcan
+
+
+                                @can('delete business')
+                                    <form
+                                        action="{{ route('businesses.delete', $business->id) }}"
+                                        method="POST"
+                                        class="inline-flex"
+                                        onsubmit="return confirm('Are you sure you want to delete this business?');"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center justify-center rounded-lg
+                                                bg-red-600 px-3 py-2
+                                                text-sm font-medium text-white
+                                                transition hover:bg-red-700
+                                                focus:outline-none focus:ring-2 focus:ring-red-400"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                @endcan
+
+                            </div>
                         </td>
                     </tr>
                 @empty

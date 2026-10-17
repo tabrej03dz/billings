@@ -2,7 +2,6 @@
 
 <nav class=" text-black shadow-md">
     <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-
       <!-- Logo -->
       <div class="text-2xl font-bold tracking-wide">
         Billing <span class="text-amber-800">GST</span>
@@ -12,6 +11,7 @@
       <button id="menu-btn" class="md:hidden text-3xl focus:outline-none">
         ☰
       </button>
+
 
       <!-- Navigation Links -->
       <ul id="menu" class="hidden md:flex space-x-6 font-medium">

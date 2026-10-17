@@ -1,98 +1,213 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Register – MyVictory Billing</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Create your MyVictory Billing account and onboard your business in minutes.">
+@extends('frontend.layout')
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+@section('content')
 
-    <style>
-        html { scroll-behavior: smooth; }
+<style>
+    .inline-registration-card {
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 28px;
+        background: #ffffff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+    }
 
-        body {
-            background:
-                radial-gradient(circle at 15% 10%, rgba(37,99,235,.14), transparent 32%),
-                radial-gradient(circle at 85% 15%, rgba(245,158,11,.18), transparent 32%),
-                linear-gradient(180deg, #fffaf0 0%, #ffffff 45%, #f8fbff 100%);
-        }
+    .inline-registration-header {
+        padding: 22px 24px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #6c63ff);
+    }
 
-        .hero-bg {
-            background:
-                radial-gradient(circle at 15% 10%, rgba(37,99,235,.14), transparent 32%),
-                radial-gradient(circle at 85% 15%, rgba(245,158,11,.18), transparent 32%),
-                linear-gradient(180deg, #fffaf0 0%, #ffffff 45%, #f8fbff 100%);
-        }
+    .registration-field {
+        width: 100%;
+        padding: 14px 15px;
+        border: 1px solid #d8dce8;
+        border-radius: 15px;
+        color: #1e293b;
+        background: #ffffff;
+        outline: none;
+        transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    }
 
-        .soft-card {
-            box-shadow: 0 24px 70px rgba(15, 23, 42, .10);
-        }
+    .registration-field:focus {
+        border-color: #2624cc;
+        box-shadow: 0 0 0 4px rgba(38, 36, 204, .10);
+    }
 
-        .main-card {
-            background: rgba(255,255,255,0.96);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 24px 70px rgba(15, 23, 42, .10);
-        }
+    .registration-field[readonly],
+    .registration-field:disabled {
+        background: #f1f5f9;
+        cursor: not-allowed;
+    }
 
-        .step-pill.active {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border-color: #bfdbfe;
-        }
+    .step-pill {
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        background: #ffffff;
+    }
 
-        .step-pill.done {
-            background: #f0fdf4;
-            color: #166534;
-            border-color: #bbf7d0;
-        }
+    .step-pill.active {
+        border-color: #2624cc !important;
+        color: #ffffff !important;
+        background: linear-gradient(90deg, #2624cc, #6c63ff) !important;
+        box-shadow: 0 10px 24px rgba(38, 36, 204, .18);
+    }
 
-        .field-focus:focus {
-            box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
-        }
+    .step-pill.active > div,
+    .step-pill.active * {
+        color: #ffffff !important;
+    }
 
-        .soft-divider {
-            background: linear-gradient(90deg, transparent, rgba(148,163,184,0.35), transparent);
-            height: 1px;
-        }
-    </style>
-</head>
+    .step-pill.done {
+        border-color: rgba(38, 36, 204, .25) !important;
+        color: #2624cc !important;
+        background: #f0efff !important;
+    }
 
-<body class="min-h-screen text-slate-900">
+    .step-pill.done > div,
+    .step-pill.done * {
+        color: #2624cc !important;
+    }
 
-<header class="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 lg:px-8 h-20 flex items-center justify-between">
-        <a href="{{ url('/') }}" class="flex items-center gap-3">
-            <img src="{{ asset('asset/img/logo.png') }}"
-                 class="h-12 w-12 rounded-2xl border border-slate-200 shadow-sm"
-                 alt="MyVictory">
+    .registration-primary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 12px 24px;
+        border-radius: 15px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #514ff0);
+        font-size: 14px;
+        font-weight: 900;
+        transition: .2s ease;
+    }
 
-            <div>
-                <div class="font-black text-xl leading-none">MyVictory Billing</div>
-                <div class="text-xs text-slate-500 mt-1">By Real Victory Groups</div>
-            </div>
-        </a>
+    .registration-primary-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(38, 36, 204, .22);
+    }
 
-        <div class="flex items-center gap-3">
-            <a href="{{ url('/') }}"
-               class="hidden sm:inline-flex px-5 py-3 rounded-full border border-slate-300 text-sm font-bold hover:border-blue-500">
-                Home
-            </a>
+    .registration-primary-button:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
 
-            <a href="{{ route('login') }}"
-               class="px-5 py-3 rounded-full bg-slate-950 text-white text-sm font-bold">
-                Login
-            </a>
+    .registration-secondary-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 46px;
+        padding: 11px 22px;
+        border: 1px solid #d8dce8;
+        border-radius: 15px;
+        color: #475569;
+        background: #ffffff;
+        font-size: 14px;
+        font-weight: 800;
+    }
 
-            <a href="https://wa.me/917753800444"
-               class="hidden md:inline-flex px-6 py-3 rounded-full bg-blue-600 text-white text-sm font-black shadow-lg shadow-blue-200">
-                Need Help?
-            </a>
-        </div>
-    </div>
-</header>
+    .registration-skip-button {
+        width: 100%;
+        padding: 13px 18px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 15px;
+        color: #64748b;
+        background: #f8fafc;
+        font-size: 13px;
+        font-weight: 800;
+        transition: .2s ease;
+    }
+
+    .registration-skip-button:hover {
+        border-color: #2624cc;
+        color: #2624cc;
+        background: #f5f4ff;
+    }
+
+    .registration-otp-loader {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        color: #2624cc;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .registration-otp-loader.show { display: flex; }
+
+    .registration-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #d9d8ff;
+        border-top-color: #2624cc;
+        border-radius: 50%;
+        animation: registrationSpin .7s linear infinite;
+    }
+
+    @keyframes registrationSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+        .inline-registration-card { border-radius: 22px; }
+        .inline-registration-header { padding: 20px 18px; }
+    }
+    .plan-select-card {
+        position: relative;
+        overflow: hidden;
+        border: 2px solid #e2e8f0;
+        border-radius: 24px;
+        background: #ffffff;
+        transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .plan-select-card:hover {
+        transform: translateY(-3px);
+        border-color: #a5b4fc;
+        box-shadow: 0 18px 45px rgba(38, 36, 204, .12);
+    }
+
+    .plan-select-card.selected {
+        border-color: #2624cc;
+        box-shadow: 0 20px 50px rgba(38, 36, 204, .20);
+    }
+
+    .plan-select-card.selected::after {
+        content: "Selected";
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #6c63ff);
+        font-size: 11px;
+        font-weight: 900;
+    }
+
+    .plan-select-button {
+        display: inline-flex;
+        width: 100%;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        border-radius: 14px;
+        color: #ffffff;
+        background: linear-gradient(90deg, #2624cc, #514ff0);
+        font-size: 14px;
+        font-weight: 900;
+        transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .plan-select-button:hover {
+        opacity: .92;
+        transform: translateY(-1px);
+    }
+
+</style>
 
 <main class="hero-bg relative overflow-hidden">
     <div class="absolute inset-0 pointer-events-none">
@@ -101,6 +216,113 @@
     </div>
 
     <div class="relative max-w-7xl mx-auto px-4 lg:px-8 py-10 lg:py-16">
+
+        {{-- PLAN SELECTION --}}
+        <section id="pricing" class="mb-10 lg:mb-14">
+            <div class="text-center max-w-3xl mx-auto mb-8">
+                <p class="text-[#2624cc] font-black uppercase tracking-widest text-sm">
+                    Choose Your Plan
+                </p>
+
+                <h2 class="mt-3 text-3xl sm:text-4xl lg:text-5xl font-black text-slate-950">
+                    Select a plan before registration
+                </h2>
+
+                <p class="mt-3 text-slate-600">
+                    Apne business ke according plan select karein. Selected plan registration form ke saath submit hoga.
+                </p>
+            </div>
+
+            @php
+                $availablePlans = isset($plans) ? $plans : collect();
+                $selectedPlanId = (string) old('plan_id', request('plan_id', optional($selectedPlan ?? null)->id));
+            @endphp
+
+            @if($availablePlans->count())
+                <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                    @foreach($availablePlans as $plan)
+                        @php
+                            $isRecommended = (bool) ($plan->is_recommended ?? false);
+                            $isSelected = $selectedPlanId === (string) $plan->id;
+                        @endphp
+
+                        <article
+                            class="plan-select-card {{ $isSelected ? 'selected' : '' }} p-6 sm:p-7"
+                            data-plan-card="{{ $plan->id }}"
+                        >
+                            @if($isRecommended)
+                                <div class="mb-4 inline-flex rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black text-[#2624cc]">
+                                    Most Recommended
+                                </div>
+                            @endif
+
+                            <h3 class="text-2xl font-black uppercase text-slate-950">
+                                {{ $plan->name }}
+                            </h3>
+
+                            <p class="mt-2 min-h-[42px] text-sm leading-6 text-slate-500">
+                                {{ $plan->subtitle ?: ($plan->description ?: 'Perfect for growing businesses') }}
+                            </p>
+
+                            <div class="mt-5 flex items-end gap-2">
+                                <span class="text-4xl font-black text-[#2624cc]">
+                                    ₹{{ number_format($plan->price, 0) }}
+                                </span>
+
+                                <span class="pb-1 text-sm font-bold text-slate-500">
+                                    /
+                                    {{ ($plan->duration_days ?? 365) >= 365
+                                        ? 'Year'
+                                        : ($plan->duration_days ?? 0) . ' Days' }}
+                                </span>
+                            </div>
+
+                            <ul class="mt-6 space-y-2.5 text-sm text-slate-600">
+                                @forelse($plan->planFeatures ?? [] as $feature)
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>{{ $feature->title }}</span>
+                                    </li>
+                                @empty
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>GST Billing</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>Stock Management</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="font-black text-green-600">✓</span>
+                                        <span>Invoice Print and Share</span>
+                                    </li>
+                                @endforelse
+                            </ul>
+
+                            <button
+                                type="button"
+                                class="plan-select-button mt-7"
+                                data-select-plan="{{ $plan->id }}"
+                                data-plan-name="{{ $plan->name }}"
+                                data-plan-price="{{ number_format($plan->price, 0) }}"
+                            >
+                                {{ $isSelected ? 'Selected Plan' : 'Select This Plan' }}
+                            </button>
+                        </article>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-8 text-center">
+                    <h3 class="text-xl font-black text-slate-900">
+                        Plans are not available
+                    </h3>
+                    <p class="mt-2 text-sm text-slate-600">
+                        Controller se <code class="font-bold">$plans</code> variable pass hona chahiye.
+                    </p>
+                </div>
+            @endif
+        </section>
+
         <div class="grid lg:grid-cols-12 gap-10 items-start">
 
             <div class="lg:col-span-5 lg:sticky lg:top-28">
@@ -152,25 +374,25 @@
             </div>
 
             <div class="lg:col-span-7">
-                <section class="rounded-[2.5rem] border border-white/70 main-card overflow-hidden">
-                    <div class="px-5 sm:px-8 pt-6 sm:pt-8 pb-6 bg-gradient-to-b from-white to-blue-50/50">
+                <section id="registrationFormCard" class="inline-registration-card">
+                    <div class="inline-registration-header">
                         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                             <div>
-                                <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                                    Register your account
+                                <h2 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                                    Start MyVictory Billing
                                 </h2>
-                                <p class="mt-2 text-sm text-slate-500">
+                                <p class="mt-2 text-sm text-blue-100">
                                     Complete 3 simple steps to start using MyVictory Billing.
                                 </p>
                             </div>
 
-                            <div class="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-700 shadow-sm">
+                            <div class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-bold text-white shadow-sm">
                                 <span class="h-2 w-2 rounded-full bg-green-500"></span>
                                 Secure Onboarding
                             </div>
                         </div>
 
-                        <div class="mt-6 soft-divider"></div>
+                        <div class="mt-6 border-t border-white/20"></div>
 
                         <div class="mt-6 grid grid-cols-3 gap-2">
                             <div id="pillStep1" class="step-pill active rounded-2xl border border-slate-200 bg-white px-3 py-3 text-center transition">
@@ -191,13 +413,13 @@
 
                         <div class="mt-6">
                             <div class="flex items-center justify-between text-xs mb-2">
-                                <span class="text-slate-500">Step <span id="currentStepText">1</span> of 3</span>
-                                <span class="text-blue-600 font-black" id="currentStepLabel">User Details</span>
+                                <span class="text-blue-100">Step <span id="currentStepText">1</span> of 3</span>
+                                <span class="text-white font-black" id="currentStepLabel">User Details</span>
                             </div>
 
-                            <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
+                            <div class="h-2 w-full rounded-full bg-white/25 overflow-hidden">
                                 <div id="progressBar"
-                                     class="h-full rounded-full bg-blue-600 transition-all duration-300"
+                                     class="h-full rounded-full bg-white transition-all duration-300"
                                      style="width: 33.33%;"></div>
                             </div>
                         </div>
@@ -227,136 +449,188 @@
                             </div>
                         @endif
 
-                        <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6">
+                        @php
+                            $step1Fields = ['name', 'phone'];
+                            $step2Fields = ['business_name', 'business_email', 'mobile', 'gstin', 'business_type_id', 'address', 'state', 'state_code'];
+                            $step3Fields = ['gst_enabled', 'invoice_base_prefix', 'rounding_mode', 'rounding_step', 'terms'];
+
+                            $initialStep = old('current_step', 1);
+
+                            if ($errors->hasAny($step1Fields)) {
+                                $initialStep = 1;
+                            } elseif ($errors->hasAny($step2Fields)) {
+                                $initialStep = 2;
+                            } elseif ($errors->hasAny($step3Fields)) {
+                                $initialStep = 3;
+                            }
+                        @endphp
+
+                        <div id="selectedPlanSummary"
+                             class="{{ $selectedPlanId ? '' : 'hidden' }} mb-5 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+                            Selected Plan:
+                            <strong id="selectedPlanName">
+                                {{ optional($availablePlans->firstWhere('id', (int) $selectedPlanId))->name }}
+                            </strong>
+                        </div>
+
+                        <form id="multiStepForm" action="{{ route('register.store1') }}" method="POST" class="space-y-6" novalidate>
                             @csrf
 
-                            <input type="hidden" name="plan_id" value="{{ old('plan_id', request('plan_id')) }}">
-                            <input type="hidden" name="current_step" id="current_step" value="{{ old('current_step', 1) }}">
+                            <input type="hidden" name="payment_done" value="{{ request('payment_done', 0) }}">
+                            <input type="hidden" name="plan_id" id="selectedPlanInput" value="{{ old('plan_id', request('plan_id', optional($selectedPlan ?? null)->id)) }}">
+                            <input type="hidden" name="trial" value="{{ old('trial', request('trial', 0)) }}">
+                            <input type="hidden" name="current_step" id="current_step" value="{{ $initialStep }}">
+                            <input type="hidden" name="business_skipped" id="business_skipped" value="{{ old('business_skipped', 0) }}">
+                            <input type="hidden" name="billing_skipped" id="billing_skipped" value="{{ old('billing_skipped', 0) }}">
 
+                            {{-- STEP 1 --}}
                             <div class="form-step space-y-5" data-step="1">
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Owner account details</div>
                                     <div class="mt-1 text-xs text-slate-500">
-                                        Enter login credentials to create the primary account.
+                                        Owner name aur phone OTP se account create karein.
                                     </div>
                                 </div>
 
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                                    <input type="text" name="name" value="{{ old('name') }}" required
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                    <input type="text" name="name"
+                                           value="{{ old('name', session('paid_name')) }}"
+                                           required
+                                           class="registration-field text-sm placeholder:text-slate-400"
                                            placeholder="Enter your full name">
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Owner Phone Number</label>
 
                                     <div class="flex flex-col sm:flex-row gap-3">
-                                        <input type="email" name="email" id="email" value="{{ old('email') }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Enter your email address">
+                                        <input type="text" name="phone" id="owner_phone"
+                                               value="{{ old('phone', session('register_phone_verified')) }}"
+                                               required
+                                               maxlength="10"
+                                               inputmode="numeric"
+                                               class="registration-field text-sm placeholder:text-slate-400"
+                                               placeholder="Enter owner phone number">
 
-                                        <button type="button" id="sendOtpBtn"
-                                                class="shrink-0 rounded-2xl bg-yellow-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-yellow-300 transition">
-                                            Send OTP
-                                        </button>
+                                        @if(!session('register_phone_verified'))
+                                            <button type="button" id="sendOtpBtn"
+                                                    class="registration-primary-button shrink-0">
+                                                Send OTP
+                                            </button>
+                                        @else
+                                            <div class="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700 font-bold">
+                                                Phone already verified.
+                                            </div>
+                                        @endif
                                     </div>
 
                                     <p id="otpStatus" class="mt-2 text-xs text-slate-500"></p>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Email OTP</label>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Phone OTP</label>
 
                                     <div class="flex flex-col sm:flex-row gap-3">
-                                        <input type="text" id="emailOtp" maxlength="6"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Enter 6 digit OTP">
+                                        <input type="text" id="phoneOtp"
+                                               maxlength="6"
+                                               inputmode="numeric"
+                                               class="registration-field text-center text-xl font-black tracking-[0.35em]"
+                                               placeholder="••••••">
 
-                                        <button type="button" id="verifyOtpBtn"
-                                                class="shrink-0 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800 transition">
-                                            Verify OTP
-                                        </button>
+                                        
+
+                                        <button type="button" id="verifyOtpBtn" class="hidden">Verify OTP</button>
                                     </div>
 
-                                    <input type="hidden" id="emailVerified" value="0">
+                                    <input type="hidden"
+                                           id="phoneVerified"
+                                           value="{{ session('register_phone_verified') && session('register_phone_verified') == old('phone', session('register_phone_verified')) ? 1 : 0 }}">
+
                                     <p id="verifyOtpStatus" class="mt-2 text-xs text-slate-500"></p>
                                 </div>
 
-                                <div class="grid sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Password</label>
-                                        <input type="password" name="password" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Create a password">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Confirm Password</label>
-                                        <input type="password" name="password_confirmation" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Confirm your password">
-                                    </div>
-                                </div>
-
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-700">
-                                    Email verification is required before moving to the next step.
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-xs text-blue-700">
+                                    Phone OTP verification is required before moving to the next step.
                                 </div>
                             </div>
 
+                            {{-- STEP 2 --}}
                             <div class="form-step hidden space-y-5" data-step="2">
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Business information</div>
                                     <div class="mt-1 text-xs text-slate-500">
-                                        Add showroom and contact details for your billing profile.
+                                        Business mobile verified owner phone se auto fill hoga.
                                     </div>
+                                </div>
+
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                    <div>
+                                        <div class="text-sm font-black text-slate-900">Business details abhi nahi dena chahte?</div>
+                                        <div class="mt-1 text-xs text-slate-600">Aap is step ko skip karke details baad me profile se add kar sakte hain.</div>
+                                    </div>
+
+                                    <button type="button" id="skipBusinessBtn"
+                                            class="registration-secondary-button shrink-0">
+                                        Skip for now
+                                    </button>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">Business / Showroom Name</label>
-                                    <input type="text" name="business_name" value="{{ old('business_name') }}" required
-                                           class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Business / Showroom Name <span class="text-xs font-normal text-slate-400">(Optional)</span></label>
+                                    <input type="text" name="business_name" value="{{ old('business_name') }}"
+                                           class="registration-field text-sm placeholder:text-slate-400"
                                            placeholder="Enter showroom name">
                                 </div>
 
-                                <div class="grid sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Business Email</label>
-                                        <input type="email" name="business_email" value="{{ old('business_email') }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Business email">
-                                    </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">
+                                        Business Email <span class="text-xs font-normal text-slate-400">(Optional)</span>
+                                    </label>
 
-                                    <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Mobile Number</label>
-                                        <input type="text" name="mobile" value="{{ old('mobile') }}" required
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
-                                               placeholder="Business mobile number">
-                                    </div>
+                                    <input type="email" name="business_email"
+                                        value="{{ old('business_email') }}"
+                                        class="registration-field text-sm placeholder:text-slate-400"
+                                        placeholder="Enter business email address">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Business Mobile Number</label>
+                                    <input type="text" name="mobile" id="business_mobile"
+                                           value="{{ old('mobile', old('phone', session('register_phone_verified'))) }}"
+                                           required
+                                           maxlength="10"
+                                           inputmode="numeric"
+                                           readonly
+                                           class="registration-field text-sm placeholder:text-slate-400"
+                                           placeholder="Verified phone number auto fill hoga">
+
+                                    <p class="mt-2 text-xs text-slate-500">
+                                        Ye number owner OTP verify hone ke baad automatic fill hoga.
+                                    </p>
                                 </div>
 
                                 <div class="grid sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">GSTIN</label>
                                         <input type="text" name="gstin" id="gstin" value="{{ old('gstin') }}"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm uppercase outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm uppercase placeholder:text-slate-400"
                                                placeholder="Optional GSTIN">
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-bold text-slate-700 mb-2">Business Type</label>
-                                        <select name="type" required
-                                                class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500">
+                                        <label class="block text-sm font-bold text-slate-700 mb-2">Business Type <span class="text-xs font-normal text-slate-400">(Optional)</span></label>
+
+                                        <select name="business_type_id"
+                                                class="registration-field text-sm text-slate-700">
                                             <option value="">-- Select Business Type --</option>
-                                            <option value="Jewellery" {{ old('type') == 'Jewellery' ? 'selected' : '' }}>Jewellery</option>
-                                            <option value="Retail" {{ old('type') == 'Retail' ? 'selected' : '' }}>Retail</option>
-                                            <option value="Wholesale" {{ old('type') == 'Wholesale' ? 'selected' : '' }}>Wholesale</option>
-                                            <option value="Manufacturer" {{ old('type') == 'Manufacturer' ? 'selected' : '' }}>Manufacturer</option>
-                                            <option value="Service Provider" {{ old('type') == 'Service Provider' ? 'selected' : '' }}>Service Provider</option>
-                                            <option value="Trading" {{ old('type') == 'Trading' ? 'selected' : '' }}>Trading</option>
-                                            <option value="E-Commerce" {{ old('type') == 'E-Commerce' ? 'selected' : '' }}>E-Commerce</option>
-                                            <option value="Agency" {{ old('type') == 'Agency' ? 'selected' : '' }}>Agency</option>
-                                            <option value="Other" {{ old('type') == 'Other' ? 'selected' : '' }}>Other</option>
+
+                                            @foreach($businessTypes as $businessType)
+                                                <option value="{{ $businessType->id }}"
+                                                    {{ old('business_type_id') == $businessType->id ? 'selected' : '' }}>
+                                                    {{ $businessType->name }}
+                                                </option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
@@ -364,7 +638,7 @@
                                 <div>
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Address</label>
                                     <textarea name="address" rows="4"
-                                              class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                              class="registration-field text-sm placeholder:text-slate-400"
                                               placeholder="Enter business address">{{ old('address') }}</textarea>
                                 </div>
 
@@ -414,10 +688,15 @@
                                 @endphp
 
                                 <div>
-                                    <label class="block text-sm font-bold text-slate-700 mb-2">State (GST Code)</label>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">
+                                        State (GST Code)
+                                        <span id="stateOptionalText" class="text-xs font-normal text-slate-400">
+                                            (Optional when GSTIN is not provided)
+                                        </span>
+                                    </label>
 
-                                    <select id="state_select" required
-                                            class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-blue-500">
+                                    <select id="state_select"
+                                            class="registration-field text-sm text-slate-700">
                                         <option value="">-- Select State --</option>
 
                                         @foreach($states as $st)
@@ -431,31 +710,65 @@
                                     <input type="hidden" name="state" id="state" value="{{ old('state') }}">
                                     <input type="hidden" name="state_code" id="state_code" value="{{ old('state_code') }}">
                                 </div>
+
+                                <div class="pt-2">
+                                    <button type="button" id="skipBusinessBottomBtn"
+                                            class="registration-skip-button">
+                                        Skip Business Details for Now
+                                    </button>
+                                </div>
                             </div>
 
+                            {{-- STEP 3 --}}
                             <div class="form-step hidden space-y-5" data-step="3">
-                                <div class="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-4">
+                                <div class="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
                                     <div class="text-sm font-black text-slate-900">Billing preferences</div>
                                     <div class="mt-1 text-xs text-slate-500">
                                         Choose your default invoice and rounding settings.
                                     </div>
                                 </div>
 
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                                    <div>
+                                        <div class="text-sm font-black text-slate-900">Billing settings abhi set nahi karna chahte?</div>
+                                        <div class="mt-1 text-xs text-slate-600">
+                                            Default settings use hongi. Aap baad me settings page se update kar sakte hain.
+                                        </div>
+                                    </div>
+
+                                    <button type="button" id="skipBillingBtn"
+                                            class="registration-secondary-button shrink-0">
+                                        Skip & Create Account
+                                    </button>
+                                </div>
+
                                 <div class="grid sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">GST Enabled</label>
-                                        <select name="gst_enabled"
+                                        @php
+                                            $defaultGstEnabled = old('gst_enabled');
+
+                                            if ($defaultGstEnabled === null) {
+                                                $defaultGstEnabled = old('gstin') ? '1' : '0';
+                                            }
+                                        @endphp
+
+                                        <select name="gst_enabled" id="gst_enabled"
                                                 class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500">
-                                            <option value="1" {{ old('gst_enabled', '1') == '1' ? 'selected' : '' }}>Yes</option>
-                                            <option value="0" {{ old('gst_enabled') == '0' ? 'selected' : '' }}>No</option>
+                                            <option value="1" {{ (string) $defaultGstEnabled === '1' ? 'selected' : '' }}>Yes</option>
+                                            <option value="0" {{ (string) $defaultGstEnabled === '0' ? 'selected' : '' }}>No</option>
                                         </select>
+
+                                        <p id="gstEnabledHelp" class="mt-2 text-xs text-slate-500">
+                                            GSTIN blank hone par GST Enabled automatically No rahega.
+                                        </p>
                                     </div>
 
                                     <div>
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Invoice Base Prefix</label>
                                         <input type="text" name="invoice_base_prefix"
                                                value="{{ old('invoice_base_prefix', 'RV/SL') }}"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm placeholder:text-slate-400"
                                                placeholder="RV/SL">
                                     </div>
                                 </div>
@@ -476,7 +789,7 @@
                                         <label class="block text-sm font-bold text-slate-700 mb-2">Rounding Step</label>
                                         <input type="number" step="0.01" name="rounding_step"
                                                value="{{ old('rounding_step', '1.00') }}"
-                                               class="field-focus w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:border-blue-500"
+                                               class="registration-field text-sm placeholder:text-slate-400"
                                                placeholder="1.00">
                                     </div>
                                 </div>
@@ -484,21 +797,29 @@
                                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                                     <div class="text-sm font-black text-slate-900">Before submitting</div>
                                     <ul class="mt-2 space-y-1.5 text-xs text-slate-600">
-                                        <li>• Verify your email OTP</li>
-                                        <li>• Check showroom details carefully</li>
+                                        <li>• Verify your phone OTP</li>
+                                        <li>• Business details optional hain aur baad me add ho sakti hain</li>
                                         <li>• Billing settings can be updated later</li>
                                     </ul>
                                 </div>
 
+                                <div class="pt-1">
+                                    <button type="button" id="skipBillingBottomBtn"
+                                            class="registration-skip-button">
+                                        Skip Billing Preferences & Create Account
+                                    </button>
+                                </div>
+
                                 <div class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4">
                                     <input id="terms" type="checkbox" name="terms" value="1" required
+                                           {{ old('terms') ? 'checked' : '' }}
                                            class="mt-1 rounded border-slate-300 bg-white text-blue-600 focus:ring-blue-500">
 
                                     <label for="terms" class="text-xs sm:text-sm text-slate-600 leading-6">
                                         I agree to the
-                                        <a href="#" class="font-bold text-slate-900 hover:text-blue-600">Terms & Conditions</a>
+                                        <a href="{{ route('terms-conditions')}}" class="font-bold text-slate-900 hover:text-blue-600">Terms & Conditions</a>
                                         and
-                                        <a href="#" class="font-bold text-slate-900 hover:text-blue-600">Privacy Policy</a>.
+                                        <a href="{{ route('privacy-policy') }}" class="font-bold text-slate-900 hover:text-blue-600">Privacy Policy</a>.
                                     </label>
                                 </div>
                             </div>
@@ -506,18 +827,18 @@
                             <div class="pt-2">
                                 <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
                                     <button type="button" id="prevBtn"
-                                            class="hidden rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 hover:border-blue-500 transition">
+                                            class="registration-secondary-button hidden">
                                         Back
                                     </button>
 
                                     <div class="sm:ml-auto flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                                         <button type="button" id="nextBtn"
-                                                class="w-full sm:w-auto rounded-full bg-blue-600 px-8 py-4 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition">
+                                                class="registration-primary-button w-full sm:w-auto">
                                             Continue
                                         </button>
 
                                         <button type="submit" id="submitBtn"
-                                                class="hidden w-full sm:w-auto rounded-full bg-slate-950 px-8 py-4 text-sm font-black text-white hover:bg-slate-800 transition">
+                                                class="registration-primary-button hidden w-full sm:w-auto">
                                             Create Account
                                         </button>
                                     </div>
@@ -545,19 +866,6 @@
     </div>
 </main>
 
-<footer class="border-t border-slate-200 bg-white/80 backdrop-blur py-5">
-    <div class="max-w-7xl mx-auto px-4 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-        <div>
-            © {{ date('Y') }} MyVictory Billing · Powered by Real Victory Groups
-        </div>
-
-        <div class="flex flex-wrap gap-4">
-            <a href="#" class="hover:text-blue-600 transition">Terms & Conditions</a>
-            <a href="#" class="hover:text-blue-600 transition">Privacy Policy</a>
-        </div>
-    </div>
-</footer>
-
 <script>
     const steps = document.querySelectorAll('.form-step');
     const nextBtn = document.getElementById('nextBtn');
@@ -574,22 +882,40 @@
 
     const sendOtpBtn = document.getElementById('sendOtpBtn');
     const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-    const emailInput = document.getElementById('email');
-    const emailOtpInput = document.getElementById('emailOtp');
+    const skipBusinessBtn = document.getElementById('skipBusinessBtn');
+    const skipBusinessBottomBtn = document.getElementById('skipBusinessBottomBtn');
+    const businessSkippedInput = document.getElementById('business_skipped');
+
+    const skipBillingBtn = document.getElementById('skipBillingBtn');
+    const skipBillingBottomBtn = document.getElementById('skipBillingBottomBtn');
+    const billingSkippedInput = document.getElementById('billing_skipped');
+
+    const ownerPhoneInput = document.getElementById('owner_phone');
+    const businessMobileInput = document.getElementById('business_mobile');
+
+    const phoneOtpInput = document.getElementById('phoneOtp');
+    const phoneVerifiedInput = document.getElementById('phoneVerified');
+
     const otpStatus = document.getElementById('otpStatus');
     const verifyOtpStatus = document.getElementById('verifyOtpStatus');
-    const emailVerifiedInput = document.getElementById('emailVerified');
+
     const form = document.getElementById('multiStepForm');
 
     const gstinInput = document.getElementById('gstin');
     const stateSelect = document.getElementById('state_select');
     const stateInput = document.getElementById('state');
     const stateCodeInput = document.getElementById('state_code');
+    const gstEnabledSelect = document.getElementById('gst_enabled');
+    const gstEnabledHelp = document.getElementById('gstEnabledHelp');
+    const stateOptionalText = document.getElementById('stateOptionalText');
 
     const labels = ['User Details', 'Business Details', 'Billing Setup'];
     const pills = [pillStep1, pillStep2, pillStep3];
 
     let currentStep = 0;
+    let isSubmitting = false;
+    let isVerifyingOtp = false;
+    let lastAutoVerifiedOtp = '';
 
     const gstStateMap = {
         '01': 'Jammu and Kashmir',
@@ -647,33 +973,82 @@
         stateInput.value = parts.slice(1).join(',') || '';
     }
 
-    function updateStateFromGstin() {
-        if (!gstinInput || !stateSelect || !stateInput || !stateCodeInput) return;
+    function syncGstFields() {
+        if (!gstinInput) return;
 
         const gstin = gstinInput.value.trim().toUpperCase();
+        const hasGstin = gstin.length > 0;
+
         gstinInput.value = gstin;
 
-        if (gstin.length < 2) return;
+        /*
+        |--------------------------------------------------------------------------
+        | GSTIN blank:
+        | - State optional
+        | - GST Enabled defaults to No
+        |--------------------------------------------------------------------------
+        */
+        if (stateSelect) {
+            stateSelect.required = hasGstin;
+        }
+
+        if (stateOptionalText) {
+            stateOptionalText.textContent = hasGstin
+                ? ''
+                : '';
+
+            stateOptionalText.className = hasGstin
+                ? 'text-xs font-normal text-red-500'
+                : 'text-xs font-normal text-slate-400';
+        }
+
+        if (gstEnabledSelect) {
+            gstEnabledSelect.value = hasGstin ? '1' : '0';
+        }
+
+        if (gstEnabledHelp) {
+            gstEnabledHelp.textContent = hasGstin
+                ? ''
+                : '';
+
+            gstEnabledHelp.className = hasGstin
+                ? 'mt-2 text-xs text-green-600'
+                : 'mt-2 text-xs text-slate-500';
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GSTIN ke first 2 digits se State auto select
+        |--------------------------------------------------------------------------
+        */
+        if (gstin.length < 2) {
+            return;
+        }
 
         const code = gstin.substring(0, 2);
         const stateName = gstStateMap[code];
 
-        if (!stateName) return;
+        if (!stateName) {
+            return;
+        }
 
-        stateCodeInput.value = code;
-        stateInput.value = stateName;
-        stateSelect.value = code + ',' + stateName;
+        if (stateCodeInput) stateCodeInput.value = code;
+        if (stateInput) stateInput.value = stateName;
+        if (stateSelect) stateSelect.value = code + ',' + stateName;
     }
 
-    if (stateSelect) {
-        stateSelect.addEventListener('change', updateStateFields);
-        updateStateFields();
+    function updateStateFromGstin() {
+        syncGstFields();
     }
 
-    if (gstinInput) {
-        gstinInput.addEventListener('input', updateStateFromGstin);
-        gstinInput.addEventListener('blur', updateStateFromGstin);
-        updateStateFromGstin();
+    function syncBusinessMobileFromOwner() {
+        if (!ownerPhoneInput || !businessMobileInput) return;
+
+        const phone = ownerPhoneInput.value.trim();
+
+        if (phoneVerifiedInput && phoneVerifiedInput.value === '1' && phone.length === 10) {
+            businessMobileInput.value = phone;
+        }
     }
 
     function getInitialStep() {
@@ -701,13 +1076,13 @@
     }
 
     function updateStepMeta(index) {
-        currentStepText.textContent = index + 1;
-        currentStepLabel.textContent = labels[index];
-        progressBar.style.width = (((index + 1) / steps.length) * 100) + '%';
+        if (currentStepText) currentStepText.textContent = index + 1;
+        if (currentStepLabel) currentStepLabel.textContent = labels[index];
+        if (progressBar) progressBar.style.width = (((index + 1) / steps.length) * 100) + '%';
 
-        prevBtn.classList.toggle('hidden', index === 0);
-        nextBtn.classList.toggle('hidden', index === steps.length - 1);
-        submitBtn.classList.toggle('hidden', index !== steps.length - 1);
+        if (prevBtn) prevBtn.classList.toggle('hidden', index === 0);
+        if (nextBtn) nextBtn.classList.toggle('hidden', index === steps.length - 1);
+        if (submitBtn) submitBtn.classList.toggle('hidden', index !== steps.length - 1);
 
         if (currentStepInput) {
             currentStepInput.value = index + 1;
@@ -723,10 +1098,11 @@
             step.classList.toggle('hidden', i !== index);
         });
 
+        syncBusinessMobileFromOwner();
         updateStepMeta(index);
 
         if (shouldScroll) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('registrationFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
@@ -751,18 +1127,54 @@
     }
 
     function clearStepErrors(index) {
+        if (!steps[index]) return;
+
         const currentInputs = steps[index].querySelectorAll('input, select, textarea');
 
         currentInputs.forEach(input => {
             setFieldErrorState(input, false);
+            input.setCustomValidity('');
         });
+    }
+
+    function showError(input, message) {
+        if (!input) return false;
+
+        input.setCustomValidity(message);
+        setFieldErrorState(input, true);
+
+        const stepBox = input.closest('.form-step');
+
+        if (stepBox) {
+            const stepIndex = Array.from(steps).indexOf(stepBox);
+
+            if (stepIndex !== -1 && stepIndex !== currentStep) {
+                showStep(stepIndex);
+            }
+        }
+
+        setTimeout(() => {
+            input.reportValidity();
+            input.focus();
+        }, 150);
+
+        return false;
     }
 
     function validateStep(index) {
         clearStepErrors(index);
 
+        if (index === 1 && businessSkippedInput?.value === '1') {
+            return true;
+        }
+
+        if (index === 2 && billingSkippedInput?.value === '1') {
+            return true;
+        }
+
         updateStateFromGstin();
         updateStateFields();
+        syncBusinessMobileFromOwner();
 
         const currentInputs = steps[index].querySelectorAll('input, select, textarea');
 
@@ -770,47 +1182,171 @@
             if (
                 input.type === 'hidden' ||
                 input.type === 'button' ||
-                input.type === 'submit'
+                input.type === 'submit' ||
+                input.id === 'phoneOtp'
             ) {
                 continue;
             }
 
             input.setCustomValidity('');
 
+            if (input.name === 'password' || input.name === 'password_confirmation') {
+                continue;
+            }
+
+            if (input.required) {
+                if (input.type === 'checkbox' && !input.checked) {
+                    return showError(input, 'Ye field required hai.');
+                }
+
+                if (input.type !== 'checkbox' && !input.value.trim()) {
+                    return showError(input, 'Ye field required hai.');
+                }
+            }
+
             if (!input.checkValidity()) {
-                setFieldErrorState(input, true);
-                input.reportValidity();
-                input.focus();
-                return false;
+                return showError(input, 'Valid value daliyega.');
             }
         }
 
-        const password = document.querySelector('input[name="password"]');
-        const confirmPassword = document.querySelector('input[name="password_confirmation"]');
-
-        if (index === 0 && password && confirmPassword) {
-            confirmPassword.setCustomValidity('');
-
-            if (password.value !== confirmPassword.value) {
-                confirmPassword.setCustomValidity('Passwords do not match');
-                setFieldErrorState(confirmPassword, true);
-                confirmPassword.reportValidity();
-                confirmPassword.focus();
-                return false;
-            }
-
-            confirmPassword.setCustomValidity('');
-        }
-
-        if (index === 0 && emailVerifiedInput && emailVerifiedInput.value !== '1') {
-            verifyOtpStatus.textContent = 'Pehle email OTP verify kijiye.';
+        if (index === 0 && phoneVerifiedInput && phoneVerifiedInput.value !== '1') {
+            verifyOtpStatus.textContent = 'Pehle phone OTP verify kijiye.';
             verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
-            setFieldErrorState(emailOtpInput, true);
-            emailOtpInput.focus();
+
+            setFieldErrorState(phoneOtpInput, true);
+            phoneOtpInput.focus();
+
             return false;
         }
 
+        if (index === 1) {
+            const ownerPhone = ownerPhoneInput.value.trim();
+            const businessPhone = businessMobileInput.value.trim();
+
+            if (phoneVerifiedInput.value !== '1') {
+                showStep(0);
+                verifyOtpStatus.textContent = 'Pehle phone OTP verify kijiye.';
+                verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+                phoneOtpInput.focus();
+                return false;
+            }
+
+            if (businessPhone !== ownerPhone) {
+                businessMobileInput.value = ownerPhone;
+            }
+
+            if (businessMobileInput.value.length !== 10) {
+                return showError(businessMobileInput, 'Business mobile required hai.');
+            }
+        }
+
         return true;
+    }
+
+    function validateAllStepsBeforeSubmit() {
+        for (let i = 0; i < steps.length; i++) {
+            if (!validateStep(i)) {
+                showStep(i);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function setBusinessFieldsDisabled(disabled) {
+        if (!steps[1]) return;
+
+        steps[1].querySelectorAll('input, select, textarea').forEach(input => {
+            if (input.id === 'business_skipped') return;
+            input.disabled = disabled;
+            input.setCustomValidity('');
+            setFieldErrorState(input, false);
+        });
+    }
+
+    function skipBusinessStep() {
+        if (businessSkippedInput) {
+            businessSkippedInput.value = '1';
+        }
+
+        setBusinessFieldsDisabled(true);
+        showStep(2);
+    }
+
+    function restoreBusinessStep() {
+        if (businessSkippedInput?.value !== '1') {
+            setBusinessFieldsDisabled(false);
+        }
+    }
+
+    function setBillingFieldsDisabled(disabled) {
+        if (!steps[2]) return;
+
+        steps[2].querySelectorAll('input, select, textarea').forEach(input => {
+            if (
+                input.id === 'billing_skipped' ||
+                input.id === 'terms'
+            ) {
+                return;
+            }
+
+            input.disabled = disabled;
+            input.setCustomValidity('');
+            setFieldErrorState(input, false);
+        });
+    }
+
+    function applyDefaultBillingValues() {
+        if (gstEnabledSelect) gstEnabledSelect.value = '0';
+
+        const invoicePrefix = document.querySelector('[name="invoice_base_prefix"]');
+        const roundingMode = document.querySelector('[name="rounding_mode"]');
+        const roundingStep = document.querySelector('[name="rounding_step"]');
+
+        if (invoicePrefix && !invoicePrefix.value.trim()) {
+            invoicePrefix.value = 'RV/SL';
+        }
+
+        if (roundingMode) roundingMode.value = 'nearest';
+        if (roundingStep && !roundingStep.value) roundingStep.value = '1.00';
+    }
+
+    function skipBillingAndSubmit() {
+        const terms = document.getElementById('terms');
+
+        if (!terms?.checked) {
+            showError(terms, 'Account create karne ke liye Terms & Conditions accept kijiye.');
+            return;
+        }
+
+        if (billingSkippedInput) {
+            billingSkippedInput.value = '1';
+        }
+
+        applyDefaultBillingValues();
+        setBillingFieldsDisabled(true);
+
+        if (isSubmitting) return;
+
+        if (!validateStep(0)) {
+            showStep(0);
+            return;
+        }
+
+        if (!validateStep(1)) {
+            showStep(1);
+            return;
+        }
+
+        isSubmitting = true;
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+        }
+
+        form.submit();
     }
 
     pills.forEach((pill, index) => {
@@ -831,29 +1367,34 @@
         document.querySelectorAll('input, select, textarea').forEach(input => {
             input.addEventListener('input', function () {
                 setFieldErrorState(this, false);
-
-                if (this.name === 'password_confirmation') {
-                    this.setCustomValidity('');
-                }
+                this.setCustomValidity('');
             });
 
             input.addEventListener('change', function () {
                 setFieldErrorState(this, false);
+                this.setCustomValidity('');
             });
         });
     }
 
     async function sendOtp() {
-        const email = emailInput.value.trim();
+        const phone = ownerPhoneInput.value.trim();
 
-        if (!email) {
-            emailInput.reportValidity();
-            emailInput.focus();
+        if (!phone || phone.length !== 10) {
+            otpStatus.textContent = 'Valid 10 digit phone number daliyega.';
+            otpStatus.className = 'mt-2 text-xs text-red-500';
+            setFieldErrorState(ownerPhoneInput, true);
+            ownerPhoneInput.focus();
             return;
         }
 
         otpStatus.textContent = 'OTP bheja ja raha hai...';
         otpStatus.className = 'mt-2 text-xs text-amber-600';
+
+        if (sendOtpBtn) {
+            sendOtpBtn.disabled = true;
+            sendOtpBtn.textContent = 'Sending...';
+        }
 
         try {
             const response = await fetch("{{ route('register.sendOtp') }}", {
@@ -863,7 +1404,7 @@
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({ phone })
             });
 
             const data = await response.json();
@@ -872,42 +1413,62 @@
                 throw data;
             }
 
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '0';
+            if (phoneVerifiedInput) {
+                phoneVerifiedInput.value = '0';
+            }
+
+            if (businessMobileInput) {
+                businessMobileInput.value = '';
             }
 
             verifyOtpStatus.textContent = '';
-            otpStatus.textContent = data.message || 'OTP bhej diya gaya hai.';
+            otpStatus.textContent = data.message || 'OTP phone number par bhej diya gaya hai.';
             otpStatus.className = 'mt-2 text-xs text-green-600';
 
-            setFieldErrorState(emailInput, false);
-            setFieldErrorState(emailOtpInput, false);
+            setFieldErrorState(ownerPhoneInput, false);
+            setFieldErrorState(phoneOtpInput, false);
         } catch (error) {
             otpStatus.textContent = error?.message || 'OTP bhejne me problem aayi.';
             otpStatus.className = 'mt-2 text-xs text-red-500';
+        } finally {
+            if (sendOtpBtn) {
+                sendOtpBtn.disabled = false;
+                sendOtpBtn.textContent = 'Send OTP';
+            }
         }
     }
 
     async function verifyOtp() {
-        const email = emailInput.value.trim();
-        const otp = emailOtpInput.value.trim();
+        const phone = ownerPhoneInput.value.trim();
+        const otp = phoneOtpInput.value.trim();
 
-        if (!email) {
-            emailInput.reportValidity();
-            emailInput.focus();
+        if (isVerifyingOtp) return;
+
+        if (!phone || phone.length !== 10) {
+            verifyOtpStatus.textContent = 'Valid 10 digit phone number daliyega.';
+            verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
+            setFieldErrorState(ownerPhoneInput, true);
+            ownerPhoneInput.focus();
             return;
         }
 
         if (!otp || otp.length !== 6) {
             verifyOtpStatus.textContent = 'Valid 6 digit OTP daliyega.';
             verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
-            setFieldErrorState(emailOtpInput, true);
-            emailOtpInput.focus();
+            setFieldErrorState(phoneOtpInput, true);
+            phoneOtpInput.focus();
             return;
         }
 
-        verifyOtpStatus.textContent = 'OTP verify ho raha hai...';
+        isVerifyingOtp = true;
+        verifyOtpStatus.textContent = 'OTP automatic verify ho raha hai...';
         verifyOtpStatus.className = 'mt-2 text-xs text-blue-600';
+
+        if (verifyOtpBtn) {
+            verifyOtpBtn.disabled = true;
+            verifyOtpBtn.textContent = 'Verifying...';
+        }
+
 
         try {
             const response = await fetch("{{ route('register.verifyOtp') }}", {
@@ -917,7 +1478,7 @@
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({ email, otp })
+                body: JSON.stringify({ phone, otp })
             });
 
             const data = await response.json();
@@ -926,25 +1487,55 @@
                 throw data;
             }
 
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '1';
+            if (phoneVerifiedInput) {
+                phoneVerifiedInput.value = '1';
             }
 
-            verifyOtpStatus.textContent = data.message || 'OTP verify ho gaya.';
+            if (businessMobileInput) {
+                businessMobileInput.value = phone;
+            }
+
+            lastAutoVerifiedOtp = otp;
+            verifyOtpStatus.textContent = data.message || 'Phone OTP verify ho gaya. Business mobile auto fill kar diya gaya.';
             verifyOtpStatus.className = 'mt-2 text-xs text-green-600';
 
-            setFieldErrorState(emailOtpInput, false);
-            setFieldErrorState(emailInput, false);
+            setFieldErrorState(phoneOtpInput, false);
+            setFieldErrorState(ownerPhoneInput, false);
+            setFieldErrorState(businessMobileInput, false);
         } catch (error) {
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '0';
+            if (phoneVerifiedInput) {
+                phoneVerifiedInput.value = '0';
+            }
+
+            if (businessMobileInput) {
+                businessMobileInput.value = '';
             }
 
             verifyOtpStatus.textContent = error?.message || 'OTP verify nahi hua.';
             verifyOtpStatus.className = 'mt-2 text-xs text-red-500';
 
-            setFieldErrorState(emailOtpInput, true);
+            setFieldErrorState(phoneOtpInput, true);
+        } finally {
+            if (verifyOtpBtn) {
+                verifyOtpBtn.disabled = false;
+                verifyOtpBtn.textContent = 'Verify OTP';
+            }
+
+           
+            isVerifyingOtp = false;
         }
+    }
+
+    if (stateSelect) {
+        stateSelect.addEventListener('change', updateStateFields);
+        updateStateFields();
+    }
+
+    if (gstinInput) {
+        gstinInput.addEventListener('input', syncGstFields);
+        gstinInput.addEventListener('change', syncGstFields);
+        gstinInput.addEventListener('blur', syncGstFields);
+        syncGstFields();
     }
 
     if (sendOtpBtn) {
@@ -955,27 +1546,88 @@
         verifyOtpBtn.addEventListener('click', verifyOtp);
     }
 
-    if (emailInput) {
-        emailInput.addEventListener('input', function () {
-            if (emailVerifiedInput) {
-                emailVerifiedInput.value = '0';
-            }
+    if (skipBusinessBtn) {
+        skipBusinessBtn.addEventListener('click', skipBusinessStep);
+    }
+
+    if (skipBusinessBottomBtn) {
+        skipBusinessBottomBtn.addEventListener('click', skipBusinessStep);
+    }
+
+    if (skipBillingBtn) {
+        skipBillingBtn.addEventListener('click', skipBillingAndSubmit);
+    }
+
+    if (skipBillingBottomBtn) {
+        skipBillingBottomBtn.addEventListener('click', skipBillingAndSubmit);
+    }
+
+    if (phoneOtpInput) {
+        phoneOtpInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 6);
 
             verifyOtpStatus.textContent = '';
-            setFieldErrorState(emailInput, false);
-            setFieldErrorState(emailOtpInput, false);
+            setFieldErrorState(phoneOtpInput, false);
+            phoneOtpInput.setCustomValidity('');
+
+            if (this.value.length < 6) {
+                lastAutoVerifiedOtp = '';
+
+                if (phoneVerifiedInput) {
+                    phoneVerifiedInput.value = '0';
+                }
+
+               
+
+                return;
+            }
+
+            if (this.value.length === 6 && this.value !== lastAutoVerifiedOtp && !isVerifyingOtp) {
+                verifyOtp();
+            }
         });
     }
 
-    if (emailOtpInput) {
-        emailOtpInput.addEventListener('input', function () {
+    if (ownerPhoneInput) {
+        ownerPhoneInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+
+            if (phoneVerifiedInput) {
+                phoneVerifiedInput.value = '0';
+            }
+
+            if (businessMobileInput) {
+                businessMobileInput.value = '';
+            }
+
+            otpStatus.textContent = '';
             verifyOtpStatus.textContent = '';
-            setFieldErrorState(emailOtpInput, false);
+            lastAutoVerifiedOtp = '';
+
+            if (phoneOtpInput) phoneOtpInput.value = '';
+          
+
+            setFieldErrorState(ownerPhoneInput, false);
+            setFieldErrorState(phoneOtpInput, false);
+            setFieldErrorState(businessMobileInput, false);
+
+            ownerPhoneInput.setCustomValidity('');
+            phoneOtpInput.setCustomValidity('');
+        });
+    }
+
+    if (businessMobileInput) {
+        businessMobileInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
         });
     }
 
     if (nextBtn) {
         nextBtn.addEventListener('click', function () {
+            if (currentStep === 1 && businessSkippedInput?.value !== '1') {
+                setBusinessFieldsDisabled(false);
+            }
+
             if (!validateStep(currentStep)) return;
 
             if (currentStep < steps.length - 1) {
@@ -994,25 +1646,95 @@
 
     if (form) {
         form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            if (isSubmitting) return;
+
             updateStateFromGstin();
             updateStateFields();
+            syncBusinessMobileFromOwner();
 
-            if (!validateStep(currentStep)) {
-                e.preventDefault();
+            if (!validateAllStepsBeforeSubmit()) {
                 return;
             }
 
             if (currentStepInput) {
                 currentStepInput.value = currentStep + 1;
             }
+
+            isSubmitting = true;
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+            }
+
+            form.submit();
         });
     }
 
     bindFieldListeners();
 
+    if (businessSkippedInput?.value === '1') {
+        setBusinessFieldsDisabled(true);
+    } else {
+        restoreBusinessStep();
+    }
+
+    if (billingSkippedInput?.value === '1') {
+        applyDefaultBillingValues();
+        setBillingFieldsDisabled(true);
+    }
+
+    const selectedPlanInput = document.getElementById('selectedPlanInput');
+    const selectedPlanSummary = document.getElementById('selectedPlanSummary');
+    const selectedPlanName = document.getElementById('selectedPlanName');
+    const registrationFormCard = document.getElementById('registrationFormCard');
+    const planCards = document.querySelectorAll('[data-plan-card]');
+    const planButtons = document.querySelectorAll('[data-select-plan]');
+
+    function selectPlan(button) {
+        const planId = button.dataset.selectPlan || '';
+        const planName = button.dataset.planName || 'Selected Plan';
+
+        if (selectedPlanInput) {
+            selectedPlanInput.value = planId;
+        }
+
+        planCards.forEach(card => {
+            const isSelected = card.dataset.planCard === planId;
+            card.classList.toggle('selected', isSelected);
+
+            const cardButton = card.querySelector('[data-select-plan]');
+            if (cardButton) {
+                cardButton.textContent = isSelected
+                    ? 'Selected Plan'
+                    : 'Select This Plan';
+            }
+        });
+
+        if (selectedPlanName) {
+            selectedPlanName.textContent = planName;
+        }
+
+        if (selectedPlanSummary) {
+            selectedPlanSummary.classList.remove('hidden');
+        }
+
+        registrationFormCard?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+    planButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            selectPlan(this);
+        });
+    });
+
     currentStep = getInitialStep();
     showStep(currentStep, false);
 </script>
 
-</body>
-</html>
+@endsection

@@ -19,7 +19,15 @@ class Invoice extends Model
         'items_json'     => 'array',   // if you store items as json (optional)
         'invoice_date'   => 'date',
         'kots_json'      => 'array',
+        'hospital_details_json' => 'array',
+        'visit_at' => 'datetime',
+        'admitted_at' => 'datetime',
+        'discharged_at' => 'datetime',
+        'is_rough_estimate' => 'boolean',
     ];
+
+
+
 
     public function client()
     {
@@ -114,5 +122,37 @@ class Invoice extends Model
     }
     public function updatedBy(){
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function billRequest()
+    {
+        return $this->belongsTo(BillRequest::class, 'bil_request_id');
+    }
+
+
+    public function patientVisit()
+    {
+        return $this->belongsTo(
+            PatientVisit::class,
+            'patient_visit_id'
+        );
+    }
+
+    public function doctor()
+    {
+        return $this->belongsTo(Doctor::class);
+    }
+
+    public function bankAccount()
+    {
+        return $this->belongsTo(
+            \App\Models\BankAccount::class,
+            'bank_account_id'
+        );
+    }
+
+    public function ewayBill()
+    {
+        return $this->hasOne(EwayBill::class);
     }
 }

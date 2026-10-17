@@ -21,6 +21,10 @@ return [
 
     'openai' => [
         'key' => env('OPENAI_API_KEY'),
+        'purchase_bill_model' => env(
+            'OPENAI_PURCHASE_BILL_MODEL',
+            'gpt-5.6-luna'
+        ),
     ],
 
     'razorpay' => [

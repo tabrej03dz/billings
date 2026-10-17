@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -84,49 +85,139 @@ class UserController extends Controller
 
 
     // POST /api/users
+    // public function store(Request $request)
+    // {
+    //     $data = $request->validate([
+    //         'name'     => ['required','string','max:255'],
+    //         'email'    => ['required','email','max:255','unique:users,email'],
+    //         'password' => ['required','confirmed','min:8'],
+
+    //         // businesses[]: array of business_ids that were checked
+    //         'businesses'          => ['nullable','array'],
+    //         'businesses.*'        => ['integer','exists:businesses,id'],
+
+    //         // roles[business_id] => role string
+    //         'roles'               => ['nullable','array'],
+    //         'roles.*'             => ['in:owner,admin,staff'],
+    //     ]);
+
+    //     $user = DB::transaction(function () use ($data) {
+    //         $user = User::create([
+    //             'name'     => $data['name'],
+    //             'email'    => $data['email'],
+    //             'password' => Hash::make($data['password']),
+    //         ]);
+
+    //         // Attach to selected businesses with roles
+    //         $attach = [];
+    //         foreach ((array)($data['businesses'] ?? []) as $bid) {
+    //             $role = $data['roles'][$bid] ?? 'staff';
+    //             $attach[$bid] = ['role' => $role];
+    //         }
+
+    //         if (!empty($attach)) {
+    //             $user->businesses()->attach($attach);
+    //         }
+
+    //         return $user;
+    //     });
+
+    //     $user->load(['businesses:id,name,slug']);
+
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'User created successfully.',
+    //         'data' => $user,
+    //     ], 201);
+    // }
+
+
+
+
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'     => ['required','string','max:255'],
-            'email'    => ['required','email','max:255','unique:users,email'],
-            'password' => ['required','confirmed','min:8'],
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', 'min:8'],
 
-            // businesses[]: array of business_ids that were checked
-            'businesses'          => ['nullable','array'],
-            'businesses.*'        => ['integer','exists:businesses,id'],
+            // businesses[]: selected business IDs
+            'businesses'   => ['nullable', 'array'],
+            'businesses.*' => ['integer', 'exists:businesses,id'],
 
-            // roles[business_id] => role string
-            'roles'               => ['nullable','array'],
-            'roles.*'             => ['in:owner,admin,staff'],
+            // Business pivot roles
+            'roles'   => ['nullable', 'array'],
+            'roles.*' => ['in:owner,admin,staff'],
+
+            // Optional Spatie role
+            'spatie_role' => ['nullable', 'string'],
         ]);
 
         $user = DB::transaction(function () use ($data) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Create User
+            |--------------------------------------------------------------------------
+            */
             $user = User::create([
                 'name'     => $data['name'],
                 'email'    => $data['email'],
                 'password' => Hash::make($data['password']),
             ]);
 
-            // Attach to selected businesses with roles
+            /*
+            |--------------------------------------------------------------------------
+            | Attach Businesses
+            |--------------------------------------------------------------------------
+            */
             $attach = [];
-            foreach ((array)($data['businesses'] ?? []) as $bid) {
-                $role = $data['roles'][$bid] ?? 'staff';
-                $attach[$bid] = ['role' => $role];
+
+            foreach ((array) ($data['businesses'] ?? []) as $businessId) {
+
+                $businessRole = $data['roles'][$businessId] ?? 'staff';
+
+                $attach[$businessId] = [
+                    'role' => $businessRole,
+                ];
             }
 
             if (!empty($attach)) {
                 $user->businesses()->attach($attach);
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | Spatie Role
+            |--------------------------------------------------------------------------
+            |
+            | Request me spatie_role aaya to wahi assign hoga.
+            | Agar nahi aaya to default "user" role assign hoga.
+            |
+            */
+
+            $roleName = $data['spatie_role'] ?? 'user';
+
+            // Role nahi hai to create bhi kar dega
+            Role::firstOrCreate([
+                'name'       => $roleName,
+                'guard_name' => 'web',
+            ]);
+
+            $user->assignRole($roleName);
+
             return $user;
         });
 
-        $user->load(['businesses:id,name,slug']);
+        $user->load([
+            'businesses:id,name,slug',
+            'roles',
+        ]);
 
         return response()->json([
-            'status' => true,
+            'status'  => true,
             'message' => 'User created successfully.',
-            'data' => $user,
+            'data'    => $user,
         ], 201);
     }
 

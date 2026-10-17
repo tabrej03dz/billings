@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Business;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -13,100 +14,272 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    // List all users
-//    public function index(Request $request)
-//    {
-//        $user = $request->user();
-//
-//        // SUPER ADMIN → optional filter
-//        if ($user->hasRole('super admin') || $user->can('view all users')) {
-//            $businessId = $request->query('business_id'); // may be null for "All"
-//            $query = \App\Models\User::query();
-//
-//            if ($businessId) {
-//                $query->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
-//                    ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
-//            } else {
-//                // All businesses; keep a light relation for display
-//                $query->withCount('businesses');
-//            }
-//
-//            $users = $query->latest()->paginate(15)->withQueryString();
-//
-//            // super admin filter dropdown needs list of businesses
-//            $allBusinesses = \App\Models\Business::orderBy('name')->get();
-//
-//            return view('users.index', compact('users', 'allBusinesses', 'businessId'));
-//        }
-//
-//        // NON-SUPER: restrict to active business
-//        $activeId = $user->current_business_id ?? session('active_business_id')
-//            ?? $user->businesses()->value('business_id');
-//
-//        abort_if(!$activeId, 403, 'No business selected.');
-//
-//        $users = \App\Models\User::whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
-//            ->with(['businesses' => fn($q) => $q->where('business_id', $activeId)])
-//            ->latest()
-//            ->paginate(15);
-//
-//        return view('users.index', compact('users'));
-//    }
+
+    // public function index(Request $request)
+    // {
+    //     $user = $request->user();
+    //     $show = $request->query('show');
+
+    //     $baseQuery = \App\Models\User::query();
+
+    //     if ($show === 'deleted') {
+    //         $baseQuery->onlyTrashed();
+    //     }
+
+    //     // Filters
+    //     $search = trim($request->query('search', ''));
+    //     $businessId = $request->query('business_id');
+
+    //     if ($search) {
+    //         $baseQuery->where(function ($q) use ($search) {
+    //             $q->where('name', 'like', "%{$search}%")
+    //             ->orWhere('email', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%");
+    //         });
+    //     }
+
+    //     // SUPER ADMIN
+    //     if ($user->hasRole('super admin') || $user->can('view all users')) {
+
+    //         if ($businessId) {
+    //             $baseQuery->whereHas('businesses', function ($q) use ($businessId) {
+    //                 $q->where('business_id', $businessId);
+    //             });
+    //         }
+
+    //         $baseQuery->withCount('businesses');
+
+    //         $users = $baseQuery
+    //             ->latest()
+    //             ->paginate(15)
+    //             ->withQueryString();
+
+    //         $allBusinesses = \App\Models\Business::orderBy('name')->get();
+
+    //         return view('users.index', compact(
+    //             'users',
+    //             'allBusinesses',
+    //             'businessId',
+    //             'search',
+    //             'show'
+    //         ));
+    //     }
+
+    //     // NON SUPER ADMIN
+    //     $activeId = $user->current_business_id
+    //         ?? session('active_business_id')
+    //         ?? $user->businesses()->value('business_id');
+
+    //     abort_if(!$activeId, 403, 'No business selected.');
+
+    //     $users = $baseQuery
+    //         ->whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
+    //         ->withCount('businesses')
+    //         ->latest()
+    //         ->paginate(15)
+    //         ->withQueryString();
+
+    //     return view('users.index', compact('users', 'search', 'show'));
+    // }
 
     public function index(Request $request)
-    {
-        $user = $request->user();
-        $show = $request->query('show'); // active | deleted
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Logged In User
+    |--------------------------------------------------------------------------
+    */
+    $authUser = $request->user();
 
-        $baseQuery = \App\Models\User::query();
+    /*
+    |--------------------------------------------------------------------------
+    | Request Filters
+    |--------------------------------------------------------------------------
+    */
+    $show       = $request->query('show');
+    $search     = trim((string) $request->query('search', ''));
+    $businessId = $request->query('business_id');
 
-        if ($show === 'deleted') {
-            $baseQuery->onlyTrashed();
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Base User Query
+    |--------------------------------------------------------------------------
+    */
+    $baseQuery = User::query();
 
-        // SUPER ADMIN
-        if ($user->hasRole('super admin') || $user->can('view all users')) {
-
-            $businessId = $request->query('business_id');
-
-            if ($businessId) {
-                $baseQuery->whereHas('businesses', fn($q) => $q->where('business_id', $businessId))
-                    ->with(['businesses' => fn($q) => $q->where('business_id', $businessId)]);
-            } else {
-                $baseQuery->withCount('businesses');
-            }
-
-            $users = $baseQuery->latest()->paginate(15)->withQueryString();
-            $allBusinesses = \App\Models\Business::orderBy('name')->get();
-
-            return view('users.index', compact('users', 'allBusinesses', 'businessId', 'show'));
-        }
-
-        // NON SUPER
-        $activeId = $user->current_business_id ?? session('active_business_id')
-            ?? $user->businesses()->value('business_id');
-
-        abort_if(!$activeId, 403, 'No business selected.');
-
-        $users = $baseQuery
-            ->whereHas('businesses', fn($q) => $q->where('business_id', $activeId))
-            ->with(['businesses' => fn($q) => $q->where('business_id', $activeId)])
-            ->latest()
-            ->paginate(15);
-
-        return view('users.index', compact('users', 'show'));
+    /*
+    |--------------------------------------------------------------------------
+    | Active / Deleted Users
+    |--------------------------------------------------------------------------
+    */
+    if ($show === 'deleted') {
+        $baseQuery->onlyTrashed();
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Search Filter
+    |--------------------------------------------------------------------------
+    |
+    | Search by:
+    | - Name
+    | - Email
+    | - Phone
+    |
+    */
+    if ($search !== '') {
+        $baseQuery->where(function ($query) use ($search) {
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhere('phone', 'like', "%{$search}%");
+        });
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin / View All Users
+    |--------------------------------------------------------------------------
+    */
+    if (
+        $authUser->hasRole('super admin') ||
+        $authUser->can('view all users')
+    ) {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Business Filter
+        |--------------------------------------------------------------------------
+        */
+        if (!empty($businessId)) {
+            $baseQuery->whereHas('businesses', function ($query) use ($businessId) {
+                $query->where('businesses.id', $businessId);
+            });
+        }
 
+        /*
+        |--------------------------------------------------------------------------
+        | Load Businesses
+        |--------------------------------------------------------------------------
+        |
+        | businesses       = actual business data
+        | businesses_count = business count
+        |
+        */
+        $baseQuery
+            ->with([
+                'businesses' => function ($query) {
+                    $query->select(
+                        'businesses.id',
+                        'businesses.name'
+                    )->orderBy('businesses.name');
+                }
+            ])
+            ->withCount('businesses');
 
-    // public function create()
-    // {
-    //     $businesses = Business::orderBy('name')->get(); // assign businesses on create
-    //     $roles = ['owner' => 'Owner', 'admin' => 'Admin', 'staff' => 'Staff'];
-    //     return view('users.create', compact('businesses', 'roles'));
-    // }
+        /*
+        |--------------------------------------------------------------------------
+        | Users Pagination
+        |--------------------------------------------------------------------------
+        */
+        $users = $baseQuery
+            ->latest('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Businesses For Filter Dropdown
+        |--------------------------------------------------------------------------
+        */
+        $allBusinesses = Business::query()
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return view('users.index', compact(
+            'users',
+            'allBusinesses',
+            'businessId',
+            'search',
+            'show'
+        ));
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normal User - Find Active Business
+    |--------------------------------------------------------------------------
+    */
+    $activeBusinessId = $authUser->current_business_id
+        ?? session('active_business_id')
+        ?? $authUser->businesses()->value('businesses.id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Active Business Required
+    |--------------------------------------------------------------------------
+    */
+    abort_if(
+        !$activeBusinessId,
+        403,
+        'No business selected.'
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Only Users Of Active Business
+    |--------------------------------------------------------------------------
+    */
+    $baseQuery->whereHas('businesses', function ($query) use ($activeBusinessId) {
+        $query->where('businesses.id', $activeBusinessId);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Load User Businesses
+    |--------------------------------------------------------------------------
+    */
+    $baseQuery
+        ->with([
+            'businesses' => function ($query) {
+                $query->select(
+                    'businesses.id',
+                    'businesses.name'
+                )->orderBy('businesses.name');
+            }
+        ])
+        ->withCount('businesses');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    */
+    $users = $baseQuery
+        ->latest('id')
+        ->paginate(15)
+        ->withQueryString();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Normal User Doesn't Need Business Filter List
+    |--------------------------------------------------------------------------
+    */
+    $allBusinesses = collect();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Return View
+    |--------------------------------------------------------------------------
+    */
+    return view('users.index', compact(
+        'users',
+        'allBusinesses',
+        'businessId',
+        'search',
+        'show'
+    ));
+}
+
 
     public function create()
     {
@@ -116,45 +289,6 @@ class UserController extends Controller
         return view('users.create', compact('businesses', 'roles'));
     }
 
-    // public function store(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name'     => ['required','string','max:255'],
-    //         'email'    => ['required','email','max:255','unique:users,email'],
-    //         'google_drive_folder_id' => [
-    //             'nullable',
-    //             Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
-    //         ],
-    //         'password' => ['required','confirmed','min:8'],
-    //         // businesses[]: array of business_ids that were checked
-    //         'businesses'          => ['array'],
-    //         'businesses.*'        => ['integer','exists:businesses,id'],
-    //         // roles[business_id] => role string
-    //         'roles'               => ['array'],
-    //         'roles.*'             => ['in:owner,admin,staff'],
-    //     ]);
-
-    //     DB::transaction(function () use ($request, $data) {
-    //         $user = User::create([
-    //             'name'     => $data['name'],
-    //             'email'    => $data['email'],
-    //             'google_drive_folder_id'    => $data['google_drive_folder_id'],
-    //             'password' => Hash::make($data['password']),
-    //         ]);
-
-    //         // Attach to selected businesses with roles
-    //         $attach = [];
-    //         foreach ((array)($data['businesses'] ?? []) as $bid) {
-    //             $role = $data['roles'][$bid] ?? 'staff';
-    //             $attach[$bid] = ['role' => $role];
-    //         }
-    //         if ($attach) {
-    //             $user->businesses()->attach($attach);
-    //         }
-    //     });
-
-    //     return redirect()->route('users.index')->with('success', 'User created successfully.');
-    // }
 
     public function store(Request $request)
 {
@@ -163,6 +297,7 @@ class UserController extends Controller
         'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
         'google_drive_folder_id' => ['nullable', 'unique:users,google_drive_folder_id'],
         'password' => ['required', 'confirmed', 'min:8'],
+        'phone' => ['required', 'string', 'max:255', 'unique:users,phone'],
 
         'businesses'   => ['nullable', 'array'],
         'businesses.*' => ['integer', 'exists:businesses,id'],
@@ -178,6 +313,7 @@ class UserController extends Controller
             'email'    => $data['email'],
             'google_drive_folder_id' => $data['google_drive_folder_id'] ?? null,
             'password' => Hash::make($data['password']),
+            'phone' => $data['phone'],
         ]);
 
         // businesses attach
@@ -198,69 +334,18 @@ class UserController extends Controller
     return redirect()->route('users.index')->with('success', 'User created successfully.');
 }
 
-    // public function edit(User $user)
-    // {
-    //     $businesses = Business::orderBy('name')->get();
-    //     $roles = ['owner' => 'Owner', 'admin' => 'Admin', 'staff' => 'Staff'];
+    
 
-    //     // existing roles per business (pivot)
-    //     $pivotRoles = $user->businesses()
-    //         ->pluck('business_user.role', 'business_id')
-    //         ->toArray();
+    public function edit(User $user)
+    {
+        $businesses = Business::orderBy('name')->get();
+        $roles = Role::orderBy('name')->get();
 
-    //     return view('users.edit', compact('user','businesses','roles','pivotRoles'));
-    // }
+        $selectedBusinesses = $user->businesses()->pluck('businesses.id')->toArray();
+        $selectedRoles = $user->roles()->pluck('name')->toArray();
 
-public function edit(User $user)
-{
-    $businesses = Business::orderBy('name')->get();
-    $roles = Role::orderBy('name')->get();
-
-    $selectedBusinesses = $user->businesses()->pluck('businesses.id')->toArray();
-    $selectedRoles = $user->roles()->pluck('name')->toArray();
-
-    return view('users.edit', compact('user', 'businesses', 'roles', 'selectedBusinesses', 'selectedRoles'));
-}
-
-    // public function update(Request $request, User $user)
-    // {
-    //     $data = $request->validate([
-    //         'name'     => ['required','string','max:255'],
-    //         'email'    => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
-    //         'google_drive_folder_id' => [
-    //             'nullable',
-    //             Rule::unique('users','google_drive_folder_id')->ignore($user->id ?? null)
-    //         ],
-    //         'password' => ['nullable','confirmed','min:8'],
-    //         'businesses'   => ['array'],
-    //         'businesses.*' => ['integer','exists:businesses,id'],
-    //         'roles'        => ['array'],
-    //         'roles.*'      => ['in:owner,admin,staff'],
-    //     ]);
-
-    //     DB::transaction(function () use ($request, $user, $data) {
-    //         // Update main fields
-    //         $user->name  = $data['name'];
-    //         $user->email = $data['email'];
-    //         $user->google_drive_folder_id = $data['google_drive_folder_id'];
-    //         if (!empty($data['password'])) {
-    //             $user->password = Hash::make($data['password']);
-    //         }
-    //         $user->save();
-
-    //         // Sync businesses + roles
-    //         $selected = (array)($data['businesses'] ?? []);
-    //         $sync = [];
-    //         foreach ($selected as $bid) {
-    //             $role = $data['roles'][$bid] ?? 'staff';
-    //             $sync[$bid] = ['role' => $role];
-    //         }
-    //         // Remove unselected; keep selected with roles
-    //         $user->businesses()->sync($sync);
-    //     });
-
-    //     return redirect()->route('users.index')->with('success', 'User updated successfully.');
-    // }
+        return view('users.edit', compact('user', 'businesses', 'roles', 'selectedBusinesses', 'selectedRoles'));
+    }
 
 
     public function update(Request $request, User $user)
@@ -273,6 +358,7 @@ public function edit(User $user)
             Rule::unique('users', 'google_drive_folder_id')->ignore($user->id)
         ],
         'password' => ['nullable', 'confirmed', 'min:8'],
+        'phone' => ['required', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($user->id)],
 
         'businesses'   => ['nullable', 'array'],
         'businesses.*' => ['integer', 'exists:businesses,id'],
@@ -290,6 +376,7 @@ public function edit(User $user)
             $user->password = Hash::make($data['password']);
         }
 
+        $user->phone = $data['phone'];
         $user->save();
 
         // sync businesses
@@ -305,14 +392,40 @@ public function edit(User $user)
 
     return redirect()->route('users.index')->with('success', 'User updated successfully.');
 }
+    // public function destroy(User $user)
+    // {
+    //     // Detach pivot (optional; cascade is safe too)
+    //     $user->businesses()->detach();
+    //     $user->delete();
+
+    //     return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+    // }
+
+
     public function destroy(User $user)
     {
-        // Detach pivot (optional; cascade is safe too)
-        $user->businesses()->detach();
-        $user->delete();
+        DB::transaction(function () use ($user) {
+            $businesses = $user->businesses()->get();
 
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+            foreach ($businesses as $business) {
+                $otherUsersExist = $business->users()
+                    ->where('users.id', '!=', $user->id)
+                    ->exists();
+
+                if (!$otherUsersExist && !$business->trashed()) {
+                    $business->delete();
+                }
+            }
+
+            $user->delete();
+        });
+
+        return redirect()
+            ->route('users.index')
+            ->with('success', 'User deleted successfully.');
     }
+
+
 
     public function permissions(User $user){
         $permissions = $user->permissions;
@@ -346,6 +459,78 @@ public function edit(User $user)
         $user->forceDelete();
 
         return back()->with('success', 'User permanently deleted.');
+    }
+
+
+
+
+    public function impersonate(User $user)
+    {
+        $admin = auth()->user();
+
+        abort_if(!$admin, 403);
+
+        // Sirf super admin ya view all users permission wale ko allow
+        abort_if(
+            !$admin->hasRole('super admin') && !$admin->can('view all users'),
+            403,
+            'You are not allowed to login as this user.'
+        );
+
+        // Khud ke account me login as na kare
+        abort_if($admin->id === $user->id, 403, 'You cannot impersonate yourself.');
+
+        // Deleted user me login na ho
+        abort_if(method_exists($user, 'trashed') && $user->trashed(), 403, 'Cannot impersonate deleted user.');
+
+        // Super admin kisi dusre super admin me login na kare
+        abort_if($user->hasRole('super admin'), 403, 'Cannot impersonate super admin user.');
+
+        session([
+            'impersonator_id' => $admin->id,
+            'impersonator_name' => $admin->name,
+            'previous_active_business_id' => session('active_business_id'),
+        ]);
+
+        // Target user ka active business set kar do
+        $activeBusinessId = $user->current_business_id
+            ?? $user->businesses()->value('businesses.id');
+
+        if ($activeBusinessId) {
+            session(['active_business_id' => $activeBusinessId]);
+        } else {
+            session()->forget('active_business_id');
+        }
+
+        Auth::login($user);
+
+        return redirect()->route('dashboard')
+            ->with('success', 'You are now logged in as ' . $user->name);
+    }
+
+
+    public function exitImpersonate()
+    {
+        abort_if(!session()->has('impersonator_id'), 403, 'No impersonation session found.');
+
+        $admin = User::findOrFail(session('impersonator_id'));
+
+        Auth::login($admin);
+
+        if (session()->has('previous_active_business_id')) {
+            session(['active_business_id' => session('previous_active_business_id')]);
+        } else {
+            session()->forget('active_business_id');
+        }
+
+        session()->forget([
+            'impersonator_id',
+            'impersonator_name',
+            'previous_active_business_id',
+        ]);
+
+        return redirect()->route('users.index')
+            ->with('success', 'You are back to your super admin account.');
     }
 
 }

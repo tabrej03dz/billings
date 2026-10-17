@@ -1,6 +1,19 @@
 @extends('frontend.layout')
 @section('content')
 
+<style>
+    #typingText::after {
+    content: "|";
+    animation: blink 0.7s infinite;
+    color: #2624CC;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+</style>
+
+
 <main id="top">
 
     {{-- HERO --}}
@@ -14,9 +27,13 @@
                         Smart Billing Software for Modern Shops
                     </div>
 
-                    <h1 class="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-mvDark">
+                    {{-- <h1 class="text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-mvDark">
                         Typing Kam,
                         <span class="brand-text">Billing Fast.</span>
+                    </h1> --}}
+
+                    <h1 class="min-h-[150px] sm:min-h-[160px] lg:min-h-[150px] text-4xl sm:text-5xl lg:text-7xl font-black leading-[1.05] tracking-tight text-mvDark">
+                        <span id="typingText"></span>
                     </h1>
 
                     <p class="mt-6 text-lg text-slate-600 max-w-xl leading-8">
@@ -314,77 +331,213 @@
             </div>
         </div>
     </section>
-
     {{-- PRICING --}}
     <section id="pricing" class="py-20 bg-white">
+
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
+
             <div class="text-center mb-14">
-                <p class="text-mvBlue font-black uppercase tracking-widest text-sm">Pricing Plans</p>
-                <h2 class="text-3xl lg:text-5xl font-black mt-3 text-mvDark">Plans Starting From ₹999 / Year</h2>
-                <p class="mt-4 text-slate-600">Choose the best plan for your shop or growing business.</p>
+
+                <p class="text-mvBlue font-black uppercase tracking-widest text-sm">
+                    Pricing Plans
+                </p>
+
+                <h2 class="text-3xl lg:text-5xl font-black mt-3 text-mvDark">
+                    Plans Starting From ₹999 / Year
+                </h2>
+
+                <p class="mt-4 text-slate-600">
+                    Choose the best plan for your shop or growing business.
+                </p>
+
             </div>
 
+
             @if($plans->count())
+
                 <div class="grid md:grid-cols-3 gap-8">
+
                     @foreach($plans as $plan)
+
                         @php
                             $isPopular = $plan->is_recommended;
                         @endphp
 
-                        <div class="rounded-[2rem] p-8 relative transition hover:-translate-y-1
-                            {{ $isPopular ? 'brand-gradient text-white shadow-2xl shadow-blue-200 scale-105' : 'bg-slate-50 border border-slate-200 text-mvDark' }}">
 
+                        <div class="rounded-[2rem] p-8 relative transition hover:-translate-y-1
+                            {{ $isPopular
+                                ? 'brand-gradient text-white shadow-2xl shadow-blue-200 scale-105'
+                                : 'bg-slate-50 border border-slate-200 text-mvDark'
+                            }}">
+
+
+                            {{-- RECOMMENDED --}}
                             @if($isPopular)
-                                <div class="absolute -top-4 right-8 bg-white text-mvBlue text-xs font-black px-4 py-2 rounded-full shadow-lg">
+
+                                <div class="absolute -top-4 right-8 bg-white text-mvBlue
+                                    text-xs font-black px-4 py-2 rounded-full shadow-lg">
+
                                     Most Recommended ⭐
+
                                 </div>
+
                             @endif
 
-                            <h3 class="text-2xl font-black uppercase">{{ $plan->name }}</h3>
 
+                            {{-- PLAN NAME --}}
+                            <h3 class="text-2xl font-black uppercase">
+                                {{ $plan->name }}
+                            </h3>
+
+
+                            {{-- DESCRIPTION --}}
                             <p class="mt-2 {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
-                                {{ $plan->subtitle ?: ($plan->description ?: 'Perfect for Small & Medium Businesses') }}
+
+                                {{
+                                    $plan->subtitle
+                                    ?: ($plan->description
+                                    ?: 'Perfect for Small & Medium Businesses')
+                                }}
+
                             </p>
 
-                            <div class="text-4xl font-black mt-6">
-                                ₹{{ number_format($plan->price, 0) }}
-                                <span class="text-sm {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
-                                    / {{ $plan->duration_days >= 365 ? 'Year' : $plan->duration_days . ' Days' }}
-                                </span>
+
+                            {{-- PRICE --}}
+                            <div class="mt-6">
+
+                                <div class="flex items-end gap-2 flex-wrap">
+
+                                    {{-- BASE PRICE --}}
+                                    <div class="text-4xl font-black">
+
+                                        ₹{{ number_format($plan->price, 0) }}
+
+                                    </div>
+
+
+                                    {{-- DURATION --}}
+                                    <span class="text-sm mb-1
+                                        {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
+
+                                        /
+                                        {{ $plan->duration_days >= 365
+                                            ? 'Year'
+                                            : $plan->duration_days . ' Days'
+                                        }}
+
+                                    </span>
+
+                                </div>
+
+
+                                {{-- GST PERCENTAGE ONLY --}}
+                                <div class="mt-2 text-sm font-bold
+                                    {{ $isPopular ? 'text-blue-100' : 'text-slate-500' }}">
+
+                                    + {{ $plan->tax ?? '18' }}% GST
+
+                                </div>
+
                             </div>
 
-                            <ul class="mt-7 space-y-3 text-sm {{ $isPopular ? 'text-blue-50' : 'text-slate-600' }}">
+
+                            {{-- FEATURES --}}
+                            <ul class="mt-7 space-y-3 text-sm
+                                {{ $isPopular ? 'text-blue-50' : 'text-slate-600' }}">
+
                                 @forelse($plan->planFeatures as $feature)
+
                                     <li>
+
                                         @if($feature->icon)
+
                                             {{ $feature->icon }}
+
                                         @else
+
                                             ✔
+
                                         @endif
+
                                         {{ $feature->title }}
+
                                     </li>
+
                                 @empty
+
                                     <li>✔ GST Billing</li>
+
                                     <li>✔ Customer Management</li>
+
                                     <li>✔ Invoice Print / Share</li>
+
                                 @endforelse
+
                             </ul>
 
-                            <a href="{{ route('user.register', ['plan_id' => $plan->id]) }}"
-                                class="mt-8 block text-center rounded-full py-4 font-black
-                                {{ $isPopular ? 'bg-white text-mvBlue' : 'bg-mvDark text-white' }}">
-                                Choose Plan
-                            </a>
+
+                            {{-- BUTTONS --}}
+                            <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+
+                                {{-- FREE TRIAL --}}
+                                <a
+                                    href="{{ url('/ad') }}?open_register=1&plan_id={{ $plan->id }}&trial=1"
+
+                                    class="block text-center rounded-full py-4 font-black border
+
+                                    {{ $isPopular
+                                        ? 'bg-white/10 text-white border-white/40'
+                                        : 'bg-white text-mvBlue border-mvBlue'
+                                    }}">
+
+                                    Start Free Trial
+
+                                </a>
+
+
+                                {{-- START PLAN --}}
+                                <a
+                                    href="{{ url('/ad') }}?open_register=1&plan_id={{ $plan->id }}&trial=0"
+
+                                    class="block text-center rounded-full py-4 font-black
+
+                                    {{ $isPopular
+                                        ? 'bg-white text-mvBlue'
+                                        : 'bg-mvDark text-white'
+                                    }}">
+
+                                    Start Plan
+
+                                </a>
+
+                            </div>
+
                         </div>
+
                     @endforeach
+
                 </div>
+
+
             @else
+
                 <div class="text-center bg-slate-50 border border-slate-200 rounded-3xl p-10">
-                    <h3 class="text-2xl font-black text-mvDark">No active plans available</h3>
-                    <p class="text-slate-500 mt-2">Please add active plans from admin panel.</p>
+
+                    <h3 class="text-2xl font-black text-mvDark">
+                        No active plans available
+                    </h3>
+
+                    <p class="text-slate-500 mt-2">
+                        Please add active plans from admin panel.
+                    </p>
+
                 </div>
+
             @endif
+
         </div>
+
     </section>
 
     {{-- CTA --}}
@@ -493,5 +646,48 @@
     </section>
 
 </main>
+
+<script>
+    const words = [
+        "Typing Kam, Billing Fast.",
+        "Entry Kam, Billing Smart.",
+        "Time Save, Billing Easy.",
+        "Photo Entry, Invoice Ready.",
+        "Smart Shop, Fast Billing.",
+        "GST Bill, One Click."
+    ];
+
+    let wordIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    const typingText = document.getElementById("typingText");
+
+    function typeEffect() {
+        const currentWord = words[wordIndex];
+
+        if (isDeleting) {
+            typingText.innerHTML = currentWord.substring(0, charIndex--);
+        } else {
+            typingText.innerHTML = currentWord.substring(0, charIndex++);
+        }
+
+        let speed = isDeleting ? 45 : 70;
+
+        if (!isDeleting && charIndex === currentWord.length + 1) {
+            speed = 1200; // 1.2 second rukega
+            isDeleting = true;
+        }
+
+        if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            wordIndex = (wordIndex + 1) % words.length;
+            speed = 300;
+        }
+
+        setTimeout(typeEffect, speed);
+    }
+
+    typeEffect();
+</script>
 
 @endsection

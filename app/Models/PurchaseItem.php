@@ -6,15 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseItem extends Model
 {
-    protected $fillable = [
-        'purchase_id',
-        'item_id',
-        'qty',
-        'gross_weight',
-        'metal_weight',
-        'stone_weight',
-        'rate',
-        'amount',
+    protected $guarded = [
+        'id',
     ];
 
     public function purchase()

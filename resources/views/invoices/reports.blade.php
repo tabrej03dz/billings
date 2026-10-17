@@ -42,10 +42,31 @@
                 </label>
                 <select name="date_range" id="date_range"
                         class="block w-full rounded-xl border-gray-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 text-sm focus:ring-blue-500 focus:border-blue-500">
-                    <option value="quarter" {{ ($filters['date_range'] ?? 'quarter') === 'quarter' ? 'selected' : '' }}>Last Quarter</option>
-                    <option value="half_year" {{ ($filters['date_range'] ?? '') === 'half_year' ? 'selected' : '' }}>Last Half-Year</option>
-                    <option value="last_year" {{ ($filters['date_range'] ?? '') === 'last_year' ? 'selected' : '' }}>Last Year</option>
-                    <option value="custom" {{ ($filters['date_range'] ?? '') === 'custom' ? 'selected' : '' }}>Custom Range</option>
+
+                    <option value="last_month"
+                        {{ ($filters['date_range'] ?? '') === 'last_month' ? 'selected' : '' }}>
+                        Last Month
+                    </option>
+
+                    <option value="quarter"
+                        {{ ($filters['date_range'] ?? 'quarter') === 'quarter' ? 'selected' : '' }}>
+                        Last Quarter
+                    </option>
+
+                    <option value="half_year"
+                        {{ ($filters['date_range'] ?? '') === 'half_year' ? 'selected' : '' }}>
+                        Last Half-Year
+                    </option>
+
+                    <option value="last_year"
+                        {{ ($filters['date_range'] ?? '') === 'last_year' ? 'selected' : '' }}>
+                        Last Year
+                    </option>
+
+                    <option value="custom"
+                        {{ ($filters['date_range'] ?? '') === 'custom' ? 'selected' : '' }}>
+                        Custom Range
+                    </option>
                 </select>
             </div>
 

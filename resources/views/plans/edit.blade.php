@@ -26,7 +26,7 @@
             @csrf
             @method('PUT')
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {{-- <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-sm font-medium mb-1 dark:text-white">Plan Name <span class="text-red-500">*</span></label>
                     <input type="text" name="name" value="{{ old('name', $plan->name) }}"
@@ -62,6 +62,140 @@
                     <input type="number" name="sort_order" value="{{ old('sort_order', $plan->sort_order) }}"
                            class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white">
                 </div>
+            </div> --}}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Plan Name <span class="text-red-500">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        name="name"
+                        value="{{ old('name', $plan->name) }}"
+                        required
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Subtitle
+                    </label>
+
+                    <input
+                        type="text"
+                        name="subtitle"
+                        value="{{ old('subtitle', $plan->subtitle) }}"
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Slug
+                    </label>
+
+                    <input
+                        type="text"
+                        name="slug"
+                        value="{{ old('slug', $plan->slug) }}"
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Price <span class="text-red-500">*</span>
+                    </label>
+
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="price"
+                        value="{{ old('price', $plan->price) }}"
+                        required
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Duration Days <span class="text-red-500">*</span>
+                    </label>
+
+                    <input
+                        type="number"
+                        min="1"
+                        name="duration_days"
+                        value="{{ old('duration_days', $plan->duration_days) }}"
+                        required
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Number of Offices <span class="text-red-500">*</span>
+                    </label>
+
+                    <input
+                        type="number"
+                        min="1"
+                        name="number_of_office"
+                        value="{{ old('number_of_office', $plan->number_of_office ?? 1) }}"
+                        required
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+
+                    <p class="text-xs text-gray-500 mt-1">
+                        Maximum offices allowed in this plan.
+                    </p>
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Number of Users <span class="text-red-500">*</span>
+                    </label>
+
+                    <input
+                        type="number"
+                        min="1"
+                        name="number_of_user"
+                        value="{{ old('number_of_user', $plan->number_of_user ?? 1) }}"
+                        required
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+
+                    <p class="text-xs text-gray-500 mt-1">
+                        Maximum users allowed in this plan.
+                    </p>
+                </div>
+
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 dark:text-white">
+                        Sort Order
+                    </label>
+
+                    <input
+                        type="number"
+                        min="0"
+                        name="sort_order"
+                        value="{{ old('sort_order', $plan->sort_order) }}"
+                        class="w-full border rounded-lg px-3 py-2 dark:bg-neutral-800 dark:border-neutral-700 dark:text-white"
+                    >
+                </div>
+
             </div>
 
             <div>

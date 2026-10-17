@@ -9,13 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Purchase extends Model
 {
     use BelongsToBusiness;
-    protected $fillable = [
-        'business_id',
-        'invoice_no',
-        'invoice_date',
-        'supplier_id',
-        'total_amount',
-    ];
+    protected $guarded = ['id'];
 
     protected $casts = [
         'invoice_date' => 'date',

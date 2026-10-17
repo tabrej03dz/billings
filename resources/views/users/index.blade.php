@@ -27,13 +27,68 @@
 
         </div>
 
+        <div class="bg-white dark:bg-neutral-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+            <form method="GET" class="flex flex-wrap gap-3 items-end">
+
+                <div>
+                    <label class="block text-sm font-medium mb-1">Search</label>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Name, Email or Phone"
+                        class="border rounded px-3 py-2 w-64 dark:bg-neutral-800"
+                    >
+                </div>
+
+                @if(auth()->user()->hasRole('super admin') || auth()->user()->can('view all users'))
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Business</label>
+                        <select
+                            name="business_id"
+                            class="border rounded px-3 py-2 w-64 dark:bg-neutral-800"
+                        >
+                            <option value="">All Businesses</option>
+
+                            @foreach($allBusinesses as $business)
+                                <option
+                                    value="{{ $business->id }}"
+                                    @selected(request('business_id') == $business->id)
+                                >
+                                    {{ $business->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @endif
+
+                <input type="hidden" name="show" value="{{ request('show') }}">
+
+                <button
+                    type="submit"
+                    class="px-4 py-2 bg-blue-600 text-white rounded"
+                >
+                    Filter
+                </button>
+
+                <a
+                    href="{{ route('users.index', request('show') ? ['show' => request('show')] : []) }}"
+                    class="px-4 py-2 bg-gray-500 text-white rounded"
+                >
+                    Reset
+                </a>
+
+            </form>
+        </div>
+
         <div class="overflow-auto rounded-xl border border-gray-200 dark:border-gray-700">
             <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                 <thead class=" bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium tracking-wider">
                 <tr>
                     <th class="px-6 py-3">Name</th>
-                    <th class="px-6 py-3">Email</th>
+                    <th class="px-6 py-3">Phone</th>
                     <th class="px-6 py-3">Businesses</th>
+                    <th class="px-6 py-3">Created At</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
                 </thead>
@@ -41,9 +96,43 @@
                 @forelse ($users as $u)
                     <tr>
                         <td class="px-6 py-3 font-medium text-gray-900 dark:text-white">{{ $u->name }}</td>
-                        <td class="px-6 py-3">{{ $u->email }}</td>
-                        <td class="px-6 py-3">{{ $u->businesses_count }}</td>
-                        <td class="px-6 py-3 space-x-2">
+                        <td class="px-6 py-3">{{ $u->phone }}</td>
+                        <td class="px-6 py-3">
+                            @if($u->businesses->isNotEmpty())
+
+                                <div class="flex flex-wrap gap-1.5">
+
+                                    @foreach($u->businesses as $business)
+
+                                        <span
+                                            class="inline-flex items-center
+                                                px-2.5 py-1
+                                                text-xs font-medium
+                                                rounded-full
+                                                bg-blue-100 text-blue-800
+                                                dark:bg-blue-900/40 dark:text-blue-300"
+                                        >
+                                            {{ $business->name }}
+                                        </span>
+
+                                    @endforeach
+
+                                </div>
+
+                                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $u->businesses_count }}
+                                    {{ $u->businesses_count == 1 ? 'Business' : 'Businesses' }}
+                                </div>
+
+                            @else
+
+                                <span class="text-gray-400 dark:text-gray-500">
+                                    No Business
+                                </span>
+
+                            @endif
+                        </td>
+                        {{-- <td class="px-6 py-3 space-x-2">
 
                             @if(!$u->trashed())
                                 <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 p-2 text-white">Edit</a>
@@ -63,6 +152,53 @@
                                 <form action="{{ route('users.force', $u->id) }}" method="POST" class="inline-block"
                                       onsubmit="return confirm('Permanently delete?');">
                                     @csrf @method('DELETE')
+                                    <button class="bg-black p-2 text-white">Force Delete</button>
+                                </form>
+                            @endif
+
+                            <a href="{{ route('users.permissions', $u->id) }}" class="bg-sky-600 p-2 text-white">Permissions</a>
+                        </td> --}}
+
+
+                        <td class="px-6 py-3">{{ $u->created_at->format('Y-m-d H:i:s') }}</td>
+
+                        <td class="px-6 py-3 space-x-2">
+
+                            @if(!$u->trashed())
+                                <a href="{{ route('users.edit', $u->id) }}" class="bg-yellow-600 p-2 text-white">Edit</a>
+
+
+                                @if(auth()->id() !== $u->id && (auth()->user()->hasRole('super admin') ))
+                                    @if(!$u->hasRole('super admin'))
+                                        <form action="{{ route('users.impersonate', $u->id) }}" method="POST" class="inline-block"
+                                            onsubmit="return confirm('Login as {{ $u->name }}?');">
+                                            @csrf
+                                            <button class="bg-purple-600 p-2 text-white">
+                                                Login As
+                                            </button>
+                                        </form>
+                                    @endif
+                                @endif
+
+                                @can('delete user') 
+                                <form action="{{ route('users.destroy', $u->id) }}" method="POST" class="inline-block"
+                                    onsubmit="return confirm('Delete this user?');">
+                                    @csrf 
+                                    @method('DELETE')
+                                    <button class="bg-red-600 p-2 text-white">Delete</button>
+                                </form>
+                                @endcan
+
+                            @else
+                                <form action="{{ route('users.restore', $u->id) }}" method="POST" class="inline-block">
+                                    @csrf
+                                    <button class="bg-green-600 p-2 text-white">Restore</button>
+                                </form>
+
+                                <form action="{{ route('users.force', $u->id) }}" method="POST" class="inline-block"
+                                    onsubmit="return confirm('Permanently delete?');">
+                                    @csrf 
+                                    @method('DELETE')
                                     <button class="bg-black p-2 text-white">Force Delete</button>
                                 </form>
                             @endif

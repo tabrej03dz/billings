@@ -6,6 +6,24 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -111,6 +129,33 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+        $invoiceSignature = $inv->signature ?? null;
+
+    $invoiceSignatureUrl = null;
+
+    if (!empty($invoiceSignature)) {
+        $invoiceSignature = ltrim((string) $invoiceSignature, '/');
+
+        if (\Illuminate\Support\Str::startsWith(
+            $invoiceSignature,
+            ['http://', 'https://', 'data:']
+        )) {
+            $invoiceSignatureUrl = $invoiceSignature;
+        } else {
+            $possibleSignaturePaths = [
+                public_path('storage/' . $invoiceSignature),
+                public_path($invoiceSignature),
+                storage_path('app/public/' . $invoiceSignature),
+            ];
+
+            foreach ($possibleSignaturePaths as $signaturePath) {
+                if (is_file($signaturePath)) {
+                    $invoiceSignatureUrl = $signaturePath;
+                    break;
+                }
+            }
+        }
+    }
 @endphp
 
 
@@ -120,7 +165,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ strtoupper($type) }} {{ $invoiceNo }}</title>
+<title>{{ $docLabel }} {{ $invoiceNo }}</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:"DejaVu Sans",sans-serif;font-size:12px;margin:0;padding:18px;color:#111;background:#eef2f7}
@@ -138,9 +183,47 @@ table{width:100%;border-collapse:collapse}
 .summary{width:45%;margin-left:auto;margin-top:14px}
 .summary td{padding:8px;border-bottom:1px solid #cbd5e1}
 .summary .grand td{background:#243b53;color:#fff;font-weight:700}
-.footer{padding:16px 20px}
-.sign{text-align:right}
-.sign img{max-height:48px}
+.footer{
+    width:100%;
+    padding:16px 20px;
+    table-layout:fixed;
+}
+.footer td{
+    vertical-align:bottom;
+}
+.amountWordsCell{
+    width:62%;
+    padding-right:18px;
+    line-height:1.35;
+}
+.sign{
+    width:38%;
+    text-align:right;
+    vertical-align:bottom;
+}
+.signatureBox{
+    width:150px;
+    height:58px;
+    margin-left:auto;
+    margin-bottom:5px;
+    text-align:center;
+    overflow:hidden;
+}
+.signatureBox img{
+    width:150px;
+    height:58px;
+    display:block;
+    margin:0 0 0 auto;
+}
+.signatoryTitle{
+    font-size:10px;
+    font-weight:700;
+    line-height:1.2;
+}
+.signatoryBusiness{
+    font-size:9px;
+    line-height:1.2;
+}
 </style>
 </head>
 <body>
@@ -153,7 +236,7 @@ table{width:100%;border-collapse:collapse}
                 Mobile: {{ $b_mobile ?: '-' }} | GSTIN: {{ $b_gstin ?: '-' }}
             </td>
             <td class="bankInvoice">
-                {{ strtoupper($type) }}<br>
+                {{ $docLabel }}<br>
                 <span style="font-size:12px;">No: {{ $invoiceNo }}</span>
             </td>
         </tr>
@@ -251,16 +334,25 @@ table{width:100%;border-collapse:collapse}
 
     <table class="footer">
         <tr>
-            <td>
+            <td class="amountWordsCell">
                 <strong>Amount in Words:</strong><br>
                 {{ inr_words($finalTotal) }}
             </td>
+
             <td class="sign">
-                @if(!empty($sign))
-                    <img src="{{ $sign }}"><br>
+                @if(!empty($invoiceSignatureUrl))
+                    <div class="signatureBox">
+                        <img
+                            src="{{ $invoiceSignatureUrl }}"
+                            alt="Signature"
+                            width="150"
+                            height="58"
+                        >
+                    </div>
                 @endif
-                <strong>Authorised Signatory</strong><br>
-                {{ $b->name ?? '' }}
+
+                <div class="signatoryTitle">Authorised Signatory</div>
+                <div class="signatoryBusiness">{{ $b->name ?? '' }}</div>
             </td>
         </tr>
     </table>

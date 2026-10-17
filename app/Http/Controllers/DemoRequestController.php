@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\DemoRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class DemoRequestController extends Controller
 {
@@ -38,30 +40,76 @@ class DemoRequestController extends Controller
         return view('demo_requests.create');
     }
 
-    public function store(Request $request)
-    {
-       $validated = $request->validate([
-            'name'          => 'required|string|max:255',
-            'mobile'        => [
-                'required',
-                'digits:10',
-                'regex:/^[6-9][0-9]{9}$/',
-            ],
-            'city'          => 'nullable|string|max:255',
-            'business_name' => 'nullable|string|max:255',
-            'message'       => 'nullable|string',
-        ], [
-            'mobile.required' => 'Mobile number required hai.',
-            'mobile.digits'   => 'Mobile number 10 digit ka hona chahiye.',
-            'mobile.regex'    => 'Mobile number 6, 7, 8 ya 9 se start hona chahiye.',
-        ]);
+    // public function store(Request $request)
+    // {
+    //    $validated = $request->validate([
+    //         'name'          => 'required|string|max:255',
+    //         'mobile'        => [
+    //             'required',
+    //             'digits:10',
+    //             'regex:/^[6-9][0-9]{9}$/',
+    //         ],
+    //         'city'          => 'nullable|string|max:255',
+    //         'business_name' => 'nullable|string|max:255',
+    //         'message'       => 'nullable|string',
+    //     ], [
+    //         'mobile.required' => 'Mobile number required hai.',
+    //         'mobile.digits'   => 'Mobile number 10 digit ka hona chahiye.',
+    //         'mobile.regex'    => 'Mobile number 6, 7, 8 ya 9 se start hona chahiye.',
+    //     ]);
 
-        DemoRequest::create($validated);
+    //     DemoRequest::create($validated);
 
-          return redirect()
-            ->to(url()->previous() . '#contact')
-            ->with('success', 'Demo request successfully submit ho gayi.');
+    //       return redirect()
+    //         ->to(url()->previous() . '#contact')
+    //         ->with('success', 'Demo request successfully submit ho gayi.');
+    // }
+
+
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'          => 'required|string|max:255',
+        'mobile'        => [
+            'required',
+            'digits:10',
+            'regex:/^[6-9][0-9]{9}$/',
+        ],
+        'city'          => 'nullable|string|max:255',
+        'business_name' => 'nullable|string|max:255',
+        'message'       => 'nullable|string',
+    ], [
+        'mobile.required' => 'Mobile number required hai.',
+        'mobile.digits'   => 'Mobile number 10 digit ka hona chahiye.',
+        'mobile.regex'    => 'Mobile number 6, 7, 8 ya 9 se start hona chahiye.',
+    ]);
+
+    $demoRequest = DemoRequest::create($validated);
+
+    $mailBody =
+        "New Demo Request Aayi Hai\n\n" .
+        "Name: " . $demoRequest->name . "\n" .
+        "Mobile: " . $demoRequest->mobile . "\n" .
+        "City: " . ($demoRequest->city ?? 'N/A') . "\n" .
+        "Business Name: " . ($demoRequest->business_name ?? 'N/A') . "\n" .
+        "Message: " . ($demoRequest->message ?? 'N/A') . "\n";
+
+    $superAdminEmails = User::role('super admin')
+        ->whereNotNull('email')
+        ->pluck('email')
+        ->toArray();
+
+    if (!empty($superAdminEmails)) {
+        Mail::raw($mailBody, function ($message) use ($superAdminEmails) {
+            $message->to($superAdminEmails)
+                ->subject('New Demo Request Received');
+        });
     }
+
+    return redirect()
+        ->to(url()->previous() . '#contact')
+        ->with('success', 'Demo request successfully submit ho gayi.');
+}
 
     public function show(DemoRequest $demoRequest)
     {

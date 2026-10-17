@@ -37,68 +37,151 @@ class PlanController extends Controller
         return view('plans.index', compact('plans'));
     }
 
+    // public function create()
+    // {
+    //     $permissions = Permission::orderBy('name')->get();
+
+    //     return view('plans.create', compact('permissions'));
+    // }
+
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'name'                    => ['required', 'string', 'max:255'],
+    //         'subtitle'                => ['nullable', 'string', 'max:255'],
+    //         'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
+    //         'price'                   => ['required', 'numeric', 'min:0'],
+    //         'duration_days'           => ['required', 'integer', 'min:1'],
+    //         'description'             => ['nullable', 'string'],
+    //         'status'                  => ['nullable', 'boolean'],
+    //         'is_recommended'          => ['nullable', 'boolean'],
+    //         'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+    //         'permission_ids'          => ['nullable', 'array'],
+    //         'permission_ids.*'        => ['exists:permissions,id'],
+
+    //         'feature_titles'          => ['nullable', 'array'],
+    //         'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+    //         'feature_descriptions'    => ['nullable', 'array'],
+    //         'feature_descriptions.*'  => ['nullable', 'string'],
+    //         'feature_icons'           => ['nullable', 'array'],
+    //         'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+    //         'feature_sort_orders'     => ['nullable', 'array'],
+    //         'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+    //         'feature_is_active'       => ['nullable', 'array'],
+    //     ]);
+
+    //     $slug = !empty($validated['slug'])
+    //         ? Str::slug($validated['slug'])
+    //         : Str::slug($validated['name']);
+
+    //     $slug = $this->makeUniqueSlug($slug);
+
+    //     DB::transaction(function () use ($request, $validated, $slug) {
+    //         $plan = Plan::create([
+    //             'name'              => $validated['name'],
+    //             'subtitle'          => $validated['subtitle'] ?? null,
+    //             'slug'              => $slug,
+    //             'price'             => $validated['price'],
+    //             'duration_days'     => $validated['duration_days'],
+    //             'description'       => $validated['description'] ?? null,
+    //             'status'            => $request->boolean('status'),
+    //             'is_recommended'    => $request->boolean('is_recommended'),
+    //             'sort_order'        => $validated['sort_order'] ?? 0,
+    //         ]);
+
+    //         $plan->permissions()->sync($validated['permission_ids'] ?? []);
+
+    //         $this->syncPlanFeatures($plan, $request);
+    //     });
+
+    //     return redirect()
+    //         ->route('plans.index')
+    //         ->with('success', 'Plan created successfully.');
+    // }
+
+
     public function create()
-    {
-        $permissions = Permission::orderBy('name')->get();
+{
+    $permissions = Permission::orderBy('name')->get();
 
-        return view('plans.create', compact('permissions'));
-    }
+    return view('plans.create', compact('permissions'));
+}
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'                    => ['required', 'string', 'max:255'],
-            'subtitle'                => ['nullable', 'string', 'max:255'],
-            'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
-            'price'                   => ['required', 'numeric', 'min:0'],
-            'duration_days'           => ['required', 'integer', 'min:1'],
-            'description'             => ['nullable', 'string'],
-            'status'                  => ['nullable', 'boolean'],
-            'is_recommended'          => ['nullable', 'boolean'],
-            'sort_order'              => ['nullable', 'integer', 'min:0'],
 
-            'permission_ids'          => ['nullable', 'array'],
-            'permission_ids.*'        => ['exists:permissions,id'],
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'                    => ['required', 'string', 'max:255'],
+        'subtitle'                => ['nullable', 'string', 'max:255'],
+        'slug'                    => ['nullable', 'string', 'max:255', 'unique:plans,slug'],
+        'price'                   => ['required', 'numeric', 'min:0'],
+        'duration_days'           => ['required', 'integer', 'min:1'],
 
-            'feature_titles'          => ['nullable', 'array'],
-            'feature_titles.*'        => ['nullable', 'string', 'max:255'],
-            'feature_descriptions'    => ['nullable', 'array'],
-            'feature_descriptions.*'  => ['nullable', 'string'],
-            'feature_icons'           => ['nullable', 'array'],
-            'feature_icons.*'         => ['nullable', 'string', 'max:255'],
-            'feature_sort_orders'     => ['nullable', 'array'],
-            'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
-            'feature_is_active'       => ['nullable', 'array'],
+        // Plan limits
+        'number_of_office'        => ['required', 'integer', 'min:1'],
+        'number_of_user'          => ['required', 'integer', 'min:1'],
+
+        'description'             => ['nullable', 'string'],
+        'status'                  => ['nullable', 'boolean'],
+        'is_recommended'          => ['nullable', 'boolean'],
+        'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+        'permission_ids'          => ['nullable', 'array'],
+        'permission_ids.*'        => ['exists:permissions,id'],
+
+        'feature_titles'          => ['nullable', 'array'],
+        'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+
+        'feature_descriptions'    => ['nullable', 'array'],
+        'feature_descriptions.*'  => ['nullable', 'string'],
+
+        'feature_icons'           => ['nullable', 'array'],
+        'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+
+        'feature_sort_orders'     => ['nullable', 'array'],
+        'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+
+        'feature_is_active'       => ['nullable', 'array'],
+    ]);
+
+    $slug = !empty($validated['slug'])
+        ? Str::slug($validated['slug'])
+        : Str::slug($validated['name']);
+
+    $slug = $this->makeUniqueSlug($slug);
+
+    DB::transaction(function () use ($request, $validated, $slug) {
+
+        $plan = Plan::create([
+            'name'               => $validated['name'],
+            'subtitle'           => $validated['subtitle'] ?? null,
+            'slug'               => $slug,
+            'price'              => $validated['price'],
+            'duration_days'      => $validated['duration_days'],
+
+            // Plan limits
+            'number_of_office'   => $validated['number_of_office'],
+            'number_of_user'     => $validated['number_of_user'],
+
+            'description'        => $validated['description'] ?? null,
+            'status'             => $request->boolean('status'),
+            'is_recommended'     => $request->boolean('is_recommended'),
+            'sort_order'         => $validated['sort_order'] ?? 0,
         ]);
 
-        $slug = !empty($validated['slug'])
-            ? Str::slug($validated['slug'])
-            : Str::slug($validated['name']);
+        $plan->permissions()->sync(
+            $validated['permission_ids'] ?? []
+        );
 
-        $slug = $this->makeUniqueSlug($slug);
+        $this->syncPlanFeatures($plan, $request);
+    });
 
-        DB::transaction(function () use ($request, $validated, $slug) {
-            $plan = Plan::create([
-                'name'              => $validated['name'],
-                'subtitle'          => $validated['subtitle'] ?? null,
-                'slug'              => $slug,
-                'price'             => $validated['price'],
-                'duration_days'     => $validated['duration_days'],
-                'description'       => $validated['description'] ?? null,
-                'status'            => $request->boolean('status'),
-                'is_recommended'    => $request->boolean('is_recommended'),
-                'sort_order'        => $validated['sort_order'] ?? 0,
-            ]);
+    return redirect()
+        ->route('plans.index')
+        ->with('success', 'Plan created successfully.');
+}
 
-            $plan->permissions()->sync($validated['permission_ids'] ?? []);
-
-            $this->syncPlanFeatures($plan, $request);
-        });
-
-        return redirect()
-            ->route('plans.index')
-            ->with('success', 'Plan created successfully.');
-    }
 
     public function show($id)
     {
@@ -107,77 +190,180 @@ class PlanController extends Controller
         return view('plans.show', compact('plan'));
     }
 
+    // public function edit($id)
+    // {
+    //     $plan = Plan::with(['permissions', 'planFeatures'])->findOrFail($id);
+    //     $permissions = Permission::orderBy('name')->get();
+    //     $selectedPermissions = $plan->permissions->pluck('id')->toArray();
+
+    //     return view('plans.edit', compact('plan', 'permissions', 'selectedPermissions'));
+    // }
+
+    // public function update(Request $request, $id)
+    // {
+    //     $plan = Plan::with('planFeatures')->findOrFail($id);
+
+    //     $validated = $request->validate([
+    //         'name'                    => ['required', 'string', 'max:255'],
+    //         'subtitle'                => ['nullable', 'string', 'max:255'],
+    //         'slug'                    => [
+    //             'nullable',
+    //             'string',
+    //             'max:255',
+    //             Rule::unique('plans', 'slug')->ignore($plan->id),
+    //         ],
+    //         'price'                   => ['required', 'numeric', 'min:0'],
+    //         'duration_days'           => ['required', 'integer', 'min:1'],
+    //         'description'             => ['nullable', 'string'],
+    //         'status'                  => ['nullable', 'boolean'],
+    //         'is_recommended'          => ['nullable', 'boolean'],
+    //         'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+    //         'permission_ids'          => ['nullable', 'array'],
+    //         'permission_ids.*'        => ['exists:permissions,id'],
+
+    //         'feature_titles'          => ['nullable', 'array'],
+    //         'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+    //         'feature_descriptions'    => ['nullable', 'array'],
+    //         'feature_descriptions.*'  => ['nullable', 'string'],
+    //         'feature_icons'           => ['nullable', 'array'],
+    //         'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+    //         'feature_sort_orders'     => ['nullable', 'array'],
+    //         'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+    //         'feature_is_active'       => ['nullable', 'array'],
+    //     ]);
+
+    //     $slug = !empty($validated['slug'])
+    //         ? Str::slug($validated['slug'])
+    //         : Str::slug($validated['name']);
+
+    //     $slug = $this->makeUniqueSlug($slug, $plan->id);
+
+    //     DB::transaction(function () use ($request, $validated, $plan, $slug) {
+    //         $plan->update([
+    //             'name'              => $validated['name'],
+    //             'subtitle'          => $validated['subtitle'] ?? null,
+    //             'slug'              => $slug,
+    //             'price'             => $validated['price'],
+    //             'duration_days'     => $validated['duration_days'],
+    //             'description'       => $validated['description'] ?? null,
+    //             'status'            => $request->boolean('status'),
+    //             'is_recommended'    => $request->boolean('is_recommended'),
+    //             'sort_order'        => $validated['sort_order'] ?? 0,
+    //         ]);
+
+    //         $plan->permissions()->sync($validated['permission_ids'] ?? []);
+
+    //         $this->syncPlanFeatures($plan, $request);
+    //     });
+
+    //     return redirect()
+    //         ->route('plans.index')
+    //         ->with('success', 'Plan updated successfully.');
+    // }
+
     public function edit($id)
-    {
-        $plan = Plan::with(['permissions', 'planFeatures'])->findOrFail($id);
-        $permissions = Permission::orderBy('name')->get();
-        $selectedPermissions = $plan->permissions->pluck('id')->toArray();
+{
+    $plan = Plan::with([
+        'permissions',
+        'planFeatures',
+    ])->findOrFail($id);
 
-        return view('plans.edit', compact('plan', 'permissions', 'selectedPermissions'));
-    }
+    $permissions = Permission::orderBy('name')->get();
 
-    public function update(Request $request, $id)
-    {
-        $plan = Plan::with('planFeatures')->findOrFail($id);
+    $selectedPermissions = $plan->permissions
+        ->pluck('id')
+        ->toArray();
 
-        $validated = $request->validate([
-            'name'                    => ['required', 'string', 'max:255'],
-            'subtitle'                => ['nullable', 'string', 'max:255'],
-            'slug'                    => [
-                'nullable',
-                'string',
-                'max:255',
-                Rule::unique('plans', 'slug')->ignore($plan->id),
-            ],
-            'price'                   => ['required', 'numeric', 'min:0'],
-            'duration_days'           => ['required', 'integer', 'min:1'],
-            'description'             => ['nullable', 'string'],
-            'status'                  => ['nullable', 'boolean'],
-            'is_recommended'          => ['nullable', 'boolean'],
-            'sort_order'              => ['nullable', 'integer', 'min:0'],
+    return view('plans.edit', compact(
+        'plan',
+        'permissions',
+        'selectedPermissions'
+    ));
+}
 
-            'permission_ids'          => ['nullable', 'array'],
-            'permission_ids.*'        => ['exists:permissions,id'],
 
-            'feature_titles'          => ['nullable', 'array'],
-            'feature_titles.*'        => ['nullable', 'string', 'max:255'],
-            'feature_descriptions'    => ['nullable', 'array'],
-            'feature_descriptions.*'  => ['nullable', 'string'],
-            'feature_icons'           => ['nullable', 'array'],
-            'feature_icons.*'         => ['nullable', 'string', 'max:255'],
-            'feature_sort_orders'     => ['nullable', 'array'],
-            'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
-            'feature_is_active'       => ['nullable', 'array'],
+public function update(Request $request, $id)
+{
+    $plan = Plan::with('planFeatures')->findOrFail($id);
+
+    $validated = $request->validate([
+        'name'                    => ['required', 'string', 'max:255'],
+        'subtitle'                => ['nullable', 'string', 'max:255'],
+
+        'slug'                    => [
+            'nullable',
+            'string',
+            'max:255',
+            Rule::unique('plans', 'slug')->ignore($plan->id),
+        ],
+
+        'price'                   => ['required', 'numeric', 'min:0'],
+        'duration_days'           => ['required', 'integer', 'min:1'],
+
+        // Plan limits
+        'number_of_office'        => ['required', 'integer', 'min:1'],
+        'number_of_user'          => ['required', 'integer', 'min:1'],
+
+        'description'             => ['nullable', 'string'],
+        'status'                  => ['nullable', 'boolean'],
+        'is_recommended'          => ['nullable', 'boolean'],
+        'sort_order'              => ['nullable', 'integer', 'min:0'],
+
+        'permission_ids'          => ['nullable', 'array'],
+        'permission_ids.*'        => ['exists:permissions,id'],
+
+        'feature_titles'          => ['nullable', 'array'],
+        'feature_titles.*'        => ['nullable', 'string', 'max:255'],
+
+        'feature_descriptions'    => ['nullable', 'array'],
+        'feature_descriptions.*'  => ['nullable', 'string'],
+
+        'feature_icons'           => ['nullable', 'array'],
+        'feature_icons.*'         => ['nullable', 'string', 'max:255'],
+
+        'feature_sort_orders'     => ['nullable', 'array'],
+        'feature_sort_orders.*'   => ['nullable', 'integer', 'min:0'],
+
+        'feature_is_active'       => ['nullable', 'array'],
+    ]);
+
+    $slug = !empty($validated['slug'])
+        ? Str::slug($validated['slug'])
+        : Str::slug($validated['name']);
+
+    $slug = $this->makeUniqueSlug($slug, $plan->id);
+
+    DB::transaction(function () use ($request, $validated, $plan, $slug) {
+
+        $plan->update([
+            'name'               => $validated['name'],
+            'subtitle'           => $validated['subtitle'] ?? null,
+            'slug'               => $slug,
+            'price'              => $validated['price'],
+            'duration_days'      => $validated['duration_days'],
+
+            // Plan limits
+            'number_of_office'   => $validated['number_of_office'],
+            'number_of_user'     => $validated['number_of_user'],
+
+            'description'        => $validated['description'] ?? null,
+            'status'             => $request->boolean('status'),
+            'is_recommended'     => $request->boolean('is_recommended'),
+            'sort_order'         => $validated['sort_order'] ?? 0,
         ]);
 
-        $slug = !empty($validated['slug'])
-            ? Str::slug($validated['slug'])
-            : Str::slug($validated['name']);
+        $plan->permissions()->sync(
+            $validated['permission_ids'] ?? []
+        );
 
-        $slug = $this->makeUniqueSlug($slug, $plan->id);
+        $this->syncPlanFeatures($plan, $request);
+    });
 
-        DB::transaction(function () use ($request, $validated, $plan, $slug) {
-            $plan->update([
-                'name'              => $validated['name'],
-                'subtitle'          => $validated['subtitle'] ?? null,
-                'slug'              => $slug,
-                'price'             => $validated['price'],
-                'duration_days'     => $validated['duration_days'],
-                'description'       => $validated['description'] ?? null,
-                'status'            => $request->boolean('status'),
-                'is_recommended'    => $request->boolean('is_recommended'),
-                'sort_order'        => $validated['sort_order'] ?? 0,
-            ]);
-
-            $plan->permissions()->sync($validated['permission_ids'] ?? []);
-
-            $this->syncPlanFeatures($plan, $request);
-        });
-
-        return redirect()
-            ->route('plans.index')
-            ->with('success', 'Plan updated successfully.');
-    }
+    return redirect()
+        ->route('plans.index')
+        ->with('success', 'Plan updated successfully.');
+}
 
     public function destroy($id)
     {
@@ -220,50 +406,375 @@ class PlanController extends Controller
 
     public function choosenSave(Request $request)
     {
-        $request->validate([
-            'plan_id'     => ['required', 'exists:plans,id'],
-            'business_id' => ['nullable', 'exists:businesses,id'],
+        /*
+        |--------------------------------------------------------------------------
+        | Validation
+        |--------------------------------------------------------------------------
+        */
+
+        $validated = $request->validate([
+            'plan_id' => [
+                'required',
+                'integer',
+                'exists:plans,id',
+            ],
+
+            'business_id' => [
+                'nullable',
+                'integer',
+                'exists:businesses,id',
+            ],
         ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Logged-in user
+        |--------------------------------------------------------------------------
+        */
 
         $user = Auth::user();
 
-        $plan = Plan::with('permissions')->findOrFail($request->plan_id);
-
-        $businessId = $request->business_id
-            ?? $user->current_business_id
-            ?? session('active_business_id')
-            ?? $user->businesses()->pluck('businesses.id')->first();
-
-        if (!$businessId) {
-            return back()->with('error', 'Business not found. Please select business first.');
+        if (!$user) {
+            return redirect()
+                ->route('login')
+                ->with(
+                    'error',
+                    'Please login first.'
+                );
         }
 
-        DB::transaction(function () use ($businessId, $user, $plan) {
-            UserPlan::where('business_id', $businessId)
-                ->where('status', 1)
-                ->update([
-                    'status' => 0,
-                ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Get selected plan with web permissions
+        |--------------------------------------------------------------------------
+        */
 
-            UserPlan::create([
-                'business_id' => $businessId,
-                'user_id'     => $user->id,
-                'plan_id'     => $plan->id,
-                'start_date'  => Carbon::today(),
-                'expiry_date' => Carbon::today()->addDays((int) $plan->duration_days),
-                'status'      => 1,
+        $plan = Plan::query()
+            ->with([
+                'permissions' => function ($query) {
+                    $query->where(
+                        'guard_name',
+                        'web'
+                    );
+                },
+            ])
+            ->findOrFail(
+                (int) $validated['plan_id']
+            );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Resolve user's business
+        |--------------------------------------------------------------------------
+        |
+        | Priority:
+        |
+        | 1. Request business_id
+        | 2. User current_business_id
+        | 3. Session active_business_id
+        | 4. User ke attached businesses me se first business
+        |
+        | Business nahi milne par $business null rahega.
+        |
+        */
+
+        $requestedBusinessId =
+            $validated['business_id'] ?? null;
+
+        $businessId =
+            $requestedBusinessId
+            ?? $user->current_business_id
+            ?? session('active_business_id')
+            ?? $user->businesses()
+                ->value('businesses.id');
+
+        $business = null;
+
+        if ($businessId) {
+            /*
+            |--------------------------------------------------------------------------
+            | Ensure business belongs to logged-in user
+            |--------------------------------------------------------------------------
+            */
+
+            $business = $user->businesses()
+                ->where(
+                    'businesses.id',
+                    $businessId
+                )
+                ->first();
+
+            if (!$business) {
+                return redirect()
+                    ->route('plan.choose')
+                    ->with(
+                        'error',
+                        'Selected business is not associated with your account.'
+                    );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Check business profile status
+        |--------------------------------------------------------------------------
+        |
+        | Business nahi hai to profile incomplete maana jayega.
+        |
+        | Aapke purane records me dummy business ho sakta hai:
+        | "User Name's Business"
+        |
+        */
+
+        $temporaryBusinessName =
+            trim((string) $user->name)
+            . "'s Business";
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business Type
+        |--------------------------------------------------------------------------
+        | businesses.type canonical field hai.
+        | business_type_id sirf legacy fallback hai.
+        |--------------------------------------------------------------------------
+        */
+
+        $businessTypeId = $business
+            ? (
+                $business->type
+                ?? $business->business_type_id
+                ?? null
+            )
+            : null;
+
+        $businessProfileIncomplete =
+            !$business ||
+            blank($business->name) ||
+            blank($businessTypeId) ||
+            trim((string) $business->name)
+                === $temporaryBusinessName;
+
+        $createdUserPlan = null;
+
+        try {
+            DB::transaction(function () use (
+                $business,
+                $user,
+                $plan,
+                &$createdUserPlan
+            ) {
+                /*
+                |--------------------------------------------------------------------------
+                | Deactivate existing active plan
+                |--------------------------------------------------------------------------
+                |
+                | Business available hai:
+                |     us business ka existing active plan deactivate hoga.
+                |
+                | Business available nahi hai:
+                |     user ka business-less pending active plan deactivate hoga.
+                |
+                */
+
+                if ($business) {
+                    UserPlan::query()
+                        ->where(
+                            'business_id',
+                            $business->id
+                        )
+                        ->where('status', 1)
+                        ->update([
+                            'status' => 0,
+                        ]);
+                } else {
+                    UserPlan::query()
+                        ->where(
+                            'user_id',
+                            $user->id
+                        )
+                        ->whereNull('business_id')
+                        ->where('status', 1)
+                        ->update([
+                            'status' => 0,
+                        ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Create selected UserPlan
+                |--------------------------------------------------------------------------
+                |
+                | Business nahi hai to business_id null save hoga.
+                |
+                */
+
+                $createdUserPlan =
+                    UserPlan::query()->create([
+                        'business_id' =>
+                            $business?->id,
+
+                        'user_id' =>
+                            $user->id,
+
+                        'plan_id' =>
+                            $plan->id,
+
+                        'start_date' =>
+                            Carbon::today(),
+
+                        'expiry_date' =>
+                            Carbon::today()->addDays(
+                                (int) (
+                                    $plan->duration_days
+                                    ?? 30
+                                )
+                            ),
+
+                        'status' => 1,
+                    ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Set current business only when business exists
+                |--------------------------------------------------------------------------
+                |
+                | Business nahi hone par koi dummy business create nahi hoga aur
+                | current_business_id me fake value set nahi hogi.
+                |
+                */
+
+                if ($business) {
+                    $user->current_business_id =
+                        $business->id;
+
+                    $user->save();
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Assign selected plan permissions
+                |--------------------------------------------------------------------------
+                */
+
+                app(PermissionRegistrar::class)
+                    ->forgetCachedPermissions();
+
+                $permissions = $plan->permissions
+                    ->pluck('name')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->toArray();
+
+                /*
+                | Plan me jitni direct permissions hain, wahi user ko assign hongi.
+                */
+
+                $user->syncPermissions(
+                    $permissions
+                );
+
+                app(PermissionRegistrar::class)
+                    ->forgetCachedPermissions();
+            });
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'plan' =>
+                        app()->environment('local')
+                            ? $exception->getMessage()
+                            : 'Plan select nahi ho paya. Dobara try kijiye.',
+                ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Session handling
+        |--------------------------------------------------------------------------
+        */
+
+        if ($business) {
+            session([
+                'active_business_id' =>
+                    $business->id,
+
+                'active_business_name' =>
+                    $business->name,
             ]);
 
-            $permissions = $plan->permissions->pluck('name')->toArray();
+            session()->forget([
+                'pending_registration_plan_id',
+                'pending_user_plan_id',
+            ]);
+        } else {
+            /*
+            | Business profile save hone ke baad isi pending UserPlan me
+            | business_id attach kiya ja sakta hai.
+            */
 
-            $user->syncPermissions($permissions);
+            session()->forget([
+                'active_business_id',
+                'active_business_name',
+            ]);
 
-            app(PermissionRegistrar::class)->forgetCachedPermissions();
-        });
+            session([
+                'pending_registration_plan_id' =>
+                    $plan->id,
+
+                'pending_user_plan_id' =>
+                    $createdUserPlan?->id,
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business missing
+        |--------------------------------------------------------------------------
+        |
+        | UserPlan create ho chuka hai aur permissions assign ho chuki hain.
+        | Ab user ko business profile complete karne bhejenge.
+        |
+        */
+
+        if (!$business) {
+            return redirect()
+                ->route('business-profile.index')
+                ->with(
+                    'success',
+                    'Plan selected successfully and all plan permissions have been assigned. Please complete your business profile.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business profile incomplete
+        |--------------------------------------------------------------------------
+        */
+
+        if ($businessProfileIncomplete) {
+            return redirect()
+                ->route('business-profile.index')
+                ->with(
+                    'success',
+                    'Plan selected successfully and permissions assigned. Please complete your business profile.'
+                );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Business profile complete
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()
             ->route('bill-templates.choose')
-            ->with('success', 'Plan selected successfully and permissions assigned.');
+            ->with(
+                'success',
+                'Plan selected successfully and all plan permissions have been assigned.'
+            );
     }
 
     private function syncPlanFeatures(Plan $plan, Request $request): void

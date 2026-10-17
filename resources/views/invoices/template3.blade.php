@@ -1,316 +1,660 @@
-
 @php
-    $termsText = $inv->terms ?? null;
-
     /** @var \App\Models\Invoice $inv */
+
     $b = $biz ?? ($inv->business ?? null);
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
-    $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
-    $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
-    $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
-
-    $taxable      = (float)($subtotal ?? ($inv->subtotal ?? 0));
-    $tax_total_db = (float)($tax_total ?? ($inv->tax_amount ?? 0));
-
-    $cgst_db = (float)($cgst_amount ?? ($inv->cgst_amount ?? 0));
-    $sgst_db = (float)($sgst_amount ?? ($inv->sgst_amount ?? 0));
-    $igst_db = (float)($igst_amount ?? ($inv->igst_amount ?? 0));
-
-    $grand_db = (float)($grand_total ?? ($inv->total ?? 0));
-    $received_db = (float)($received ?? ($inv->received_amount ?? 0));
-
-    $pay = $payRow ?? null;
-    $cashAmt   = (float)($pay->cash_amount ?? 0);
-    $onlineAmt = (float)($pay->online_amount ?? 0);
-    $cardAmt   = (float)($pay->card_amount ?? 0);
-    $chequeAmt = (float)($pay->cheque_amount ?? 0);
-    $creditExcess = (float)($pay->credit_sales_excess_amount ?? 0);
-    $advanceAmt   = (float)($pay->advance_amount ?? 0);
-
-    $receivedTot = $inv->received_amount ?? 0;
-    $balanceNow = (float)($balance ?? ($inv->balance ?? max(0, $grand_db - $receivedTot)));
-
-    $taxPercent = (float)($inv->tax_percent ?? 0);
-    $isIGST = $igst_db > 0;
-
-    $finalTax = $isIGST
-        ? $igst_db
-        : (($cgst_db + $sgst_db) > 0 ? ($cgst_db + $sgst_db) : $tax_total_db);
-
-    $finalTax   = round((float)$finalTax, 2);
-    $finalTotal = round((float)$grand_db, 2);
-
-    function inr_words($amount)
-    {
-        $amount = (float)$amount;
-        $rupees = (int) floor($amount);
-        $paise  = (int) round(($amount - $rupees) * 100);
-
-        $ones = [
-            '', 'One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-            'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'
-        ];
-        $tens = ['', '', 'Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-
-        $twoDigits = function($n) use ($ones,$tens){
-            $n = (int)$n;
-            if ($n == 0) return '';
-            if ($n < 20) return $ones[$n];
-            return trim($tens[(int)($n/10)] . ' ' . $ones[$n%10]);
-        };
-
-        $parts = [];
-
-        if ($rupees >= 10000000) {
-            $cr = (int) floor($rupees / 10000000);
-            $parts[] = $twoDigits($cr) . ' Crore';
-            $rupees = $rupees % 10000000;
-        }
-        if ($rupees >= 100000) {
-            $lk = (int) floor($rupees / 100000);
-            $parts[] = $twoDigits($lk) . ' Lakh';
-            $rupees = $rupees % 100000;
-        }
-        if ($rupees >= 1000) {
-            $th = (int) floor($rupees / 1000);
-            $parts[] = $twoDigits($th) . ' Thousand';
-            $rupees = $rupees % 1000;
-        }
-        if ($rupees >= 100) {
-            $hd = (int) floor($rupees / 100);
-            $parts[] = $ones[$hd] . ' Hundred';
-            $rupees = $rupees % 100;
-        }
-        if ($rupees > 0) {
-            $parts[] = $twoDigits($rupees);
-        }
-
-        $words = trim(implode(' ', array_filter($parts)));
-        if ($words === '') $words = 'Zero';
-
-        $result = $words . ' Rupees';
-        if ($paise > 0) $result .= ' and ' . $twoDigits($paise) . ' Paise';
-        return $result;
+    if (!($items instanceof \Illuminate\Support\Collection)) {
+        $items = collect($items);
     }
 
+    $docType = strtolower((string)($type ?? ($inv->invoice_type ?? 'invoice')));
+
+    $gstEnabled = (bool)($b->gst_enabled ?? false);
+    $businessGstin = trim((string)($b->gstin ?? ''));
+
+    if (!$gstEnabled || $businessGstin === '') {
+        $docLabel = 'JEWELLERY INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
+
+    $fmt2 = fn($v) => number_format((float)$v, 2, '.', ',');
+    $fmt3 = fn($v) => number_format((float)$v, 3, '.', '');
+
+    $dateFmt = function ($date) {
+        if (!$date) return '';
+
+        try {
+            return \Carbon\Carbon::parse($date)->format('d-M-Y');
+        } catch (\Throwable $e) {
+            return (string)$date;
+        }
+    };
+
     $invoiceNo   = $inv->invoice_number ?? $inv->invoice_no ?? '-';
-    $invoiceDate = $inv->invoice_date ?? $inv->date ?? null;
+    $invoiceDate = $inv->invoice_date ?? $inv->date ?? $inv->created_at ?? null;
 
-    $gstin  = $c->gstin ?? $c->gst_number ?? $c->gst ?? '';
-    $pan    = $c->pan ?? $c->pan_number ?? '';
-    $pos    = $c->place_of_supply ?? $c->state ?? '';
-    $mobile = $c->mobile ?? $c->phone ?? $c->phone1 ?? '';
+    $taxable    = (float)($subtotal ?? ($inv->subtotal ?? 0));
+    $cgstAmount = (float)($cgst_amount ?? ($inv->cgst_amount ?? 0));
+    $sgstAmount = (float)($sgst_amount ?? ($inv->sgst_amount ?? 0));
+    $igstAmount = (float)($igst_amount ?? ($inv->igst_amount ?? 0));
+    $discount   = (float)($inv->discount_total ?? $inv->discount ?? 0);
+    $roundOff   = (float)($inv->round_off ?? 0);
+    $grandTotal = (float)($grand_total ?? ($inv->total ?? $inv->grand_total ?? 0));
 
-    $b_addr   = trim((string)($b->address ?? ''));
-    $b_city   = trim((string)($b->city ?? ''));
-    $b_pin    = trim((string)($b->pin ?? ''));
-    $b_state  = trim((string)($b->state ?? ''));
-    $b_mobile = $b->mobile ?? $b->phone ?? '';
-    $b_email  = $b->email ?? '';
-    $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
+    $received = (float)($received ?? ($inv->received_amount ?? 0));
+    $balance  = (float)($balance ?? ($inv->balance ?? max(0, $grandTotal - $received)));
 
-    $single = ($items->count() === 1);
+    $bName   = $b->name ?? $b->business_name ?? 'Your Jewellery Store';
+    $bAddr   = trim((string)($b->address ?? $b->business_address ?? ''));
+    $bCity   = trim((string)($b->city ?? ''));
+    $bState  = trim((string)($b->state ?? ''));
+    $bCode   = trim((string)($b->state_code ?? $b->gst_state_code ?? ''));
+    $bMobile = trim((string)($b->mobile ?? $b->phone ?? ''));
+    $bEmail  = trim((string)($b->email ?? ''));
+    $bGstin  = trim((string)($b->gstin ?? ($inv->gst_no ?? '')));
+
+    $cName   = $c->name ?? 'CASH';
+    $cAddr   = trim((string)($c->address ?? ''));
+    $cCity   = trim((string)($c->city ?? ''));
+    $cState  = trim((string)($c->state ?? ''));
+    $cCode   = trim((string)($c->state_code ?? $c->gst_state_code ?? ''));
+    $cMobile = trim((string)($c->mobile ?? $c->phone ?? ''));
+    $cGstin  = trim((string)($c->gstin ?? $c->gst_number ?? ''));
+
+    $paymentMethod = trim((string)($inv->payment_method ?? ''));
+
+    $cgstPercent = $taxable > 0 ? (($cgstAmount / $taxable) * 100) : 0;
+    $sgstPercent = $taxable > 0 ? (($sgstAmount / $taxable) * 100) : 0;
+    $igstPercent = $taxable > 0 ? (($igstAmount / $taxable) * 100) : 0;
+
+    if (!function_exists('simple_invoice_words')) {
+        function simple_invoice_words($amount)
+        {
+            $amount = round((float)$amount, 2);
+            $rupees = (int)floor($amount);
+            $paise  = (int)round(($amount - $rupees) * 100);
+
+            $ones = [
+                '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven',
+                'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen',
+                'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'
+            ];
+
+            $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+            $two = function ($n) use ($ones, $tens) {
+                $n = (int)$n;
+                if ($n < 20) return $ones[$n] ?? '';
+                return trim(($tens[(int)floor($n / 10)] ?? '') . ' ' . ($ones[$n % 10] ?? ''));
+            };
+
+            $three = function ($n) use ($ones, $two) {
+                $n = (int)$n;
+                $out = '';
+
+                if ($n >= 100) {
+                    $out .= ($ones[(int)floor($n / 100)] ?? '') . ' Hundred ';
+                    $n %= 100;
+                }
+
+                if ($n > 0) {
+                    $out .= $two($n);
+                }
+
+                return trim($out);
+            };
+
+            $parts = [];
+
+            if ($rupees >= 10000000) {
+                $v = (int)floor($rupees / 10000000);
+                $parts[] = $three($v) . ' Crore';
+                $rupees %= 10000000;
+            }
+
+            if ($rupees >= 100000) {
+                $v = (int)floor($rupees / 100000);
+                $parts[] = $three($v) . ' Lakh';
+                $rupees %= 100000;
+            }
+
+            if ($rupees >= 1000) {
+                $v = (int)floor($rupees / 1000);
+                $parts[] = $three($v) . ' Thousand';
+                $rupees %= 1000;
+            }
+
+            if ($rupees > 0) {
+                $parts[] = $three($rupees);
+            }
+
+            $words = trim(implode(' ', array_filter($parts)));
+            if ($words === '') $words = 'Zero';
+
+            $result = $words . ' Rupees';
+
+            if ($paise > 0) {
+                $result .= ' and ' . $two($paise) . ' Paise';
+            }
+
+            return $result . ' Only';
+        }
+    }
 @endphp
-
-{{-- @include('invoices.partials.shared_logic') --}}
 
 <!doctype html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>{{ ucfirst($type) }} {{ $invoiceNo }}</title>
+    <title>{{ $docLabel }} {{ $invoiceNo }}</title>
+
     <style>
-        *{ box-sizing:border-box; }
-        body{ font-family:"DejaVu Sans", sans-serif; font-size:12px; color:#1e293b; margin:0; padding:0; }
-        .page{ padding:18px; }
-        .hero{
-            background:#1d4ed8;
-            color:#fff;
-            padding:16px;
-            border-radius:0 0 14px 14px;
-            margin-bottom:14px;
+        body {
+            font-family: "DejaVu Sans", sans-serif;
+            font-size: 10px;
+            margin: 0;
+            padding: 12px;
+            color: #000;
+            background: #fff;
         }
-        table{ width:100%; border-collapse:collapse; }
-        .hero td{ vertical-align:top; }
-        .company{ font-size:24px; font-weight:700; }
-        .muted{ color:#475569; }
-        .card{
-            border:1px solid #cbd5e1;
-            border-radius:10px;
-            padding:12px;
-            margin-bottom:14px;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
         }
-        .cardTitle{
-            color:#1d4ed8;
-            font-size:13px;
-            font-weight:700;
-            margin-bottom:8px;
-            text-transform:uppercase;
+
+        .top-space {
+            height: 100px;
         }
-        .items th{
-            background:#eff6ff;
-            color:#1d4ed8;
-            border-bottom:2px solid #1d4ed8;
-            padding:8px;
-            text-align:left;
-            font-size:11px;
+
+        .title {
+            border: 1px solid #000;
+            text-align: center;
+            font-size: 17px;
+            font-weight: bold;
+            padding: 9px 4px;
         }
-        .items td{
-            border-bottom:1px solid #e2e8f0;
-            padding:8px;
-            vertical-align:top;
+
+        .meta-table td {
+            border: 1px solid #000;
+            vertical-align: top;
+            padding: 7px;
+            line-height: 15px;
         }
-        .text-right{ text-align:right; }
-        .descSmall{ font-size:10px; color:#64748b; }
-        .summary{
-            width:45%;
-            margin-left:auto;
-            margin-top:14px;
-            border:1px solid #cbd5e1;
-            border-radius:10px;
-            overflow:hidden;
+
+        .seller-buyer {
+            width: 50%;
         }
-        .summary td{ padding:8px 10px; border-bottom:1px solid #e2e8f0; }
-        .summary .total{ background:#1d4ed8; color:#fff; font-weight:700; }
-        .row:after{ content:""; display:block; clear:both; }
-        .colL{ float:left; width:54%; }
-        .colR{ float:right; width:42%; }
-        .sign img{ max-height:48px; }
+
+        .meta-small {
+            width: 25%;
+        }
+
+        .name {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .items-table {
+            margin-top: 10px;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 5px 4px;
+            vertical-align: top;
+            font-size: 9px;
+        }
+
+        .items-table th {
+            text-align: center;
+            font-weight: normal;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .small {
+            font-size: 8px;
+            line-height: 12px;
+        }
+
+        .words-box {
+            border: 1px solid #000;
+            border-top: 0;
+            padding: 7px;
+            font-size: 9px;
+            line-height: 14px;
+        }
+
+        .footer-table td {
+            border: 1px solid #000;
+            border-top: 0;
+            padding: 7px;
+            vertical-align: top;
+            font-size: 8px;
+            line-height: 13px;
+        }
+
+        .sign {
+            text-align: right;
+        }
+
+        .sign img {
+            max-width: 100px;
+            max-height: 35px;
+        }
+
+        .generated {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 7px;
+        }
     </style>
 </head>
+
 <body>
-<div class="page">
-    <div class="hero">
-        <table>
-            <tr>
-                <td style="width:70%;">
-                    <div class="company">{{ $b->name ?? 'Real Victory Groups' }}</div>
-                    <div>{{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif @if($b_pin) - {{ $b_pin }}@endif</div>
-                    <div style="margin-top:5px;">Mobile: {{ $b_mobile ?: '-' }} | GSTIN: {{ $b_gstin ?: '-' }}</div>
-                    <div>Email: {{ $b_email ?: '-' }}</div>
-                </td>
-                <td style="width:30%; text-align:right;">
-                    <div style="font-size:24px; font-weight:700;">{{ strtoupper($type) }}</div>
-                    <div>{{ $type != 'quotation' ? 'Invoice' : 'Quotation' }}</div>
-                    @if(!empty($logo))
-                        <img src="{{ $logo }}" alt="Logo" style="max-width:100px; max-height:70px; margin-top:8px;">
-                    @endif
-                </td>
-            </tr>
-        </table>
-    </div>
 
-    <div class="row">
-        <div class="colL">
-            <div class="card">
-                <div class="cardTitle">Bill To</div>
-                <strong>{{ strtoupper($c->name ?? '-') }}</strong><br>
-                {{ $c->address ?? '-' }}
-                @if(!empty($c->city)), {{ $c->city }}@endif
-                @if(!empty($c->state)), {{ $c->state }}@endif
-                @if(!empty($c->pin)) - {{ $c->pin }}@endif
-                <div style="margin-top:6px;">
-                    Mobile: {{ $mobile ?: '-' }}<br>
-                    GSTIN: {{ $gstin ?: '-' }}<br>
-                    PAN: {{ $pan ?: '-' }}<br>
-                    Place of Supply: {{ $pos ?: '-' }}
-                </div>
-            </div>
-        </div>
-        <div class="colR">
-            <div class="card">
-                <div class="cardTitle">Invoice Info</div>
-                <strong>No:</strong> {{ $invoiceNo }}<br>
-                <strong>Date:</strong> {{ $dmy($invoiceDate) }}<br>
-                <strong>Status:</strong> {{ ucfirst($type) }}
-            </div>
-        </div>
-    </div>
+<div class="top-space"></div>
 
-    <table class="items">
-        <thead>
-            <tr>
-                <th style="width:35%;">Item</th>
-                <th style="width:12%;">SAC</th>
-                <th style="width:10%;">Qty</th>
-                <th style="width:12%;" class="text-right">Rate</th>
-                <th style="width:12%;" class="text-right">Tax</th>
-                <th style="width:19%;" class="text-right">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($items as $it)
-                @php
-                    $name = $it->item->name ?? '';
-                    $desc = $it->description ?? '';
-                    $note = trim((string)($it->note ?? $it->extra_line ?? ''));
-                    $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
-                    $qty  = (float)($it->quantity ?? 1); $qty = $qty > 0 ? $qty : 1;
-                    $lineBase = (float)($it->line_base ?? 0);
-                    if ($lineBase <= 0) {
-                        $r = (float)($it->rate ?? 0);
-                        $lineBase = $r * $qty;
-                    }
-                    $showRate = $single ? $taxable : $lineBase;
-                    $lineTax = round((($it->rate ?? 0) * ($it->tax_percent ?? 0))/100, 2);
-                    $lineTotal = (float)($it->amount ?? $it->line_total ?? 0);
-                    if ($lineTotal <= 0) $lineTotal = $lineBase + $lineTax;
-                    if ($single && $lineTax <= 0) $lineTax = $finalTax;
-                    if ($single && $lineTotal <= 0) $lineTotal = $finalTotal;
-                @endphp
-                <tr>
-                    <td>
-                        <strong>{{ $name ?: '-' }}</strong>
-                        @if($desc)<div class="descSmall">{{ $desc }}</div>@endif
-                        @if($note)<div class="descSmall">{{ $note }}</div>@endif
-                    </td>
-                    <td>{{ $sac }}</td>
-                    <td>{{ $qty }} {{ $it->unit ?? '' }}</td>
-                    <td class="text-right">{{ $fmt2($showRate) }}</td>
-                    <td class="text-right">{{ $fmt2($lineTax) }}</td>
-                    <td class="text-right">{{ $fmt2($lineTotal) }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <table class="summary">
-        <tr><td>Taxable Amount</td><td class="text-right">₹ {{ $fmt2($taxable) }}</td></tr>
-        @if($isIGST)
-            <tr><td>IGST</td><td class="text-right">₹ {{ $fmt2($igst_db) }}</td></tr>
-        @else
-            <tr><td>CGST</td><td class="text-right">₹ {{ $fmt2($cgst_db) }}</td></tr>
-            <tr><td>SGST</td><td class="text-right">₹ {{ $fmt2($sgst_db) }}</td></tr>
-        @endif
-        <tr><td>Received</td><td class="text-right">₹ {{ $fmt2($receivedTot) }}</td></tr>
-        <tr><td>Balance</td><td class="text-right">₹ {{ $fmt2($balanceNow) }}</td></tr>
-        <tr class="total"><td>Total Amount</td><td class="text-right">₹ {{ $fmt2($finalTotal) }}</td></tr>
-    </table>
-
-    <div class="card" style="margin-top:14px;">
-        <div class="cardTitle">Amount in Words</div>
-        {{ inr_words($finalTotal) }}
-    </div>
-
-    <div class="row">
-        <div class="colL">
-            @if(!empty($inv->terms))
-                <div class="card">
-                    <div class="cardTitle">Terms & Conditions</div>
-                    {!! nl2br(e($inv->terms)) !!}
-                </div>
-            @endif
-        </div>
-        <div class="colR sign" style="text-align:right;">
-            @if(!empty($sign))
-                <img src="{{ $sign }}" alt="Signature"><br>
-            @endif
-            <strong>Authorised Signatory</strong><br>
-            {{ $b->name ?? 'Real Victory Groups' }}
-        </div>
-    </div>
+<div class="title">
+    {{ $docLabel }}
 </div>
+
+<table class="meta-table">
+    <tr>
+        <td class="seller-buyer">
+            <div class="name">{{ strtoupper($bName) }}</div>
+
+            @if($bAddr !== '')
+                {{ strtoupper($bAddr) }}<br>
+            @endif
+
+            @if($bCity !== '')
+                {{ strtoupper($bCity) }}<br>
+            @endif
+
+            @if($bGstin !== '')
+                GSTIN/UIN: {{ strtoupper($bGstin) }}<br>
+            @endif
+
+            @if($bState !== '')
+                State Name : {{ $bState }}
+                @if($bCode !== '')
+                    , Code : {{ $bCode }}
+                @endif
+                <br>
+            @endif
+
+            @if($bMobile !== '')
+                Mobile : {{ $bMobile }}<br>
+            @endif
+
+            @if($bEmail !== '')
+                E-Mail : {{ $bEmail }}
+            @endif
+        </td>
+
+        <td class="meta-small">
+            Invoice No.<br>
+            <strong>{{ $invoiceNo }}</strong><br><br>
+
+            Delivery Note<br><br>
+
+            Supplier's Ref.
+        </td>
+
+        <td class="meta-small">
+            Dated<br>
+            <strong>{{ $dateFmt($invoiceDate) }}</strong><br><br>
+
+            Mode/Terms of Payment<br>
+            @if($paymentMethod !== '')
+                <strong>{{ strtoupper($paymentMethod) }}</strong>
+            @endif
+            <br><br>
+
+            Other Reference(s)
+        </td>
+    </tr>
+
+    <tr>
+        <td class="seller-buyer">
+            Buyer<br>
+
+            <div class="name">{{ strtoupper($cName) }}</div>
+
+            @if($cAddr !== '')
+                {{ strtoupper($cAddr) }}<br>
+            @endif
+
+            @if($cCity !== '')
+                {{ strtoupper($cCity) }}<br>
+            @endif
+
+            @if($cMobile !== '')
+                MOB---{{ $cMobile }}<br>
+            @endif
+
+            @if($cGstin !== '')
+                GSTIN/UIN: {{ strtoupper($cGstin) }}<br>
+            @endif
+
+            @if($cState !== '')
+                State Name : {{ $cState }}
+                @if($cCode !== '')
+                    , Code : {{ $cCode }}
+                @endif
+            @endif
+        </td>
+
+        <td class="meta-small">
+            Buyer's Order No.<br><br>
+            Despatch Document No.<br><br>
+            Despatched through<br><br>
+            Terms of Delivery
+        </td>
+
+        <td class="meta-small">
+            Dated<br><br>
+            Delivery Note Date<br><br>
+            Destination
+        </td>
+    </tr>
+</table>
+
+<table class="items-table">
+    <thead>
+    <tr>
+        <th style="width:6%;">Sl<br>No.</th>
+        <th style="width:35%;">Description of Goods</th>
+        <th style="width:14%;">HSN/SAC</th>
+        <th style="width:13%;">Quantity</th>
+        <th style="width:11%;">Rate</th>
+        <th style="width:6%;">per</th>
+        <th style="width:15%;">Amount<br><span class="small">Without GST</span></th>
+    </tr>
+    </thead>
+
+    <tbody>
+    @forelse($items as $index => $it)
+        @php
+            $name = $it->item->name ?? $it->name ?? $it->item_name ?? 'Jewellery Product';
+            $desc = trim((string)($it->description ?? ''));
+            $hsn  = $it->hsn_code ?? $it->sac_code ?? $it->hsn ?? '-';
+
+            $purity = $it->purity ?? $it->karat ?? '';
+            $huid   = $it->huid ?? $it->hallmark_uid ?? '';
+
+            $goldWeight   = (float)($it->gold_wt ?? 0);
+            $silverWeight = (float)($it->silver_wt ?? 0);
+            $netWeight    = (float)($it->net_weight ?? $it->net_wt ?? 0);
+
+            if ($netWeight <= 0) {
+                $netWeight = $silverWeight > 0 ? $silverWeight : $goldWeight;
+            }
+
+            $qty = (float)($it->quantity ?? $it->qty ?? 1);
+            $quantity = $netWeight > 0 ? $netWeight : ($qty > 0 ? $qty : 1);
+
+            $goldRate   = (float)($it->gold_rate ?? 0);
+            $silverRate = (float)($it->silver_rate ?? 0);
+            $metalRate = (float)($it->metalRate ?? 0);
+            $normalRate = (float)($it->rate ?? $it->unit_price ?? $it->price ?? 0);
+
+            if ($silverWeight > 0 && $silverRate > 0 && $metalRate > 0) {
+                $rate = $silverRate;
+            } elseif ($goldRate > 0) {
+                $rate = $goldRate;
+            }elseif ($metalRate > 0) {
+                $rate = $metalRate;
+            }
+             else {
+                $rate = $normalRate;
+            }
+
+            $unit = strtoupper(trim((string)($it->unit ?? '')));
+            if ($unit === '') {
+                $unit = $netWeight > 0 ? 'GMS' : 'GMS';
+            }
+
+            /*
+             |------------------------------------------------------------------
+             | Item Amount WITHOUT GST
+             |------------------------------------------------------------------
+             | Priority:
+             | 1. If taxable/base amount is already stored, use it directly.
+             | 2. Otherwise, if tax amount is stored, remove tax from gross amount.
+             | 3. Otherwise, remove GST using item GST rate.
+             | 4. If no stored amount exists, use quantity x rate as base amount.
+             */
+
+            $grossLineTotal = (float)($it->amount ?? $it->line_total ?? $it->total ?? 0);
+
+            $itemTaxableAmount = (float)(
+                $it->taxable_amount
+                ?? $it->taxable_value
+                ?? $it->base_amount
+                ?? $it->amount_before_tax
+                ?? $it->subtotal
+                ?? 0
+            );
+
+            $itemTaxAmount = (float)(
+                $it->tax_amount
+                ?? $it->gst_amount
+                ?? 0
+            );
+
+            if ($itemTaxAmount <= 0) {
+                $itemTaxAmount =
+                    (float)($it->cgst_amount ?? 0)
+                    + (float)($it->sgst_amount ?? 0)
+                    + (float)($it->igst_amount ?? 0);
+            }
+
+            $itemGstPercent = (float)(
+                $it->tax_percent
+                ?? $it->tax_rate
+                ?? $it->gst_percent
+                ?? $it->gst_rate
+                ?? 0
+            );
+
+            // If item GST rate is not saved, use invoice GST percentage.
+            if ($itemGstPercent <= 0) {
+                $itemGstPercent = $igstPercent > 0
+                    ? $igstPercent
+                    : ($cgstPercent + $sgstPercent);
+            }
+
+            if ($itemTaxableAmount <= 0) {
+                if ($grossLineTotal > 0 && $itemTaxAmount > 0 && $grossLineTotal >= $itemTaxAmount) {
+                    // Example: 1030 inclusive - 30 GST = 1000 taxable amount.
+                    $itemTaxableAmount = $grossLineTotal - $itemTaxAmount;
+                } elseif ($grossLineTotal > 0 && $itemGstPercent > 0) {
+                    // Gross amount is GST inclusive, so reverse-calculate base amount.
+                    $itemTaxableAmount = $grossLineTotal / (1 + ($itemGstPercent / 100));
+                } elseif ($grossLineTotal > 0) {
+                    // No GST data available; treat stored amount as base amount.
+                    $itemTaxableAmount = $grossLineTotal;
+                } elseif ($quantity > 0 && $rate > 0) {
+                    // Rate is treated as GST-exclusive base rate.
+                    $itemTaxableAmount = $quantity * $rate;
+                }
+            }
+
+            $lineTotal = $itemTaxableAmount;
+        @endphp
+
+        <tr>
+            <td class="text-center">{{ $index + 1 }}</td>
+
+            <td>
+                <strong>{{ strtoupper($name) }}</strong>
+
+                @if($desc !== '')
+                    <div class="small">{{ $desc }}</div>
+                @endif
+
+                @if($purity !== '' || $huid !== '')
+                    <div class="small">
+                        @if($purity !== '')
+                            Purity: {{ $purity }}
+                        @endif
+
+                        @if($huid !== '')
+                            @if($purity !== '') | @endif
+                            HUID: {{ $huid }}
+                        @endif
+                    </div>
+                @endif
+            </td>
+
+            <td class="text-center">
+                {{ $hsn ?: '-' }}
+            </td>
+
+            <td class="text-right">
+                {{ $fmt3($quantity) }} {{ $unit }}
+            </td>
+
+            <td class="text-right">
+                {{ $rate > 0 ? $fmt2($rate) : '-' }}
+            </td>
+
+            <td class="text-center">
+                {{ $rate > 0 ? $unit : '' }}
+            </td>
+
+            <td class="text-right bold">
+                {{ $fmt2($lineTotal) }}
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="7" class="text-center">
+                No item found
+            </td>
+        </tr>
+    @endforelse
+
+    @if($taxable > 0)
+        <tr>
+            <td colspan="6" class="text-right bold">Taxable Amount</td>
+            <td class="text-right bold">{{ $fmt2($taxable) }}</td>
+        </tr>
+    @endif
+
+    @if($discount > 0)
+        <tr>
+            <td colspan="6" class="text-right bold">Discount</td>
+            <td class="text-right bold">-{{ $fmt2($discount) }}</td>
+        </tr>
+    @endif
+
+    @if($cgstAmount > 0)
+        <tr>
+            <td colspan="4" class="text-right bold">
+                CGST {{ $fmt2($cgstPercent) }} %
+            </td>
+            <td class="text-right">{{ $fmt2($cgstPercent) }}</td>
+            <td class="text-center">%</td>
+            <td class="text-right bold">{{ $fmt2($cgstAmount) }}</td>
+        </tr>
+    @endif
+
+    @if($sgstAmount > 0)
+        <tr>
+            <td colspan="4" class="text-right bold">
+                SGST {{ $fmt2($sgstPercent) }} %
+            </td>
+            <td class="text-right">{{ $fmt2($sgstPercent) }}</td>
+            <td class="text-center">%</td>
+            <td class="text-right bold">{{ $fmt2($sgstAmount) }}</td>
+        </tr>
+    @endif
+
+    @if($igstAmount > 0)
+        <tr>
+            <td colspan="4" class="text-right bold">
+                IGST {{ $fmt2($igstPercent) }} %
+            </td>
+            <td class="text-right">{{ $fmt2($igstPercent) }}</td>
+            <td class="text-center">%</td>
+            <td class="text-right bold">{{ $fmt2($igstAmount) }}</td>
+        </tr>
+    @endif
+
+    @if(abs($roundOff) > 0.0001)
+        <tr>
+            <td colspan="6" class="text-right bold">Round Off</td>
+            <td class="text-right bold">{{ $fmt2($roundOff) }}</td>
+        </tr>
+    @endif
+
+    <tr>
+        <td colspan="6" class="text-right bold">Total</td>
+        <td class="text-right bold">Rs. {{ $fmt2($grandTotal) }}</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="words-box">
+    Amount Chargeable (in words)<br>
+    <strong>
+        INR {{ $inv->amount_in_words ?: simple_invoice_words($grandTotal) }}
+    </strong>
+</div>
+
+<table class="footer-table">
+    <tr>
+        <td>
+            <strong>Declaration</strong><br>
+
+            @if(!empty($inv->terms))
+                {!! nl2br(e($inv->terms)) !!}
+            @elseif(!empty($inv->notes))
+                {!! nl2br(e($inv->notes)) !!}
+            @else
+                We declare that this invoice shows the actual price of the goods described
+                and that all particulars are true and correct.
+            @endif
+        </td>
+
+        <td class="sign">
+            <strong>for {{ strtoupper($bName) }}</strong><br><br>
+
+            @if(!empty($sign))
+                <img src="{{ $sign }}" alt=""><br>
+            @endif
+
+            <br>
+            <strong>Authorised Signatory</strong>
+        </td>
+    </tr>
+</table>
+
+<div class="generated">
+    This is a Computer Generated Invoice
+</div>
+
 </body>
 </html>

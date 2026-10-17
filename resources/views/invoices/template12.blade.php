@@ -6,6 +6,28 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+    /*
+    |--------------------------------------------------------------------------
+    | GST / Non-GST Document Label
+    |--------------------------------------------------------------------------
+    */
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -111,6 +133,14 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+
+    $invoiceSignature = $inv->signature ?? null;
+
+    $invoiceSignatureUrl = $invoiceSignature
+        ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+            ? $invoiceSignature
+            : public_path('storage/' . $invoiceSignature))
+        : null;
 @endphp
 
 {{-- @include('invoices.partials.shared_logic') --}}
@@ -119,7 +149,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ strtoupper($type) }} {{ $invoiceNo }}</title>
+<title>{{ $docLabel }} {{ $invoiceNo }}</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:"DejaVu Sans",sans-serif;font-size:12px;margin:0;padding:18px;background:#fff;color:#111}
@@ -153,7 +183,7 @@ table{width:100%;border-collapse:collapse}
                 {{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif<br>
                 {{ $b_mobile ?: '-' }} | {{ $b_email ?: '-' }}
             </td>
-            <td class="doc">{{ strtoupper($type) }}</td>
+            <td class="doc">{{ $docLabel }}</td>
         </tr>
     </table>
 
@@ -260,8 +290,8 @@ table{width:100%;border-collapse:collapse}
     @endif
 
     <div class="sign">
-        @if(!empty($sign))
-            <img src="{{ $sign }}"><br>
+        @if(!empty($invoiceSignatureUrl))
+            <img src="{{ $invoiceSignatureUrl }}" alt="Signature"><br>
         @endif
         <strong>Authorised Signatory</strong><br>
         {{ $b->name ?? '' }}

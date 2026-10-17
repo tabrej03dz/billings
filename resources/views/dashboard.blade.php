@@ -1,6 +1,7 @@
+
+
 <x-layouts.app :title="__('Dashboard')">
     <div x-data="{ showRatesForm: false }" class="flex flex-col gap-4">
-
         {{-- FLASH MESSAGE --}}
         @if(session('success'))
             <div class="p-3 rounded-lg bg-green-50 text-green-700 border border-green-200 text-sm">
@@ -66,6 +67,299 @@
             </div>
         </div>
 
+        {{-- GETTING STARTED GUIDE: ITEM / PURCHASE / INVOICE --}}
+        @php
+            $dashboardGuideStorageKey =
+                'dashboard-setup-guide-v2-user-'
+                . auth()->id()
+                . '-business-'
+                . ($bid ?? 'default');
+
+            $itemSetupDone = (int) ($dashboardItemCount ?? 0) > 0;
+            $purchaseSetupDone = (int) ($dashboardPurchaseCount ?? 0) > 0;
+            $invoiceSetupDone = (int) ($dashboardInvoiceCount ?? 0) > 0;
+
+            $completedSetupSteps = collect([
+                $itemSetupDone,
+                $purchaseSetupDone,
+                $invoiceSetupDone,
+            ])->filter()->count();
+
+            $dashboardSetupProgress = (int) round(
+                ($completedSetupSteps / 3) * 100
+            );
+
+            $purchaseCreateRoute = \Illuminate\Support\Facades\Route::has('purchases.create')
+                ? route('purchases.create')
+                : route('purchases.index');
+        @endphp
+
+        @if($showDashboardSuggestion ?? false)
+            <section
+                id="dashboardSetupGuide"
+                data-storage-key="{{ $dashboardGuideStorageKey }}"
+                class="relative overflow-hidden rounded-2xl border border-indigo-200
+                       bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-5 shadow-sm
+                       dark:border-indigo-900/70 dark:from-indigo-950/50
+                       dark:via-neutral-900 dark:to-cyan-950/30 sm:p-6"
+            >
+                <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40
+                            rounded-full bg-indigo-200/40 blur-3xl dark:bg-indigo-700/20"></div>
+
+                <div class="pointer-events-none absolute -bottom-16 left-1/3 h-36 w-36
+                            rounded-full bg-cyan-200/40 blur-3xl dark:bg-cyan-700/20"></div>
+
+                <button
+                    type="button"
+                    onclick="dismissDashboardSetupGuide()"
+                    aria-label="Close setup guide"
+                    title="Hide this guide"
+                    class="absolute right-3 top-3 z-20 inline-flex h-9 w-9 items-center
+                           justify-center rounded-full border border-gray-200 bg-white/90
+                           text-gray-500 shadow-sm transition hover:bg-white hover:text-red-600
+                           dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300
+                           dark:hover:text-red-400"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="relative z-10 pr-8">
+                    <div class="flex flex-col gap-5 lg:flex-row lg:items-start">
+                        <div class="flex h-14 w-14 shrink-0 items-center justify-center
+                                    rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+                            <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 12h6m-6 4h6M5 5h14v14H5z" />
+                            </svg>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
+                                    Complete your billing setup
+                                </h2>
+
+                                <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-[11px]
+                                             font-bold uppercase tracking-wide text-indigo-700
+                                             dark:bg-indigo-900/60 dark:text-indigo-300">
+                                    Getting Started
+                                </span>
+                            </div>
+
+                            <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-600 dark:text-neutral-300">
+                                Billing ko properly start karne ke liye item add karein, purchase entry karein
+                                aur customer ke liye tax invoice create karein.
+                            </p>
+
+                            <div class="mt-4">
+                                <div class="mb-1 flex items-center justify-between text-xs">
+                                    <span class="font-semibold text-gray-700 dark:text-neutral-300">
+                                        Setup progress
+                                    </span>
+
+                                    <span class="font-bold text-indigo-700 dark:text-indigo-300">
+                                        {{ $dashboardSetupProgress }}%
+                                    </span>
+                                </div>
+
+                                <div class="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-neutral-700">
+                                    <div class="h-full rounded-full bg-indigo-600 transition-all"
+                                         style="width: {{ $dashboardSetupProgress }}%"></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 grid gap-3 md:grid-cols-3">
+                                {{-- ITEM STEP --}}
+                                <article class="rounded-xl border p-4 shadow-sm
+                                    {{ $itemSetupDone
+                                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                        : 'border-indigo-100 bg-white/80 dark:border-indigo-900/50 dark:bg-neutral-800/70' }}">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                                                     text-sm font-bold
+                                            {{ $itemSetupDone
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-300' }}">
+                                            {{ $itemSetupDone ? '✓' : '1' }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Add Item</h3>
+                                            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
+                                                @if($isServiceBusiness ?? false)
+                                                    Service ka naam, rate aur tax details add karein.
+                                                @else
+                                                    Product ya service ka naam, rate, tax, barcode aur stock add karein.
+                                                @endif
+                                            </p>
+
+                                            <div class="mt-3">
+                                                @if($itemSetupDone)
+                                                    <span class="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5
+                                                                 text-xs font-semibold text-emerald-700
+                                                                 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        {{ $dashboardItemCount }} item added
+                                                    </span>
+                                                @else
+                                                    @can('create item')
+                                                        <a href="{{ route('items.create') }}"
+                                                           class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
+                                                                  text-xs font-semibold text-white hover:bg-indigo-700">
+                                                            + Add Item
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                {{-- PURCHASE STEP --}}
+                                <article class="rounded-xl border p-4 shadow-sm
+                                    {{ $purchaseSetupDone
+                                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                        : 'border-indigo-100 bg-white/80 dark:border-indigo-900/50 dark:bg-neutral-800/70' }}">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                                                     text-sm font-bold
+                                            {{ $purchaseSetupDone
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-300' }}">
+                                            {{ $purchaseSetupDone ? '✓' : '2' }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Add Purchase</h3>
+                                            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
+                                                Supplier purchase record karke stock aur cost price maintain karein.
+                                            </p>
+
+                                            <div class="mt-3">
+                                                @if($purchaseSetupDone)
+                                                    <span class="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5
+                                                                 text-xs font-semibold text-emerald-700
+                                                                 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        {{ $dashboardPurchaseCount }} purchase added
+                                                    </span>
+                                                @else
+                                                    @can('create purchase')
+                                                        <a href="{{ $purchaseCreateRoute }}"
+                                                           class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
+                                                                  text-xs font-semibold text-white hover:bg-indigo-700">
+                                                            + Add Purchase
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                {{-- INVOICE STEP --}}
+                                <article class="rounded-xl border p-4 shadow-sm
+                                    {{ $invoiceSetupDone
+                                        ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/30'
+                                        : 'border-indigo-100 bg-white/80 dark:border-indigo-900/50 dark:bg-neutral-800/70' }}">
+                                    <div class="flex items-start gap-3">
+                                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
+                                                     text-sm font-bold
+                                            {{ $invoiceSetupDone
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/70 dark:text-indigo-300' }}">
+                                            {{ $invoiceSetupDone ? '✓' : '3' }}
+                                        </span>
+
+                                        <div class="min-w-0 flex-1">
+                                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Create Invoice</h3>
+                                            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-neutral-400">
+                                                Customer select karke items add karein aur final tax invoice save karein.
+                                            </p>
+
+                                            <div class="mt-3">
+                                                @if($invoiceSetupDone)
+                                                    <span class="inline-flex rounded-lg bg-emerald-100 px-3 py-1.5
+                                                                 text-xs font-semibold text-emerald-700
+                                                                 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                        {{ $dashboardInvoiceCount }} invoice created
+                                                    </span>
+                                                @else
+                                                    @can('create invoice')
+                                                        <a href="{{ route('invoices.create', 'tax') }}"
+                                                           class="inline-flex rounded-lg bg-indigo-600 px-3 py-1.5
+                                                                  text-xs font-semibold text-white hover:bg-indigo-700">
+                                                            + Create Invoice
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+                            </div>
+
+                            <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3
+                                        text-sm text-amber-800 dark:border-amber-900/60
+                                        dark:bg-amber-950/30 dark:text-amber-300">
+                                <strong>Recommended order:</strong>
+                                Item → Purchase → Invoice. Purchase optional ho sakta hai, lekin stock aur profit
+                                calculation ke liye useful hai.
+                            </div>
+
+                            <div class="mt-4 flex flex-wrap items-center gap-3">
+                                @if(!$itemSetupDone)
+                                    @can('create item')
+                                        <a href="{{ route('items.create') }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600
+                                                  px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Start with Item
+                                        </a>
+                                    @endcan
+                                @elseif(!$purchaseSetupDone)
+                                    @can('create purchase')
+                                        <a href="{{ $purchaseCreateRoute }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600
+                                                  px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Add Purchase
+                                        </a>
+                                    @endcan
+                                @elseif(!$invoiceSetupDone)
+                                    @can('create invoice')
+                                        <a href="{{ route('invoices.create', 'tax') }}"
+                                           class="inline-flex items-center justify-center rounded-xl bg-indigo-600
+                                                  px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+                                            Create Invoice
+                                        </a>
+                                    @endcan
+                                @endif
+
+                                <button type="button" onclick="dismissDashboardSetupGuide()"
+                                        class="inline-flex items-center justify-center rounded-xl border
+                                               border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold
+                                               text-gray-700 transition hover:bg-gray-50
+                                               dark:border-neutral-600 dark:bg-neutral-800
+                                               dark:text-neutral-200 dark:hover:bg-neutral-700">
+                                    Hide guide
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div id="dashboardSetupGuideReopen" class="hidden justify-end">
+                <button type="button" onclick="showDashboardSetupGuide()"
+                        class="inline-flex items-center gap-2 rounded-xl border border-indigo-200
+                               bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700
+                               hover:bg-indigo-100 dark:border-indigo-900
+                               dark:bg-indigo-950/40 dark:text-indigo-300">
+                    Show Setup Guide
+                </button>
+            </div>
+        @endif
+
         {{-- FILTER BAR (Month / From-To) --}}
         <div class="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-xl p-4">
             <form method="GET" action="{{ url()->current() }}" class="flex flex-col lg:flex-row gap-3 lg:items-end">
@@ -124,6 +418,7 @@
 
         {{-- TOP SUMMARY CARDS: SMALL COMPACT BOXES --}}
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            
 
             {{-- Today Sales --}}
             <div class="bg-[#33D39A] dark:bg-[#E6F7F1] rounded-lg border border-grey-900 dark:border p-3 shadow-sm">
@@ -135,6 +430,26 @@
                 </p>
                 <p class="mt-1 text-[11px] text-[#F5F5F5] dark:text-gray-500">
                     {{ $todaySalesCount ?? 0 }} invoice(s)
+                </p>
+            </div>
+
+            {{-- Today Gross Profit --}}
+            <div class="bg-[#7C3AED] dark:bg-[#4C3B68] rounded-lg border border-purple-200 dark:border-purple-800 p-3 shadow-sm">
+                <p class="text-[10px] font-semibold text-white uppercase tracking-wider">
+                    Today Gross Profit
+                </p>
+
+                <p class="mt-1 text-lg font-bold text-white leading-none">
+                    ₹ {{ number_format($todayProfitAmount ?? 0, 2) }}
+                </p>
+
+                <p class="mt-1 text-[11px] text-purple-100">
+                    Sale: ₹ {{ number_format($todayItemSaleAmount ?? 0, 2) }}
+                </p>
+
+                <p class="mt-1 text-[11px] text-purple-100">
+                    Cost: ₹ {{ number_format($todayItemCostAmount ?? 0, 2) }}
+                    • Margin: {{ number_format($todayProfitPercent ?? 0, 2) }}%
                 </p>
             </div>
 
@@ -165,39 +480,365 @@
             </div>
 
             {{-- Pending Amount --}}
-            <div class="bg-[#bc5b6a] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-red-50 dark:text-red-50 uppercase tracking-wider">
-                    Pending Amount
-                </p>
-                <p class="mt-1 text-lg font-bold text-red-50 dark:text-red-50 leading-none">
-                    ₹ {{ number_format($totalPendingAmount ?? 0, 2) }}
-                </p>
-                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
-                    Today: ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
-                </p>
+            <div
+                class="overflow-hidden rounded-lg border border-gray-200
+                    bg-[#bc5b6a] shadow-sm
+                    dark:border-neutral-700 dark:bg-[#3C3433]"
+            >
+                {{-- All Pending Invoices --}}
+                <a
+                    href="{{ route('invoices.index', [
+                        'type'   => 'tax',
+                        'status' => 'pending',
+                    ]) }}"
+                    class="group block p-3 transition
+                        hover:bg-black/10
+                        focus:outline-none focus:ring-2
+                        focus:ring-inset focus:ring-white/70"
+                    title="View all pending invoices"
+                >
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p
+                                class="text-[10px] font-semibold uppercase
+                                    tracking-wider text-red-50"
+                            >
+                                Pending Amount
+                            </p>
+
+                            <p
+                                class="mt-1 text-lg font-bold leading-none
+                                    text-red-50"
+                            >
+                                ₹ {{ number_format($totalPendingAmount ?? 0, 2) }}
+                            </p>
+                        </div>
+
+                        <svg
+                            class="h-5 w-5 text-white/70 transition
+                                group-hover:translate-x-1
+                                group-hover:text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+                    </div>
+
+                    <p class="mt-2 text-[10px] font-medium text-white/80">
+                        Click to view all pending invoices
+                    </p>
+                </a>
+
+                {{-- Today's Pending Invoices --}}
+                <a
+                    href="{{ route('invoices.index', [
+                        'type'      => 'tax',
+                        'status'    => 'pending',
+                        'from_date' => now()->toDateString(),
+                        'to_date'   => now()->toDateString(),
+                    ]) }}"
+                    class="flex items-center justify-between border-t
+                        border-white/20 px-3 py-2
+                        text-[11px] text-gray-50 transition
+                        hover:bg-black/10"
+                    title="View today's pending invoices"
+                >
+                    <span>Today Pending</span>
+
+                    <span class="font-bold">
+                        ₹ {{ number_format($todayPendingAmount ?? 0, 2) }}
+                    </span>
+                </a>
             </div>
-            {{-- Items / Stock --}}
-            <div class="bg-[#ffd055] dark:bg-[#3C3433] rounded-lg border border-grey-200 dark:border  p-3 shadow-sm">
-                <p class="text-[10px] font-semibold text-gray-50 dark:text-gray-50 uppercase tracking-wider">
-                    Items / Stock
-                </p>
-                <p class="mt-1 text-lg font-bold text-gray-50 dark:text-white leading-none">
-                    {{ number_format($totalItems ?? 0) }} items
-                </p>
-                <p class="mt-1 text-[11px] text-gray-50 dark:text-gray-50">
-                    Stock: {{ number_format($totalStockQty ?? 0) }} •
-                    Low:
-                    <span class="font-semibold text-red-50 dark:text-[#E5533D] p-2">
-                {{ $lowStockCount ?? 0 }}
-            </span>
-                </p>
-            </div>
+            @unless($isServiceBusiness ?? false)
+                {{-- Items / Stock --}}
+                <div
+                    class="overflow-hidden rounded-lg border border-gray-200
+                           bg-[#ffd055] shadow-sm
+                           dark:border-neutral-700 dark:bg-[#3C3433]"
+                >
+                    {{-- All Items --}}
+                    <a
+                        href="{{ route('items.index') }}"
+                        class="group block p-3 transition hover:bg-black/10"
+                        title="View all items"
+                    >
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-white">
+                                    Items / Stock
+                                </p>
+
+                                <p class="mt-1 text-lg font-bold leading-none text-white">
+                                    {{ number_format($totalItems ?? 0) }} items
+                                </p>
+                            </div>
+
+                            <svg
+                                class="h-5 w-5 text-white/70 transition
+                                       group-hover:translate-x-1 group-hover:text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+                        </div>
+
+                        <p class="mt-2 text-[10px] text-white/80">
+                            Total quantity:
+                            <strong>{{ number_format($totalStockQty ?? 0) }}</strong>
+                        </p>
+                    </a>
+
+                    <div class="grid grid-cols-3 border-t border-white/20 text-center">
+                        <a
+                            href="{{ route('items.index', ['stock_status' => 'in_stock']) }}"
+                            class="border-r border-white/20 px-2 py-2
+                                   text-white transition hover:bg-black/10"
+                            title="View healthy-stock items"
+                        >
+                            <span class="block text-[10px] text-white/75">Healthy</span>
+                            <span class="mt-1 block text-sm font-bold">
+                                {{ number_format($healthyStockCount ?? 0) }}
+                            </span>
+                        </a>
+
+                        <a
+                            href="{{ route('items.index', ['stock_status' => 'low_stock']) }}"
+                            class="border-r border-white/20 px-2 py-2
+                                   text-white transition hover:bg-black/10"
+                            title="View low-stock items"
+                        >
+                            <span class="block text-[10px] text-white/75">Low</span>
+                            <span class="mt-1 block text-sm font-bold text-red-100">
+                                {{ number_format($lowStockCount ?? 0) }}
+                            </span>
+                        </a>
+
+                        <a
+                            href="{{ route('items.index', ['stock_status' => 'out_of_stock']) }}"
+                            class="px-2 py-2 text-white transition hover:bg-black/10"
+                            title="View out-of-stock items"
+                        >
+                            <span class="block text-[10px] text-white/75">Out</span>
+                            <span class="mt-1 block text-sm font-bold text-red-100">
+                                {{ number_format($outOfStockCount ?? 0) }}
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            @endunless
 
 
 
 
         </div>
 
+
+
+        {{-- DASHBOARD CHARTS --}}
+        <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            {{-- Sales vs Purchase Trend --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 xl:col-span-2 sm:p-5">
+                <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                            Sales & Purchase Trend
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Selected date range ka daily comparison
+                        </p>
+                    </div>
+
+                    <span class="mt-2 inline-flex w-fit rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 sm:mt-0">
+                        {{ count($chartLabels ?? []) }} day(s)
+                    </span>
+                </div>
+
+                <div class="relative h-[280px] w-full sm:h-[330px]">
+                    <canvas id="salesPurchaseTrendChart"></canvas>
+                </div>
+            </div>
+
+            {{-- Payment Collection Doughnut --}}
+            <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+                <div class="mb-4">
+                    <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                        Payment Collection
+                    </h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Collected amount vs pending amount
+                    </p>
+                </div>
+
+                <div class="relative mx-auto h-[220px] max-w-[280px]">
+                    <canvas id="paymentCollectionChart"></canvas>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3 text-center">
+                    <div class="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
+                        <p class="text-[11px] font-semibold uppercase text-emerald-700 dark:text-emerald-300">
+                            Collected
+                        </p>
+                        <p class="mt-1 text-sm font-bold text-emerald-800 dark:text-emerald-200">
+                            ₹ {{ number_format($filteredCollectedAmount ?? 0, 2) }}
+                        </p>
+                    </div>
+
+                    {{-- <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/30">
+                        <p class="text-[11px] font-semibold uppercase text-rose-700 dark:text-rose-300">
+                            Pending
+                        </p>
+                        <p class="mt-1 text-sm font-bold text-rose-800 dark:text-rose-200">
+                            ₹ {{ number_format($filteredPendingAmount ?? 0, 2) }}
+                        </p>
+                    </div> --}}
+
+                    <a
+                        href="{{ route('invoices.index', [
+                            'type'      => 'tax',
+                            'status'    => 'pending',
+                            'from_date' => isset($from)
+                                ? \Carbon\Carbon::parse($from)->toDateString()
+                                : null,
+                            'to_date'   => isset($to)
+                                ? \Carbon\Carbon::parse($to)->toDateString()
+                                : null,
+                        ]) }}"
+                        class="group rounded-xl bg-rose-50 p-3
+                            text-center transition
+                            hover:bg-rose-100 hover:shadow-sm
+                            dark:bg-rose-950/30
+                            dark:hover:bg-rose-950/50"
+                        title="View pending invoices for selected date range"
+                    >
+                        <div class="flex items-center justify-center gap-1">
+                            <p
+                                class="text-[11px] font-semibold uppercase
+                                    text-rose-700 dark:text-rose-300"
+                            >
+                                Pending
+                            </p>
+
+                            <svg
+                                class="h-3.5 w-3.5 text-rose-600 transition
+                                    group-hover:translate-x-0.5
+                                    dark:text-rose-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+                        </div>
+
+                        <p
+                            class="mt-1 text-sm font-bold
+                                text-rose-800 dark:text-rose-200"
+                        >
+                            ₹ {{ number_format($filteredPendingAmount ?? 0, 2) }}
+                        </p>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        @unless($isServiceBusiness ?? false)
+            {{-- STOCK STATUS CHART --}}
+            <section class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm
+                            dark:border-neutral-700 dark:bg-neutral-900 sm:p-5">
+                <div class="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 dark:text-white">
+                            Stock Status Overview
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Healthy, low-stock aur out-of-stock items
+                        </p>
+                    </div>
+
+                    <a
+                        href="{{ route('items.index') }}"
+                        class="mt-2 text-xs font-semibold text-indigo-600
+                               hover:underline dark:text-indigo-400 sm:mt-0"
+                    >
+                        Manage stock
+                    </a>
+                </div>
+
+                <div class="relative h-[240px] w-full sm:h-[280px]">
+                    <canvas id="stockStatusChart"></canvas>
+                </div>
+
+                <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                    <a
+                        href="{{ route('items.index', ['stock_status' => 'in_stock']) }}"
+                        class="rounded-xl bg-emerald-50 p-3 transition
+                               hover:bg-emerald-100 hover:shadow-sm
+                               dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50"
+                    >
+                        <p class="text-[11px] font-semibold uppercase
+                                  text-emerald-700 dark:text-emerald-300">
+                            Healthy
+                        </p>
+                        <p class="mt-1 text-sm font-bold
+                                  text-emerald-800 dark:text-emerald-200">
+                            {{ number_format($healthyStockCount ?? 0) }}
+                        </p>
+                    </a>
+
+                    <a
+                        href="{{ route('items.index', ['stock_status' => 'low_stock']) }}"
+                        class="rounded-xl bg-amber-50 p-3 transition
+                               hover:bg-amber-100 hover:shadow-sm
+                               dark:bg-amber-950/30 dark:hover:bg-amber-950/50"
+                    >
+                        <p class="text-[11px] font-semibold uppercase
+                                  text-amber-700 dark:text-amber-300">
+                            Low Stock
+                        </p>
+                        <p class="mt-1 text-sm font-bold
+                                  text-amber-800 dark:text-amber-200">
+                            {{ number_format($lowStockCount ?? 0) }}
+                        </p>
+                    </a>
+
+                    <a
+                        href="{{ route('items.index', ['stock_status' => 'out_of_stock']) }}"
+                        class="rounded-xl bg-rose-50 p-3 transition
+                               hover:bg-rose-100 hover:shadow-sm
+                               dark:bg-rose-950/30 dark:hover:bg-rose-950/50"
+                    >
+                        <p class="text-[11px] font-semibold uppercase
+                                  text-rose-700 dark:text-rose-300">
+                            Out of Stock
+                        </p>
+                        <p class="mt-1 text-sm font-bold
+                                  text-rose-800 dark:text-rose-200">
+                            {{ number_format($outOfStockCount ?? 0) }}
+                        </p>
+                    </a>
+                </div>
+            </section>
+        @endunless
 
         {{-- SECOND ROW: TOTALS + RATES + FORM BUTTON --}}
         <div class="flex flex-wrap gap-4">
@@ -226,7 +867,9 @@
                 </div>
             </div>
 
-            @if($business->type == 'jewellery')
+            {{-- @if($business->type == 'jewellery') --}}
+            @can('show metal rates')
+                
             {{-- Today Metal Rates + button --}}
             <div class="w-full xl:w-1/3">
                 <div class="bg-white dark:bg-neutral-900 rounded-xl border border-red-200 dark:border p-3 dark:border-neutral-700 shadow-sm px-4 py-3 h-full">
@@ -267,7 +910,9 @@
                     @endif
                 </div>
             </div>
-            @endif
+            {{-- @endif --}}
+            @endcan
+
         </div>
 
         {{-- METAL RATES FORM (toggle) --}}
@@ -559,15 +1204,16 @@
             </div>
         </div>
 
+        @unless($isServiceBusiness ?? false)
         {{-- LOW STOCK ITEMS --}}
         <div class="bg-[#BFE0E0] dark:bg-[#354A54] rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm">
             <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-neutral-700">
                 <h2 class="text-sm font-semibold text-gray-800 dark:text-gray-100">
                     Low Stock Items
                 </h2>
-                <a href="{{ route('items.index') }}"
+                <a href="{{ route('items.index', ['stock_status' => 'low_stock']) }}"
                    class="text-xs text-[#FA5252] dark:text-red-700 hover:underline">
-                    Manage items
+                    Manage low stock
                 </a>
             </div>
 
@@ -608,6 +1254,630 @@
                 </table>
             </div>
         </div>
+        @endunless
 
     </div>
+
+
+
+    @if($showDashboardSuggestion ?? false)
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                initializeDashboardSetupGuide();
+            });
+
+            function dashboardSetupGuideElements() {
+                return {
+                    guide: document.getElementById('dashboardSetupGuide'),
+                    reopen: document.getElementById('dashboardSetupGuideReopen')
+                };
+            }
+
+            function initializeDashboardSetupGuide() {
+                const elements = dashboardSetupGuideElements();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                const storageKey = elements.guide.dataset.storageKey;
+                const dismissed = storageKey
+                    ? localStorage.getItem(storageKey) === '1'
+                    : false;
+
+                if (dismissed) {
+                    elements.guide.classList.add('hidden');
+
+                    if (elements.reopen) {
+                        elements.reopen.classList.remove('hidden');
+                        elements.reopen.classList.add('flex');
+                    }
+
+                    return;
+                }
+
+                elements.guide.classList.remove('hidden');
+
+                if (elements.reopen) {
+                    elements.reopen.classList.add('hidden');
+                    elements.reopen.classList.remove('flex');
+                }
+            }
+
+            function dismissDashboardSetupGuide() {
+                const elements = dashboardSetupGuideElements();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                const storageKey = elements.guide.dataset.storageKey;
+
+                if (storageKey) {
+                    localStorage.setItem(storageKey, '1');
+                }
+
+                elements.guide.classList.add('hidden');
+
+                if (elements.reopen) {
+                    elements.reopen.classList.remove('hidden');
+                    elements.reopen.classList.add('flex');
+                }
+            }
+
+            function showDashboardSetupGuide() {
+                const elements = dashboardSetupGuideElements();
+
+                if (!elements.guide) {
+                    return;
+                }
+
+                const storageKey = elements.guide.dataset.storageKey;
+
+                if (storageKey) {
+                    localStorage.removeItem(storageKey);
+                }
+
+                elements.guide.classList.remove('hidden');
+
+                if (elements.reopen) {
+                    elements.reopen.classList.add('hidden');
+                    elements.reopen.classList.remove('flex');
+                }
+
+                elements.guide.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        </script>
+    @endif
+
+    {{-- CHART.JS: normal load + wire:navigate compatible --}}
+    <script>
+        (() => {
+            /*
+            |--------------------------------------------------------------------------
+            | Current page chart data
+            |--------------------------------------------------------------------------
+            | Har dashboard navigation par latest Blade data overwrite hogi.
+            */
+            window.dashboardChartData = {
+                labels: @json($chartLabels ?? []),
+                sales: @json($salesChartData ?? []),
+                purchases: @json($purchaseChartData ?? []),
+                payments: @json($paymentChartData ?? [0, 0]),
+                stock: @json($stockChartData ?? [0, 0, 0]),
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Load Chart.js only once
+            |--------------------------------------------------------------------------
+            | Pehli visit par CDN load hone ka wait kiya jayega.
+            | Isi race condition ki wajah se pehle click par charts blank the.
+            */
+            window.loadDashboardChartJs = window.loadDashboardChartJs || function () {
+                if (typeof window.Chart !== 'undefined') {
+                    return Promise.resolve(window.Chart);
+                }
+
+                if (window.dashboardChartJsPromise) {
+                    return window.dashboardChartJsPromise;
+                }
+
+                window.dashboardChartJsPromise = new Promise((resolve, reject) => {
+                    const existingScript = document.querySelector(
+                        'script[data-dashboard-chartjs="1"]'
+                    );
+
+                    if (existingScript) {
+                        existingScript.addEventListener('load', () => {
+                            if (typeof window.Chart !== 'undefined') {
+                                resolve(window.Chart);
+                            } else {
+                                reject(new Error('Chart.js loaded but Chart is unavailable.'));
+                            }
+                        }, { once: true });
+
+                        existingScript.addEventListener('error', () => {
+                            reject(new Error('Chart.js could not be loaded.'));
+                        }, { once: true });
+
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+
+                    script.src =
+                        'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
+
+                    script.async = true;
+                    script.dataset.dashboardChartjs = '1';
+
+                    script.onload = () => {
+                        if (typeof window.Chart !== 'undefined') {
+                            resolve(window.Chart);
+                        } else {
+                            reject(new Error('Chart.js loaded but Chart is unavailable.'));
+                        }
+                    };
+
+                    script.onerror = () => {
+                        /*
+                        | Failed promise ko reset kar dein, taaki next navigation
+                        | ya retry par library dobara load ho sake.
+                        */
+                        window.dashboardChartJsPromise = null;
+
+                        reject(new Error('Chart.js could not be loaded.'));
+                    };
+
+                    document.head.appendChild(script);
+                });
+
+                return window.dashboardChartJsPromise;
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Destroy old chart instances
+            |--------------------------------------------------------------------------
+            */
+            window.destroyDashboardCharts = function () {
+                if (typeof window.Chart === 'undefined') {
+                    return;
+                }
+
+                [
+                    'salesPurchaseTrendChart',
+                    'paymentCollectionChart',
+                    'stockStatusChart'
+                ].forEach((canvasId) => {
+                    const canvas = document.getElementById(canvasId);
+
+                    if (!canvas) {
+                        return;
+                    }
+
+                    const existingChart = window.Chart.getChart(canvas);
+
+                    if (existingChart) {
+                        existingChart.destroy();
+                    }
+                });
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Initialize charts
+            |--------------------------------------------------------------------------
+            */
+            window.initializeDashboardCharts = function () {
+                if (typeof window.Chart === 'undefined') {
+                    return;
+                }
+
+                const trendCanvas = document.getElementById(
+                    'salesPurchaseTrendChart'
+                );
+
+                const paymentCanvas = document.getElementById(
+                    'paymentCollectionChart'
+                );
+
+                const stockCanvas = document.getElementById(
+                    'stockStatusChart'
+                );
+
+                /*
+                | User dashboard page par nahi hai.
+                */
+                if (!trendCanvas && !paymentCanvas && !stockCanvas) {
+                    return;
+                }
+
+                window.destroyDashboardCharts();
+
+                const chartData = window.dashboardChartData || {
+                    labels: [],
+                    sales: [],
+                    purchases: [],
+                    payments: [0, 0],
+                    stock: [0, 0, 0],
+                };
+
+                const isDarkMode =
+                    document.documentElement.classList.contains('dark');
+
+                const textColor = isDarkMode
+                    ? '#d4d4d8'
+                    : '#4b5563';
+
+                const gridColor = isDarkMode
+                    ? 'rgba(115, 115, 115, 0.22)'
+                    : 'rgba(209, 213, 219, 0.55)';
+
+                window.Chart.defaults.color = textColor;
+
+                window.Chart.defaults.font.family =
+                    'Inter, ui-sans-serif, system-ui, sans-serif';
+
+                const currencyFormatter = (value) => {
+                    return '₹ ' + new Intl.NumberFormat('en-IN', {
+                        maximumFractionDigits: 2
+                    }).format(Number(value || 0));
+                };
+
+                const commonTooltip = {
+                    backgroundColor: isDarkMode
+                        ? '#171717'
+                        : '#111827',
+                    padding: 12,
+                    cornerRadius: 10,
+                    titleSpacing: 6,
+                    bodySpacing: 6
+                };
+
+                /*
+                |--------------------------------------------------------------------------
+                | Sales and purchase trend
+                |--------------------------------------------------------------------------
+                */
+                if (trendCanvas) {
+                    new window.Chart(trendCanvas, {
+                        type: 'line',
+
+                        data: {
+                            labels: chartData.labels,
+
+                            datasets: [
+                                {
+                                    label: 'Sales',
+                                    data: chartData.sales,
+                                    borderColor: '#4f46e5',
+                                    backgroundColor: 'rgba(79, 70, 229, 0.12)',
+                                    fill: true,
+                                    tension: 0.35,
+                                    borderWidth: 2.5,
+                                    pointRadius: 3,
+                                    pointHoverRadius: 5
+                                },
+                                {
+                                    label: 'Purchases',
+                                    data: chartData.purchases,
+                                    borderColor: '#f59e0b',
+                                    backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                                    fill: true,
+                                    tension: 0.35,
+                                    borderWidth: 2.5,
+                                    pointRadius: 3,
+                                    pointHoverRadius: 5
+                                }
+                            ]
+                        },
+
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    align: 'end',
+
+                                    labels: {
+                                        usePointStyle: true,
+                                        boxWidth: 8,
+                                        padding: 18
+                                    }
+                                },
+
+                                tooltip: {
+                                    ...commonTooltip,
+
+                                    callbacks: {
+                                        label(context) {
+                                            return context.dataset.label
+                                                + ': '
+                                                + currencyFormatter(context.raw);
+                                        }
+                                    }
+                                }
+                            },
+
+                            scales: {
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+
+                                    ticks: {
+                                        maxRotation: 0,
+                                        autoSkip: true,
+                                        maxTicksLimit: 10
+                                    }
+                                },
+
+                                y: {
+                                    beginAtZero: true,
+
+                                    grid: {
+                                        color: gridColor
+                                    },
+
+                                    ticks: {
+                                        callback(value) {
+                                            return currencyFormatter(value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Payment collection
+                |--------------------------------------------------------------------------
+                */
+                if (paymentCanvas) {
+                    const paymentValues = (
+                        chartData.payments || [0, 0]
+                    ).map(Number);
+
+                    const hasPaymentData = paymentValues.some(
+                        (value) => value > 0
+                    );
+
+                    new window.Chart(paymentCanvas, {
+                        type: 'doughnut',
+
+                        data: {
+                            labels: hasPaymentData
+                                ? ['Collected', 'Pending']
+                                : ['No data'],
+
+                            datasets: [
+                                {
+                                    data: hasPaymentData
+                                        ? paymentValues
+                                        : [1],
+
+                                    backgroundColor: hasPaymentData
+                                        ? ['#10b981', '#f43f5e']
+                                        : ['#d1d5db'],
+
+                                    borderWidth: 0,
+                                    hoverOffset: 7
+                                }
+                            ]
+                        },
+
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '68%',
+
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 18
+                                    }
+                                },
+
+                                tooltip: {
+                                    ...commonTooltip,
+
+                                    callbacks: {
+                                        label(context) {
+                                            if (!hasPaymentData) {
+                                                return 'No payment data';
+                                            }
+
+                                            return context.label
+                                                + ': '
+                                                + currencyFormatter(context.raw);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Stock status
+                |--------------------------------------------------------------------------
+                */
+                if (stockCanvas) {
+                    new window.Chart(stockCanvas, {
+                        type: 'bar',
+
+                        data: {
+                            labels: [
+                                'Healthy Stock',
+                                'Low Stock',
+                                'Out of Stock'
+                            ],
+
+                            datasets: [
+                                {
+                                    label: 'Items',
+                                    data: chartData.stock || [0, 0, 0],
+                                    backgroundColor: [
+                                        '#22c55e',
+                                        '#f59e0b',
+                                        '#ef4444'
+                                    ],
+                                    borderRadius: 10,
+                                    borderSkipped: false,
+                                    maxBarThickness: 72
+                                }
+                            ]
+                        },
+
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+
+                                tooltip: {
+                                    ...commonTooltip,
+
+                                    callbacks: {
+                                        label(context) {
+                                            return context.raw + ' item(s)';
+                                        }
+                                    }
+                                }
+                            },
+
+                            scales: {
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+
+                                y: {
+                                    beginAtZero: true,
+
+                                    ticks: {
+                                        precision: 0
+                                    },
+
+                                    grid: {
+                                        color: gridColor
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Safe boot with retry after DOM replacement
+            |--------------------------------------------------------------------------
+            */
+            window.bootDashboardCharts = function () {
+                const dashboardCanvasExists =
+                    document.getElementById('salesPurchaseTrendChart')
+                    || document.getElementById('paymentCollectionChart')
+                    || document.getElementById('stockStatusChart');
+
+                if (!dashboardCanvasExists) {
+                    return;
+                }
+
+                window.loadDashboardChartJs()
+                    .then(() => {
+                        /*
+                        | Livewire/Flux ko DOM paint aur layout complete karne dein.
+                        */
+                        window.requestAnimationFrame(() => {
+                            window.requestAnimationFrame(() => {
+                                window.initializeDashboardCharts();
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error(
+                            'Dashboard chart initialization failed:',
+                            error
+                        );
+                    });
+            };
+
+            /*
+            |--------------------------------------------------------------------------
+            | Remove previously registered global listeners
+            |--------------------------------------------------------------------------
+            | Page script wire:navigate par dobara evaluate ho sakti hai.
+            */
+            if (window.dashboardNavigatedHandler) {
+                document.removeEventListener(
+                    'livewire:navigated',
+                    window.dashboardNavigatedHandler
+                );
+            }
+
+            if (window.dashboardNavigatingHandler) {
+                document.removeEventListener(
+                    'livewire:navigating',
+                    window.dashboardNavigatingHandler
+                );
+            }
+
+            window.dashboardNavigatedHandler = () => {
+                window.bootDashboardCharts();
+            };
+
+            window.dashboardNavigatingHandler = () => {
+                window.destroyDashboardCharts();
+            };
+
+            document.addEventListener(
+                'livewire:navigated',
+                window.dashboardNavigatedHandler
+            );
+
+            document.addEventListener(
+                'livewire:navigating',
+                window.dashboardNavigatingHandler
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | First normal page load and first wire:navigate visit
+            |--------------------------------------------------------------------------
+            */
+            if (document.readyState === 'loading') {
+                document.addEventListener(
+                    'DOMContentLoaded',
+                    window.bootDashboardCharts,
+                    { once: true }
+                );
+            } else {
+                window.bootDashboardCharts();
+            }
+        })();
+    </script>
+
 </x-layouts.app>

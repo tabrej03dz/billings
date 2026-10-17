@@ -6,6 +6,28 @@
     $c = $client ?? ($inv->client ?? null);
     $items = $items ?? collect();
 
+    /*
+    |--------------------------------------------------------------------------
+    | GST / Non-GST Document Label
+    |--------------------------------------------------------------------------
+    */
+    $docType = strtolower((string)($type ?? 'invoice'));
+
+    $gstEnabled = (bool) ($b->gst_enabled ?? false);
+    $businessGstin = trim((string) ($b->gstin ?? ''));
+
+    $isGstBusiness = $gstEnabled && $businessGstin !== '';
+
+    if (!$isGstBusiness) {
+        $docLabel = 'INVOICE';
+    } else {
+        $docLabel = match ($docType) {
+            'quotation' => 'QUOTATION',
+            'proforma'  => 'PROFORMA INVOICE',
+            default     => 'TAX INVOICE',
+        };
+    }
+
     $fmt0 = fn($v) => number_format((float)$v, 0, '.', '');
     $fmt2 = fn($v) => number_format((float)$v, 2, '.', '');
     $dmy  = fn($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '';
@@ -111,13 +133,20 @@
     $b_gstin  = $b->gstin ?? ($inv->gst_no ?? '');
 
     $single = ($items->count() === 1);
+    $invoiceSignature = $inv->signature ?? null;
+
+$invoiceSignatureUrl = $invoiceSignature
+    ? (\Illuminate\Support\Str::startsWith($invoiceSignature, ['http://', 'https://'])
+        ? $invoiceSignature
+        : public_path('storage/' . $invoiceSignature))
+    : null;
 @endphp
 
 <!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ strtoupper($type) }} {{ $invoiceNo }}</title>
+<title>{{ $docLabel }} {{ $invoiceNo }}</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:"DejaVu Sans",sans-serif;font-size:12px;margin:0;padding:18px;background:#fff;color:#111}
@@ -152,7 +181,10 @@ table{width:100%;border-collapse:collapse}
         {{ $b_addr }}@if($b_city), {{ $b_city }}@endif @if($b_state), {{ $b_state }}@endif<br>
         Mobile: {{ $b_mobile ?: '-' }} | Email: {{ $b_email ?: '-' }} | GSTIN: {{ $b_gstin ?: '-' }}<br>
 
-        <div class="docTitle">{{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}</div>
+        {{-- <div class="docTitle">{{ strtoupper($type) }} {{ $type != 'quotation' ? 'INVOICE' : '' }}</div> --}}
+    <div class="docTitle">
+        {{ $docLabel }}
+    </div>
     </div>
 
     <table class="meta">
@@ -184,6 +216,7 @@ table{width:100%;border-collapse:collapse}
     <table class="items" style="margin-top:10px;">
         <thead>
         <tr>
+               <th style="width:70px;">Image</th>
             <th>Particulars</th>
             <th>SAC</th>
             <th>Qty</th>
@@ -196,6 +229,20 @@ table{width:100%;border-collapse:collapse}
         @foreach($items as $it)
             @php
                 $name = $it->item->name ?? '';
+
+
+                $itemImage = null;
+
+                if (!empty($it->item?->image)) {
+                    $imagePath = \Illuminate\Support\Facades\Storage::disk('public')
+                        ->path($it->item->image);
+
+                    if (is_file($imagePath)) {
+                        $itemImage = $imagePath;
+                    }
+                }
+
+
                 $desc = $it->description ?? '';
                 $note = trim((string)($it->note ?? $it->extra_line ?? ''));
                 $sac  = $it->sac_code ?? $it->hsn_code ?? $it->sac ?? '';
@@ -217,6 +264,18 @@ table{width:100%;border-collapse:collapse}
                 if ($single && $lineTotal <= 0) $lineTotal = $finalTotal;
             @endphp
             <tr>
+                 <td style="width:70px;text-align:center;vertical-align:middle;">
+                    @if($itemImage)
+                        <img
+                            src="{{ $itemImage }}"
+                            style="width:55px;height:55px;object-fit:contain;"
+                        >
+                    @else
+                        <span style="font-size:9px;color:#999;">
+                            No Image
+                        </span>
+                    @endif
+                </td>
                 <td>
                     <strong>{{ $name ?: '-' }}</strong>
                     @if($desc)<div class="desc">{{ $desc }}</div>@endif
@@ -265,8 +324,8 @@ table{width:100%;border-collapse:collapse}
         <tr>
             <td>Customer Signature</td>
             <td class="sign">
-                @if(!empty($sign))
-                    <img src="{{ $sign }}"><br>
+                @if(!empty($invoiceSignatureUrl))
+                    <img src="{{ $invoiceSignatureUrl }}" alt="Signature"><br>
                 @endif
                 <strong>Authorised Signatory</strong><br>
                 {{ $b->name ?? '' }}
