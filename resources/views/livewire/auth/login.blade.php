@@ -23,7 +23,7 @@ new #[Layout('components.layouts.auth')] class extends Component {
     /**
      * Handle an incoming authentication request.
      */
-    public function login(): void
+    public function loginreal(): void
     {
         $this->validate();
 
@@ -88,6 +88,66 @@ new #[Layout('components.layouts.auth')] class extends Component {
 
 
     }
+
+
+
+
+
+
+
+
+/**
+ * Handle an incoming authentication request.
+ */
+public function login(): void
+{
+    $this->validate();
+
+    // Check rate limiting
+    $this->ensureIsNotRateLimited();
+
+    // Find user by email
+    $user = \App\Models\User::where('email', $this->email)->first();
+
+    // Verify email and password
+    if (
+        ! $user ||
+        ! \Illuminate\Support\Facades\Hash::check(
+            $this->password,
+            $user->password
+        )
+    ) {
+        RateLimiter::hit($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => __('auth.failed'),
+        ]);
+    }
+
+    // Clear rate limiter after successful authentication
+    RateLimiter::clear($this->throttleKey());
+
+    // Direct login without OTP for testing
+    Auth::login($user, $this->remember);
+
+    // Regenerate session for security
+    Session::regenerate();
+
+    // Redirect to dashboard
+    $this->redirectIntended(
+        default: route('dashboard', absolute: false),
+        navigate: true
+    );
+}
+
+
+
+
+
+
+
+
+
 
     /**
      * Ensure the authentication request is not rate limited.
