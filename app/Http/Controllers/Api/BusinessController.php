@@ -233,23 +233,29 @@ class BusinessController extends Controller
 
             'logo' => [
                 'nullable',
+                'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:2048',
+                'dimensions:max_width=2000,max_height=2000',
             ],
 
             'signature' => [
                 'nullable',
+                'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:2048',
+                'max:1024',
+                'dimensions:max_width=1500,max_height=800',
             ],
 
             'letter_head' => [
                 'nullable',
+                'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:4096',
+                'dimensions:max_width=3508,max_height=4961',
             ],
         ]);
 
@@ -761,25 +767,31 @@ class BusinessController extends Controller
             'logo' => [
                 'sometimes',
                 'nullable',
+                'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:2048',
+                'dimensions:max_width=2000,max_height=2000',
             ],
 
             'signature' => [
                 'sometimes',
                 'nullable',
+                'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
-                'max:2048',
+                'max:1024',
+                'dimensions:max_width=1500,max_height=800',
             ],
 
             'letter_head' => [
                 'sometimes',
                 'nullable',
+                'file',
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:4096',
+                'dimensions:max_width=3508,max_height=4961',
             ],
         ]);
 
