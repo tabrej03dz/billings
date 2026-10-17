@@ -255,11 +255,18 @@
 
         .sign {
             text-align: right;
+            width: 35%;
         }
 
+        /*
+         | Signature image size (Dompdf friendly).
+         | Dompdf does not reliably honour max-width / max-height,
+         | so a fixed height is used. Width is auto-scaled
+         | proportionally, keeping the signature aspect ratio.
+         */
         .sign img {
-            max-width: 100px;
-            max-height: 35px;
+            height: 40px;
+            width: auto;
         }
 
         .generated {
@@ -643,7 +650,7 @@
             <strong>for {{ strtoupper($bName) }}</strong><br><br>
 
             @if(!empty($sign))
-                <img src="{{ $sign }}" alt=""><br>
+                <img src="{{ $sign }}" height="40" alt=""><br>
             @endif
 
             <br>
