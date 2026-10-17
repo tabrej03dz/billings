@@ -75,105 +75,338 @@ new #[Layout('components.layouts.auth')] class extends Component
     |--------------------------------------------------------------------------
     */
 
-    public function sendOtp(): void
-    {
-        $this->validate([
-            'phone' => ['required', 'digits:10'],
+    // public function sendOtp(): void
+    // {
+    //     $this->validate([
+    //         'phone' => ['required', 'digits:10'],
+    //     ]);
+
+    //     $this->ensureIsNotRateLimited();
+
+    //     $user = \App\Models\User::where('phone', $this->phone)->first();
+
+    //     if (! $user) {
+    //         RateLimiter::hit($this->throttleKey());
+
+    //         throw ValidationException::withMessages([
+    //             'phone' => 'This phone number is not registered.',
+    //         ]);
+    //     }
+
+    //     $otp = rand(100000, 999999);
+
+    //     session([
+    //         'login_otp_user_id' => $user->id,
+    //         'login_otp_remember' => $this->remember,
+    //         'login_otp' => $otp,
+    //         'login_otp_expires_at' => now()->addMinutes(5)->timestamp,
+    //     ]);
+
+    //     $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+    //     Http::get(env('KUTILITY_URL'), [
+    //         'key' => env('KUTILITY_KEY'),
+    //         'campaign' => '12754',
+    //         'routeid' => '7',
+    //         'type' => 'text',
+    //         'contacts' => $this->phone,
+    //         'senderid' => 'RVGRPS',
+    //         'msg' => $msg,
+    //         'template_id' => '1707178057481157648',
+    //         'pe_id' => '1701164032595209992',
+    //     ]);
+
+    //     RateLimiter::clear($this->throttleKey());
+
+    //     $this->otpSent = true;
+
+    //     session()->flash('status', 'OTP sent successfully.');
+    // }
+
+
+    
+public function sendOtp(): void
+{
+    $this->validate([
+        'phone' => ['required', 'digits:10'],
+    ]);
+
+    $this->ensureIsNotRateLimited();
+
+    $user = User::where('phone', $this->phone)->first();
+
+    if (! $user) {
+        RateLimiter::hit($this->throttleKey(), 300);
+
+        throw ValidationException::withMessages([
+            'phone' => 'This phone number is not registered.',
+        ]);
+    }
+
+    // Resend cooldown: 60 seconds
+    $resendKey = 'login-otp-send:' . $this->throttleKey();
+
+    if (RateLimiter::tooManyAttempts($resendKey, 1)) {
+        $seconds = RateLimiter::availableIn($resendKey);
+
+        throw ValidationException::withMessages([
+            'phone' => "Please wait {$seconds} seconds before requesting another OTP.",
+        ]);
+    }
+
+    $url = config('services.kutility.url');
+    $apiKey = config('services.kutility.key');
+
+    if (empty($url) || empty($apiKey)) {
+        Log::error('SMS API configuration missing');
+
+        throw ValidationException::withMessages([
+            'phone' => 'SMS service configuration missing. Contact administrator.',
+        ]);
+    }
+
+    // Secure 6-digit OTP
+    $otp = (string) random_int(100000, 999999);
+
+    $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
+
+    // Limit repeated SMS requests
+    RateLimiter::hit($resendKey, 60);
+
+    try {
+        $response = Http::timeout(20)
+            ->connectTimeout(10)
+            ->acceptJson()
+            ->get($url, [
+                'key' => $apiKey,
+                'campaign' => config('services.kutility.campaign'),
+                'routeid' => config('services.kutility.routeid'),
+                'type' => 'text',
+                'contacts' => $this->phone,
+                'senderid' => config('services.kutility.senderid'),
+                'msg' => $msg,
+                'template_id' => config('services.kutility.template_id'),
+                'pe_id' => config('services.kutility.pe_id'),
+            ]);
+
+        // Never log OTP, API key or complete SMS URL
+        Log::info('Login OTP SMS API response', [
+            'http_status' => $response->status(),
+            'response_body' => mb_substr(
+                preg_replace(
+                    '/\b\d{6}\b/',
+                    '[REDACTED]',
+                    $response->body()
+                ),
+                0,
+                1000
+            ),
         ]);
 
-        $this->ensureIsNotRateLimited();
-
-        $user = \App\Models\User::where('phone', $this->phone)->first();
-
-        if (! $user) {
-            RateLimiter::hit($this->throttleKey());
-
-            throw ValidationException::withMessages([
-                'phone' => 'This phone number is not registered.',
+        if (! $response->successful()) {
+            Log::error('Login OTP SMS HTTP failure', [
+                'status' => $response->status(),
             ]);
+
+            throw new \RuntimeException(
+                'SMS provider returned HTTP ' . $response->status()
+            );
         }
 
-        $otp = rand(100000, 999999);
+        /*
+         * IMPORTANT:
+         * HTTP 200 does not always mean SMS accepted.
+         *
+         * Check your SMS provider's actual JSON/text
+         * response and verify its success field here.
+         *
+         * Example only:
+         * $data = $response->json();
+         * if (($data['status'] ?? null) !== 'success') {
+         *     throw new \RuntimeException('SMS rejected');
+         * }
+         */
 
+        // Save OTP only after successful HTTP response.
         session([
             'login_otp_user_id' => $user->id,
+            'login_otp_phone' => $this->phone,
             'login_otp_remember' => $this->remember,
-            'login_otp' => $otp,
+            'login_otp_hash' => hash('sha256', $otp),
             'login_otp_expires_at' => now()->addMinutes(5)->timestamp,
+            'login_otp_attempts' => 0,
         ]);
 
-        $msg = "Dear Customer, {$otp} this is your login verification OTP. Please do not share with anyone. Best Regards, Real Victory Groups https://myvictory.in/";
-
-        Http::get(env('KUTILITY_URL'), [
-            'key' => env('KUTILITY_KEY'),
-            'campaign' => '12754',
-            'routeid' => '7',
-            'type' => 'text',
-            'contacts' => $this->phone,
-            'senderid' => 'RVGRPS',
-            'msg' => $msg,
-            'template_id' => '1707178057481157648',
-            'pe_id' => '1701164032595209992',
-        ]);
-
-        RateLimiter::clear($this->throttleKey());
-
+        $this->otp = '';
         $this->otpSent = true;
 
-        session()->flash('status', 'OTP sent successfully.');
-    }
+        session()->flash(
+            'status',
+            'OTP request submitted successfully.'
+        );
 
-    public function verifyOtp(): void
-    {
-        $this->validate([
-            'otp' => ['required', 'digits:6'],
+    } catch (\Throwable $e) {
+
+        Log::error('Login OTP SMS sending failed', [
+            'error_type' => get_class($e),
+            'http_error' => $e instanceof \Illuminate\Http\Client\RequestException,
         ]);
 
-        if (
-            ! session('login_otp') ||
-            ! session('login_otp_user_id') ||
-            now()->timestamp > session('login_otp_expires_at')
-        ) {
-            throw ValidationException::withMessages([
-                'otp' => 'OTP expired. Please request a new OTP.',
-            ]);
-        }
+        throw ValidationException::withMessages([
+            'phone' => 'Unable to send OTP. Please try again later.',
+        ]);
+    }
+}
 
-        if ($this->otp != session('login_otp')) {
-            throw ValidationException::withMessages([
-                'otp' => 'Invalid OTP.',
-            ]);
-        }
 
-        $user = \App\Models\User::find(
-            session('login_otp_user_id')
-        );
+    // public function verifyOtp(): void
+    // {
+    //     $this->validate([
+    //         'otp' => ['required', 'digits:6'],
+    //     ]);
 
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'otp' => 'User not found.',
-            ]);
-        }
+    //     if (
+    //         ! session('login_otp') ||
+    //         ! session('login_otp_user_id') ||
+    //         now()->timestamp > session('login_otp_expires_at')
+    //     ) {
+    //         throw ValidationException::withMessages([
+    //             'otp' => 'OTP expired. Please request a new OTP.',
+    //         ]);
+    //     }
 
-        Auth::login(
-            $user,
-            session('login_otp_remember', true)
-        );
+    //     if ($this->otp != session('login_otp')) {
+    //         throw ValidationException::withMessages([
+    //             'otp' => 'Invalid OTP.',
+    //         ]);
+    //     }
 
-        Session::regenerate();
+    //     $user = \App\Models\User::find(
+    //         session('login_otp_user_id')
+    //     );
 
-        session()->forget([
-            'login_otp_user_id',
-            'login_otp_remember',
-            'login_otp',
-            'login_otp_expires_at',
+    //     if (! $user) {
+    //         throw ValidationException::withMessages([
+    //             'otp' => 'User not found.',
+    //         ]);
+    //     }
+
+    //     Auth::login(
+    //         $user,
+    //         session('login_otp_remember', true)
+    //     );
+
+    //     Session::regenerate();
+
+    //     session()->forget([
+    //         'login_otp_user_id',
+    //         'login_otp_remember',
+    //         'login_otp',
+    //         'login_otp_expires_at',
+    //     ]);
+
+    //     $this->redirectIntended(
+    //         default: route('dashboard', absolute: false),
+    //         navigate: true
+    //     );
+    // }
+
+
+    
+public function verifyOtp(): void
+{
+    $this->validate([
+        'otp' => ['required', 'digits:6'],
+    ]);
+
+    $userId = session('login_otp_user_id');
+    $otpHash = session('login_otp_hash');
+    $expiresAt = session('login_otp_expires_at');
+    $otpPhone = session('login_otp_phone');
+
+    $otpKeys = [
+        'login_otp_user_id',
+        'login_otp_phone',
+        'login_otp_remember',
+        'login_otp_hash',
+        'login_otp_expires_at',
+        'login_otp_attempts',
+    ];
+
+    if (
+        ! $userId ||
+        ! $otpHash ||
+        ! $expiresAt ||
+        ! $otpPhone ||
+        now()->timestamp > $expiresAt
+    ) {
+        session()->forget($otpKeys);
+
+        $this->otpSent = false;
+
+        throw ValidationException::withMessages([
+            'otp' => 'OTP expired. Please request a new OTP.',
+        ]);
+    }
+
+    // Maximum 5 verification attempts
+    $attempts = (int) session('login_otp_attempts', 0);
+
+    if ($attempts >= 5) {
+        session()->forget($otpKeys);
+
+        $this->otpSent = false;
+
+        throw ValidationException::withMessages([
+            'otp' => 'Too many invalid attempts. Request a new OTP.',
+        ]);
+    }
+
+    // Secure OTP comparison
+    if (
+        ! hash_equals(
+            $otpHash,
+            hash('sha256', $this->otp)
+        )
+    ) {
+        session([
+            'login_otp_attempts' => $attempts + 1,
         ]);
 
-        $this->redirectIntended(
-            default: route('dashboard', absolute: false),
-            navigate: true
-        );
+        throw ValidationException::withMessages([
+            'otp' => 'Invalid OTP.',
+        ]);
     }
+
+    $user = User::find($userId);
+
+    if (! $user || $user->phone !== $otpPhone) {
+        session()->forget($otpKeys);
+
+        $this->otpSent = false;
+
+        throw ValidationException::withMessages([
+            'otp' => 'User not found or phone number changed.',
+        ]);
+    }
+
+    $remember = (bool) session(
+        'login_otp_remember',
+        true
+    );
+
+    // Clear OTP before login
+    session()->forget($otpKeys);
+
+    Auth::login($user, $remember);
+
+    Session::regenerate();
+
+    $this->redirectIntended(
+        default: route('dashboard', absolute: false),
+        navigate: true
+    );
+}
 
     protected function ensureIsNotRateLimited(): void
     {
