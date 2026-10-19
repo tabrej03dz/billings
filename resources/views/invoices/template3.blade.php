@@ -421,25 +421,9 @@
             $qty = (float)($it->quantity ?? $it->qty ?? 1);
             $quantity = $netWeight > 0 ? $netWeight : ($qty > 0 ? $qty : 1);
 
-            $goldRate   = (float)($it->gold_rate ?? 0);
-            $silverRate = (float)($it->silver_rate ?? 0);
-            $metalRate = (float)($it->metalRate ?? 0);
-            $normalRate = (float)($it->rate ?? $it->unit_price ?? $it->price ?? 0);
-
-            if ($silverWeight > 0 && $silverRate > 0 && $metalRate > 0) {
-                $rate = $silverRate;
-            } elseif ($goldRate > 0) {
-                $rate = $goldRate;
-            }elseif ($metalRate > 0) {
-                $rate = $metalRate;
-            }
-             else {
-                $rate = $normalRate;
-            }
-
             $unit = strtoupper(trim((string)($it->unit ?? '')));
             if ($unit === '') {
-                $unit = $netWeight > 0 ? 'GMS' : 'GMS';
+                $unit = $netWeight > 0 ? 'GMS' : 'PCS';
             }
 
             /*
@@ -492,6 +476,29 @@
                     : ($cgstPercent + $sgstPercent);
             }
 
+            // Stored per-unit rate (used only when amount cannot be derived).
+            $goldRate   = (float)($it->gold_rate ?? 0);
+            $silverRate = (float)($it->silver_rate ?? 0);
+            $metalRate  = (float)($it->metalRate ?? $it->metal_rate ?? 0);
+            $normalRate = (float)($it->rate ?? $it->unit_price ?? $it->price ?? 0);
+
+            // Pick the best stored per-gram rate (if any).
+            $storedRate = 0;
+
+            if ($silverWeight > 0 && $silverRate > 0) {
+                $storedRate = $silverRate;
+            } elseif ($goldWeight > 0 && $goldRate > 0) {
+                $storedRate = $goldRate;
+            } elseif ($metalRate > 0) {
+                $storedRate = $metalRate;
+            } elseif ($goldRate > 0) {
+                $storedRate = $goldRate;
+            } elseif ($silverRate > 0) {
+                $storedRate = $silverRate;
+            } elseif ($normalRate > 0) {
+                $storedRate = $normalRate;
+            }
+
             if ($itemTaxableAmount <= 0) {
                 if ($grossLineTotal > 0 && $itemTaxAmount > 0 && $grossLineTotal >= $itemTaxAmount) {
                     // Example: 1030 inclusive - 30 GST = 1000 taxable amount.
@@ -502,13 +509,36 @@
                 } elseif ($grossLineTotal > 0) {
                     // No GST data available; treat stored amount as base amount.
                     $itemTaxableAmount = $grossLineTotal;
-                } elseif ($quantity > 0 && $rate > 0) {
+                } elseif ($quantity > 0 && $storedRate > 0) {
                     // Rate is treated as GST-exclusive base rate.
-                    $itemTaxableAmount = $quantity * $rate;
+                    $itemTaxableAmount = $quantity * $storedRate;
                 }
             }
 
             $lineTotal = $itemTaxableAmount;
+
+            /*
+             |------------------------------------------------------------------
+             | RATE (per gram / per unit)
+             |------------------------------------------------------------------
+             | 1. If a stored per-gram rate exists, print that.
+             |    (Ignored if it is just the line amount repeated, i.e. equal to
+             |     the taxable amount while quantity is not 1.)
+             | 2. Otherwise, rate = taxable amount / quantity (weight).
+             */
+            $rate = 0;
+
+            $storedRateLooksLikeAmount =
+                $storedRate > 0
+                && $lineTotal > 0
+                && abs($storedRate - $lineTotal) < 0.01
+                && abs($quantity - 1) > 0.0001;
+
+            if ($storedRate > 0 && !$storedRateLooksLikeAmount) {
+                $rate = $storedRate;
+            } elseif ($lineTotal > 0 && $quantity > 0) {
+                $rate = $lineTotal / $quantity;
+            }
         @endphp
 
         <tr>
