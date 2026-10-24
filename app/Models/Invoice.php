@@ -155,4 +155,14 @@ class Invoice extends Model
     {
         return $this->hasOne(EwayBill::class);
     }
+
+    
+public function salesReturns()
+{
+    return $this->hasMany(
+        \App\Models\SalesReturn::class,
+        'invoice_id'
+    );
+}
+
 }

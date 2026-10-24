@@ -1097,10 +1097,22 @@
         @endcan
 
         @can('show invoices menu')
-            @php
+            {{-- @php
                 $type = request('type');
                 $isInvoiceRoute = request()->routeIs('invoices.*');
+            @endphp --}}
+
+            
+            @php
+                $type = request('type');
+
+                $isInvoiceRoute = request()->routeIs('invoices.*');
+
+                $isSalesReturnRoute = request()->routeIs('sales-returns.*');
+
+                $isInvoiceMenuActive = $isInvoiceRoute || $isSalesReturnRoute;
             @endphp
+
 
             <details class="group {{ $isInvoiceRoute ? 'open' : '' }}">
                 @if($isInvoiceRoute)
@@ -1218,6 +1230,21 @@
                                     Invoices
                                 </flux:navlist.item>
                             @endcan
+
+                            
+                            {{-- SALES RETURNS --}}
+                            @can('show invoices')
+                                <flux:navlist.item
+                                    icon="arrow-uturn-left"
+                                    :href="route('sales-returns.index')"
+                                    :current="request()->routeIs('sales-returns.*')"
+                                    wire:navigate
+                                >
+                                    Sales Returns
+                                </flux:navlist.item>
+                            @endcan
+
+
 
                             @can('show proformas')
                                 <flux:navlist.item

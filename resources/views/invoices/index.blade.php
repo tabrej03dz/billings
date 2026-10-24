@@ -776,25 +776,19 @@
 
                                             {{-- @if(strtolower($inv->invoice_type ?? 'tax') === 'tax') --}}
 
-                                                @if($inv->ewayBill)
+                                                
+                                            @if(
+                                                $inv->invoice_type === 'tax'
+                                                && auth()->user()->can('create invoice')
+                                            )
+                                                <a
+                                                    href="{{ route('sales-returns.create', $inv->id) }}"
+                                                    class="btn btn-sm btn-warning"
+                                                >
+                                                    Sales Return
+                                                </a>
+                                            @endif
 
-                                                    <a href="{{ route('eway-bills.show', $inv->ewayBill->id) }}"
-                                                    class="block px-4 py-2 text-sm text-green-700
-                                                            hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                                        View E-Way Bill
-                                                    </a>
-
-                                                @else
-
-                                                    <a href="{{ route('eway-bills.create', $inv->id) }}"
-                                                    class="block px-4 py-2 text-sm text-indigo-700
-                                                            hover:bg-gray-50 dark:hover:bg-neutral-800">
-                                                        Create E-Way Bill
-                                                    </a>
-
-                                                @endif
-
-                                            {{-- @endif --}}
 
 
 

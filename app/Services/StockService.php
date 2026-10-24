@@ -345,4 +345,137 @@ class StockService
 
         $this->refreshItemStock($item);
     }
+
+
+    
+/**
+ * Record stock received back from a sales return.
+ *
+ * IMPORTANT:
+ * Call this only inside a DB transaction
+ * when finalising an approved sales return.
+ */
+public function recordSalesReturn(
+    \App\Models\SalesReturn $salesReturn
+): void {
+    if (!$salesReturn->exists) {
+        throw new \LogicException(
+            'Sales return must be saved before recording stock.'
+        );
+    }
+
+    $itemIds = collect();
+
+    foreach ($salesReturn->items as $row) {
+        if (!$row->restock || !$row->item_id) {
+            continue;
+        }
+
+        $quantity = $this->qty($row->quantity);
+
+        if ($quantity <= 0) {
+            continue;
+        }
+
+        $item = Item::query()
+            ->where('id', $row->item_id)
+            ->where('business_id', $salesReturn->business_id)
+            ->firstOrFail();
+
+        /*
+         * Prevent duplicate stock movements.
+         * The same return should not restore stock twice.
+         */
+        $alreadyRecorded = StockMovement::query()
+            ->where('business_id', $salesReturn->business_id)
+            ->where('item_id', $item->id)
+            ->where(
+                'reference_type',
+                \App\Models\SalesReturn::class
+            )
+            ->where('reference_id', $salesReturn->id)
+            ->exists();
+
+        if ($alreadyRecorded) {
+            throw new \LogicException(
+                "Stock return already recorded for item {$item->id}."
+            );
+        }
+
+        $this->createMovement(
+            itemId: (int) $item->id,
+            businessId: (int) $salesReturn->business_id,
+            qtyChange: $quantity,
+            // type: 'adjustment',
+            type: 'sale_return',
+            reference: $salesReturn,
+            note: 'Sales return #' . $salesReturn->return_number
+        );
+
+        $itemIds->push((int) $item->id);
+    }
+
+    $this->refreshItemsByIds($itemIds);
+}
+
+/**
+ * Roll back only stock movements belonging to
+ * the given sales return.
+ *
+ * Use when an authorised reversal is performed.
+ * Do not delete the original sales invoice.
+ */
+public function rollbackSalesReturn(
+    \App\Models\SalesReturn $salesReturn
+): void {
+    $this->rollbackReference($salesReturn);
+}
+
+
+
+/**
+ * Restore stock for a sales return item.
+ *
+ * Call this inside a database transaction.
+ */
+public function recordReturnStock(
+    \App\Models\SalesReturn $salesReturn,
+    \App\Models\SalesReturnItem $returnItem,
+    float $quantity
+): void {
+    $quantity = $this->qty($quantity);
+
+    if ($quantity <= 0) {
+        return;
+    }
+
+    $item = Item::query()
+        ->where('business_id', $salesReturn->business_id)
+        ->findOrFail($returnItem->item_id);
+
+    $existing = StockMovement::query()
+        ->where('business_id', $salesReturn->business_id)
+        ->where('item_id', $item->id)
+        ->where('reference_type', \App\Models\SalesReturnItem::class)
+        ->where('reference_id', $returnItem->id)
+        ->exists();
+
+    if ($existing) {
+        throw new \RuntimeException(
+            'Stock already restored for this return item.'
+        );
+    }
+
+    $this->createMovement(
+        itemId: (int) $item->id,
+        businessId: (int) $salesReturn->business_id,
+        qtyChange: $quantity,
+        type: 'sale_return',
+        reference: $returnItem,
+        note: 'Sales Return #' . $salesReturn->return_number
+    );
+
+    $this->refreshItemStock($item);
+}
+
 }

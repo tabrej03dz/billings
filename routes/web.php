@@ -44,6 +44,7 @@ use App\Http\Controllers\BusinessCaController;
 use App\Http\Controllers\CaReportController;
 use App\Http\Controllers\EwayBillController;
 use App\Http\Controllers\PlanPaymentLinkController;
+use App\Http\Controllers\SalesReturnController;
 
 // frontend web routes:::::
 
@@ -532,7 +533,47 @@ Route::middleware(['auth'])->group(function () {
     //    });
 
 
-    Route::resource('api-keys', \App\Http\Controllers\ApiKeyController::class);
+        Route::resource('api-keys', \App\Http\Controllers\ApiKeyController::class);
+
+
+        
+
+        Route::middleware(['auth'])->group(function () {
+
+            Route::get(
+                '/sales-returns',
+                [SalesReturnController::class, 'index']
+            )->name('sales-returns.index');
+
+            Route::get(
+                '/invoices/{invoice}/sales-return',
+                [SalesReturnController::class, 'create']
+            )->name('sales-returns.create');
+
+            Route::post(
+                '/invoices/{invoice}/sales-return',
+                [SalesReturnController::class, 'store']
+            )->name('sales-returns.store');
+
+            Route::get(
+                '/sales-returns/{salesReturn}',
+                [SalesReturnController::class, 'show']
+            )->name('sales-returns.show');
+
+
+            Route::post(
+                '/sales-returns/{salesReturn}/approve',
+                [SalesReturnController::class, 'approve']
+            )->name('sales-returns.approve');
+
+
+            Route::get(
+                '/sales-returns/{salesReturn}/credit-note',
+                [SalesReturnController::class, 'downloadCreditNote']
+            )->name('sales-returns.credit-note');
+
+        });
+
 
         Route::get('/invoices',              [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('/invoices/create/{type?}',       [InvoiceController::class, 'create'])->name('invoices.create');

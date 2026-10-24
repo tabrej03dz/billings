@@ -19,4 +19,14 @@ class InvoiceItem extends Model
     public function item(){
         return $this->belongsTo(Item::class, 'item_id');
     }
+
+    
+public function salesReturnItems()
+{
+    return $this->hasMany(
+        \App\Models\SalesReturnItem::class,
+        'invoice_item_id'
+    );
+}
+
 }
