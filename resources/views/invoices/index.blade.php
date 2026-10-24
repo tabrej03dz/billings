@@ -596,7 +596,7 @@
                                             {{ $inv->invoice_number }}
                                         </div>
                                         <div class="text-xs text-gray-500 dark:text-neutral-400 truncate">
-                                            {{ $inv->client->name ?? '-' }}
+                                            {{ $inv->client->name ?? '-' }} <br> {{ $inv->client->mobile ?? '-' }} 
                                         </div>
                                     </div>
 
