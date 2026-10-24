@@ -131,7 +131,7 @@ class InvoiceController extends Controller
         */
         $query = \App\Models\Invoice::query()
             ->with([
-                'client:id,name',
+                'client:id,name,mobile',
                 'createdBy',
                 'updatedBy',
             ])
