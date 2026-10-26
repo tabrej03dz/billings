@@ -5,6 +5,7 @@
     $rows = collect($items ?? []);
     $fmt2 = fn($n) => number_format((float) $n, 2, '.', '');
     $fmt3 = fn($n) => number_format((float) $n, 3, '.', '');
+    $pct  = fn($p) => rtrim(rtrim(number_format((float) $p, 2, '.', ''), '0'), '.');
     $amount = (float) ($inv->total ?? $inv->grand_total ?? 0);
     $paid = (float) ($inv->received_amount ?? 0);
     $due = (float) ($inv->balance ?? max(0, $amount - $paid));
@@ -61,6 +62,63 @@
         $words = implode(',', $parts);
     }
 
+    // ---- Item calculator (DB columns se) ----
+    // invoice_items: metal_type, purity, metal_weight, gold_wt, silver_wt, making_*, quantity, amount
+    $calc = function ($it) {
+        $gold   = (float) ($it->gold_wt ?? 0);
+        $silver = (float) ($it->silver_wt ?? 0);
+        $mw     = (float) ($it->metal_weight ?? 0);
+        $mtype  = strtolower(trim((string) ($it->metal_type ?? '')));
+
+        // metal decide
+        if ($gold > 0)        $metal = 'G';
+        elseif ($silver > 0)  $metal = 'S';
+        elseif ($mtype === 'gold')   $metal = 'G';
+        elseif ($mtype === 'silver') $metal = 'S';
+        else $metal = '';
+
+        // gross weight
+        $gross = $mw > 0 ? $mw : ($gold + $silver);
+        $less  = (float) ($it->less_weight ?? 0);
+        $net   = max(0, $gross - $less);
+
+        // purity (Tunch)
+        $purityRaw = trim((string) ($it->purity ?? ''));
+        if ($purityRaw === '') {
+            $purityRaw = trim((string) (
+                $metal === 'G'
+                    ? ($it->item->gold_purity ?? '')
+                    : ($it->item->silver_purity ?? '')
+            ));
+        }
+
+        // purity -> percent
+        $pctVal = 0.0;
+        if ($purityRaw !== '') {
+            $num = (float) preg_replace('/[^0-9.]/', '', $purityRaw);
+            if (preg_match('/k/i', $purityRaw) && $num > 0 && $num <= 24) {
+                $pctVal = $num / 24 * 100;                 // 22K
+            } elseif ($metal === 'G' && $num > 0 && $num <= 24) {
+                $pctVal = $num / 24 * 100;                 // 22 = karat
+            } elseif ($num > 0 && $num <= 100) {
+                $pctVal = $num;                            // 92.5 / 91.6
+            }
+        }
+
+        // fine weight
+        $fine = $pctVal > 0 ? round($net * $pctVal / 100, 3) : $net;
+
+        return [
+            'metal'  => $metal,
+            'gross'  => $gross,
+            'less'   => $less,
+            'net'    => $net,
+            'purity' => $purityRaw,
+            'fine_g' => $metal === 'G' ? $fine : 0,
+            'fine_s' => $metal === 'S' ? $fine : 0,
+        ];
+    };
+
     // ---- Receipt (cash / online / card / cheque) ----
     $receiptCash = (float) ($payRow->cash_amount ?? 0)
                  + (float) ($payRow->online_amount ?? 0)
@@ -79,9 +137,14 @@
     $prevRef  = trim((string) ($prev['ref'] ?? ''));
 
     // ---- Item totals ----
-    $totGross  = (float) $rows->sum(fn($it) => (float) ($it->gross_weight ?? $it->gross_wt ?? $it->gold_wt ?? $it->silver_wt ?? 0));
-    $totGold   = (float) $rows->sum(fn($it) => (float) ($it->gold_wt ?? 0));
-    $totSilver = (float) $rows->sum(fn($it) => (float) ($it->silver_wt ?? 0));
+    $calcRows  = $rows->map(fn($it) => $calc($it));
+    $totGross  = (float) $calcRows->sum('gross');
+    $totLess   = (float) $calcRows->sum('less');
+    $totNet    = (float) $calcRows->sum('net');
+    $totQty    = (float) $rows->sum(fn($it) => (float) ($it->quantity ?? $it->qty ?? 0));
+    $totLabour = (float) $rows->sum(fn($it) => (float) ($it->making_charge ?? 0));
+    $totGold   = (float) $calcRows->sum('fine_g');
+    $totSilver = (float) $calcRows->sum('fine_s');
 
     // ---- Kacchi / Bhav totals ----
     $fineOf = fn($m) => isset($m['fine'])
@@ -123,8 +186,6 @@
 
     $tcsAmt   = (float) ($inv->tcs_amount ?? 0);
     $roundOff = (float) ($inv->round_off ?? 0);
-
-    $pct = fn($p) => rtrim(rtrim(number_format((float) $p, 2, '.', ''), '0'), '.');
 
     // ---- Khaali rows ----
     $minRows = 11;
@@ -178,7 +239,8 @@
 <tr>
     <td style="width:20%"></td>
     <td style="width:60%">
-        <div >Rough Estimate</div>
+        <div class="devotion">"OM SHRI PADMAVATI MATA NAMAH"</div>
+        <div class="heading">Rough Estimate</div>
     </td>
     <td style="width:20%" class="copy">Customer Copy</td>
 </tr>
@@ -205,7 +267,7 @@
 <table class="items">
 <colgroup>
     <col width="4%"><col width="22%"><col width="8%"><col width="7%"><col width="8%">
-    <col width="5%"><col width="12%"><col width="7%"><col width="8%"><col width="8%"><col width="11%">
+    <col width="5%"><col width="8%"><col width="12%"><col width="8%"><col width="8%"><col width="10%">
 </colgroup>
 <thead><tr>
 <th>Type</th>
@@ -225,60 +287,45 @@
 {{-- ITEMS --}}
 @foreach($rows as $it)
 @php
-    $gw = (float) ($it->gross_weight ?? $it->gross_wt ?? $it->gold_wt ?? $it->silver_wt ?? 0);
-    $loss = (float) ($it->less_weight ?? $it->less_wt ?? 0);
-    $nw = (float) ($it->net_weight ?? $it->net_wt ?? max(0, $gw - $loss));
-    $qty = (float) ($it->quantity ?? $it->qty ?? 1);
-    $goldWt = (float) ($it->gold_wt ?? 0);
-    $silverWt = (float) ($it->silver_wt ?? 0);
-    $metal = $goldWt > 0 ? 'G' : ($silverWt > 0 ? 'S' : '');
-    $line = (float) ($it->amount ?? $it->line_total ?? $it->total ?? 0);
-    $labor = (float) ($it->making_charge ?? $it->making_amount ?? 0);
+    $k = $calc($it);
+    $qty  = (float) ($it->quantity ?? $it->qty ?? 0);
+    $line = (float) ($it->amount ?? 0);
 
-    // ---- Making charge: type + rate + calculated amount (Tunch column me) ----
+    // ---- Lbr: making charge type + rate + calculated amount ----
     $mkType = strtolower(trim((string) ($it->making_charge_type ?? '')));
     if ($mkType === 'percent') $mkType = 'percentage';
     $mkRate = (float) ($it->making_rate ?? 0);
-    $mkAmt  = (float) ($it->making_charge ?? $it->making_amount ?? 0);
+    $mkAmt  = (float) ($it->making_charge ?? 0);
     $mkRateTxt = $pct($mkRate);
 
     $mkLine1 = '';
     $mkLine2 = '';
     if ($mkRate > 0 || $mkAmt > 0) {
         switch ($mkType) {
-            case 'percentage':
-                $mkLine1 = $mkRateTxt . '% (Percent)';
-                break;
-            case 'fixed':
-                $mkLine1 = $mkRateTxt . ' (Fixed)';
-                break;
-            case 'per_gram':
-                $mkLine1 = $mkRateTxt . '/gm (Per Gram)';
-                break;
-            case 'per_product':
-                $mkLine1 = $mkRateTxt . '/pc (Per Product)';
-                break;
-            default:
-                $mkLine1 = $mkRateTxt;
+            case 'percentage':  $mkLine1 = $mkRateTxt . '% (Percent)'; break;
+            case 'fixed':       $mkLine1 = $mkRateTxt . ' (Fixed)'; break;
+            case 'per_gram':    $mkLine1 = $mkRateTxt . '/gm (Per Gram)'; break;
+            case 'per_product': $mkLine1 = $mkRateTxt . '/pc (Per Product)'; break;
+            default:            $mkLine1 = $mkRateTxt;
         }
         $mkLine2 = '= ' . $fmt2($mkAmt);
     }
 @endphp
 <tr>
-<td class="ctr">{{ $metal }}</td>
-<td>{{ $up($it->item->name ?? $it->item_name ?? $it->name ?? 'ITEM') }}</td>
-<td class="r">{{ $gw > 0 ? $fmt3($gw) : '' }}</td>
-<td class="r">{{ $loss > 0 ? $fmt3($loss) : '' }}</td>
-<td class="r">{{ $nw > 0 ? $fmt3($nw) : '' }}</td>
+<td class="ctr">{{ $k['metal'] }}</td>
+<td>{{ $up($it->item->name ?? $it->description ?? 'ITEM') }}</td>
+<td class="r">{{ $k['gross'] > 0 ? $fmt3($k['gross']) : '' }}</td>
+<td class="r">{{ $k['less'] > 0 ? $fmt3($k['less']) : '' }}</td>
+<td class="r">{{ $k['net'] > 0 ? $fmt3($k['net']) : '' }}</td>
 <td class="ctr">{{ $qty > 0 ? $fmt2($qty) : '' }}</td>
+<td class="ctr">{{ $k['purity'] }}</td>
 <td class="ctr mk">
     @if($mkLine1 !== '')
         {{ $mkLine1 }}<br>{{ $mkLine2 }}
     @endif
 </td>
-<td class="r">{{ $labor > 0 ? $fmt2($labor) : '' }}</td>
-<td class="r">{{ $goldWt > 0 ? $fmt3($goldWt) : '' }}</td>
-<td class="r">{{ $silverWt > 0 ? $fmt3($silverWt) : '' }}</td>
+<td class="r">{{ $k['fine_g'] > 0 ? $fmt3($k['fine_g']) : '' }}</td>
+<td class="r">{{ $k['fine_s'] > 0 ? $fmt3($k['fine_s']) : '' }}</td>
 <td class="r">{{ $fmt2($line) }}</td>
 </tr>
 @endforeach
@@ -294,14 +341,14 @@
 <tr class="total">
 <td></td>
 <td></td>
-<td class="r">{{ $fmt3($totGross) }}</td>
+<td class="r">{{ $totGross > 0 ? $fmt3($totGross) : '' }}</td>
+<td class="r">{{ $totLess > 0 ? $fmt3($totLess) : '' }}</td>
+<td class="r">{{ $totNet > 0 ? $fmt3($totNet) : '' }}</td>
+<td class="ctr">{{ $totQty > 0 ? $fmt2($totQty) : '' }}</td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
+<td class="r">{{ $totLabour > 0 ? $fmt2($totLabour) : '' }}</td>
 <td class="r">{{ $totGold > 0 ? $fmt3($totGold) : '' }}</td>
-<td class="r">{{ $fmt3($totSilver) }}</td>
+<td class="r">{{ $totSilver > 0 ? $fmt3($totSilver) : '' }}</td>
 <td class="r">{{ $fmt2($amount) }}</td>
 </tr>
 
@@ -369,7 +416,7 @@
 <table class="sum">
 <colgroup>
     <col width="4%"><col width="22%"><col width="8%"><col width="7%"><col width="8%">
-    <col width="5%"><col width="12%"><col width="7%"><col width="8%"><col width="8%"><col width="11%">
+    <col width="5%"><col width="8%"><col width="12%"><col width="8%"><col width="8%"><col width="10%">
 </colgroup>
 <tr>
     <td colspan="5" class="l">Rs. {{ $words }}</td>
