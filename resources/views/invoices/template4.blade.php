@@ -134,7 +134,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Rough Estimate - {{ $inv->invoice_number ?? $inv->id }}</title>
+<title>{{ $inv->invoice_number ?? $inv->id }}</title>
 <!-- pdf-orientation: landscape -->
 <style>
     body {font-family: dejavusans, sans-serif; font-size: 9px; color: #202020; margin: 0;}
@@ -177,7 +177,6 @@
 <tr>
     <td style="width:20%"></td>
     <td style="width:60%">
-        <div class="devotion">"OM SHRI PADMAVATI MATA NAMAH"</div>
         <div class="heading">Rough Estimate</div>
     </td>
     <td style="width:20%" class="copy">Customer Copy</td>
