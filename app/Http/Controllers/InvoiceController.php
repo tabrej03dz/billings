@@ -5523,37 +5523,101 @@ public function convertToTax(Request $r, \App\Models\Invoice $invoice, \App\Serv
 
 
 
+    // protected function renderMpdfOutput(string $view, array $vm): string
+    // {
+    //     $tempDir = storage_path('app/mpdf-temp');
+
+    //     if (!is_dir($tempDir)) {
+    //         mkdir($tempDir, 0775, true);
+    //     }
+
+    //     $mpdf = new \Mpdf\Mpdf([
+    //         'mode' => 'utf-8',
+    //         'format' => 'A4',
+
+    //         'margin_left' => 8,
+    //         'margin_right' => 8,
+    //         'margin_top' => 8,
+    //         'margin_bottom' => 8,
+
+    //         'tempDir' => $tempDir,
+
+    //         'default_font' => 'freeserif',
+
+    //         'autoScriptToLang' => true,
+    //         'autoLangToFont' => true,
+    //     ]);
+
+    //     $html = view($view, $vm)->render();
+
+    //     $mpdf->WriteHTML($html);
+
+    //     return $mpdf->Output('', 'S');
+    // }
+
     protected function renderMpdfOutput(string $view, array $vm): string
-    {
-        $tempDir = storage_path('app/mpdf-temp');
+{
+    $tempDir = storage_path('app/mpdf-temp');
 
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0775, true);
-        }
-
-        $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-
-            'margin_left' => 8,
-            'margin_right' => 8,
-            'margin_top' => 8,
-            'margin_bottom' => 8,
-
-            'tempDir' => $tempDir,
-
-            'default_font' => 'freeserif',
-
-            'autoScriptToLang' => true,
-            'autoLangToFont' => true,
-        ]);
-
-        $html = view($view, $vm)->render();
-
-        $mpdf->WriteHTML($html);
-
-        return $mpdf->Output('', 'S');
+    if (!is_dir($tempDir)) {
+        mkdir($tempDir, 0775, true);
     }
+
+    // 1) Pehle HTML render karo
+    $html = view($view, $vm)->render();
+
+    // 2) Orientation decide karo (priority order):
+    //    a) $vm['orientation']              -> controller se force
+    //    b) Blade ka <!-- pdf-orientation: landscape --> marker
+    //    c) billTemplate->orientation       -> agar DB me column ho
+    //    d) default portrait
+    $orientation = null;
+
+    if (!empty($vm['orientation'])) {
+        $orientation = strtolower(trim((string) $vm['orientation']));
+    }
+
+    if (!$orientation && preg_match(
+        '/<!--\s*pdf-orientation\s*:\s*(landscape|portrait)\s*-->/i',
+        $html,
+        $m
+    )) {
+        $orientation = strtolower($m[1]);
+    }
+
+    if (!$orientation) {
+        $orientation = strtolower(trim((string) (
+            $vm['billTemplate']->orientation ?? ''
+        )));
+    }
+
+    $orientation = in_array($orientation, ['landscape', 'l'], true)
+        ? 'L'
+        : 'P';
+
+    // 3) mPDF banao
+    $mpdf = new \Mpdf\Mpdf([
+        'mode' => 'utf-8',
+        'format' => 'A4',
+        'orientation' => $orientation,   // 'P' ya 'L'
+
+        'margin_left' => 8,
+        'margin_right' => 8,
+        'margin_top' => 8,
+        'margin_bottom' => 8,
+
+        'tempDir' => $tempDir,
+
+        'default_font' => 'freeserif',
+
+        'autoScriptToLang' => true,
+        'autoLangToFont' => true,
+    ]);
+
+    $mpdf->WriteHTML($html);
+
+    return $mpdf->Output('', 'S');
+}
 
     protected function pdfResponse(string $pdfContent, string $fileName, string $disposition = 'inline'): Response
     {
