@@ -157,6 +157,7 @@
     .l {text-align:left;} .r {text-align:right;} .ctr {text-align:center;}
     .items tr.total td {font-weight:bold; border-top:1px solid #444; border-bottom:1px solid #444;}
     .items tr.last td {border-bottom:1px solid #444;}
+    .mk {font-size:8px; line-height:1.3;}
 
     .sum {table-layout:fixed;}
     .sum td {padding:3px 4px; vertical-align:top;}
@@ -204,8 +205,8 @@
 
 <table class="items">
 <colgroup>
-    <col width="4%"><col width="26%"><col width="8%"><col width="8%"><col width="8%">
-    <col width="5%"><col width="7%"><col width="7%"><col width="8%"><col width="8%"><col width="11%">
+    <col width="4%"><col width="22%"><col width="8%"><col width="7%"><col width="8%">
+    <col width="5%"><col width="12%"><col width="7%"><col width="8%"><col width="8%"><col width="11%">
 </colgroup>
 <thead><tr>
 <th>Type</th>
@@ -235,18 +236,33 @@
     $line = (float) ($it->amount ?? $it->line_total ?? $it->total ?? 0);
     $labor = (float) ($it->making_charge ?? $it->making_amount ?? 0);
 
-    // Tunch = making rate (invoice item se). Na mile to item master ki purity.
-    $makingRate = (float) ($it->making_rate ?? 0);
-    $makingAmt  = (float) ($it->making_charge ?? $it->making_amount ?? 0);
+    // ---- Making charge: type + rate + calculated amount (Tunch column me) ----
+    $mkType = strtolower(trim((string) ($it->making_charge_type ?? '')));
+    if ($mkType === 'percent') $mkType = 'percentage';
+    $mkRate = (float) ($it->making_rate ?? 0);
+    $mkAmt  = (float) ($it->making_charge ?? $it->making_amount ?? 0);
+    $mkRateTxt = $pct($mkRate);
 
-    if ($makingRate > 0) {
-        $tunch = rtrim(rtrim(number_format($makingRate, 2, '.', ''), '0'), '.');
-    } elseif ($makingAmt > 0) {
-        $tunch = rtrim(rtrim(number_format($makingAmt, 2, '.', ''), '0'), '.');
-    } else {
-        $tunch = $it->tunch
-            ?? ($goldWt > 0 ? ($it->item->gold_purity ?? '') : ($it->item->silver_purity ?? ''))
-            ?? '';
+    $mkLine1 = '';
+    $mkLine2 = '';
+    if ($mkRate > 0 || $mkAmt > 0) {
+        switch ($mkType) {
+            case 'percentage':
+                $mkLine1 = $mkRateTxt . '% (Percent)';
+                break;
+            case 'fixed':
+                $mkLine1 = $mkRateTxt . ' (Fixed)';
+                break;
+            case 'per_gram':
+                $mkLine1 = $mkRateTxt . '/gm (Per Gram)';
+                break;
+            case 'per_product':
+                $mkLine1 = $mkRateTxt . '/pc (Per Product)';
+                break;
+            default:
+                $mkLine1 = $mkRateTxt;
+        }
+        $mkLine2 = '= ' . $fmt2($mkAmt);
     }
 @endphp
 <tr>
@@ -256,7 +272,11 @@
 <td class="r">{{ $loss > 0 ? $fmt3($loss) : '' }}</td>
 <td class="r">{{ $nw > 0 ? $fmt3($nw) : '' }}</td>
 <td class="ctr">{{ $qty > 0 ? $fmt2($qty) : '' }}</td>
-<td class="ctr">{{ $tunch }}</td>
+<td class="ctr mk">
+    @if($mkLine1 !== '')
+        {{ $mkLine1 }}<br>{{ $mkLine2 }}
+    @endif
+</td>
 <td class="r">{{ $labor > 0 ? $fmt2($labor) : '' }}</td>
 <td class="r">{{ $goldWt > 0 ? $fmt3($goldWt) : '' }}</td>
 <td class="r">{{ $silverWt > 0 ? $fmt3($silverWt) : '' }}</td>
@@ -349,8 +369,8 @@
 {{-- AMOUNT IN WORDS + NET TOTAL --}}
 <table class="sum">
 <colgroup>
-    <col width="4%"><col width="26%"><col width="8%"><col width="8%"><col width="8%">
-    <col width="5%"><col width="7%"><col width="7%"><col width="8%"><col width="8%"><col width="11%">
+    <col width="4%"><col width="22%"><col width="8%"><col width="7%"><col width="8%">
+    <col width="5%"><col width="12%"><col width="7%"><col width="8%"><col width="8%"><col width="11%">
 </colgroup>
 <tr>
     <td colspan="5" class="l">Rs. {{ $words }}</td>
