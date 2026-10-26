@@ -134,7 +134,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ $inv->invoice_number ?? $inv->id }}</title>
+<title>Rough Estimate - {{ $inv->invoice_number ?? $inv->id }}</title>
 <!-- pdf-orientation: landscape -->
 <style>
     body {font-family: dejavusans, sans-serif; font-size: 9px; color: #202020; margin: 0;}
@@ -177,6 +177,7 @@
 <tr>
     <td style="width:20%"></td>
     <td style="width:60%">
+        <div class="devotion">"OM SHRI PADMAVATI MATA NAMAH"</div>
         <div class="heading">Rough Estimate</div>
     </td>
     <td style="width:20%" class="copy">Customer Copy</td>
@@ -233,7 +234,20 @@
     $metal = $goldWt > 0 ? 'G' : ($silverWt > 0 ? 'S' : '');
     $line = (float) ($it->amount ?? $it->line_total ?? $it->total ?? 0);
     $labor = (float) ($it->making_charge ?? $it->making_amount ?? 0);
-    $tunch = $it->tunch ?? $it->purity ?? $it->karat ?? '';
+
+    // Tunch = making rate (invoice item se). Na mile to item master ki purity.
+    $makingRate = (float) ($it->making_rate ?? 0);
+    $makingAmt  = (float) ($it->making_charge ?? $it->making_amount ?? 0);
+
+    if ($makingRate > 0) {
+        $tunch = rtrim(rtrim(number_format($makingRate, 2, '.', ''), '0'), '.');
+    } elseif ($makingAmt > 0) {
+        $tunch = rtrim(rtrim(number_format($makingAmt, 2, '.', ''), '0'), '.');
+    } else {
+        $tunch = $it->tunch
+            ?? ($goldWt > 0 ? ($it->item->gold_purity ?? '') : ($it->item->silver_purity ?? ''))
+            ?? '';
+    }
 @endphp
 <tr>
 <td class="ctr">{{ $metal }}</td>
