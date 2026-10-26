@@ -239,8 +239,7 @@
 <tr>
     <td style="width:20%"></td>
     <td style="width:60%">
-        <div class="devotion">"OM SHRI PADMAVATI MATA NAMAH"</div>
-        <div class="heading">Rough Estimate</div>
+        <div class="devotion">Rough Estimate</div>
     </td>
     <td style="width:20%" class="copy">Customer Copy</td>
 </tr>
