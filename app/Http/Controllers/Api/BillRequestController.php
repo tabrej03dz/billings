@@ -674,6 +674,484 @@ class BillRequestController extends Controller
 
 
 
+    // private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest, bool $forceUpdate = false)
+    // {
+    //     $existingInvoice = Invoice::withoutGlobalScopes()
+    //         ->where('bil_request_id', $billRequest->id)
+    //         ->where('invoice_type', 'quotation')
+    //         ->first();
+
+    //     if ($existingInvoice && !$forceUpdate) {
+    //         return $existingInvoice;
+    //     }
+
+    //     $payload = [];
+
+    //     if (!empty($billRequest->full_payload)) {
+    //         $decoded = json_decode($billRequest->full_payload, true);
+
+    //         if (is_array($decoded)) {
+    //             $payload = $decoded;
+    //         }
+    //     }
+
+    //     $requestItems = $payload['items'] ?? [];
+
+    //     if (empty($requestItems)) {
+    //         $requestItems = [[
+    //             'item_id'     => (int) ($billRequest->package_name ?? 0),
+    //             'qty'         => 1,
+    //             'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
+    //             'description' => (string) ($billRequest->package_description ?? ''),
+    //         ]];
+    //     }
+
+    //     $firstItemId = (int) ($requestItems[0]['item_id'] ?? 0);
+
+    //     if ($firstItemId <= 0) {
+    //         Log::error('Bill request first item invalid', [
+    //             'bil_request_id' => $billRequest->id,
+    //             'request_items'   => $requestItems,
+    //             'full_payload'    => $billRequest->full_payload,
+    //             'package_name'    => $billRequest->package_name,
+    //         ]);
+
+    //         throw new \Exception('Selected service item id invalid hai.');
+    //     }
+
+    //     $firstItem = Item::withoutGlobalScopes()
+    //         ->where('id', $firstItemId)
+    //         ->first();
+
+    //     if (!$firstItem) {
+    //         throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
+    //     }
+
+    //     if ((int) ($firstItem->is_active ?? 1) !== 1) {
+    //         throw new \Exception(
+    //             'Selected item inactive hai. Item ID: ' . $firstItemId .
+    //             ', Business ID: ' . ($firstItem->business_id ?? 'NULL') .
+    //             ', Active: ' . (($firstItem->is_active ?? null) ? '1' : '0')
+    //         );
+    //     }
+
+    //     $bid = (int) ($firstItem->business_id ?: 1);
+    //     $userId = 1;
+
+    //     $business = Business::withoutGlobalScopes()->findOrFail($bid);
+
+    //     $client = null;
+
+    //     if (!empty($billRequest->gst_number)) {
+    //         $client = Client::withoutGlobalScopes()
+    //             ->where('business_id', $bid)
+    //             ->where('gstin', trim($billRequest->gst_number))
+    //             ->first();
+    //     }
+
+    //     if (!$client && !empty($billRequest->customer_phone)) {
+    //         $client = Client::withoutGlobalScopes()
+    //             ->where('business_id', $bid)
+    //             ->where('mobile', trim($billRequest->customer_phone))
+    //             ->first();
+    //     }
+
+    //     if (!$client && !empty($billRequest->customer_email)) {
+    //         $client = Client::withoutGlobalScopes()
+    //             ->where('business_id', $bid)
+    //             ->where('email', trim($billRequest->customer_email))
+    //             ->first();
+    //     }
+
+    //     $states = [
+    //         ['code'=>'01','name'=>'Jammu and Kashmir'],
+    //         ['code'=>'02','name'=>'Himachal Pradesh'],
+    //         ['code'=>'03','name'=>'Punjab'],
+    //         ['code'=>'04','name'=>'Chandigarh'],
+    //         ['code'=>'05','name'=>'Uttarakhand'],
+    //         ['code'=>'06','name'=>'Haryana'],
+    //         ['code'=>'07','name'=>'Delhi'],
+    //         ['code'=>'08','name'=>'Rajasthan'],
+    //         ['code'=>'09','name'=>'Uttar Pradesh'],
+    //         ['code'=>'10','name'=>'Bihar'],
+    //         ['code'=>'11','name'=>'Sikkim'],
+    //         ['code'=>'12','name'=>'Arunachal Pradesh'],
+    //         ['code'=>'13','name'=>'Nagaland'],
+    //         ['code'=>'14','name'=>'Manipur'],
+    //         ['code'=>'15','name'=>'Mizoram'],
+    //         ['code'=>'16','name'=>'Tripura'],
+    //         ['code'=>'17','name'=>'Meghalaya'],
+    //         ['code'=>'18','name'=>'Assam'],
+    //         ['code'=>'19','name'=>'West Bengal'],
+    //         ['code'=>'20','name'=>'Jharkhand'],
+    //         ['code'=>'21','name'=>'Odisha'],
+    //         ['code'=>'22','name'=>'Chhattisgarh'],
+    //         ['code'=>'23','name'=>'Madhya Pradesh'],
+    //         ['code'=>'24','name'=>'Gujarat'],
+    //         ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
+    //         ['code'=>'27','name'=>'Maharashtra'],
+    //         ['code'=>'29','name'=>'Karnataka'],
+    //         ['code'=>'30','name'=>'Goa'],
+    //         ['code'=>'31','name'=>'Lakshadweep'],
+    //         ['code'=>'32','name'=>'Kerala'],
+    //         ['code'=>'33','name'=>'Tamil Nadu'],
+    //         ['code'=>'34','name'=>'Puducherry'],
+    //         ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
+    //         ['code'=>'36','name'=>'Telangana'],
+    //         ['code'=>'37','name'=>'Andhra Pradesh'],
+    //         ['code'=>'38','name'=>'Ladakh'],
+    //     ];
+
+    //     $stateCode = null;
+
+    //     foreach ($states as $st) {
+    //         if (strtolower(trim($st['name'])) === strtolower(trim((string) $billRequest->state))) {
+    //             $stateCode = $st['code'];
+    //             break;
+    //         }
+    //     }
+
+    //     if (!$client) {
+    //         $client = Client::create([
+    //             'business_id' => $bid,
+    //             'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
+    //             'address'     => $billRequest->address,
+    //             'gstin'       => $billRequest->gst_number,
+    //             'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+    //             'state'       => $billRequest->state,
+    //             'city'        => $billRequest->city,
+    //             'pincode'     => $billRequest->pin,
+    //             'state_code'  => $stateCode,
+    //             'email'       => $billRequest->customer_email,
+    //             'is_save'     => 1,
+    //         ]);
+    //     }
+
+    //     $invoiceDate = now(config('app.timezone'))->toDateString();
+
+    //     $bizCode   = $this->normCode($business->state_code ?? '');
+    //     $partyCode = $this->normCode($client->state_code ?? '');
+
+    //     $isIntra = ($bizCode !== '' && $partyCode !== '')
+    //         ? ($bizCode === $partyCode)
+    //         : false;
+
+    //     $itemsJson = [];
+    //     $invoiceRows = [];
+
+    //     $subtotal = 0;
+    //     $taxAmount = 0;
+    //     $grandTotal = 0;
+
+    //     $totalTaxPercentForInvoice = 0;
+    //     $totalCgstAmount = 0;
+    //     $totalSgstAmount = 0;
+    //     $totalIgstAmount = 0;
+
+    //     foreach ($requestItems as $row) {
+    //         $itemId = (int) ($row['item_id'] ?? 0);
+
+    //         if ($itemId <= 0) {
+    //             throw new \Exception('Selected service item id invalid hai.');
+    //         }
+
+    //         $matchedItem = Item::withoutGlobalScopes()
+    //             ->where('business_id', $bid)
+    //             ->where('id', $itemId)
+    //             ->first();
+
+    //         if (!$matchedItem) {
+    //             $debugItem = Item::withoutGlobalScopes()
+    //                 ->where('id', $itemId)
+    //                 ->first();
+
+    //             if ($debugItem) {
+    //                 throw new \Exception(
+    //                     'Selected item business match nahi hua. Item ID: ' . $itemId .
+    //                     ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
+    //                     ', Expected Business ID: ' . $bid .
+    //                     ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
+    //                 );
+    //             }
+
+    //             throw new \Exception('Selected item database me nahi mila. Item ID: ' . $itemId);
+    //         }
+
+    //         if ((int) ($matchedItem->is_active ?? 1) !== 1) {
+    //             throw new \Exception(
+    //                 'Selected item inactive hai. Item ID: ' . $itemId .
+    //                 ', Business ID: ' . ($matchedItem->business_id ?? 'NULL') .
+    //                 ', Active: ' . (($matchedItem->is_active ?? null) ? '1' : '0')
+    //             );
+    //         }
+
+    //         $qty = max(1, (float) ($row['qty'] ?? 1));
+    //         $price = (float) ($row['price'] ?? 0);
+
+    //         if ($price <= 0) {
+    //             throw new \Exception('Bill request amount invalid hai. Item: ' . $matchedItem->name);
+    //         }
+
+    //         $grossAmount = round($qty * $price, 2);
+    //         $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
+
+    //         if ($taxPercent > 0) {
+    //             $lineSubtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
+    //             $lineTaxAmount = round($grossAmount - $lineSubtotal, 2);
+    //         } else {
+    //             $lineSubtotal = round($grossAmount, 2);
+    //             $lineTaxAmount = 0;
+    //         }
+
+    //         if ($isIntra) {
+    //             $lineCgstAmount = round($lineTaxAmount / 2, 2);
+    //             $lineSgstAmount = round($lineTaxAmount - $lineCgstAmount, 2);
+    //             $lineIgstAmount = 0;
+    //         } else {
+    //             $lineCgstAmount = 0;
+    //             $lineSgstAmount = 0;
+    //             $lineIgstAmount = round($lineTaxAmount, 2);
+    //         }
+
+    //         $itemDescription = trim((string) ($row['description'] ?? ''));
+
+    //         if ($itemDescription === '') {
+    //             $itemDescription = $matchedItem->description ?: $matchedItem->name;
+    //         }
+
+    //         $rateWithoutTax = round($lineSubtotal / $qty, 2);
+
+    //         $subtotal += $lineSubtotal;
+    //         $taxAmount += $lineTaxAmount;
+    //         $grandTotal += $grossAmount;
+
+    //         $totalCgstAmount += $lineCgstAmount;
+    //         $totalSgstAmount += $lineSgstAmount;
+    //         $totalIgstAmount += $lineIgstAmount;
+
+    //         $totalTaxPercentForInvoice = max($totalTaxPercentForInvoice, $taxPercent);
+
+    //         $itemsJson[] = [
+    //             'item_id'       => $matchedItem->id,
+    //             'item_type'     => 'service',
+    //             'description'   => $itemDescription,
+    //             'hsn'           => $matchedItem->sac ?? '',
+    //             'qty'           => $qty,
+    //             'tax_percent'   => round($taxPercent, 2),
+    //             'service_rate'  => $rateWithoutTax,
+    //             'rate'          => $rateWithoutTax,
+    //             'tax_amount'    => round($lineTaxAmount, 2),
+    //             'amount'        => round($grossAmount, 2),
+    //             'making_charge' => round($lineSubtotal, 2),
+    //             'gold_wt'       => 0,
+    //             'silver_wt'     => 0,
+    //             'gold_rate'     => 0,
+    //             'silver_rate'   => 0,
+    //             'gemstone_wt'   => 0,
+    //             'diamond_wt'    => 0,
+    //             'making_rate'   => 0,
+    //             'stone_charges' => 0,
+    //         ];
+
+    //         $invoiceRows[] = [
+    //             'matched_item'     => $matchedItem,
+    //             'description'      => $itemDescription,
+    //             'qty'              => $qty,
+    //             'rate_without_tax' => $rateWithoutTax,
+    //             'line_subtotal'    => round($lineSubtotal, 2),
+    //             'tax_percent'      => round($taxPercent, 2),
+    //             'line_tax_amount'  => round($lineTaxAmount, 2),
+    //             'gross_amount'     => round($grossAmount, 2),
+    //         ];
+    //     }
+
+    //     if (empty($invoiceRows)) {
+    //         throw new \Exception('Invoice ke liye koi valid item nahi mila.');
+    //     }
+
+    //     $subtotal = round($subtotal, 2);
+    //     $taxAmount = round($taxAmount, 2);
+    //     $grandTotal = round($grandTotal, 2);
+
+    //     if ($isIntra) {
+    //         $cgstPercent = round($totalTaxPercentForInvoice / 2, 2);
+    //         $sgstPercent = round($totalTaxPercentForInvoice / 2, 2);
+    //         $igstPercent = 0;
+
+    //         $cgstAmount = round($totalCgstAmount, 2);
+    //         $sgstAmount = round($totalSgstAmount, 2);
+    //         $igstAmount = 0;
+    //     } else {
+    //         $cgstPercent = 0;
+    //         $sgstPercent = 0;
+    //         $igstPercent = round($totalTaxPercentForInvoice, 2);
+
+    //         $cgstAmount = 0;
+    //         $sgstAmount = 0;
+    //         $igstAmount = round($totalIgstAmount, 2);
+    //     }
+
+    //     if ($existingInvoice && $forceUpdate) {
+    //         $prefix = $existingInvoice->invoice_prefix;
+    //         $invoiceNumber = $existingInvoice->invoice_number;
+    //     } else {
+    //         $taxBase = $business->quotation_base_prefix ?? 'QT';
+    //         $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
+
+    //         $alloc = \App\Services\InvoiceNumber::next(
+    //             $bid,
+    //             $invoiceDate,
+    //             $prefix,
+    //             3,
+    //             'quotation'
+    //         );
+
+    //         $invoiceNumber = $alloc['full'];
+
+    //         \App\Services\InvoiceNumber::syncNextSeqIfMatches(
+    //             $bid,
+    //             $invoiceDate,
+    //             $invoiceNumber,
+    //             3,
+    //             'quotation'
+    //         );
+    //     }
+
+    //     $invoiceData = [
+    //         'business_id'     => $bid,
+    //         'bil_request_id'  => $billRequest->id,
+
+    //         'invoice_type'    => 'quotation',
+    //         'invoice_prefix'  => $prefix,
+    //         'invoice_number'  => $invoiceNumber,
+    //         'client_id'       => $client->id,
+    //         'invoice_date'    => $invoiceDate,
+    //         'payment_terms'   => 0,
+    //         'due_date'        => null,
+
+    //         'subtotal'        => $subtotal,
+    //         'tax_amount'      => $taxAmount,
+
+    //         'cgst_percent'    => $cgstPercent,
+    //         'cgst_amount'     => $cgstAmount,
+    //         'sgst_percent'    => $sgstPercent,
+    //         'sgst_amount'     => $sgstAmount,
+    //         'igst_percent'    => $igstPercent,
+    //         'igst_amount'     => $igstAmount,
+
+    //         'discount_total'  => 0,
+    //         'charge_total'    => 0,
+    //         'tcs_percent'     => 0,
+    //         'tcs_amount'      => 0,
+    //         'round_off'       => 0,
+    //         'less_amount'     => 0,
+
+    //         'total'           => $grandTotal,
+    //         'received_amount' => 0,
+    //         'balance'         => $grandTotal,
+
+    //         'payment_method'  => null,
+    //         'transport_mode'  => null,
+    //         'reverse_charge'  => 0,
+
+    //         'place_of_supply_state' => $client->state,
+    //         'place_of_supply_code'  => $client->state_code,
+
+    //         'notes'           => ($existingInvoice && $forceUpdate)
+    //             ? 'Updated from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id)
+    //             : 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+    //         'terms'           => null,
+
+    //         'charges_json'    => json_encode([]),
+    //         'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
+
+    //         'amount_in_words' => '',
+    //         'pdf_url'         => null,
+    //         'signature'       => null,
+
+    //         'user_id'         => $userId,
+    //         'created_by'      => ($existingInvoice && $forceUpdate)
+    //             ? ($existingInvoice->created_by ?? $userId)
+    //             : $userId,
+    //         'updated_by'      => $userId,
+
+    //         'kots_json'       => json_encode([]),
+    //     ];
+
+    //     if ($existingInvoice && $forceUpdate) {
+    //         $invoice = $existingInvoice;
+    //         $invoice->update($invoiceData);
+
+    //         InvoiceItem::where('invoice_id', $invoice->id)->delete();
+    //     } else {
+    //         $invoice = Invoice::create($invoiceData);
+    //     }
+
+    //     foreach ($invoiceRows as $row) {
+    //         InvoiceItem::create([
+    //             'invoice_id'      => $invoice->id,
+    //             'item_id'         => $row['matched_item']->id,
+    //             'description'     => $row['description'],
+    //             'sac_code'        => $row['matched_item']->sac ?? null,
+    //             'hsn_code'        => null,
+    //             'quantity'        => $row['qty'],
+    //             'gold_wt'         => 0,
+    //             'silver_wt'       => 0,
+    //             'gold_rate'       => 0,
+    //             'silver_rate'     => 0,
+    //             'gemstone_wt_ct'  => 0,
+    //             'diamond_wt_ct'   => 0,
+    //             'making_charge'   => $row['line_subtotal'],
+    //             'making_rate'     => null,
+    //             'discount'        => 0,
+    //             'tax_percent'     => $row['tax_percent'],
+    //             'rate'            => $row['rate_without_tax'],
+    //             'amount'          => $row['gross_amount'],
+    //         ]);
+    //     }
+
+    //     $oldApi = [];
+
+    //     if (!empty($billRequest->api_response)) {
+    //         $decoded = json_decode($billRequest->api_response, true);
+
+    //         if (is_array($decoded)) {
+    //             $oldApi = $decoded;
+    //         }
+    //     }
+
+    //     $oldApi['matched_items'] = collect($invoiceRows)->map(function ($row) {
+    //         return [
+    //             'matched_item_id'   => $row['matched_item']->id,
+    //             'matched_item_name' => $row['matched_item']->name,
+    //             'qty'               => $row['qty'],
+    //             'rate'              => $row['rate_without_tax'],
+    //             'amount'            => $row['gross_amount'],
+    //         ];
+    //     })->values()->toArray();
+
+    //     $oldApi['created_invoice_id']     = $invoice->id;
+    //     $oldApi['created_invoice_number'] = $invoice->invoice_number;
+    //     $oldApi['created_client_id']      = $client->id;
+    //     $oldApi['invoice_type']           = 'quotation';
+    //     $oldApi['invoice_date']           = $invoiceDate;
+    //     $oldApi['gst_included']           = true;
+    //     $oldApi['gross_amount']           = $grandTotal;
+    //     $oldApi['taxable_amount']         = $subtotal;
+    //     $oldApi['tax_amount']             = $taxAmount;
+    //     $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
+    //     $oldApi['was_updated']            = ($existingInvoice && $forceUpdate);
+
+    //     $billRequest->update([
+    //         'remarks'      => ($existingInvoice && $forceUpdate)
+    //             ? 'Quotation updated successfully. Quotation No: ' . $invoice->invoice_number
+    //             : 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
+    //         'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
+    //     ]);
+
+    //     return $invoice;
+    // }
+
     private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest, bool $forceUpdate = false)
     {
         $existingInvoice = Invoice::withoutGlobalScopes()
@@ -711,9 +1189,9 @@ class BillRequestController extends Controller
         if ($firstItemId <= 0) {
             Log::error('Bill request first item invalid', [
                 'bil_request_id' => $billRequest->id,
-                'request_items'   => $requestItems,
-                'full_payload'    => $billRequest->full_payload,
-                'package_name'    => $billRequest->package_name,
+                'request_items'  => $requestItems,
+                'full_payload'   => $billRequest->full_payload,
+                'package_name'   => $billRequest->package_name,
             ]);
 
             throw new \Exception('Selected service item id invalid hai.');
@@ -742,6 +1220,15 @@ class BillRequestController extends Controller
 
         $client = null;
 
+        $primaryPhone = trim((string) $billRequest->customer_phone);
+        $alternatePhone = trim((string) $billRequest->customer_phone1);
+        $originalPhone = $primaryPhone !== '' ? $primaryPhone : $alternatePhone;
+        $clientMobile = $originalPhone === '' ? null : $originalPhone;
+
+        if ($clientMobile !== null && preg_match('/^\+?[0-9]{12}$/D', $clientMobile) === 1) {
+            $clientMobile = substr($clientMobile, -10);
+        }
+
         if (!empty($billRequest->gst_number)) {
             $client = Client::withoutGlobalScopes()
                 ->where('business_id', $bid)
@@ -749,10 +1236,17 @@ class BillRequestController extends Controller
                 ->first();
         }
 
-        if (!$client && !empty($billRequest->customer_phone)) {
+        if (!$client && $clientMobile !== null) {
             $client = Client::withoutGlobalScopes()
                 ->where('business_id', $bid)
-                ->where('mobile', trim($billRequest->customer_phone))
+                ->where('mobile', $clientMobile)
+                ->first();
+        }
+
+        if (!$client && $clientMobile !== null && $clientMobile !== $originalPhone) {
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
+                ->where('mobile', $originalPhone)
                 ->first();
         }
 
@@ -764,42 +1258,42 @@ class BillRequestController extends Controller
         }
 
         $states = [
-            ['code'=>'01','name'=>'Jammu and Kashmir'],
-            ['code'=>'02','name'=>'Himachal Pradesh'],
-            ['code'=>'03','name'=>'Punjab'],
-            ['code'=>'04','name'=>'Chandigarh'],
-            ['code'=>'05','name'=>'Uttarakhand'],
-            ['code'=>'06','name'=>'Haryana'],
-            ['code'=>'07','name'=>'Delhi'],
-            ['code'=>'08','name'=>'Rajasthan'],
-            ['code'=>'09','name'=>'Uttar Pradesh'],
-            ['code'=>'10','name'=>'Bihar'],
-            ['code'=>'11','name'=>'Sikkim'],
-            ['code'=>'12','name'=>'Arunachal Pradesh'],
-            ['code'=>'13','name'=>'Nagaland'],
-            ['code'=>'14','name'=>'Manipur'],
-            ['code'=>'15','name'=>'Mizoram'],
-            ['code'=>'16','name'=>'Tripura'],
-            ['code'=>'17','name'=>'Meghalaya'],
-            ['code'=>'18','name'=>'Assam'],
-            ['code'=>'19','name'=>'West Bengal'],
-            ['code'=>'20','name'=>'Jharkhand'],
-            ['code'=>'21','name'=>'Odisha'],
-            ['code'=>'22','name'=>'Chhattisgarh'],
-            ['code'=>'23','name'=>'Madhya Pradesh'],
-            ['code'=>'24','name'=>'Gujarat'],
-            ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
-            ['code'=>'27','name'=>'Maharashtra'],
-            ['code'=>'29','name'=>'Karnataka'],
-            ['code'=>'30','name'=>'Goa'],
-            ['code'=>'31','name'=>'Lakshadweep'],
-            ['code'=>'32','name'=>'Kerala'],
-            ['code'=>'33','name'=>'Tamil Nadu'],
-            ['code'=>'34','name'=>'Puducherry'],
-            ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
-            ['code'=>'36','name'=>'Telangana'],
-            ['code'=>'37','name'=>'Andhra Pradesh'],
-            ['code'=>'38','name'=>'Ladakh'],
+            ['code' => '01', 'name' => 'Jammu and Kashmir'],
+            ['code' => '02', 'name' => 'Himachal Pradesh'],
+            ['code' => '03', 'name' => 'Punjab'],
+            ['code' => '04', 'name' => 'Chandigarh'],
+            ['code' => '05', 'name' => 'Uttarakhand'],
+            ['code' => '06', 'name' => 'Haryana'],
+            ['code' => '07', 'name' => 'Delhi'],
+            ['code' => '08', 'name' => 'Rajasthan'],
+            ['code' => '09', 'name' => 'Uttar Pradesh'],
+            ['code' => '10', 'name' => 'Bihar'],
+            ['code' => '11', 'name' => 'Sikkim'],
+            ['code' => '12', 'name' => 'Arunachal Pradesh'],
+            ['code' => '13', 'name' => 'Nagaland'],
+            ['code' => '14', 'name' => 'Manipur'],
+            ['code' => '15', 'name' => 'Mizoram'],
+            ['code' => '16', 'name' => 'Tripura'],
+            ['code' => '17', 'name' => 'Meghalaya'],
+            ['code' => '18', 'name' => 'Assam'],
+            ['code' => '19', 'name' => 'West Bengal'],
+            ['code' => '20', 'name' => 'Jharkhand'],
+            ['code' => '21', 'name' => 'Odisha'],
+            ['code' => '22', 'name' => 'Chhattisgarh'],
+            ['code' => '23', 'name' => 'Madhya Pradesh'],
+            ['code' => '24', 'name' => 'Gujarat'],
+            ['code' => '26', 'name' => 'Dadra and Nagar Haveli and Daman and Diu'],
+            ['code' => '27', 'name' => 'Maharashtra'],
+            ['code' => '29', 'name' => 'Karnataka'],
+            ['code' => '30', 'name' => 'Goa'],
+            ['code' => '31', 'name' => 'Lakshadweep'],
+            ['code' => '32', 'name' => 'Kerala'],
+            ['code' => '33', 'name' => 'Tamil Nadu'],
+            ['code' => '34', 'name' => 'Puducherry'],
+            ['code' => '35', 'name' => 'Andaman and Nicobar Islands'],
+            ['code' => '36', 'name' => 'Telangana'],
+            ['code' => '37', 'name' => 'Andhra Pradesh'],
+            ['code' => '38', 'name' => 'Ladakh'],
         ];
 
         $stateCode = null;
@@ -817,7 +1311,7 @@ class BillRequestController extends Controller
                 'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
                 'address'     => $billRequest->address,
                 'gstin'       => $billRequest->gst_number,
-                'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+                'mobile'      => $clientMobile,
                 'state'       => $billRequest->state,
                 'city'        => $billRequest->city,
                 'pincode'     => $billRequest->pin,
@@ -829,7 +1323,7 @@ class BillRequestController extends Controller
 
         $invoiceDate = now(config('app.timezone'))->toDateString();
 
-        $bizCode   = $this->normCode($business->state_code ?? '');
+        $bizCode = $this->normCode($business->state_code ?? '');
         $partyCode = $this->normCode($client->state_code ?? '');
 
         $isIntra = ($bizCode !== '' && $partyCode !== '')
@@ -1020,7 +1514,6 @@ class BillRequestController extends Controller
         $invoiceData = [
             'business_id'     => $bid,
             'bil_request_id'  => $billRequest->id,
-
             'invoice_type'    => 'quotation',
             'invoice_prefix'  => $prefix,
             'invoice_number'  => $invoiceNumber,
@@ -1089,24 +1582,24 @@ class BillRequestController extends Controller
 
         foreach ($invoiceRows as $row) {
             InvoiceItem::create([
-                'invoice_id'      => $invoice->id,
-                'item_id'         => $row['matched_item']->id,
-                'description'     => $row['description'],
-                'sac_code'        => $row['matched_item']->sac ?? null,
-                'hsn_code'        => null,
-                'quantity'        => $row['qty'],
-                'gold_wt'         => 0,
-                'silver_wt'       => 0,
-                'gold_rate'       => 0,
-                'silver_rate'     => 0,
-                'gemstone_wt_ct'  => 0,
-                'diamond_wt_ct'   => 0,
-                'making_charge'   => $row['line_subtotal'],
-                'making_rate'     => null,
-                'discount'        => 0,
-                'tax_percent'     => $row['tax_percent'],
-                'rate'            => $row['rate_without_tax'],
-                'amount'          => $row['gross_amount'],
+                'invoice_id'     => $invoice->id,
+                'item_id'        => $row['matched_item']->id,
+                'description'    => $row['description'],
+                'sac_code'       => $row['matched_item']->sac ?? null,
+                'hsn_code'       => null,
+                'quantity'       => $row['qty'],
+                'gold_wt'        => 0,
+                'silver_wt'      => 0,
+                'gold_rate'      => 0,
+                'silver_rate'    => 0,
+                'gemstone_wt_ct' => 0,
+                'diamond_wt_ct'  => 0,
+                'making_charge'  => $row['line_subtotal'],
+                'making_rate'    => null,
+                'discount'       => 0,
+                'tax_percent'    => $row['tax_percent'],
+                'rate'           => $row['rate_without_tax'],
+                'amount'         => $row['gross_amount'],
             ]);
         }
 
@@ -1371,6 +1864,322 @@ class BillRequestController extends Controller
         }
     }
 
+    // public function createInvoice(Request $request, BillRequest $billRequest)
+    // {
+    //     $bid = $request->business_id;
+    //     $userId = $request->user_id;
+
+    //     try {
+    //         $invoice = DB::transaction(function () use ($billRequest, $bid, $userId) {
+    //             $business = Business::withoutGlobalScopes()->findOrFail($bid);
+
+    //             $client = null;
+
+    //             if (!empty($billRequest->gst_number)) {
+    //                 $client = Client::withoutGlobalScopes()
+    //                     ->where('business_id', $bid)
+    //                     ->where('gstin', trim($billRequest->gst_number))
+    //                     ->first();
+    //             }
+
+    //             if (!$client && !empty($billRequest->customer_phone)) {
+    //                 $client = Client::withoutGlobalScopes()
+    //                     ->where('business_id', $bid)
+    //                     ->where('mobile', trim($billRequest->customer_phone))
+    //                     ->first();
+    //             }
+
+    //             if (!$client && !empty($billRequest->customer_email)) {
+    //                 $client = Client::withoutGlobalScopes()
+    //                     ->where('business_id', $bid)
+    //                     ->where('email', trim($billRequest->customer_email))
+    //                     ->first();
+    //             }
+
+    //             if (!$client) {
+    //                 $client = Client::create([
+    //                     'business_id' => $bid,
+    //                     'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
+    //                     'address'     => $billRequest->address,
+    //                     'gstin'       => $billRequest->gst_number,
+    //                     'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+    //                     'state'       => $billRequest->state,
+    //                     'city'        => $billRequest->city,
+    //                     'pincode'     => $billRequest->pin,
+    //                     'state_code'  => null,
+    //                     'email'       => $billRequest->customer_email,
+    //                     'is_save'     => 1,
+    //                 ]);
+    //             }
+
+    //             $itemId = (int) ($billRequest->package_name ?? 0);
+
+    //             $matchedItem = Item::withoutGlobalScopes()
+    //                 ->where('business_id', $bid)
+    //                 // ->where('type', 'service')
+    //                 ->where('id', $itemId)
+    //                 ->first();
+
+    //             if (!$matchedItem) {
+    //                 throw new \Exception('Selected service item nahi mila. Item ID: ' . $itemId);
+    //             }
+
+    //             $grossAmount = (float) (
+    //                 $billRequest->selling_price
+    //                 ?? $billRequest->payment_amount
+    //                 ?? $billRequest->package_price
+    //                 ?? $matchedItem->price
+    //                 ?? 0
+    //             );
+
+    //             if ($grossAmount <= 0) {
+    //                 throw new \Exception('Bill request amount invalid hai.');
+    //             }
+
+    //             $receivedAmount = (float) ($billRequest->payment_amount ?? 0);
+    //             $invoiceDate = now(config('app.timezone'))->toDateString();
+
+    //             $taxPercent = (float) ($matchedItem->tax_rate ?? 0);
+
+    //             if ($taxPercent > 0) {
+    //                 $subtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
+    //                 $taxAmount = round($grossAmount - $subtotal, 2);
+    //             } else {
+    //                 $subtotal = round($grossAmount, 2);
+    //                 $taxAmount = 0;
+    //             }
+
+    //             $grandTotal = round($grossAmount, 2);
+    //             $balance = max(0, round($grandTotal - $receivedAmount, 2));
+
+    //             $businessStateCode = $this->normCode($business->state_code ?? '');
+    //             $clientStateCode = $this->normCode($client->state_code ?? '');
+
+    //             $isIntra = ($businessStateCode !== '' && $clientStateCode !== '')
+    //                 ? ($businessStateCode === $clientStateCode)
+    //                 : false;
+
+    //             if ($isIntra) {
+    //                 $cgstPercent = round($taxPercent / 2, 2);
+    //                 $sgstPercent = round($taxPercent / 2, 2);
+    //                 $igstPercent = 0;
+
+    //                 $cgstAmount = round($taxAmount / 2, 2);
+    //                 $sgstAmount = round($taxAmount - $cgstAmount, 2);
+    //                 $igstAmount = 0;
+    //             } else {
+    //                 $cgstPercent = 0;
+    //                 $sgstPercent = 0;
+    //                 $igstPercent = round($taxPercent, 2);
+
+    //                 $cgstAmount = 0;
+    //                 $sgstAmount = 0;
+    //                 $igstAmount = round($taxAmount, 2);
+    //             }
+
+    //             $existingInvoice = Invoice::withoutGlobalScopes()
+    //                 ->where('business_id', $bid)
+    //                 ->where('bil_request_id', $billRequest->id)
+    //                 ->where('invoice_type', 'tax')
+    //                 ->first();
+
+    //             $taxBase = 'INV';
+    //             $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
+
+    //             $alloc = \App\Services\InvoiceNumber::next(
+    //                 (int) $bid,
+    //                 $invoiceDate,
+    //                 $prefix,
+    //                 3,
+    //                 'tax'
+    //             );
+
+    //             $invoiceNumber = $alloc['full'];
+
+    //             \App\Services\InvoiceNumber::syncNextSeqIfMatches(
+    //                 (int) $bid,
+    //                 $invoiceDate,
+    //                 $invoiceNumber,
+    //                 3,
+    //                 'tax'
+    //             );
+
+    //             $itemDescription = $matchedItem->description ?: $matchedItem->name;
+
+    //             $itemsJson = [
+    //                 [
+    //                     'item_id'       => $matchedItem->id,
+    //                     'item_type'     => 'service',
+    //                     'description'   => $itemDescription,
+    //                     'hsn'           => $matchedItem->sac ?? '',
+    //                     'qty'           => 1,
+    //                     'tax_percent'   => round($taxPercent, 2),
+    //                     'service_rate'  => round($subtotal, 2),
+    //                     'rate'          => round($subtotal, 2),
+    //                     'tax_amount'    => round($taxAmount, 2),
+    //                     'amount'        => round($grandTotal, 2),
+    //                     'making_charge' => round($subtotal, 2),
+    //                 ],
+    //             ];
+
+    //             $invoiceData = [
+    //                 'business_id'     => $bid,
+    //                 'bil_request_id'  => $billRequest->id,
+    //                 'invoice_type'    => 'tax',
+    //                 'invoice_prefix'  => $prefix,
+    //                 'invoice_number'  => $invoiceNumber,
+    //                 'client_id'       => $client->id,
+    //                 'invoice_date'    => $invoiceDate,
+    //                 'payment_terms'   => 0,
+
+    //                 'subtotal'        => round($subtotal, 2),
+    //                 'tax_amount'      => round($taxAmount, 2),
+
+    //                 'cgst_percent'    => $cgstPercent,
+    //                 'cgst_amount'     => $cgstAmount,
+    //                 'sgst_percent'    => $sgstPercent,
+    //                 'sgst_amount'     => $sgstAmount,
+    //                 'igst_percent'    => $igstPercent,
+    //                 'igst_amount'     => $igstAmount,
+
+    //                 'discount_total'  => 0,
+    //                 'charge_total'    => 0,
+    //                 'tcs_percent'     => 0,
+    //                 'tcs_amount'      => 0,
+    //                 'round_off'       => 0,
+    //                 'less_amount'     => 0,
+
+    //                 'total'           => $grandTotal,
+    //                 'received_amount' => $receivedAmount,
+    //                 'balance'         => $balance,
+
+    //                 'payment_method'  => $billRequest->payment_method,
+    //                 'reverse_charge'  => 0,
+
+    //                 'place_of_supply_state' => $client->state,
+    //                 'place_of_supply_code'  => $client->state_code,
+
+    //                 'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+
+    //                 'charges_json'    => json_encode([]),
+    //                 'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
+
+    //                 'amount_in_words' => '',
+    //                 'pdf_url'         => null,
+    //                 'signature'       => null,
+    //                 'user_id'         => $userId,
+    //                 'updated_by'      => $userId,
+    //                 'kots_json'       => json_encode([]),
+    //             ];
+
+    //             if ($existingInvoice) {
+    //                 $invoice = $existingInvoice;
+    //                 $invoice->update($invoiceData);
+    //                 InvoiceItem::where('invoice_id', $invoice->id)->delete();
+    //             } else {
+    //                 $invoiceData['created_by'] = $userId;
+    //                 $invoice = Invoice::create($invoiceData);
+    //             }
+
+    //             InvoiceItem::create([
+    //                 'invoice_id'     => $invoice->id,
+    //                 'item_id'        => $matchedItem->id,
+    //                 'description'    => $itemDescription,
+    //                 'sac_code'       => $matchedItem->sac ?? null,
+    //                 'quantity'       => 1,
+    //                 'making_charge'  => round($subtotal, 2),
+    //                 'discount'       => 0,
+    //                 'tax_percent'    => round($taxPercent, 2),
+    //                 'rate'           => round($subtotal, 2),
+    //                 'amount'         => round($grandTotal, 2),
+    //             ]);
+
+    //             if ($receivedAmount > 0) {
+    //                 $method = strtolower(trim((string) $billRequest->payment_method));
+
+    //                 InvoicePayment::where('invoice_id', $invoice->id)->delete();
+
+    //                 InvoicePayment::create([
+    //                     'business_id'    => $bid,
+    //                     'invoice_id'     => $invoice->id,
+    //                     'client_id'      => $client->id,
+    //                     'total_value'    => $grandTotal,
+
+    //                     'cash_amount'    => $method === 'cash' ? $receivedAmount : 0,
+    //                     'online_amount'  => in_array($method, ['upi', 'online', 'bank'], true) ? $receivedAmount : 0,
+    //                     'card_amount'    => $method === 'card' ? $receivedAmount : 0,
+    //                     'cheque_amount'  => $method === 'cheque' ? $receivedAmount : 0,
+
+    //                     'online_mode'    => $method === 'upi' ? 'upi' : null,
+    //                     'online_ref'     => $billRequest->transaction_id,
+    //                     'bank_name'      => $billRequest->bank,
+
+    //                     'received_total' => $receivedAmount,
+    //                     'notes'          => 'Created from bill request',
+    //                     'paid_at'        => now(config('app.timezone')),
+    //                 ]);
+    //             }
+
+    //             $oldApi = [];
+
+    //             if (!empty($billRequest->api_response)) {
+    //                 $decoded = json_decode($billRequest->api_response, true);
+
+    //                 if (is_array($decoded)) {
+    //                     $oldApi = $decoded;
+    //                 }
+    //             }
+
+    //             $oldApi['created_invoice_id'] = $invoice->id;
+    //             $oldApi['created_invoice_number'] = $invoice->invoice_number;
+    //             $oldApi['created_client_id'] = $client->id;
+    //             $oldApi['invoice_type'] = 'tax';
+    //             $oldApi['processed_at'] = now(config('app.timezone'))->toDateTimeString();
+
+    //             $billRequest->update([
+    //                 'status'       => 'processed',
+    //                 'remarks'      => 'Tax invoice created successfully. Invoice No: ' . $invoice->invoice_number,
+    //                 'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
+    //             ]);
+
+    //             return $invoice;
+    //         });
+
+    //         $this->pushSaveInvoiceApi($billRequest->fresh(), $invoice->fresh());
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Invoice created successfully from bill request.',
+    //             'data'    => [
+    //                 'bill_request' => $billRequest->fresh(),
+    //                 'invoice'      => $invoice->fresh(),
+    //                 'preview_url'  => route('invoices.preview', $invoice->id),
+    //                 'show_url'     => route('invoices.show', $invoice->id),
+    //             ],
+    //         ]);
+
+    //     } catch (\Throwable $e) {
+    //         Log::error('Bill request to invoice API failed', [
+    //             'bil_request_id' => $billRequest->id,
+    //             'error'           => $e->getMessage(),
+    //             'line'            => $e->getLine(),
+    //             'file'            => $e->getFile(),
+    //         ]);
+
+    //         $billRequest->update([
+    //             'status'  => 'failed',
+    //             'remarks' => $e->getMessage(),
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Invoice create/update failed.',
+    //             'error'   => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+
     public function createInvoice(Request $request, BillRequest $billRequest)
     {
         $bid = $request->business_id;
@@ -1382,6 +2191,15 @@ class BillRequestController extends Controller
 
                 $client = null;
 
+                $primaryPhone = trim((string) $billRequest->customer_phone);
+                $alternatePhone = trim((string) $billRequest->customer_phone1);
+                $originalPhone = $primaryPhone !== '' ? $primaryPhone : $alternatePhone;
+                $clientMobile = $originalPhone === '' ? null : $originalPhone;
+
+                if ($clientMobile !== null && preg_match('/^\+?[0-9]{12}$/D', $clientMobile) === 1) {
+                    $clientMobile = substr($clientMobile, -10);
+                }
+
                 if (!empty($billRequest->gst_number)) {
                     $client = Client::withoutGlobalScopes()
                         ->where('business_id', $bid)
@@ -1389,10 +2207,17 @@ class BillRequestController extends Controller
                         ->first();
                 }
 
-                if (!$client && !empty($billRequest->customer_phone)) {
+                if (!$client && $clientMobile !== null) {
                     $client = Client::withoutGlobalScopes()
                         ->where('business_id', $bid)
-                        ->where('mobile', trim($billRequest->customer_phone))
+                        ->where('mobile', $clientMobile)
+                        ->first();
+                }
+
+                if (!$client && $clientMobile !== null && $clientMobile !== $originalPhone) {
+                    $client = Client::withoutGlobalScopes()
+                        ->where('business_id', $bid)
+                        ->where('mobile', $originalPhone)
                         ->first();
                 }
 
@@ -1409,7 +2234,7 @@ class BillRequestController extends Controller
                         'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
                         'address'     => $billRequest->address,
                         'gstin'       => $billRequest->gst_number,
-                        'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+                        'mobile'      => $clientMobile,
                         'state'       => $billRequest->state,
                         'city'        => $billRequest->city,
                         'pincode'     => $billRequest->pin,
@@ -1423,7 +2248,6 @@ class BillRequestController extends Controller
 
                 $matchedItem = Item::withoutGlobalScopes()
                     ->where('business_id', $bid)
-                    // ->where('type', 'service')
                     ->where('id', $itemId)
                     ->first();
 
@@ -1589,16 +2413,16 @@ class BillRequestController extends Controller
                 }
 
                 InvoiceItem::create([
-                    'invoice_id'     => $invoice->id,
-                    'item_id'        => $matchedItem->id,
-                    'description'    => $itemDescription,
-                    'sac_code'       => $matchedItem->sac ?? null,
-                    'quantity'       => 1,
-                    'making_charge'  => round($subtotal, 2),
-                    'discount'       => 0,
-                    'tax_percent'    => round($taxPercent, 2),
-                    'rate'           => round($subtotal, 2),
-                    'amount'         => round($grandTotal, 2),
+                    'invoice_id'    => $invoice->id,
+                    'item_id'       => $matchedItem->id,
+                    'description'   => $itemDescription,
+                    'sac_code'      => $matchedItem->sac ?? null,
+                    'quantity'      => 1,
+                    'making_charge' => round($subtotal, 2),
+                    'discount'      => 0,
+                    'tax_percent'   => round($taxPercent, 2),
+                    'rate'          => round($subtotal, 2),
+                    'amount'        => round($grandTotal, 2),
                 ]);
 
                 if ($receivedAmount > 0) {
@@ -1664,13 +2488,12 @@ class BillRequestController extends Controller
                     'show_url'     => route('invoices.show', $invoice->id),
                 ],
             ]);
-
         } catch (\Throwable $e) {
             Log::error('Bill request to invoice API failed', [
                 'bil_request_id' => $billRequest->id,
-                'error'           => $e->getMessage(),
-                'line'            => $e->getLine(),
-                'file'            => $e->getFile(),
+                'error'          => $e->getMessage(),
+                'line'           => $e->getLine(),
+                'file'           => $e->getFile(),
             ]);
 
             $billRequest->update([
