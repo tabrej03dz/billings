@@ -20,1082 +20,561 @@ use Illuminate\Support\Facades\Storage;
 class BillRequestController extends Controller
 {
 
-
-    // public function index1(Request $request)
-    // {
-    //     $statuses = [
-    //         'pending',
-    //         'processed',
-    //         'failed',
-    //     ];
-
-    //     $allowedPerPages = [
-    //         10,
-    //         20,
-    //         50,
-    //         100,
-    //     ];
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Bill Request Query
-    //     |--------------------------------------------------------------------------
-    //     |
-    //     | invoice relation ko eager load kiya gaya hai, jisse jis bill request
-    //     | ka invoice ban chuka hai uska complete invoice data response me aayega.
-    //     |
-    //     */
-
-    //     $query = BillRequest::query()
-    //         ->with([
-    //             'invoice' => function ($invoiceQuery) {
-    //                 $invoiceQuery->select([
-    //                     'id',
-    //                     'bil_request_id',
-    //                     'business_id',
-    //                     'invoice_type',
-    //                     'invoice_prefix',
-    //                     'invoice_number',
-    //                     'client_id',
-    //                     'invoice_date',
-    //                     'due_date',
-    //                     'subtotal',
-    //                     'tax_amount',
-    //                     'cgst_percent',
-    //                     'cgst_amount',
-    //                     'sgst_percent',
-    //                     'sgst_amount',
-    //                     'igst_percent',
-    //                     'igst_amount',
-    //                     'discount_total',
-    //                     'charge_total',
-    //                     'tcs_percent',
-    //                     'tcs_amount',
-    //                     'round_off',
-    //                     'less_amount',
-    //                     'total',
-    //                     'received_amount',
-    //                     'balance',
-    //                     'payment_method',
-    //                     'transport_mode',
-    //                     'reverse_charge',
-    //                     'place_of_supply_state',
-    //                     'place_of_supply_code',
-    //                     'notes',
-    //                     'terms',
-    //                     'charges_json',
-    //                     'items_json',
-    //                     'amount_in_words',
-    //                     'pdf_url',
-    //                     'signature',
-    //                     'user_id',
-    //                     'created_at',
-    //                     'updated_at',
-    //                 ]);
-    //             },
-    //         ]);
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Search Filter
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     if ($request->filled('search')) {
-    //         $search = trim($request->search);
-
-    //         $query->where(function ($q) use ($search) {
-    //             $q->where('customer_name', 'like', "%{$search}%")
-    //                 ->orWhere('customer_email', 'like', "%{$search}%")
-    //                 ->orWhere('customer_phone', 'like', "%{$search}%")
-    //                 ->orWhere('customer_phone1', 'like', "%{$search}%")
-    //                 ->orWhere('business_name', 'like', "%{$search}%")
-    //                 ->orWhere('gst_number', 'like', "%{$search}%")
-    //                 ->orWhere('package_name', 'like', "%{$search}%")
-    //                 ->orWhere('payment_method', 'like', "%{$search}%")
-    //                 ->orWhere('transaction_id', 'like', "%{$search}%")
-    //                 ->orWhere('source_software', 'like', "%{$search}%")
-    //                 ->orWhere('source_request_id', 'like', "%{$search}%")
-
-    //                 /*
-    //                 * Invoice number se bhi bill request search kar sakte hain.
-    //                 */
-    //                 ->orWhereHas('invoice', function ($invoiceQuery) use ($search) {
-    //                     $invoiceQuery
-    //                         ->where('invoice_number', 'like', "%{$search}%")
-    //                         ->orWhereRaw(
-    //                             "CONCAT(COALESCE(invoice_prefix, ''), invoice_number) LIKE ?",
-    //                             ["%{$search}%"]
-    //                         );
-    //                 });
-    //         });
-    //     }
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Status Filter
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     if (
-    //         $request->filled('status')
-    //         && in_array($request->status, $statuses, true)
-    //     ) {
-    //         $query->where('status', $request->status);
-    //     }
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Date Filters
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     if ($request->filled('from_date')) {
-    //         $query->whereDate('requested_at', '>=', $request->from_date);
-    //     }
-
-    //     if ($request->filled('to_date')) {
-    //         $query->whereDate('requested_at', '<=', $request->to_date);
-    //     }
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Payment Method Filter
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     if ($request->filled('payment_method')) {
-    //         $query->where(
-    //             'payment_method',
-    //             trim($request->payment_method)
-    //         );
-    //     }
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Customer Type Filter
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     if ($request->filled('customer_type')) {
-    //         $query->where(
-    //             'customer_type',
-    //             trim($request->customer_type)
-    //         );
-    //     }
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Invoice Status Filter
-    //     |--------------------------------------------------------------------------
-    //     |
-    //     | invoice_status=generated  => sirf generated invoices
-    //     | invoice_status=pending    => jinka invoice nahi bana
-    //     |
-    //     */
-
-    //     if ($request->invoice_status === 'generated') {
-    //         $query->whereHas('invoice');
-    //     }
-
-    //     if ($request->invoice_status === 'pending') {
-    //         $query->whereDoesntHave('invoice');
-    //     }
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Pagination
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     $perPage = (int) $request->get('per_page', 20);
-
-    //     if (!in_array($perPage, $allowedPerPages, true)) {
-    //         $perPage = 20;
-    //     }
-
-    //     $billRequests = $query
-    //         ->latest('id')
-    //         ->paginate($perPage)
-    //         ->withQueryString();
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Additional Invoice Information
-    //     |--------------------------------------------------------------------------
-    //     */
-
-    //     $billRequests->getCollection()->transform(function ($billRequest) {
-    //         $billRequest->invoice_generated = $billRequest->invoice !== null;
-
-    //         $billRequest->invoice_status = $billRequest->invoice
-    //             ? 'generated'
-    //             : 'not_generated';
-
-    //         $billRequest->invoice_display_number = $billRequest->invoice
-    //             ? trim(
-    //                 ($billRequest->invoice->invoice_prefix ?? '')
-    //                 . ($billRequest->invoice->invoice_number ?? '')
-    //             )
-    //             : null;
-
-    //         return $billRequest;
-    //     });
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Bill requests with invoices fetched successfully.',
-
-    //         'summary' => [
-    //             'current_page_records' => $billRequests->count(),
-
-    //             'invoice_generated' => $billRequests
-    //                 ->getCollection()
-    //                 ->where('invoice_generated', true)
-    //                 ->count(),
-
-    //             'invoice_not_generated' => $billRequests
-    //                 ->getCollection()
-    //                 ->where('invoice_generated', false)
-    //                 ->count(),
-    //         ],
-
-    //         'data' => $billRequests,
-    //     ]);
-    // }
-
     public function index1(Request $request)
-{
-    $statuses = [
-        'pending',
-        'processed',
-        'failed',
-    ];
-
-    $allowedPerPages = [
-        10,
-        20,
-        50,
-        100,
-    ];
-
-    /*
-    |--------------------------------------------------------------------------
-    | Bill Request Query
-    |--------------------------------------------------------------------------
-    */
-
-    $query = BillRequest::query()
-        ->with([
-            'invoice' => function ($invoiceQuery) {
-                $invoiceQuery->select([
-                    'id',
-                    'bil_request_id',
-                    'business_id',
-                    'invoice_type',
-                    'invoice_prefix',
-                    'invoice_number',
-                    'client_id',
-                    'invoice_date',
-                    'due_date',
-                    'subtotal',
-                    'tax_amount',
-                    'cgst_percent',
-                    'cgst_amount',
-                    'sgst_percent',
-                    'sgst_amount',
-                    'igst_percent',
-                    'igst_amount',
-                    'discount_total',
-                    'charge_total',
-                    'tcs_percent',
-                    'tcs_amount',
-                    'round_off',
-                    'less_amount',
-                    'total',
-                    'received_amount',
-                    'balance',
-                    'payment_method',
-                    'transport_mode',
-                    'reverse_charge',
-                    'place_of_supply_state',
-                    'place_of_supply_code',
-                    'notes',
-                    'terms',
-                    'charges_json',
-                    'items_json',
-                    'amount_in_words',
-                    'pdf_url',
-                    'signature',
-                    'created_at',
-                    'updated_at',
-                ]);
-            },
-        ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Search Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if ($request->filled('search')) {
-        $search = trim($request->search);
-
-        $query->where(function ($q) use ($search) {
-            $q->where('customer_name', 'like', "%{$search}%")
-                ->orWhere('customer_email', 'like', "%{$search}%")
-                ->orWhere('customer_phone', 'like', "%{$search}%")
-                ->orWhere('customer_phone1', 'like', "%{$search}%")
-                ->orWhere('business_name', 'like', "%{$search}%")
-                ->orWhere('gst_number', 'like', "%{$search}%")
-                ->orWhere('package_name', 'like', "%{$search}%")
-                ->orWhere('payment_method', 'like', "%{$search}%")
-                ->orWhere('transaction_id', 'like', "%{$search}%")
-                ->orWhere('source_software', 'like', "%{$search}%")
-                ->orWhere('source_request_id', 'like', "%{$search}%")
-                ->orWhereHas('invoice', function ($invoiceQuery) use ($search) {
-                    $invoiceQuery
-                        ->where('invoice_number', 'like', "%{$search}%")
-                        ->orWhereRaw(
-                            "CONCAT(COALESCE(invoice_prefix, ''), invoice_number) LIKE ?",
-                            ["%{$search}%"]
-                        );
-                });
-        });
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Status Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        $request->filled('status') &&
-        in_array($request->status, $statuses, true)
-    ) {
-        $query->where('status', $request->status);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Date Filters
-    |--------------------------------------------------------------------------
-    */
-
-    if ($request->filled('from_date')) {
-        $query->whereDate('requested_at', '>=', $request->from_date);
-    }
-
-    if ($request->filled('to_date')) {
-        $query->whereDate('requested_at', '<=', $request->to_date);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Payment Method Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if ($request->filled('payment_method')) {
-        $query->where(
-            'payment_method',
-            trim($request->payment_method)
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Customer Type Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if ($request->filled('customer_type')) {
-        $query->where(
-            'customer_type',
-            trim($request->customer_type)
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invoice Status Filter
-    |--------------------------------------------------------------------------
-    */
-
-    if ($request->invoice_status === 'generated') {
-        $query->whereHas('invoice');
-    }
-
-    if ($request->invoice_status === 'pending') {
-        $query->whereDoesntHave('invoice');
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Pagination
-    |--------------------------------------------------------------------------
-    */
-
-    $perPage = (int) $request->get('per_page', 20);
-
-    if (!in_array($perPage, $allowedPerPages, true)) {
-        $perPage = 20;
-    }
-
-    $billRequests = $query
-        ->latest('id')
-        ->paginate($perPage)
-        ->withQueryString();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Additional Invoice Information
-    |--------------------------------------------------------------------------
-    */
-
-    $billRequests->getCollection()->transform(function ($billRequest) {
-        $billRequest->invoice_generated = $billRequest->invoice !== null;
-
-        $billRequest->invoice_status = $billRequest->invoice
-            ? 'generated'
-            : 'not_generated';
-
-        $billRequest->invoice_display_number = $billRequest->invoice
-            ? trim(
-                ($billRequest->invoice->invoice_prefix ?? '') .
-                ($billRequest->invoice->invoice_number ?? '')
-            )
-            : null;
-
-        return $billRequest;
-    });
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Bill requests with invoices fetched successfully.',
-
-        'summary' => [
-            'current_page_records' => $billRequests->count(),
-
-            'invoice_generated' => $billRequests
-                ->getCollection()
-                ->where('invoice_generated', true)
-                ->count(),
-
-            'invoice_not_generated' => $billRequests
-                ->getCollection()
-                ->where('invoice_generated', false)
-                ->count(),
-        ],
-
-        'data' => $billRequests,
-    ]);
-}
-
-    // public function store(Request $request)
-    // {
-    //     try {
-    //         $data = $request->all();
-
-    //         if (empty($data)) {
-    //             $json = json_decode($request->getContent(), true);
-
-    //             if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
-    //                 $data = $json;
-    //                 $request->merge($data);
-    //             }
-    //         }
-
-    //         $requestForBill = $request->input('request_for_bill');
-
-    //         if (in_array($requestForBill, ['1', 1, true, 'true', 'yes', 'on'], true)) {
-    //             $requestForBill = true;
-    //         } elseif (in_array($requestForBill, ['0', 0, false, 'false', 'no', 'off'], true)) {
-    //             $requestForBill = false;
-    //         } else {
-    //             $requestForBill = null;
-    //         }
-
-    //         $validator = Validator::make([
-    //             'request_for_bill'       => $requestForBill,
-
-    //             'source_software'        => $request->input('source_software'),
-    //             'source_customer_id'     => $request->input('source_customer_id'),
-    //             'source_package_id'      => $request->input('source_package_id'),
-    //             'source_user_package_id' => $request->input('source_user_package_id'),
-    //             'source_payment_id'      => $request->input('source_payment_id'),
-
-    //             'customer_name'          => $request->input('customer_name'),
-    //             'customer_email'         => $request->input('customer_email'),
-    //             'customer_phone'         => $request->input('customer_phone'),
-    //             'customer_phone1'        => $request->input('customer_phone1'),
-    //             'country'                => $request->input('country'),
-    //             'state'                  => $request->input('state'),
-    //             'city'                   => $request->input('city'),
-    //             'pin'                    => $request->input('pin'),
-    //             'address'                => $request->input('address'),
-    //             'customer_gst_number'    => $request->input('customer_gst_number') ?? $request->input('gst_number'),
-
-    //             'package_id'             => $request->input('package_id'),
-    //             'package_name'           => $request->input('package_name'),
-    //             'package_description'    => $request->input('package_description'),
-    //             'package_price'          => $request->input('package_price'),
-    //             'package_duration'       => $request->input('package_duration'),
-
-    //             'items'                  => $request->input('items'),
-
-    //             'start_date'             => $request->input('start_date'),
-    //             'expiry_date'            => $request->input('expiry_date'),
-    //             'status'                 => $request->input('status'),
-
-    //             'payment_amount'         => $request->input('payment_amount'),
-    //             'payment_method'         => $request->input('payment_method'),
-    //             'transaction_id'         => $request->input('transaction_id'),
-    //             'bank'                   => $request->input('bank'),
-    //             'payment_date'           => $request->input('payment_date'),
-    //             'activated_by'           => $request->input('activated_by') ?? $request->input('created_by') ?? $request->input('created_by_name'),
-    //             'customer_type'          => $request->input('customer_type'),
-    //             'old_customer_user_id'   => $request->input('old_customer_user_id'),
-
-    //             'created_by'             => $request->input('created_by'),
-    //             'created_by_name'        => $request->input('created_by_name'),
-    //             'request_date'           => $request->input('request_date'),
-    //         ], [
-    //             'request_for_bill'       => ['required', 'boolean'],
-
-    //             'source_software'        => ['nullable', 'string', 'max:255'],
-    //             'source_customer_id'     => ['nullable', 'integer'],
-    //             'source_package_id'      => ['nullable', 'integer'],
-    //             'source_user_package_id' => ['nullable', 'integer'],
-    //             'source_payment_id'      => ['nullable', 'integer'],
-
-    //             'customer_name'          => ['required', 'string', 'max:255'],
-    //             'customer_email'         => ['nullable', 'email', 'max:255'],
-    //             'customer_phone'         => ['nullable', 'string', 'max:255'],
-    //             'customer_phone1'        => ['nullable', 'string', 'max:255'],
-    //             'country'                => ['nullable', 'string', 'max:255'],
-    //             'state'                  => ['nullable', 'string', 'max:255'],
-    //             'city'                   => ['nullable', 'string', 'max:255'],
-    //             'pin'                    => ['nullable', 'string', 'max:255'],
-    //             'address'                => ['nullable', 'string'],
-    //             'customer_gst_number'    => ['nullable', 'string', 'size:15'],
-
-    //             'package_id'             => ['nullable', 'integer'],
-    //             'package_name'           => ['nullable'],
-    //             'package_description'    => ['nullable', 'string'],
-    //             'package_price'          => ['nullable', 'numeric'],
-    //             'package_duration'       => ['nullable', 'integer'],
-
-    //             'items'                  => ['nullable', 'array'],
-    //             'items.*.item_id'        => ['required_with:items', 'integer'],
-    //             'items.*.qty'            => ['nullable', 'numeric', 'min:1'],
-    //             'items.*.price'          => ['required_with:items', 'numeric', 'min:0'],
-    //             'items.*.description'    => ['nullable', 'string'],
-    //             'items.*.line_total'     => ['nullable', 'numeric', 'min:0'],
-
-    //             'start_date'             => ['nullable', 'date'],
-    //             'expiry_date'            => ['nullable', 'date'],
-    //             'status'                 => ['nullable', 'string', 'max:255'],
-
-    //             'payment_amount'         => ['nullable', 'numeric'],
-    //             'payment_method'         => ['nullable', 'string', 'max:255'],
-    //             'transaction_id'         => ['nullable', 'string', 'max:255'],
-    //             'bank'                   => ['nullable', 'string', 'max:255'],
-    //             'payment_date'           => ['nullable', 'date'],
-    //             'activated_by'           => ['nullable', 'string', 'max:255'],
-    //             'customer_type'          => ['nullable', 'string', 'max:255'],
-    //             'old_customer_user_id'   => ['nullable', 'integer'],
-
-    //             'created_by'             => ['nullable', 'integer'],
-    //             'created_by_name'        => ['nullable', 'string', 'max:255'],
-    //             'request_date'           => ['nullable', 'date'],
-    //         ]);
-
-    //         if ($validator->fails()) {
-    //             return response()->json([
-    //                 'success'          => false,
-    //                 'message'          => 'Validation failed.',
-    //                 'errors'           => $validator->errors(),
-    //                 'received_payload' => $request->all(),
-    //             ], 422);
-    //         }
-
-    //         $validated = $validator->validated();
-
-    //         $sourceRequestId = trim((string) $request->header('X-Request-Id'));
-    //         $sourceSoftware  = $validated['source_software'] ?? 'postimage';
-
-    //         $idempotencyKey = null;
-
-    //         if (!empty($validated['source_user_package_id'])) {
-    //             $idempotencyKey = $sourceSoftware . ':user_package:' . $validated['source_user_package_id'];
-    //         } elseif ($sourceRequestId !== '') {
-    //             $idempotencyKey = $sourceSoftware . ':request:' . $sourceRequestId;
-    //         }
-
-    //         $items = collect($validated['items'] ?? [])
-    //             ->filter(fn ($row) => !empty($row['item_id']))
-    //             ->map(function ($row) {
-    //                 $qty = max(1, (float) ($row['qty'] ?? 1));
-    //                 $price = (float) ($row['price'] ?? 0);
-
-    //                 return [
-    //                     'item_id'     => (int) $row['item_id'],
-    //                     'qty'         => $qty,
-    //                     'price'       => $price,
-    //                     'description' => trim((string) ($row['description'] ?? '')),
-    //                     'line_total'  => round($qty * $price, 2),
-    //                 ];
-    //             })
-    //             ->filter(fn ($row) => $row['item_id'] > 0 && $row['price'] > 0)
-    //             ->values()
-    //             ->toArray();
-
-    //         if ($validated['request_for_bill'] && empty($items)) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Validation failed.',
-    //                 'errors'  => [
-    //                     'items' => ['Bill ke liye kam se kam ek valid item required hai.'],
-    //                 ],
-    //                 'received_payload' => $request->all(),
-    //             ], 422);
-    //         }
-
-    //         $existingBillRequest = null;
-
-    //         if ($idempotencyKey) {
-    //             $existingBillRequest = BillRequest::where('idempotency_key', $idempotencyKey)->first();
-    //         }
-
-    //         if (!$existingBillRequest && !empty($validated['source_user_package_id'])) {
-    //             $existingBillRequest = BillRequest::where('source_software', $sourceSoftware)
-    //                 ->where('source_user_package_id', $validated['source_user_package_id'])
-    //                 ->first();
-    //         }
-
-    //         if (!$existingBillRequest && $sourceRequestId !== '') {
-    //             $existingBillRequest = BillRequest::where('source_request_id', $sourceRequestId)->first();
-    //         }
-
-    //         if ($existingBillRequest) {
-    //             $existingInvoice = Invoice::withoutGlobalScopes()
-    //                 ->where('bil_request_id', $existingBillRequest->id)
-    //                 ->where('invoice_type', 'quotation')
-    //                 ->first();
-
-    //             if (!$existingInvoice && $validated['request_for_bill']) {
-    //                 $existingInvoice = $this->createQuotationInvoiceFromBillRequest($existingBillRequest->fresh());
-
-    //                 if ($existingInvoice) {
-    //                     $this->pushSaveInvoiceApi($existingBillRequest->fresh(), $existingInvoice->fresh());
-    //                 }
-    //             }
-
-    //             return response()->json([
-    //                 'success'            => true,
-    //                 'message'            => 'Duplicate request ignored. Existing billing request returned.',
-    //                 'billing_request_id' => $existingBillRequest->id,
-    //                 'invoice_id'         => $existingInvoice?->id,
-    //                 'invoice_number'     => $existingInvoice?->invoice_number,
-    //                 'invoice_type'       => $existingInvoice?->invoice_type,
-    //                 'status'             => $existingBillRequest->fresh()->status,
-    //                 'data'               => [
-    //                     'bill_request' => $existingBillRequest->fresh(),
-    //                     'invoice'      => $existingInvoice ? $existingInvoice->fresh() : null,
-    //                 ],
-    //             ], 200);
-    //         }
-
-    //         $itemsTotal = collect($items)->sum('line_total');
-
-    //         $gstNumber = !empty($validated['customer_gst_number'])
-    //             ? strtoupper(trim($validated['customer_gst_number']))
-    //             : null;
-
-    //         $fullPayload = [
-    //             'request_for_bill'       => $validated['request_for_bill'],
-    //             'source_software'        => $sourceSoftware,
-    //             'source_customer_id'     => $validated['source_customer_id'] ?? null,
-    //             'source_package_id'      => $validated['source_package_id'] ?? null,
-    //             'source_user_package_id' => $validated['source_user_package_id'] ?? null,
-    //             'source_payment_id'      => $validated['source_payment_id'] ?? null,
-
-    //             'customer_name'          => $validated['customer_name'] ?? null,
-    //             'customer_email'         => $validated['customer_email'] ?? null,
-    //             'customer_phone'         => $validated['customer_phone'] ?? null,
-    //             'customer_phone1'        => $validated['customer_phone1'] ?? null,
-    //             'country'                => $validated['country'] ?? null,
-    //             'state'                  => $validated['state'] ?? null,
-    //             'city'                   => $validated['city'] ?? null,
-    //             'pin'                    => $validated['pin'] ?? null,
-    //             'address'                => $validated['address'] ?? null,
-    //             'customer_gst_number'    => $gstNumber,
-
-    //             'package_id'             => $validated['package_id'] ?? null,
-    //             'package_name'           => $validated['package_name'] ?? null,
-    //             'package_description'    => $validated['package_description'] ?? null,
-    //             'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
-    //             'package_duration'       => $validated['package_duration'] ?? null,
-
-    //             'items'                  => $items,
-
-    //             'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
-    //             'payment_method'         => $validated['payment_method'] ?? null,
-    //             'transaction_id'         => $validated['transaction_id'] ?? null,
-    //             'bank'                   => $validated['bank'] ?? null,
-    //             'payment_date'           => $validated['payment_date'] ?? null,
-    //             'activated_by'           => $validated['activated_by'] ?? null,
-    //             'customer_type'          => $validated['customer_type'] ?? null,
-    //             'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
-
-    //             'created_by'             => $validated['created_by'] ?? null,
-    //             'created_by_name'        => $validated['created_by_name'] ?? null,
-    //             'request_date'           => $validated['request_date'] ?? null,
-    //         ];
-
-    //         $billRequest = null;
-    //         $invoice = null;
-
-    //         DB::transaction(function () use (
-    //             &$billRequest,
-    //             &$invoice,
-    //             $validated,
-    //             $gstNumber,
-    //             $fullPayload,
-    //             $itemsTotal,
-    //             $sourceRequestId,
-    //             $sourceSoftware,
-    //             $idempotencyKey
-    //         ) {
-    //             $billRequest = BillRequest::create([
-    //                 'source_software'        => $sourceSoftware,
-    //                 'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : null,
-    //                 'idempotency_key'        => $idempotencyKey,
-
-    //                 'source_customer_id'     => $validated['source_customer_id'] ?? null,
-    //                 'source_package_id'      => $validated['source_package_id'] ?? null,
-    //                 'source_user_package_id' => $validated['source_user_package_id'] ?? null,
-    //                 'source_payment_id'      => $validated['source_payment_id'] ?? null,
-
-    //                 'customer_name'          => $validated['customer_name'] ?? null,
-    //                 'customer_email'         => $validated['customer_email'] ?? null,
-    //                 'customer_phone'         => $validated['customer_phone'] ?? null,
-    //                 'customer_phone1'        => $validated['customer_phone1'] ?? null,
-    //                 'country'                => $validated['country'] ?? null,
-    //                 'state'                  => $validated['state'] ?? null,
-    //                 'city'                   => $validated['city'] ?? null,
-    //                 'pin'                    => $validated['pin'] ?? null,
-    //                 'address'                => $validated['address'] ?? null,
-    //                 'gst_number'             => $gstNumber,
-
-    //                 'package_name'           => $validated['package_name'] ?? null,
-    //                 'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
-    //                 'package_duration'       => $validated['package_duration'] ?? null,
-    //                 'selling_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
-
-    //                 'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
-    //                 'payment_method'         => $validated['payment_method'] ?? null,
-    //                 'transaction_id'         => $validated['transaction_id'] ?? null,
-    //                 'bank'                   => $validated['bank'] ?? null,
-    //                 'payment_date'           => $validated['payment_date'] ?? null,
-
-    //                 'activated_by'           => $validated['activated_by'] ?? null,
-    //                 'customer_type'          => $validated['customer_type'] ?? null,
-    //                 'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
-
-    //                 'status'                 => 'pending',
-    //                 'remarks'                => null,
-    //                 'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
-    //                 'api_response'           => json_encode([
-    //                     'received_from' => $sourceSoftware,
-    //                     'received_at'   => now()->toDateTimeString(),
-    //                 ], JSON_UNESCAPED_UNICODE),
-    //                 'requested_at'           => $validated['request_date'] ?? now(),
-    //             ]);
-
-    //             if ($validated['request_for_bill']) {
-    //                 $billRequest = $billRequest->fresh();
-    //                 $invoice = $this->createQuotationInvoiceFromBillRequest($billRequest);
-    //             }
-    //         });
-
-    //         if ($invoice) {
-    //             $this->pushSaveInvoiceApi($billRequest->fresh(), $invoice->fresh());
-    //         }
-
-    //         return response()->json([
-    //             'success'            => true,
-    //             'message'            => $invoice
-    //                 ? 'Billing request received and quotation created successfully.'
-    //                 : 'Billing request received successfully.',
-    //             'billing_request_id' => $billRequest->id,
-    //             'invoice_id'         => $invoice?->id,
-    //             'invoice_number'     => $invoice?->invoice_number,
-    //             'invoice_type'       => $invoice?->invoice_type,
-    //             'status'             => $billRequest->fresh()->status,
-    //             'data'               => [
-    //                 'bill_request' => $billRequest->fresh(),
-    //                 'invoice'      => $invoice ? $invoice->fresh() : null,
-    //             ],
-    //         ], 201);
-
-    //     } catch (\Throwable $e) {
-    //         Log::error('Billing request API failed', [
-    //             'message' => $e->getMessage(),
-    //             'line'    => $e->getLine(),
-    //             'file'    => $e->getFile(),
-    //             'payload' => $request->all(),
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Something went wrong while saving billing request and quotation.',
-    //             'error'   => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
-public function store(Request $request)
-{
-    try {
-        $data = $request->all();
-
-        if (empty($data)) {
-            $json = json_decode($request->getContent(), true);
-
-            if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
-                $data = $json;
-                $request->merge($data);
-            }
-        }
-
-        $requestForBill = $request->input('request_for_bill');
-
-        if (in_array($requestForBill, ['1', 1, true, 'true', 'yes', 'on'], true)) {
-            $requestForBill = true;
-        } elseif (in_array($requestForBill, ['0', 0, false, 'false', 'no', 'off'], true)) {
-            $requestForBill = false;
-        } else {
-            $requestForBill = null;
-        }
-
-        $validator = Validator::make([
-            'request_for_bill'       => $requestForBill,
-
-            'source_software'        => $request->input('source_software'),
-            'source_customer_id'     => $request->input('source_customer_id'),
-            'source_package_id'      => $request->input('source_package_id'),
-            'source_user_package_id' => $request->input('source_user_package_id'),
-            'source_payment_id'      => $request->input('source_payment_id'),
-
-            'customer_name'          => $request->input('customer_name'),
-            'customer_email'         => $request->input('customer_email'),
-            'customer_phone'         => $request->input('customer_phone'),
-            'customer_phone1'        => $request->input('customer_phone1'),
-            'country'                => $request->input('country'),
-            'state'                  => $request->input('state'),
-            'city'                   => $request->input('city'),
-            'pin'                    => $request->input('pin'),
-            'address'                => $request->input('address'),
-            'customer_gst_number'    => $request->input('customer_gst_number') ?? $request->input('gst_number'),
-
-            'package_id'             => $request->input('package_id'),
-            'package_name'           => $request->input('package_name'),
-            'package_description'    => $request->input('package_description'),
-            'package_price'          => $request->input('package_price'),
-            'package_duration'       => $request->input('package_duration'),
-
-            'items'                  => $request->input('items'),
-
-            'start_date'             => $request->input('start_date'),
-            'expiry_date'            => $request->input('expiry_date'),
-            'status'                 => $request->input('status'),
-
-            'payment_amount'         => $request->input('payment_amount'),
-            'payment_method'         => $request->input('payment_method'),
-            'transaction_id'         => $request->input('transaction_id'),
-            'bank'                   => $request->input('bank'),
-            'payment_date'           => $request->input('payment_date'),
-            'activated_by'           => $request->input('activated_by') ?? $request->input('created_by') ?? $request->input('created_by_name'),
-            'customer_type'          => $request->input('customer_type'),
-            'old_customer_user_id'   => $request->input('old_customer_user_id'),
-
-            'created_by'             => $request->input('created_by'),
-            'created_by_name'        => $request->input('created_by_name'),
-            'request_date'           => $request->input('request_date'),
-        ], [
-            'request_for_bill'       => ['required', 'boolean'],
-
-            'source_software'        => ['nullable', 'string', 'max:255'],
-            'source_customer_id'     => ['nullable', 'integer'],
-            'source_package_id'      => ['nullable', 'integer'],
-            'source_user_package_id' => ['nullable', 'integer'],
-            'source_payment_id'      => ['nullable', 'integer'],
-
-            'customer_name'          => ['required', 'string', 'max:255'],
-            'customer_email'         => ['nullable', 'email', 'max:255'],
-            'customer_phone'         => ['nullable', 'string', 'max:255'],
-            'customer_phone1'        => ['nullable', 'string', 'max:255'],
-            'country'                => ['nullable', 'string', 'max:255'],
-            'state'                  => ['nullable', 'string', 'max:255'],
-            'city'                   => ['nullable', 'string', 'max:255'],
-            'pin'                    => ['nullable', 'string', 'max:255'],
-            'address'                => ['nullable', 'string'],
-            'customer_gst_number'    => ['nullable', 'string', 'size:15'],
-
-            'package_id'             => ['nullable', 'integer'],
-            'package_name'           => ['nullable'],
-            'package_description'    => ['nullable', 'string'],
-            'package_price'          => ['nullable', 'numeric'],
-            'package_duration'       => ['nullable', 'integer'],
-
-            'items'                  => ['nullable', 'array'],
-            'items.*.item_id'        => ['required_with:items', 'integer'],
-            'items.*.qty'            => ['nullable', 'numeric', 'min:1'],
-            'items.*.price'          => ['required_with:items', 'numeric', 'min:0'],
-            'items.*.description'    => ['nullable', 'string'],
-            'items.*.line_total'     => ['nullable', 'numeric', 'min:0'],
-
-            'start_date'             => ['nullable', 'date'],
-            'expiry_date'            => ['nullable', 'date'],
-            'status'                 => ['nullable', 'string', 'max:255'],
-
-            'payment_amount'         => ['nullable', 'numeric'],
-            'payment_method'         => ['nullable', 'string', 'max:255'],
-            'transaction_id'         => ['nullable', 'string', 'max:255'],
-            'bank'                   => ['nullable', 'string', 'max:255'],
-            'payment_date'           => ['nullable', 'date'],
-            'activated_by'           => ['nullable', 'string', 'max:255'],
-            'customer_type'          => ['nullable', 'string', 'max:255'],
-            'old_customer_user_id'   => ['nullable', 'integer'],
-
-            'created_by'             => ['nullable', 'integer'],
-            'created_by_name'        => ['nullable', 'string', 'max:255'],
-            'request_date'           => ['nullable', 'date'],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success'          => false,
-                'message'          => 'Validation failed.',
-                'errors'           => $validator->errors(),
-                'received_payload' => $request->all(),
-            ], 422);
-        }
-
-        $validated = $validator->validated();
-
-        $sourceRequestId = trim((string) $request->header('X-Request-Id'));
-        $sourceSoftware  = $validated['source_software'] ?? 'postimage';
-
-        $idempotencyKey = null;
-
-        if (!empty($validated['source_user_package_id'])) {
-            $idempotencyKey = $sourceSoftware . ':user_package:' . $validated['source_user_package_id'];
-        } elseif ($sourceRequestId !== '') {
-            $idempotencyKey = $sourceSoftware . ':request:' . $sourceRequestId;
-        }
-
-        $items = collect($validated['items'] ?? [])
-            ->filter(fn ($row) => !empty($row['item_id']))
-            ->map(function ($row) {
-                $qty = max(1, (float) ($row['qty'] ?? 1));
-                $price = (float) ($row['price'] ?? 0);
-
-                return [
-                    'item_id'     => (int) $row['item_id'],
-                    'qty'         => $qty,
-                    'price'       => $price,
-                    'description' => trim((string) ($row['description'] ?? '')),
-                    'line_total'  => round($qty * $price, 2),
-                ];
-            })
-            ->filter(fn ($row) => $row['item_id'] > 0 && $row['price'] > 0)
-            ->values()
-            ->toArray();
-
-        if ($validated['request_for_bill'] && empty($items)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed.',
-                'errors'  => [
-                    'items' => ['Bill ke liye kam se kam ek valid item required hai.'],
-                ],
-                'received_payload' => $request->all(),
-            ], 422);
-        }
-
-        $itemsTotal = collect($items)->sum('line_total');
-
-        $gstNumber = !empty($validated['customer_gst_number'])
-            ? strtoupper(trim($validated['customer_gst_number']))
-            : null;
-
-        $fullPayload = [
-            'request_for_bill'       => $validated['request_for_bill'],
-            'source_software'        => $sourceSoftware,
-            'source_customer_id'     => $validated['source_customer_id'] ?? null,
-            'source_package_id'      => $validated['source_package_id'] ?? null,
-            'source_user_package_id' => $validated['source_user_package_id'] ?? null,
-            'source_payment_id'      => $validated['source_payment_id'] ?? null,
-
-            'customer_name'          => $validated['customer_name'] ?? null,
-            'customer_email'         => $validated['customer_email'] ?? null,
-            'customer_phone'         => $validated['customer_phone'] ?? null,
-            'customer_phone1'        => $validated['customer_phone1'] ?? null,
-            'country'                => $validated['country'] ?? null,
-            'state'                  => $validated['state'] ?? null,
-            'city'                   => $validated['city'] ?? null,
-            'pin'                    => $validated['pin'] ?? null,
-            'address'                => $validated['address'] ?? null,
-            'customer_gst_number'    => $gstNumber,
-
-            'package_id'             => $validated['package_id'] ?? null,
-            'package_name'           => $validated['package_name'] ?? null,
-            'package_description'    => $validated['package_description'] ?? null,
-            'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
-            'package_duration'       => $validated['package_duration'] ?? null,
-
-            'items'                  => $items,
-
-            'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
-            'payment_method'         => $validated['payment_method'] ?? null,
-            'transaction_id'         => $validated['transaction_id'] ?? null,
-            'bank'                   => $validated['bank'] ?? null,
-            'payment_date'           => $validated['payment_date'] ?? null,
-            'activated_by'           => $validated['activated_by'] ?? null,
-            'customer_type'          => $validated['customer_type'] ?? null,
-            'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
-
-            'created_by'             => $validated['created_by'] ?? null,
-            'created_by_name'        => $validated['created_by_name'] ?? null,
-            'request_date'           => $validated['request_date'] ?? null,
+    {
+        $statuses = [
+            'pending',
+            'processed',
+            'failed',
         ];
 
-        $existingBillRequest = null;
+        $allowedPerPages = [
+            10,
+            20,
+            50,
+            100,
+        ];
 
-        if ($idempotencyKey) {
-            $existingBillRequest = BillRequest::where('idempotency_key', $idempotencyKey)->first();
+        /*
+        |--------------------------------------------------------------------------
+        | Bill Request Query
+        |--------------------------------------------------------------------------
+        */
+
+        $query = BillRequest::query()
+            ->with([
+                'invoice' => function ($invoiceQuery) {
+                    $invoiceQuery->select([
+                        'id',
+                        'bil_request_id',
+                        'business_id',
+                        'invoice_type',
+                        'invoice_prefix',
+                        'invoice_number',
+                        'client_id',
+                        'invoice_date',
+                        'due_date',
+                        'subtotal',
+                        'tax_amount',
+                        'cgst_percent',
+                        'cgst_amount',
+                        'sgst_percent',
+                        'sgst_amount',
+                        'igst_percent',
+                        'igst_amount',
+                        'discount_total',
+                        'charge_total',
+                        'tcs_percent',
+                        'tcs_amount',
+                        'round_off',
+                        'less_amount',
+                        'total',
+                        'received_amount',
+                        'balance',
+                        'payment_method',
+                        'transport_mode',
+                        'reverse_charge',
+                        'place_of_supply_state',
+                        'place_of_supply_code',
+                        'notes',
+                        'terms',
+                        'charges_json',
+                        'items_json',
+                        'amount_in_words',
+                        'pdf_url',
+                        'signature',
+                        'created_at',
+                        'updated_at',
+                    ]);
+                },
+            ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+
+            $query->where(function ($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                    ->orWhere('customer_email', 'like', "%{$search}%")
+                    ->orWhere('customer_phone', 'like', "%{$search}%")
+                    ->orWhere('customer_phone1', 'like', "%{$search}%")
+                    ->orWhere('business_name', 'like', "%{$search}%")
+                    ->orWhere('gst_number', 'like', "%{$search}%")
+                    ->orWhere('package_name', 'like', "%{$search}%")
+                    ->orWhere('payment_method', 'like', "%{$search}%")
+                    ->orWhere('transaction_id', 'like', "%{$search}%")
+                    ->orWhere('source_software', 'like', "%{$search}%")
+                    ->orWhere('source_request_id', 'like', "%{$search}%")
+                    ->orWhereHas('invoice', function ($invoiceQuery) use ($search) {
+                        $invoiceQuery
+                            ->where('invoice_number', 'like', "%{$search}%")
+                            ->orWhereRaw(
+                                "CONCAT(COALESCE(invoice_prefix, ''), invoice_number) LIKE ?",
+                                ["%{$search}%"]
+                            );
+                    });
+            });
         }
 
-        if (!$existingBillRequest && !empty($validated['source_user_package_id'])) {
-            $existingBillRequest = BillRequest::where('source_software', $sourceSoftware)
-                ->where('source_user_package_id', $validated['source_user_package_id'])
-                ->first();
+        /*
+        |--------------------------------------------------------------------------
+        | Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $request->filled('status') &&
+            in_array($request->status, $statuses, true)
+        ) {
+            $query->where('status', $request->status);
         }
 
-        if (!$existingBillRequest && $sourceRequestId !== '') {
-            $existingBillRequest = BillRequest::where('source_request_id', $sourceRequestId)->first();
+        /*
+        |--------------------------------------------------------------------------
+        | Date Filters
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('from_date')) {
+            $query->whereDate('requested_at', '>=', $request->from_date);
         }
 
-        if ($existingBillRequest) {
+        if ($request->filled('to_date')) {
+            $query->whereDate('requested_at', '<=', $request->to_date);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Payment Method Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('payment_method')) {
+            $query->where(
+                'payment_method',
+                trim($request->payment_method)
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Customer Type Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->filled('customer_type')) {
+            $query->where(
+                'customer_type',
+                trim($request->customer_type)
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Invoice Status Filter
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->invoice_status === 'generated') {
+            $query->whereHas('invoice');
+        }
+
+        if ($request->invoice_status === 'pending') {
+            $query->whereDoesntHave('invoice');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $perPage = (int) $request->get('per_page', 20);
+
+        if (!in_array($perPage, $allowedPerPages, true)) {
+            $perPage = 20;
+        }
+
+        $billRequests = $query
+            ->latest('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Additional Invoice Information
+        |--------------------------------------------------------------------------
+        */
+
+        $billRequests->getCollection()->transform(function ($billRequest) {
+            $billRequest->invoice_generated = $billRequest->invoice !== null;
+
+            $billRequest->invoice_status = $billRequest->invoice
+                ? 'generated'
+                : 'not_generated';
+
+            $billRequest->invoice_display_number = $billRequest->invoice
+                ? trim(
+                    ($billRequest->invoice->invoice_prefix ?? '') .
+                    ($billRequest->invoice->invoice_number ?? '')
+                )
+                : null;
+
+            return $billRequest;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Bill requests with invoices fetched successfully.',
+
+            'summary' => [
+                'current_page_records' => $billRequests->count(),
+
+                'invoice_generated' => $billRequests
+                    ->getCollection()
+                    ->where('invoice_generated', true)
+                    ->count(),
+
+                'invoice_not_generated' => $billRequests
+                    ->getCollection()
+                    ->where('invoice_generated', false)
+                    ->count(),
+            ],
+
+            'data' => $billRequests,
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $data = $request->all();
+
+            if (empty($data)) {
+                $json = json_decode($request->getContent(), true);
+
+                if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
+                    $data = $json;
+                    $request->merge($data);
+                }
+            }
+
+            $requestForBill = $request->input('request_for_bill');
+
+            if (in_array($requestForBill, ['1', 1, true, 'true', 'yes', 'on'], true)) {
+                $requestForBill = true;
+            } elseif (in_array($requestForBill, ['0', 0, false, 'false', 'no', 'off'], true)) {
+                $requestForBill = false;
+            } else {
+                $requestForBill = null;
+            }
+
+            $validator = Validator::make([
+                'request_for_bill'       => $requestForBill,
+
+                'source_software'        => $request->input('source_software'),
+                'source_customer_id'     => $request->input('source_customer_id'),
+                'source_package_id'      => $request->input('source_package_id'),
+                'source_user_package_id' => $request->input('source_user_package_id'),
+                'source_payment_id'      => $request->input('source_payment_id'),
+
+                'customer_name'          => $request->input('customer_name'),
+                'customer_email'         => $request->input('customer_email'),
+                'customer_phone'         => $request->input('customer_phone'),
+                'customer_phone1'        => $request->input('customer_phone1'),
+                'country'                => $request->input('country'),
+                'state'                  => $request->input('state'),
+                'city'                   => $request->input('city'),
+                'pin'                    => $request->input('pin'),
+                'address'                => $request->input('address'),
+                'customer_gst_number'    => $request->input('customer_gst_number') ?? $request->input('gst_number'),
+
+                'package_id'             => $request->input('package_id'),
+                'package_name'           => $request->input('package_name'),
+                'package_description'    => $request->input('package_description'),
+                'package_price'          => $request->input('package_price'),
+                'package_duration'       => $request->input('package_duration'),
+
+                'items'                  => $request->input('items'),
+
+                'start_date'             => $request->input('start_date'),
+                'expiry_date'            => $request->input('expiry_date'),
+                'status'                 => $request->input('status'),
+
+                'payment_amount'         => $request->input('payment_amount'),
+                'payment_method'         => $request->input('payment_method'),
+                'transaction_id'         => $request->input('transaction_id'),
+                'bank'                   => $request->input('bank'),
+                'payment_date'           => $request->input('payment_date'),
+                'activated_by'           => $request->input('activated_by') ?? $request->input('created_by') ?? $request->input('created_by_name'),
+                'customer_type'          => $request->input('customer_type'),
+                'old_customer_user_id'   => $request->input('old_customer_user_id'),
+
+                'created_by'             => $request->input('created_by'),
+                'created_by_name'        => $request->input('created_by_name'),
+                'request_date'           => $request->input('request_date'),
+            ], [
+                'request_for_bill'       => ['required', 'boolean'],
+
+                'source_software'        => ['nullable', 'string', 'max:255'],
+                'source_customer_id'     => ['nullable', 'integer'],
+                'source_package_id'      => ['nullable', 'integer'],
+                'source_user_package_id' => ['nullable', 'integer'],
+                'source_payment_id'      => ['nullable', 'integer'],
+
+                'customer_name'          => ['required', 'string', 'max:255'],
+                'customer_email'         => ['nullable', 'email', 'max:255'],
+                'customer_phone'         => ['nullable', 'string', 'max:255'],
+                'customer_phone1'        => ['nullable', 'string', 'max:255'],
+                'country'                => ['nullable', 'string', 'max:255'],
+                'state'                  => ['nullable', 'string', 'max:255'],
+                'city'                   => ['nullable', 'string', 'max:255'],
+                'pin'                    => ['nullable', 'string', 'max:255'],
+                'address'                => ['nullable', 'string'],
+                'customer_gst_number'    => ['nullable', 'string', 'size:15'],
+
+                'package_id'             => ['nullable', 'integer'],
+                'package_name'           => ['nullable'],
+                'package_description'    => ['nullable', 'string'],
+                'package_price'          => ['nullable', 'numeric'],
+                'package_duration'       => ['nullable', 'integer'],
+
+                'items'                  => ['nullable', 'array'],
+                'items.*.item_id'        => ['required_with:items', 'integer'],
+                'items.*.qty'            => ['nullable', 'numeric', 'min:1'],
+                'items.*.price'          => ['required_with:items', 'numeric', 'min:0'],
+                'items.*.description'    => ['nullable', 'string'],
+                'items.*.line_total'     => ['nullable', 'numeric', 'min:0'],
+
+                'start_date'             => ['nullable', 'date'],
+                'expiry_date'            => ['nullable', 'date'],
+                'status'                 => ['nullable', 'string', 'max:255'],
+
+                'payment_amount'         => ['nullable', 'numeric'],
+                'payment_method'         => ['nullable', 'string', 'max:255'],
+                'transaction_id'         => ['nullable', 'string', 'max:255'],
+                'bank'                   => ['nullable', 'string', 'max:255'],
+                'payment_date'           => ['nullable', 'date'],
+                'activated_by'           => ['nullable', 'string', 'max:255'],
+                'customer_type'          => ['nullable', 'string', 'max:255'],
+                'old_customer_user_id'   => ['nullable', 'integer'],
+
+                'created_by'             => ['nullable', 'integer'],
+                'created_by_name'        => ['nullable', 'string', 'max:255'],
+                'request_date'           => ['nullable', 'date'],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success'          => false,
+                    'message'          => 'Validation failed.',
+                    'errors'           => $validator->errors(),
+                    'received_payload' => $request->all(),
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+
+            $sourceRequestId = trim((string) $request->header('X-Request-Id'));
+            $sourceSoftware  = $validated['source_software'] ?? 'postimage';
+
+            $idempotencyKey = null;
+
+            if (!empty($validated['source_user_package_id'])) {
+                $idempotencyKey = $sourceSoftware . ':user_package:' . $validated['source_user_package_id'];
+            } elseif ($sourceRequestId !== '') {
+                $idempotencyKey = $sourceSoftware . ':request:' . $sourceRequestId;
+            }
+
+            $items = collect($validated['items'] ?? [])
+                ->filter(fn ($row) => !empty($row['item_id']))
+                ->map(function ($row) {
+                    $qty = max(1, (float) ($row['qty'] ?? 1));
+                    $price = (float) ($row['price'] ?? 0);
+
+                    return [
+                        'item_id'     => (int) $row['item_id'],
+                        'qty'         => $qty,
+                        'price'       => $price,
+                        'description' => trim((string) ($row['description'] ?? '')),
+                        'line_total'  => round($qty * $price, 2),
+                    ];
+                })
+                ->filter(fn ($row) => $row['item_id'] > 0 && $row['price'] > 0)
+                ->values()
+                ->toArray();
+
+            if ($validated['request_for_bill'] && empty($items)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors'  => [
+                        'items' => ['Bill ke liye kam se kam ek valid item required hai.'],
+                    ],
+                    'received_payload' => $request->all(),
+                ], 422);
+            }
+
+            $itemsTotal = collect($items)->sum('line_total');
+
+            $gstNumber = !empty($validated['customer_gst_number'])
+                ? strtoupper(trim($validated['customer_gst_number']))
+                : null;
+
+            $fullPayload = [
+                'request_for_bill'       => $validated['request_for_bill'],
+                'source_software'        => $sourceSoftware,
+                'source_customer_id'     => $validated['source_customer_id'] ?? null,
+                'source_package_id'      => $validated['source_package_id'] ?? null,
+                'source_user_package_id' => $validated['source_user_package_id'] ?? null,
+                'source_payment_id'      => $validated['source_payment_id'] ?? null,
+
+                'customer_name'          => $validated['customer_name'] ?? null,
+                'customer_email'         => $validated['customer_email'] ?? null,
+                'customer_phone'         => $validated['customer_phone'] ?? null,
+                'customer_phone1'        => $validated['customer_phone1'] ?? null,
+                'country'                => $validated['country'] ?? null,
+                'state'                  => $validated['state'] ?? null,
+                'city'                   => $validated['city'] ?? null,
+                'pin'                    => $validated['pin'] ?? null,
+                'address'                => $validated['address'] ?? null,
+                'customer_gst_number'    => $gstNumber,
+
+                'package_id'             => $validated['package_id'] ?? null,
+                'package_name'           => $validated['package_name'] ?? null,
+                'package_description'    => $validated['package_description'] ?? null,
+                'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
+                'package_duration'       => $validated['package_duration'] ?? null,
+
+                'items'                  => $items,
+
+                'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
+                'payment_method'         => $validated['payment_method'] ?? null,
+                'transaction_id'         => $validated['transaction_id'] ?? null,
+                'bank'                   => $validated['bank'] ?? null,
+                'payment_date'           => $validated['payment_date'] ?? null,
+                'activated_by'           => $validated['activated_by'] ?? null,
+                'customer_type'          => $validated['customer_type'] ?? null,
+                'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
+
+                'created_by'             => $validated['created_by'] ?? null,
+                'created_by_name'        => $validated['created_by_name'] ?? null,
+                'request_date'           => $validated['request_date'] ?? null,
+            ];
+
+            $existingBillRequest = null;
+
+            if ($idempotencyKey) {
+                $existingBillRequest = BillRequest::where('idempotency_key', $idempotencyKey)->first();
+            }
+
+            if (!$existingBillRequest && !empty($validated['source_user_package_id'])) {
+                $existingBillRequest = BillRequest::where('source_software', $sourceSoftware)
+                    ->where('source_user_package_id', $validated['source_user_package_id'])
+                    ->first();
+            }
+
+            if (!$existingBillRequest && $sourceRequestId !== '') {
+                $existingBillRequest = BillRequest::where('source_request_id', $sourceRequestId)->first();
+            }
+
+            if ($existingBillRequest) {
+                $invoice = null;
+
+                DB::transaction(function () use (
+                    &$existingBillRequest,
+                    &$invoice,
+                    $validated,
+                    $gstNumber,
+                    $fullPayload,
+                    $itemsTotal,
+                    $sourceRequestId,
+                    $sourceSoftware,
+                    $idempotencyKey
+                ) {
+                    $existingBillRequest->update([
+                        'source_software'        => $sourceSoftware,
+                        'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : $existingBillRequest->source_request_id,
+                        'idempotency_key'        => $idempotencyKey ?: $existingBillRequest->idempotency_key,
+
+                        'source_customer_id'     => $validated['source_customer_id'] ?? null,
+                        'source_package_id'      => $validated['source_package_id'] ?? null,
+                        'source_user_package_id' => $validated['source_user_package_id'] ?? null,
+                        'source_payment_id'      => $validated['source_payment_id'] ?? null,
+
+                        'customer_name'          => $validated['customer_name'] ?? null,
+                        'customer_email'         => $validated['customer_email'] ?? null,
+                        'customer_phone'         => $validated['customer_phone'] ?? null,
+                        'customer_phone1'        => $validated['customer_phone1'] ?? null,
+                        'country'                => $validated['country'] ?? null,
+                        'state'                  => $validated['state'] ?? null,
+                        'city'                   => $validated['city'] ?? null,
+                        'pin'                    => $validated['pin'] ?? null,
+                        'address'                => $validated['address'] ?? null,
+                        'gst_number'             => $gstNumber,
+
+                        'package_name'           => $validated['package_name'] ?? null,
+                        'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
+                        'package_duration'       => $validated['package_duration'] ?? null,
+                        'selling_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
+
+                        'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
+                        'payment_method'         => $validated['payment_method'] ?? null,
+                        'transaction_id'         => $validated['transaction_id'] ?? null,
+                        'bank'                   => $validated['bank'] ?? null,
+                        'payment_date'           => $validated['payment_date'] ?? null,
+
+                        'activated_by'           => $validated['activated_by'] ?? null,
+                        'customer_type'          => $validated['customer_type'] ?? null,
+                        'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
+
+                        'status'                 => 'pending',
+                        'remarks'                => 'Bill request updated from duplicate request.',
+                        'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
+                        'api_response'           => json_encode([
+                            'received_from' => $sourceSoftware,
+                            'received_at'   => now()->toDateTimeString(),
+                            'updated_from_duplicate_request' => true,
+                        ], JSON_UNESCAPED_UNICODE),
+                        'requested_at'           => $validated['request_date'] ?? now(),
+                    ]);
+
+                    if ($validated['request_for_bill']) {
+                        $invoice = $this->createQuotationInvoiceFromBillRequest($existingBillRequest->fresh(), true);
+                    }
+                });
+
+                if ($invoice) {
+                    $this->pushSaveInvoiceApi($existingBillRequest->fresh(), $invoice->fresh());
+                }
+
+                return response()->json([
+                    'success'            => true,
+                    'message'            => $invoice
+                        ? 'Duplicate request received. Billing request and quotation updated successfully.'
+                        : 'Duplicate request received. Billing request updated successfully.',
+                    'billing_request_id' => $existingBillRequest->id,
+                    'invoice_id'         => $invoice?->id,
+                    'invoice_number'     => $invoice?->invoice_number,
+                    'invoice_type'       => $invoice?->invoice_type,
+                    'status'             => $existingBillRequest->fresh()->status,
+                    'data'               => [
+                        'bill_request' => $existingBillRequest->fresh(),
+                        'invoice'      => $invoice ? $invoice->fresh() : null,
+                    ],
+                ], 200);
+            }
+
+            $billRequest = null;
             $invoice = null;
 
             DB::transaction(function () use (
-                &$existingBillRequest,
+                &$billRequest,
                 &$invoice,
                 $validated,
                 $gstNumber,
@@ -1105,10 +584,10 @@ public function store(Request $request)
                 $sourceSoftware,
                 $idempotencyKey
             ) {
-                $existingBillRequest->update([
+                $billRequest = BillRequest::create([
                     'source_software'        => $sourceSoftware,
-                    'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : $existingBillRequest->source_request_id,
-                    'idempotency_key'        => $idempotencyKey ?: $existingBillRequest->idempotency_key,
+                    'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : null,
+                    'idempotency_key'        => $idempotencyKey,
 
                     'source_customer_id'     => $validated['source_customer_id'] ?? null,
                     'source_package_id'      => $validated['source_package_id'] ?? null,
@@ -1142,1089 +621,536 @@ public function store(Request $request)
                     'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
 
                     'status'                 => 'pending',
-                    'remarks'                => 'Bill request updated from duplicate request.',
+                    'remarks'                => null,
                     'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
                     'api_response'           => json_encode([
                         'received_from' => $sourceSoftware,
                         'received_at'   => now()->toDateTimeString(),
-                        'updated_from_duplicate_request' => true,
                     ], JSON_UNESCAPED_UNICODE),
                     'requested_at'           => $validated['request_date'] ?? now(),
                 ]);
 
                 if ($validated['request_for_bill']) {
-                    $invoice = $this->createQuotationInvoiceFromBillRequest($existingBillRequest->fresh(), true);
+                    $billRequest = $billRequest->fresh();
+                    $invoice = $this->createQuotationInvoiceFromBillRequest($billRequest, false);
                 }
             });
 
             if ($invoice) {
-                $this->pushSaveInvoiceApi($existingBillRequest->fresh(), $invoice->fresh());
+                $this->pushSaveInvoiceApi($billRequest->fresh(), $invoice->fresh());
             }
 
             return response()->json([
                 'success'            => true,
                 'message'            => $invoice
-                    ? 'Duplicate request received. Billing request and quotation updated successfully.'
-                    : 'Duplicate request received. Billing request updated successfully.',
-                'billing_request_id' => $existingBillRequest->id,
+                    ? 'Billing request received and quotation created successfully.'
+                    : 'Billing request received successfully.',
+                'billing_request_id' => $billRequest->id,
                 'invoice_id'         => $invoice?->id,
                 'invoice_number'     => $invoice?->invoice_number,
                 'invoice_type'       => $invoice?->invoice_type,
-                'status'             => $existingBillRequest->fresh()->status,
+                'status'             => $billRequest->fresh()->status,
                 'data'               => [
-                    'bill_request' => $existingBillRequest->fresh(),
+                    'bill_request' => $billRequest->fresh(),
                     'invoice'      => $invoice ? $invoice->fresh() : null,
                 ],
-            ], 200);
-        }
+            ], 201);
 
-        $billRequest = null;
-        $invoice = null;
-
-        DB::transaction(function () use (
-            &$billRequest,
-            &$invoice,
-            $validated,
-            $gstNumber,
-            $fullPayload,
-            $itemsTotal,
-            $sourceRequestId,
-            $sourceSoftware,
-            $idempotencyKey
-        ) {
-            $billRequest = BillRequest::create([
-                'source_software'        => $sourceSoftware,
-                'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : null,
-                'idempotency_key'        => $idempotencyKey,
-
-                'source_customer_id'     => $validated['source_customer_id'] ?? null,
-                'source_package_id'      => $validated['source_package_id'] ?? null,
-                'source_user_package_id' => $validated['source_user_package_id'] ?? null,
-                'source_payment_id'      => $validated['source_payment_id'] ?? null,
-
-                'customer_name'          => $validated['customer_name'] ?? null,
-                'customer_email'         => $validated['customer_email'] ?? null,
-                'customer_phone'         => $validated['customer_phone'] ?? null,
-                'customer_phone1'        => $validated['customer_phone1'] ?? null,
-                'country'                => $validated['country'] ?? null,
-                'state'                  => $validated['state'] ?? null,
-                'city'                   => $validated['city'] ?? null,
-                'pin'                    => $validated['pin'] ?? null,
-                'address'                => $validated['address'] ?? null,
-                'gst_number'             => $gstNumber,
-
-                'package_name'           => $validated['package_name'] ?? null,
-                'package_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
-                'package_duration'       => $validated['package_duration'] ?? null,
-                'selling_price'          => $itemsTotal > 0 ? $itemsTotal : ($validated['package_price'] ?? null),
-
-                'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
-                'payment_method'         => $validated['payment_method'] ?? null,
-                'transaction_id'         => $validated['transaction_id'] ?? null,
-                'bank'                   => $validated['bank'] ?? null,
-                'payment_date'           => $validated['payment_date'] ?? null,
-
-                'activated_by'           => $validated['activated_by'] ?? null,
-                'customer_type'          => $validated['customer_type'] ?? null,
-                'old_customer_user_id'   => $validated['old_customer_user_id'] ?? null,
-
-                'status'                 => 'pending',
-                'remarks'                => null,
-                'full_payload'           => json_encode($fullPayload, JSON_UNESCAPED_UNICODE),
-                'api_response'           => json_encode([
-                    'received_from' => $sourceSoftware,
-                    'received_at'   => now()->toDateTimeString(),
-                ], JSON_UNESCAPED_UNICODE),
-                'requested_at'           => $validated['request_date'] ?? now(),
+        } catch (\Throwable $e) {
+            Log::error('Billing request API failed', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+                'file'    => $e->getFile(),
+                'payload' => $request->all(),
             ]);
 
-            if ($validated['request_for_bill']) {
-                $billRequest = $billRequest->fresh();
-                $invoice = $this->createQuotationInvoiceFromBillRequest($billRequest, false);
-            }
-        });
-
-        if ($invoice) {
-            $this->pushSaveInvoiceApi($billRequest->fresh(), $invoice->fresh());
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong while saving billing request and quotation.',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'success'            => true,
-            'message'            => $invoice
-                ? 'Billing request received and quotation created successfully.'
-                : 'Billing request received successfully.',
-            'billing_request_id' => $billRequest->id,
-            'invoice_id'         => $invoice?->id,
-            'invoice_number'     => $invoice?->invoice_number,
-            'invoice_type'       => $invoice?->invoice_type,
-            'status'             => $billRequest->fresh()->status,
-            'data'               => [
-                'bill_request' => $billRequest->fresh(),
-                'invoice'      => $invoice ? $invoice->fresh() : null,
-            ],
-        ], 201);
-
-    } catch (\Throwable $e) {
-        Log::error('Billing request API failed', [
-            'message' => $e->getMessage(),
-            'line'    => $e->getLine(),
-            'file'    => $e->getFile(),
-            'payload' => $request->all(),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Something went wrong while saving billing request and quotation.',
-            'error'   => $e->getMessage(),
-        ], 500);
     }
-}
 
 
-    // private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest)
-    // {
-    //     $existingInvoice = Invoice::withoutGlobalScopes()
-    //         ->where('bil_request_id', $billRequest->id)
-    //         ->where('invoice_type', 'quotation')
-    //         ->first();
-
-    //     if ($existingInvoice) {
-    //         return $existingInvoice;
-    //     }
-
-    //     $payload = [];
-
-    //     if (!empty($billRequest->full_payload)) {
-    //         $decoded = json_decode($billRequest->full_payload, true);
-
-    //         if (is_array($decoded)) {
-    //             $payload = $decoded;
-    //         }
-    //     }
-
-    //     $requestItems = $payload['items'] ?? [];
-
-    //     if (empty($requestItems)) {
-    //         $requestItems = [[
-    //             'item_id'     => (int) ($billRequest->package_name ?? 0),
-    //             'qty'         => 1,
-    //             'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
-    //             'description' => (string) ($billRequest->package_description ?? ''),
-    //         ]];
-    //     }
-
-    //     $firstItemId = (int) ($requestItems[0]['item_id'] ?? 0);
-
-    //     if ($firstItemId <= 0) {
-    //         Log::error('Bill request first item invalid', [
-    //             'bil_request_id' => $billRequest->id,
-    //             'request_items'   => $requestItems,
-    //             'full_payload'    => $billRequest->full_payload,
-    //             'package_name'    => $billRequest->package_name,
-    //         ]);
-
-    //         throw new \Exception('Selected service item id invalid hai.');
-    //     }
-
-    //     /*
-    //     * Important:
-    //     * Yahan withoutGlobalScopes() use kiya hai,
-    //     * taki BelongsToBusiness global scope item ko hide na kare.
-    //     */
-    //     $firstItem = Item::withoutGlobalScopes()
-    //         ->where('id', $firstItemId)
-    //         ->first();
-
-    //     if (!$firstItem) {
-    //         throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
-    //     }
-
-    //     if ((int) ($firstItem->is_active ?? 1) !== 1) {
-    //         throw new \Exception(
-    //             'Selected item inactive hai. Item ID: ' . $firstItemId .
-    //             ', Business ID: ' . ($firstItem->business_id ?? 'NULL') .
-    //             ', Active: ' . (($firstItem->is_active ?? null) ? '1' : '0')
-    //         );
-    //     }
-
-    //     /*
-    //     * Pehle code me $bid = 1 hardcoded tha.
-    //     * Ab item jis business ka hai, wahi business use hoga.
-    //     */
-    //     $bid = (int) ($firstItem->business_id ?: 1);
-    //     $userId = 1;
-
-    //     $business = Business::withoutGlobalScopes()->findOrFail($bid);
-
-    //     $client = null;
-
-    //     if (!empty($billRequest->gst_number)) {
-    //         $client = Client::withoutGlobalScopes()
-    //             ->where('business_id', $bid)
-    //             ->where('gstin', trim($billRequest->gst_number))
-    //             ->first();
-    //     }
-
-    //     if (!$client && !empty($billRequest->customer_phone)) {
-    //         $client = Client::withoutGlobalScopes()
-    //             ->where('business_id', $bid)
-    //             ->where('mobile', trim($billRequest->customer_phone))
-    //             ->first();
-    //     }
-
-    //     if (!$client && !empty($billRequest->customer_email)) {
-    //         $client = Client::withoutGlobalScopes()
-    //             ->where('business_id', $bid)
-    //             ->where('email', trim($billRequest->customer_email))
-    //             ->first();
-    //     }
-
-    //     $states = [
-    //         ['code'=>'01','name'=>'Jammu and Kashmir'],
-    //         ['code'=>'02','name'=>'Himachal Pradesh'],
-    //         ['code'=>'03','name'=>'Punjab'],
-    //         ['code'=>'04','name'=>'Chandigarh'],
-    //         ['code'=>'05','name'=>'Uttarakhand'],
-    //         ['code'=>'06','name'=>'Haryana'],
-    //         ['code'=>'07','name'=>'Delhi'],
-    //         ['code'=>'08','name'=>'Rajasthan'],
-    //         ['code'=>'09','name'=>'Uttar Pradesh'],
-    //         ['code'=>'10','name'=>'Bihar'],
-    //         ['code'=>'11','name'=>'Sikkim'],
-    //         ['code'=>'12','name'=>'Arunachal Pradesh'],
-    //         ['code'=>'13','name'=>'Nagaland'],
-    //         ['code'=>'14','name'=>'Manipur'],
-    //         ['code'=>'15','name'=>'Mizoram'],
-    //         ['code'=>'16','name'=>'Tripura'],
-    //         ['code'=>'17','name'=>'Meghalaya'],
-    //         ['code'=>'18','name'=>'Assam'],
-    //         ['code'=>'19','name'=>'West Bengal'],
-    //         ['code'=>'20','name'=>'Jharkhand'],
-    //         ['code'=>'21','name'=>'Odisha'],
-    //         ['code'=>'22','name'=>'Chhattisgarh'],
-    //         ['code'=>'23','name'=>'Madhya Pradesh'],
-    //         ['code'=>'24','name'=>'Gujarat'],
-    //         ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
-    //         ['code'=>'27','name'=>'Maharashtra'],
-    //         ['code'=>'29','name'=>'Karnataka'],
-    //         ['code'=>'30','name'=>'Goa'],
-    //         ['code'=>'31','name'=>'Lakshadweep'],
-    //         ['code'=>'32','name'=>'Kerala'],
-    //         ['code'=>'33','name'=>'Tamil Nadu'],
-    //         ['code'=>'34','name'=>'Puducherry'],
-    //         ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
-    //         ['code'=>'36','name'=>'Telangana'],
-    //         ['code'=>'37','name'=>'Andhra Pradesh'],
-    //         ['code'=>'38','name'=>'Ladakh'],
-    //     ];
-
-    //     $stateCode = null;
-
-    //     foreach ($states as $st) {
-    //         if (strtolower(trim($st['name'])) === strtolower(trim((string) $billRequest->state))) {
-    //             $stateCode = $st['code'];
-    //             break;
-    //         }
-    //     }
-
-    //     if (!$client) {
-    //         $client = Client::create([
-    //             'business_id' => $bid,
-    //             'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
-    //             'address'     => $billRequest->address,
-    //             'gstin'       => $billRequest->gst_number,
-    //             'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
-    //             'state'       => $billRequest->state,
-    //             'city'        => $billRequest->city,
-    //             'pincode'     => $billRequest->pin,
-    //             'state_code'  => $stateCode,
-    //             'email'       => $billRequest->customer_email,
-    //             'is_save'     => 1,
-    //         ]);
-    //     }
-
-    //     $invoiceDate = now(config('app.timezone'))->toDateString();
-
-    //     $bizCode   = $this->normCode($business->state_code ?? '');
-    //     $partyCode = $this->normCode($client->state_code ?? '');
-
-    //     $isIntra = ($bizCode !== '' && $partyCode !== '')
-    //         ? ($bizCode === $partyCode)
-    //         : false;
-
-    //     $itemsJson = [];
-    //     $invoiceRows = [];
-
-    //     $subtotal = 0;
-    //     $taxAmount = 0;
-    //     $grandTotal = 0;
-
-    //     $totalTaxPercentForInvoice = 0;
-    //     $totalCgstAmount = 0;
-    //     $totalSgstAmount = 0;
-    //     $totalIgstAmount = 0;
-
-    //     foreach ($requestItems as $row) {
-    //         $itemId = (int) ($row['item_id'] ?? 0);
-
-    //         if ($itemId <= 0) {
-    //             throw new \Exception('Selected service item id invalid hai.');
-    //         }
-
-    //         $matchedItem = Item::withoutGlobalScopes()
-    //             ->where('business_id', $bid)
-    //             ->where('id', $itemId)
-    //             ->first();
-
-    //         if (!$matchedItem) {
-    //             $debugItem = Item::withoutGlobalScopes()
-    //                 ->where('id', $itemId)
-    //                 ->first();
-
-    //             if ($debugItem) {
-    //                 throw new \Exception(
-    //                     'Selected item business match nahi hua. Item ID: ' . $itemId .
-    //                     ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
-    //                     ', Expected Business ID: ' . $bid .
-    //                     ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
-    //                 );
-    //             }
-
-    //             throw new \Exception('Selected item database me nahi mila. Item ID: ' . $itemId);
-    //         }
-
-    //         if ((int) ($matchedItem->is_active ?? 1) !== 1) {
-    //             throw new \Exception(
-    //                 'Selected item inactive hai. Item ID: ' . $itemId .
-    //                 ', Business ID: ' . ($matchedItem->business_id ?? 'NULL') .
-    //                 ', Active: ' . (($matchedItem->is_active ?? null) ? '1' : '0')
-    //             );
-    //         }
-
-    //         $qty = max(1, (float) ($row['qty'] ?? 1));
-    //         $price = (float) ($row['price'] ?? 0);
-
-    //         if ($price <= 0) {
-    //             throw new \Exception('Bill request amount invalid hai. Item: ' . $matchedItem->name);
-    //         }
-
-    //         $grossAmount = round($qty * $price, 2);
-
-    //         $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
-
-    //         if ($taxPercent > 0) {
-    //             $lineSubtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
-    //             $lineTaxAmount = round($grossAmount - $lineSubtotal, 2);
-    //         } else {
-    //             $lineSubtotal = round($grossAmount, 2);
-    //             $lineTaxAmount = 0;
-    //         }
-
-    //         if ($isIntra) {
-    //             $lineCgstAmount = round($lineTaxAmount / 2, 2);
-    //             $lineSgstAmount = round($lineTaxAmount - $lineCgstAmount, 2);
-    //             $lineIgstAmount = 0;
-    //         } else {
-    //             $lineCgstAmount = 0;
-    //             $lineSgstAmount = 0;
-    //             $lineIgstAmount = round($lineTaxAmount, 2);
-    //         }
-
-    //         $itemDescription = trim((string) ($row['description'] ?? ''));
-
-    //         if ($itemDescription === '') {
-    //             $itemDescription = $matchedItem->description ?: $matchedItem->name;
-    //         }
-
-    //         $rateWithoutTax = round($lineSubtotal / $qty, 2);
-
-    //         $subtotal += $lineSubtotal;
-    //         $taxAmount += $lineTaxAmount;
-    //         $grandTotal += $grossAmount;
-
-    //         $totalCgstAmount += $lineCgstAmount;
-    //         $totalSgstAmount += $lineSgstAmount;
-    //         $totalIgstAmount += $lineIgstAmount;
-
-    //         $totalTaxPercentForInvoice = max($totalTaxPercentForInvoice, $taxPercent);
-
-    //         $itemsJson[] = [
-    //             'item_id'       => $matchedItem->id,
-    //             'item_type'     => 'service',
-    //             'description'   => $itemDescription,
-    //             'hsn'           => $matchedItem->sac ?? '',
-    //             'qty'           => $qty,
-    //             'tax_percent'   => round($taxPercent, 2),
-    //             'service_rate'  => $rateWithoutTax,
-    //             'rate'          => $rateWithoutTax,
-    //             'tax_amount'    => round($lineTaxAmount, 2),
-    //             'amount'        => round($grossAmount, 2),
-    //             'making_charge' => round($lineSubtotal, 2),
-    //             'gold_wt'       => 0,
-    //             'silver_wt'     => 0,
-    //             'gold_rate'     => 0,
-    //             'silver_rate'   => 0,
-    //             'gemstone_wt'   => 0,
-    //             'diamond_wt'    => 0,
-    //             'making_rate'   => 0,
-    //             'stone_charges' => 0,
-    //         ];
-
-    //         $invoiceRows[] = [
-    //             'matched_item'     => $matchedItem,
-    //             'description'      => $itemDescription,
-    //             'qty'              => $qty,
-    //             'rate_without_tax' => $rateWithoutTax,
-    //             'line_subtotal'    => round($lineSubtotal, 2),
-    //             'tax_percent'      => round($taxPercent, 2),
-    //             'line_tax_amount'  => round($lineTaxAmount, 2),
-    //             'gross_amount'     => round($grossAmount, 2),
-    //         ];
-    //     }
-
-    //     if (empty($invoiceRows)) {
-    //         throw new \Exception('Invoice ke liye koi valid item nahi mila.');
-    //     }
-
-    //     $subtotal = round($subtotal, 2);
-    //     $taxAmount = round($taxAmount, 2);
-    //     $grandTotal = round($grandTotal, 2);
-
-    //     if ($isIntra) {
-    //         $cgstPercent = round($totalTaxPercentForInvoice / 2, 2);
-    //         $sgstPercent = round($totalTaxPercentForInvoice / 2, 2);
-    //         $igstPercent = 0;
-
-    //         $cgstAmount = round($totalCgstAmount, 2);
-    //         $sgstAmount = round($totalSgstAmount, 2);
-    //         $igstAmount = 0;
-    //     } else {
-    //         $cgstPercent = 0;
-    //         $sgstPercent = 0;
-    //         $igstPercent = round($totalTaxPercentForInvoice, 2);
-
-    //         $cgstAmount = 0;
-    //         $sgstAmount = 0;
-    //         $igstAmount = round($totalIgstAmount, 2);
-    //     }
-
-    //     $taxBase = $business->quotation_base_prefix ?? 'QT';
-    //     $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
-
-    //     $alloc = \App\Services\InvoiceNumber::next(
-    //         $bid,
-    //         $invoiceDate,
-    //         $prefix,
-    //         3,
-    //         'quotation'
-    //     );
-
-    //     $invoiceNumber = $alloc['full'];
-
-    //     \App\Services\InvoiceNumber::syncNextSeqIfMatches(
-    //         $bid,
-    //         $invoiceDate,
-    //         $invoiceNumber,
-    //         3,
-    //         'quotation'
-    //     );
-
-    //     $invoice = Invoice::create([
-    //         'business_id'     => $bid,
-    //         'bil_request_id'  => $billRequest->id,
-
-    //         'invoice_type'    => 'quotation',
-    //         'invoice_prefix'  => $prefix,
-    //         'invoice_number'  => $invoiceNumber,
-    //         'client_id'       => $client->id,
-    //         'invoice_date'    => $invoiceDate,
-    //         'payment_terms'   => 0,
-    //         'due_date'        => null,
-
-    //         'subtotal'        => $subtotal,
-    //         'tax_amount'      => $taxAmount,
-
-    //         'cgst_percent'    => $cgstPercent,
-    //         'cgst_amount'     => $cgstAmount,
-    //         'sgst_percent'    => $sgstPercent,
-    //         'sgst_amount'     => $sgstAmount,
-    //         'igst_percent'    => $igstPercent,
-    //         'igst_amount'     => $igstAmount,
-
-    //         'discount_total'  => 0,
-    //         'charge_total'    => 0,
-    //         'tcs_percent'     => 0,
-    //         'tcs_amount'      => 0,
-    //         'round_off'       => 0,
-    //         'less_amount'     => 0,
-
-    //         'total'           => $grandTotal,
-    //         'received_amount' => 0,
-    //         'balance'         => $grandTotal,
-
-    //         'payment_method'  => null,
-    //         'transport_mode'  => null,
-    //         'reverse_charge'  => 0,
-
-    //         'place_of_supply_state' => $client->state,
-    //         'place_of_supply_code'  => $client->state_code,
-
-    //         'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
-    //         'terms'           => null,
-
-    //         'charges_json'    => json_encode([]),
-    //         'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
-
-    //         'amount_in_words' => '',
-    //         'pdf_url'         => null,
-    //         'signature'       => null,
-
-    //         'user_id'         => $userId,
-    //         'created_by'      => $userId,
-    //         'updated_by'      => $userId,
-
-    //         'kots_json'       => json_encode([]),
-    //     ]);
-
-    //     foreach ($invoiceRows as $row) {
-    //         InvoiceItem::create([
-    //             'invoice_id'      => $invoice->id,
-    //             'item_id'         => $row['matched_item']->id,
-    //             'description'     => $row['description'],
-    //             'sac_code'        => $row['matched_item']->sac ?? null,
-    //             'hsn_code'        => null,
-    //             'quantity'        => $row['qty'],
-    //             'gold_wt'         => 0,
-    //             'silver_wt'       => 0,
-    //             'gold_rate'       => 0,
-    //             'silver_rate'     => 0,
-    //             'gemstone_wt_ct'  => 0,
-    //             'diamond_wt_ct'   => 0,
-    //             'making_charge'   => $row['line_subtotal'],
-    //             'making_rate'     => null,
-    //             'discount'        => 0,
-    //             'tax_percent'     => $row['tax_percent'],
-    //             'rate'            => $row['rate_without_tax'],
-    //             'amount'          => $row['gross_amount'],
-    //         ]);
-    //     }
-
-    //     $oldApi = [];
-
-    //     if (!empty($billRequest->api_response)) {
-    //         $decoded = json_decode($billRequest->api_response, true);
-
-    //         if (is_array($decoded)) {
-    //             $oldApi = $decoded;
-    //         }
-    //     }
-
-    //     $oldApi['matched_items'] = collect($invoiceRows)->map(function ($row) {
-    //         return [
-    //             'matched_item_id'   => $row['matched_item']->id,
-    //             'matched_item_name' => $row['matched_item']->name,
-    //             'qty'               => $row['qty'],
-    //             'rate'              => $row['rate_without_tax'],
-    //             'amount'            => $row['gross_amount'],
-    //         ];
-    //     })->values()->toArray();
-
-    //     $oldApi['created_invoice_id']     = $invoice->id;
-    //     $oldApi['created_invoice_number'] = $invoice->invoice_number;
-    //     $oldApi['created_client_id']      = $client->id;
-    //     $oldApi['invoice_type']           = 'quotation';
-    //     $oldApi['invoice_date']           = $invoiceDate;
-    //     $oldApi['gst_included']           = true;
-    //     $oldApi['gross_amount']           = $grandTotal;
-    //     $oldApi['taxable_amount']         = $subtotal;
-    //     $oldApi['tax_amount']             = $taxAmount;
-    //     $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
-
-    //     $billRequest->update([
-    //         'remarks'      => 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
-    //         'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
-    //     ]);
-
-    //     return $invoice;
-    // }
 
     private function createQuotationInvoiceFromBillRequest(BillRequest $billRequest, bool $forceUpdate = false)
-{
-    $existingInvoice = Invoice::withoutGlobalScopes()
-        ->where('bil_request_id', $billRequest->id)
-        ->where('invoice_type', 'quotation')
-        ->first();
+    {
+        $existingInvoice = Invoice::withoutGlobalScopes()
+            ->where('bil_request_id', $billRequest->id)
+            ->where('invoice_type', 'quotation')
+            ->first();
 
-    if ($existingInvoice && !$forceUpdate) {
-        return $existingInvoice;
-    }
-
-    $payload = [];
-
-    if (!empty($billRequest->full_payload)) {
-        $decoded = json_decode($billRequest->full_payload, true);
-
-        if (is_array($decoded)) {
-            $payload = $decoded;
+        if ($existingInvoice && !$forceUpdate) {
+            return $existingInvoice;
         }
-    }
 
-    $requestItems = $payload['items'] ?? [];
+        $payload = [];
 
-    if (empty($requestItems)) {
-        $requestItems = [[
-            'item_id'     => (int) ($billRequest->package_name ?? 0),
-            'qty'         => 1,
-            'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
-            'description' => (string) ($billRequest->package_description ?? ''),
-        ]];
-    }
+        if (!empty($billRequest->full_payload)) {
+            $decoded = json_decode($billRequest->full_payload, true);
 
-    $firstItemId = (int) ($requestItems[0]['item_id'] ?? 0);
-
-    if ($firstItemId <= 0) {
-        Log::error('Bill request first item invalid', [
-            'bil_request_id' => $billRequest->id,
-            'request_items'   => $requestItems,
-            'full_payload'    => $billRequest->full_payload,
-            'package_name'    => $billRequest->package_name,
-        ]);
-
-        throw new \Exception('Selected service item id invalid hai.');
-    }
-
-    $firstItem = Item::withoutGlobalScopes()
-        ->where('id', $firstItemId)
-        ->first();
-
-    if (!$firstItem) {
-        throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
-    }
-
-    if ((int) ($firstItem->is_active ?? 1) !== 1) {
-        throw new \Exception(
-            'Selected item inactive hai. Item ID: ' . $firstItemId .
-            ', Business ID: ' . ($firstItem->business_id ?? 'NULL') .
-            ', Active: ' . (($firstItem->is_active ?? null) ? '1' : '0')
-        );
-    }
-
-    $bid = (int) ($firstItem->business_id ?: 1);
-    $userId = 1;
-
-    $business = Business::withoutGlobalScopes()->findOrFail($bid);
-
-    $client = null;
-
-    if (!empty($billRequest->gst_number)) {
-        $client = Client::withoutGlobalScopes()
-            ->where('business_id', $bid)
-            ->where('gstin', trim($billRequest->gst_number))
-            ->first();
-    }
-
-    if (!$client && !empty($billRequest->customer_phone)) {
-        $client = Client::withoutGlobalScopes()
-            ->where('business_id', $bid)
-            ->where('mobile', trim($billRequest->customer_phone))
-            ->first();
-    }
-
-    if (!$client && !empty($billRequest->customer_email)) {
-        $client = Client::withoutGlobalScopes()
-            ->where('business_id', $bid)
-            ->where('email', trim($billRequest->customer_email))
-            ->first();
-    }
-
-    $states = [
-        ['code'=>'01','name'=>'Jammu and Kashmir'],
-        ['code'=>'02','name'=>'Himachal Pradesh'],
-        ['code'=>'03','name'=>'Punjab'],
-        ['code'=>'04','name'=>'Chandigarh'],
-        ['code'=>'05','name'=>'Uttarakhand'],
-        ['code'=>'06','name'=>'Haryana'],
-        ['code'=>'07','name'=>'Delhi'],
-        ['code'=>'08','name'=>'Rajasthan'],
-        ['code'=>'09','name'=>'Uttar Pradesh'],
-        ['code'=>'10','name'=>'Bihar'],
-        ['code'=>'11','name'=>'Sikkim'],
-        ['code'=>'12','name'=>'Arunachal Pradesh'],
-        ['code'=>'13','name'=>'Nagaland'],
-        ['code'=>'14','name'=>'Manipur'],
-        ['code'=>'15','name'=>'Mizoram'],
-        ['code'=>'16','name'=>'Tripura'],
-        ['code'=>'17','name'=>'Meghalaya'],
-        ['code'=>'18','name'=>'Assam'],
-        ['code'=>'19','name'=>'West Bengal'],
-        ['code'=>'20','name'=>'Jharkhand'],
-        ['code'=>'21','name'=>'Odisha'],
-        ['code'=>'22','name'=>'Chhattisgarh'],
-        ['code'=>'23','name'=>'Madhya Pradesh'],
-        ['code'=>'24','name'=>'Gujarat'],
-        ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
-        ['code'=>'27','name'=>'Maharashtra'],
-        ['code'=>'29','name'=>'Karnataka'],
-        ['code'=>'30','name'=>'Goa'],
-        ['code'=>'31','name'=>'Lakshadweep'],
-        ['code'=>'32','name'=>'Kerala'],
-        ['code'=>'33','name'=>'Tamil Nadu'],
-        ['code'=>'34','name'=>'Puducherry'],
-        ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
-        ['code'=>'36','name'=>'Telangana'],
-        ['code'=>'37','name'=>'Andhra Pradesh'],
-        ['code'=>'38','name'=>'Ladakh'],
-    ];
-
-    $stateCode = null;
-
-    foreach ($states as $st) {
-        if (strtolower(trim($st['name'])) === strtolower(trim((string) $billRequest->state))) {
-            $stateCode = $st['code'];
-            break;
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
         }
-    }
 
-    if (!$client) {
-        $client = Client::create([
-            'business_id' => $bid,
-            'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
-            'address'     => $billRequest->address,
-            'gstin'       => $billRequest->gst_number,
-            'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
-            'state'       => $billRequest->state,
-            'city'        => $billRequest->city,
-            'pincode'     => $billRequest->pin,
-            'state_code'  => $stateCode,
-            'email'       => $billRequest->customer_email,
-            'is_save'     => 1,
-        ]);
-    }
+        $requestItems = $payload['items'] ?? [];
 
-    $invoiceDate = now(config('app.timezone'))->toDateString();
+        if (empty($requestItems)) {
+            $requestItems = [[
+                'item_id'     => (int) ($billRequest->package_name ?? 0),
+                'qty'         => 1,
+                'price'       => (float) ($billRequest->package_price ?? $billRequest->selling_price ?? $billRequest->payment_amount ?? 0),
+                'description' => (string) ($billRequest->package_description ?? ''),
+            ]];
+        }
 
-    $bizCode   = $this->normCode($business->state_code ?? '');
-    $partyCode = $this->normCode($client->state_code ?? '');
+        $firstItemId = (int) ($requestItems[0]['item_id'] ?? 0);
 
-    $isIntra = ($bizCode !== '' && $partyCode !== '')
-        ? ($bizCode === $partyCode)
-        : false;
+        if ($firstItemId <= 0) {
+            Log::error('Bill request first item invalid', [
+                'bil_request_id' => $billRequest->id,
+                'request_items'   => $requestItems,
+                'full_payload'    => $billRequest->full_payload,
+                'package_name'    => $billRequest->package_name,
+            ]);
 
-    $itemsJson = [];
-    $invoiceRows = [];
-
-    $subtotal = 0;
-    $taxAmount = 0;
-    $grandTotal = 0;
-
-    $totalTaxPercentForInvoice = 0;
-    $totalCgstAmount = 0;
-    $totalSgstAmount = 0;
-    $totalIgstAmount = 0;
-
-    foreach ($requestItems as $row) {
-        $itemId = (int) ($row['item_id'] ?? 0);
-
-        if ($itemId <= 0) {
             throw new \Exception('Selected service item id invalid hai.');
         }
 
-        $matchedItem = Item::withoutGlobalScopes()
-            ->where('business_id', $bid)
-            ->where('id', $itemId)
+        $firstItem = Item::withoutGlobalScopes()
+            ->where('id', $firstItemId)
             ->first();
 
-        if (!$matchedItem) {
-            $debugItem = Item::withoutGlobalScopes()
-                ->where('id', $itemId)
-                ->first();
-
-            if ($debugItem) {
-                throw new \Exception(
-                    'Selected item business match nahi hua. Item ID: ' . $itemId .
-                    ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
-                    ', Expected Business ID: ' . $bid .
-                    ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
-                );
-            }
-
-            throw new \Exception('Selected item database me nahi mila. Item ID: ' . $itemId);
+        if (!$firstItem) {
+            throw new \Exception('Selected item database me nahi mila. Item ID: ' . $firstItemId);
         }
 
-        if ((int) ($matchedItem->is_active ?? 1) !== 1) {
+        if ((int) ($firstItem->is_active ?? 1) !== 1) {
             throw new \Exception(
-                'Selected item inactive hai. Item ID: ' . $itemId .
-                ', Business ID: ' . ($matchedItem->business_id ?? 'NULL') .
-                ', Active: ' . (($matchedItem->is_active ?? null) ? '1' : '0')
+                'Selected item inactive hai. Item ID: ' . $firstItemId .
+                ', Business ID: ' . ($firstItem->business_id ?? 'NULL') .
+                ', Active: ' . (($firstItem->is_active ?? null) ? '1' : '0')
             );
         }
 
-        $qty = max(1, (float) ($row['qty'] ?? 1));
-        $price = (float) ($row['price'] ?? 0);
+        $bid = (int) ($firstItem->business_id ?: 1);
+        $userId = 1;
 
-        if ($price <= 0) {
-            throw new \Exception('Bill request amount invalid hai. Item: ' . $matchedItem->name);
+        $business = Business::withoutGlobalScopes()->findOrFail($bid);
+
+        $client = null;
+
+        if (!empty($billRequest->gst_number)) {
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
+                ->where('gstin', trim($billRequest->gst_number))
+                ->first();
         }
 
-        $grossAmount = round($qty * $price, 2);
-        $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
-
-        if ($taxPercent > 0) {
-            $lineSubtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
-            $lineTaxAmount = round($grossAmount - $lineSubtotal, 2);
-        } else {
-            $lineSubtotal = round($grossAmount, 2);
-            $lineTaxAmount = 0;
+        if (!$client && !empty($billRequest->customer_phone)) {
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
+                ->where('mobile', trim($billRequest->customer_phone))
+                ->first();
         }
+
+        if (!$client && !empty($billRequest->customer_email)) {
+            $client = Client::withoutGlobalScopes()
+                ->where('business_id', $bid)
+                ->where('email', trim($billRequest->customer_email))
+                ->first();
+        }
+
+        $states = [
+            ['code'=>'01','name'=>'Jammu and Kashmir'],
+            ['code'=>'02','name'=>'Himachal Pradesh'],
+            ['code'=>'03','name'=>'Punjab'],
+            ['code'=>'04','name'=>'Chandigarh'],
+            ['code'=>'05','name'=>'Uttarakhand'],
+            ['code'=>'06','name'=>'Haryana'],
+            ['code'=>'07','name'=>'Delhi'],
+            ['code'=>'08','name'=>'Rajasthan'],
+            ['code'=>'09','name'=>'Uttar Pradesh'],
+            ['code'=>'10','name'=>'Bihar'],
+            ['code'=>'11','name'=>'Sikkim'],
+            ['code'=>'12','name'=>'Arunachal Pradesh'],
+            ['code'=>'13','name'=>'Nagaland'],
+            ['code'=>'14','name'=>'Manipur'],
+            ['code'=>'15','name'=>'Mizoram'],
+            ['code'=>'16','name'=>'Tripura'],
+            ['code'=>'17','name'=>'Meghalaya'],
+            ['code'=>'18','name'=>'Assam'],
+            ['code'=>'19','name'=>'West Bengal'],
+            ['code'=>'20','name'=>'Jharkhand'],
+            ['code'=>'21','name'=>'Odisha'],
+            ['code'=>'22','name'=>'Chhattisgarh'],
+            ['code'=>'23','name'=>'Madhya Pradesh'],
+            ['code'=>'24','name'=>'Gujarat'],
+            ['code'=>'26','name'=>'Dadra and Nagar Haveli and Daman and Diu'],
+            ['code'=>'27','name'=>'Maharashtra'],
+            ['code'=>'29','name'=>'Karnataka'],
+            ['code'=>'30','name'=>'Goa'],
+            ['code'=>'31','name'=>'Lakshadweep'],
+            ['code'=>'32','name'=>'Kerala'],
+            ['code'=>'33','name'=>'Tamil Nadu'],
+            ['code'=>'34','name'=>'Puducherry'],
+            ['code'=>'35','name'=>'Andaman and Nicobar Islands'],
+            ['code'=>'36','name'=>'Telangana'],
+            ['code'=>'37','name'=>'Andhra Pradesh'],
+            ['code'=>'38','name'=>'Ladakh'],
+        ];
+
+        $stateCode = null;
+
+        foreach ($states as $st) {
+            if (strtolower(trim($st['name'])) === strtolower(trim((string) $billRequest->state))) {
+                $stateCode = $st['code'];
+                break;
+            }
+        }
+
+        if (!$client) {
+            $client = Client::create([
+                'business_id' => $bid,
+                'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
+                'address'     => $billRequest->address,
+                'gstin'       => $billRequest->gst_number,
+                'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
+                'state'       => $billRequest->state,
+                'city'        => $billRequest->city,
+                'pincode'     => $billRequest->pin,
+                'state_code'  => $stateCode,
+                'email'       => $billRequest->customer_email,
+                'is_save'     => 1,
+            ]);
+        }
+
+        $invoiceDate = now(config('app.timezone'))->toDateString();
+
+        $bizCode   = $this->normCode($business->state_code ?? '');
+        $partyCode = $this->normCode($client->state_code ?? '');
+
+        $isIntra = ($bizCode !== '' && $partyCode !== '')
+            ? ($bizCode === $partyCode)
+            : false;
+
+        $itemsJson = [];
+        $invoiceRows = [];
+
+        $subtotal = 0;
+        $taxAmount = 0;
+        $grandTotal = 0;
+
+        $totalTaxPercentForInvoice = 0;
+        $totalCgstAmount = 0;
+        $totalSgstAmount = 0;
+        $totalIgstAmount = 0;
+
+        foreach ($requestItems as $row) {
+            $itemId = (int) ($row['item_id'] ?? 0);
+
+            if ($itemId <= 0) {
+                throw new \Exception('Selected service item id invalid hai.');
+            }
+
+            $matchedItem = Item::withoutGlobalScopes()
+                ->where('business_id', $bid)
+                ->where('id', $itemId)
+                ->first();
+
+            if (!$matchedItem) {
+                $debugItem = Item::withoutGlobalScopes()
+                    ->where('id', $itemId)
+                    ->first();
+
+                if ($debugItem) {
+                    throw new \Exception(
+                        'Selected item business match nahi hua. Item ID: ' . $itemId .
+                        ', Item Business ID: ' . ($debugItem->business_id ?? 'NULL') .
+                        ', Expected Business ID: ' . $bid .
+                        ', Active: ' . (($debugItem->is_active ?? null) ? '1' : '0')
+                    );
+                }
+
+                throw new \Exception('Selected item database me nahi mila. Item ID: ' . $itemId);
+            }
+
+            if ((int) ($matchedItem->is_active ?? 1) !== 1) {
+                throw new \Exception(
+                    'Selected item inactive hai. Item ID: ' . $itemId .
+                    ', Business ID: ' . ($matchedItem->business_id ?? 'NULL') .
+                    ', Active: ' . (($matchedItem->is_active ?? null) ? '1' : '0')
+                );
+            }
+
+            $qty = max(1, (float) ($row['qty'] ?? 1));
+            $price = (float) ($row['price'] ?? 0);
+
+            if ($price <= 0) {
+                throw new \Exception('Bill request amount invalid hai. Item: ' . $matchedItem->name);
+            }
+
+            $grossAmount = round($qty * $price, 2);
+            $taxPercent = max(0, (float) ($matchedItem->tax_rate ?? 0));
+
+            if ($taxPercent > 0) {
+                $lineSubtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
+                $lineTaxAmount = round($grossAmount - $lineSubtotal, 2);
+            } else {
+                $lineSubtotal = round($grossAmount, 2);
+                $lineTaxAmount = 0;
+            }
+
+            if ($isIntra) {
+                $lineCgstAmount = round($lineTaxAmount / 2, 2);
+                $lineSgstAmount = round($lineTaxAmount - $lineCgstAmount, 2);
+                $lineIgstAmount = 0;
+            } else {
+                $lineCgstAmount = 0;
+                $lineSgstAmount = 0;
+                $lineIgstAmount = round($lineTaxAmount, 2);
+            }
+
+            $itemDescription = trim((string) ($row['description'] ?? ''));
+
+            if ($itemDescription === '') {
+                $itemDescription = $matchedItem->description ?: $matchedItem->name;
+            }
+
+            $rateWithoutTax = round($lineSubtotal / $qty, 2);
+
+            $subtotal += $lineSubtotal;
+            $taxAmount += $lineTaxAmount;
+            $grandTotal += $grossAmount;
+
+            $totalCgstAmount += $lineCgstAmount;
+            $totalSgstAmount += $lineSgstAmount;
+            $totalIgstAmount += $lineIgstAmount;
+
+            $totalTaxPercentForInvoice = max($totalTaxPercentForInvoice, $taxPercent);
+
+            $itemsJson[] = [
+                'item_id'       => $matchedItem->id,
+                'item_type'     => 'service',
+                'description'   => $itemDescription,
+                'hsn'           => $matchedItem->sac ?? '',
+                'qty'           => $qty,
+                'tax_percent'   => round($taxPercent, 2),
+                'service_rate'  => $rateWithoutTax,
+                'rate'          => $rateWithoutTax,
+                'tax_amount'    => round($lineTaxAmount, 2),
+                'amount'        => round($grossAmount, 2),
+                'making_charge' => round($lineSubtotal, 2),
+                'gold_wt'       => 0,
+                'silver_wt'     => 0,
+                'gold_rate'     => 0,
+                'silver_rate'   => 0,
+                'gemstone_wt'   => 0,
+                'diamond_wt'    => 0,
+                'making_rate'   => 0,
+                'stone_charges' => 0,
+            ];
+
+            $invoiceRows[] = [
+                'matched_item'     => $matchedItem,
+                'description'      => $itemDescription,
+                'qty'              => $qty,
+                'rate_without_tax' => $rateWithoutTax,
+                'line_subtotal'    => round($lineSubtotal, 2),
+                'tax_percent'      => round($taxPercent, 2),
+                'line_tax_amount'  => round($lineTaxAmount, 2),
+                'gross_amount'     => round($grossAmount, 2),
+            ];
+        }
+
+        if (empty($invoiceRows)) {
+            throw new \Exception('Invoice ke liye koi valid item nahi mila.');
+        }
+
+        $subtotal = round($subtotal, 2);
+        $taxAmount = round($taxAmount, 2);
+        $grandTotal = round($grandTotal, 2);
 
         if ($isIntra) {
-            $lineCgstAmount = round($lineTaxAmount / 2, 2);
-            $lineSgstAmount = round($lineTaxAmount - $lineCgstAmount, 2);
-            $lineIgstAmount = 0;
+            $cgstPercent = round($totalTaxPercentForInvoice / 2, 2);
+            $sgstPercent = round($totalTaxPercentForInvoice / 2, 2);
+            $igstPercent = 0;
+
+            $cgstAmount = round($totalCgstAmount, 2);
+            $sgstAmount = round($totalSgstAmount, 2);
+            $igstAmount = 0;
         } else {
-            $lineCgstAmount = 0;
-            $lineSgstAmount = 0;
-            $lineIgstAmount = round($lineTaxAmount, 2);
+            $cgstPercent = 0;
+            $sgstPercent = 0;
+            $igstPercent = round($totalTaxPercentForInvoice, 2);
+
+            $cgstAmount = 0;
+            $sgstAmount = 0;
+            $igstAmount = round($totalIgstAmount, 2);
         }
 
-        $itemDescription = trim((string) ($row['description'] ?? ''));
+        if ($existingInvoice && $forceUpdate) {
+            $prefix = $existingInvoice->invoice_prefix;
+            $invoiceNumber = $existingInvoice->invoice_number;
+        } else {
+            $taxBase = $business->quotation_base_prefix ?? 'QT';
+            $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
 
-        if ($itemDescription === '') {
-            $itemDescription = $matchedItem->description ?: $matchedItem->name;
+            $alloc = \App\Services\InvoiceNumber::next(
+                $bid,
+                $invoiceDate,
+                $prefix,
+                3,
+                'quotation'
+            );
+
+            $invoiceNumber = $alloc['full'];
+
+            \App\Services\InvoiceNumber::syncNextSeqIfMatches(
+                $bid,
+                $invoiceDate,
+                $invoiceNumber,
+                3,
+                'quotation'
+            );
         }
 
-        $rateWithoutTax = round($lineSubtotal / $qty, 2);
+        $invoiceData = [
+            'business_id'     => $bid,
+            'bil_request_id'  => $billRequest->id,
 
-        $subtotal += $lineSubtotal;
-        $taxAmount += $lineTaxAmount;
-        $grandTotal += $grossAmount;
+            'invoice_type'    => 'quotation',
+            'invoice_prefix'  => $prefix,
+            'invoice_number'  => $invoiceNumber,
+            'client_id'       => $client->id,
+            'invoice_date'    => $invoiceDate,
+            'payment_terms'   => 0,
+            'due_date'        => null,
 
-        $totalCgstAmount += $lineCgstAmount;
-        $totalSgstAmount += $lineSgstAmount;
-        $totalIgstAmount += $lineIgstAmount;
+            'subtotal'        => $subtotal,
+            'tax_amount'      => $taxAmount,
 
-        $totalTaxPercentForInvoice = max($totalTaxPercentForInvoice, $taxPercent);
+            'cgst_percent'    => $cgstPercent,
+            'cgst_amount'     => $cgstAmount,
+            'sgst_percent'    => $sgstPercent,
+            'sgst_amount'     => $sgstAmount,
+            'igst_percent'    => $igstPercent,
+            'igst_amount'     => $igstAmount,
 
-        $itemsJson[] = [
-            'item_id'       => $matchedItem->id,
-            'item_type'     => 'service',
-            'description'   => $itemDescription,
-            'hsn'           => $matchedItem->sac ?? '',
-            'qty'           => $qty,
-            'tax_percent'   => round($taxPercent, 2),
-            'service_rate'  => $rateWithoutTax,
-            'rate'          => $rateWithoutTax,
-            'tax_amount'    => round($lineTaxAmount, 2),
-            'amount'        => round($grossAmount, 2),
-            'making_charge' => round($lineSubtotal, 2),
-            'gold_wt'       => 0,
-            'silver_wt'     => 0,
-            'gold_rate'     => 0,
-            'silver_rate'   => 0,
-            'gemstone_wt'   => 0,
-            'diamond_wt'    => 0,
-            'making_rate'   => 0,
-            'stone_charges' => 0,
+            'discount_total'  => 0,
+            'charge_total'    => 0,
+            'tcs_percent'     => 0,
+            'tcs_amount'      => 0,
+            'round_off'       => 0,
+            'less_amount'     => 0,
+
+            'total'           => $grandTotal,
+            'received_amount' => 0,
+            'balance'         => $grandTotal,
+
+            'payment_method'  => null,
+            'transport_mode'  => null,
+            'reverse_charge'  => 0,
+
+            'place_of_supply_state' => $client->state,
+            'place_of_supply_code'  => $client->state_code,
+
+            'notes'           => ($existingInvoice && $forceUpdate)
+                ? 'Updated from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id)
+                : 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
+            'terms'           => null,
+
+            'charges_json'    => json_encode([]),
+            'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
+
+            'amount_in_words' => '',
+            'pdf_url'         => null,
+            'signature'       => null,
+
+            'user_id'         => $userId,
+            'created_by'      => ($existingInvoice && $forceUpdate)
+                ? ($existingInvoice->created_by ?? $userId)
+                : $userId,
+            'updated_by'      => $userId,
+
+            'kots_json'       => json_encode([]),
         ];
 
-        $invoiceRows[] = [
-            'matched_item'     => $matchedItem,
-            'description'      => $itemDescription,
-            'qty'              => $qty,
-            'rate_without_tax' => $rateWithoutTax,
-            'line_subtotal'    => round($lineSubtotal, 2),
-            'tax_percent'      => round($taxPercent, 2),
-            'line_tax_amount'  => round($lineTaxAmount, 2),
-            'gross_amount'     => round($grossAmount, 2),
-        ];
-    }
+        if ($existingInvoice && $forceUpdate) {
+            $invoice = $existingInvoice;
+            $invoice->update($invoiceData);
 
-    if (empty($invoiceRows)) {
-        throw new \Exception('Invoice ke liye koi valid item nahi mila.');
-    }
+            InvoiceItem::where('invoice_id', $invoice->id)->delete();
+        } else {
+            $invoice = Invoice::create($invoiceData);
+        }
 
-    $subtotal = round($subtotal, 2);
-    $taxAmount = round($taxAmount, 2);
-    $grandTotal = round($grandTotal, 2);
+        foreach ($invoiceRows as $row) {
+            InvoiceItem::create([
+                'invoice_id'      => $invoice->id,
+                'item_id'         => $row['matched_item']->id,
+                'description'     => $row['description'],
+                'sac_code'        => $row['matched_item']->sac ?? null,
+                'hsn_code'        => null,
+                'quantity'        => $row['qty'],
+                'gold_wt'         => 0,
+                'silver_wt'       => 0,
+                'gold_rate'       => 0,
+                'silver_rate'     => 0,
+                'gemstone_wt_ct'  => 0,
+                'diamond_wt_ct'   => 0,
+                'making_charge'   => $row['line_subtotal'],
+                'making_rate'     => null,
+                'discount'        => 0,
+                'tax_percent'     => $row['tax_percent'],
+                'rate'            => $row['rate_without_tax'],
+                'amount'          => $row['gross_amount'],
+            ]);
+        }
 
-    if ($isIntra) {
-        $cgstPercent = round($totalTaxPercentForInvoice / 2, 2);
-        $sgstPercent = round($totalTaxPercentForInvoice / 2, 2);
-        $igstPercent = 0;
+        $oldApi = [];
 
-        $cgstAmount = round($totalCgstAmount, 2);
-        $sgstAmount = round($totalSgstAmount, 2);
-        $igstAmount = 0;
-    } else {
-        $cgstPercent = 0;
-        $sgstPercent = 0;
-        $igstPercent = round($totalTaxPercentForInvoice, 2);
+        if (!empty($billRequest->api_response)) {
+            $decoded = json_decode($billRequest->api_response, true);
 
-        $cgstAmount = 0;
-        $sgstAmount = 0;
-        $igstAmount = round($totalIgstAmount, 2);
-    }
+            if (is_array($decoded)) {
+                $oldApi = $decoded;
+            }
+        }
 
-    if ($existingInvoice && $forceUpdate) {
-        $prefix = $existingInvoice->invoice_prefix;
-        $invoiceNumber = $existingInvoice->invoice_number;
-    } else {
-        $taxBase = $business->quotation_base_prefix ?? 'QT';
-        $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
+        $oldApi['matched_items'] = collect($invoiceRows)->map(function ($row) {
+            return [
+                'matched_item_id'   => $row['matched_item']->id,
+                'matched_item_name' => $row['matched_item']->name,
+                'qty'               => $row['qty'],
+                'rate'              => $row['rate_without_tax'],
+                'amount'            => $row['gross_amount'],
+            ];
+        })->values()->toArray();
 
-        $alloc = \App\Services\InvoiceNumber::next(
-            $bid,
-            $invoiceDate,
-            $prefix,
-            3,
-            'quotation'
-        );
+        $oldApi['created_invoice_id']     = $invoice->id;
+        $oldApi['created_invoice_number'] = $invoice->invoice_number;
+        $oldApi['created_client_id']      = $client->id;
+        $oldApi['invoice_type']           = 'quotation';
+        $oldApi['invoice_date']           = $invoiceDate;
+        $oldApi['gst_included']           = true;
+        $oldApi['gross_amount']           = $grandTotal;
+        $oldApi['taxable_amount']         = $subtotal;
+        $oldApi['tax_amount']             = $taxAmount;
+        $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
+        $oldApi['was_updated']            = ($existingInvoice && $forceUpdate);
 
-        $invoiceNumber = $alloc['full'];
-
-        \App\Services\InvoiceNumber::syncNextSeqIfMatches(
-            $bid,
-            $invoiceDate,
-            $invoiceNumber,
-            3,
-            'quotation'
-        );
-    }
-
-    $invoiceData = [
-        'business_id'     => $bid,
-        'bil_request_id'  => $billRequest->id,
-
-        'invoice_type'    => 'quotation',
-        'invoice_prefix'  => $prefix,
-        'invoice_number'  => $invoiceNumber,
-        'client_id'       => $client->id,
-        'invoice_date'    => $invoiceDate,
-        'payment_terms'   => 0,
-        'due_date'        => null,
-
-        'subtotal'        => $subtotal,
-        'tax_amount'      => $taxAmount,
-
-        'cgst_percent'    => $cgstPercent,
-        'cgst_amount'     => $cgstAmount,
-        'sgst_percent'    => $sgstPercent,
-        'sgst_amount'     => $sgstAmount,
-        'igst_percent'    => $igstPercent,
-        'igst_amount'     => $igstAmount,
-
-        'discount_total'  => 0,
-        'charge_total'    => 0,
-        'tcs_percent'     => 0,
-        'tcs_amount'      => 0,
-        'round_off'       => 0,
-        'less_amount'     => 0,
-
-        'total'           => $grandTotal,
-        'received_amount' => 0,
-        'balance'         => $grandTotal,
-
-        'payment_method'  => null,
-        'transport_mode'  => null,
-        'reverse_charge'  => 0,
-
-        'place_of_supply_state' => $client->state,
-        'place_of_supply_code'  => $client->state_code,
-
-        'notes'           => ($existingInvoice && $forceUpdate)
-            ? 'Updated from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id)
-            : 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
-        'terms'           => null,
-
-        'charges_json'    => json_encode([]),
-        'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
-
-        'amount_in_words' => '',
-        'pdf_url'         => null,
-        'signature'       => null,
-
-        'user_id'         => $userId,
-        'created_by'      => ($existingInvoice && $forceUpdate)
-            ? ($existingInvoice->created_by ?? $userId)
-            : $userId,
-        'updated_by'      => $userId,
-
-        'kots_json'       => json_encode([]),
-    ];
-
-    if ($existingInvoice && $forceUpdate) {
-        $invoice = $existingInvoice;
-        $invoice->update($invoiceData);
-
-        InvoiceItem::where('invoice_id', $invoice->id)->delete();
-    } else {
-        $invoice = Invoice::create($invoiceData);
-    }
-
-    foreach ($invoiceRows as $row) {
-        InvoiceItem::create([
-            'invoice_id'      => $invoice->id,
-            'item_id'         => $row['matched_item']->id,
-            'description'     => $row['description'],
-            'sac_code'        => $row['matched_item']->sac ?? null,
-            'hsn_code'        => null,
-            'quantity'        => $row['qty'],
-            'gold_wt'         => 0,
-            'silver_wt'       => 0,
-            'gold_rate'       => 0,
-            'silver_rate'     => 0,
-            'gemstone_wt_ct'  => 0,
-            'diamond_wt_ct'   => 0,
-            'making_charge'   => $row['line_subtotal'],
-            'making_rate'     => null,
-            'discount'        => 0,
-            'tax_percent'     => $row['tax_percent'],
-            'rate'            => $row['rate_without_tax'],
-            'amount'          => $row['gross_amount'],
+        $billRequest->update([
+            'remarks'      => ($existingInvoice && $forceUpdate)
+                ? 'Quotation updated successfully. Quotation No: ' . $invoice->invoice_number
+                : 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
+            'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
         ]);
+
+        return $invoice;
     }
-
-    $oldApi = [];
-
-    if (!empty($billRequest->api_response)) {
-        $decoded = json_decode($billRequest->api_response, true);
-
-        if (is_array($decoded)) {
-            $oldApi = $decoded;
-        }
-    }
-
-    $oldApi['matched_items'] = collect($invoiceRows)->map(function ($row) {
-        return [
-            'matched_item_id'   => $row['matched_item']->id,
-            'matched_item_name' => $row['matched_item']->name,
-            'qty'               => $row['qty'],
-            'rate'              => $row['rate_without_tax'],
-            'amount'            => $row['gross_amount'],
-        ];
-    })->values()->toArray();
-
-    $oldApi['created_invoice_id']     = $invoice->id;
-    $oldApi['created_invoice_number'] = $invoice->invoice_number;
-    $oldApi['created_client_id']      = $client->id;
-    $oldApi['invoice_type']           = 'quotation';
-    $oldApi['invoice_date']           = $invoiceDate;
-    $oldApi['gst_included']           = true;
-    $oldApi['gross_amount']           = $grandTotal;
-    $oldApi['taxable_amount']         = $subtotal;
-    $oldApi['tax_amount']             = $taxAmount;
-    $oldApi['processed_at']           = now(config('app.timezone'))->toDateTimeString();
-    $oldApi['was_updated']            = ($existingInvoice && $forceUpdate);
-
-    $billRequest->update([
-        'remarks'      => ($existingInvoice && $forceUpdate)
-            ? 'Quotation updated successfully. Quotation No: ' . $invoice->invoice_number
-            : 'Quotation created successfully. Quotation No: ' . $invoice->invoice_number,
-        'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
-    ]);
-
-    return $invoice;
-}
 
 
     private function pushSaveInvoiceApi(BillRequest $billRequest, Invoice $invoice): void
