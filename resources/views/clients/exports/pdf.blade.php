@@ -3,75 +3,70 @@
 <head>
     <meta charset="UTF-8">
 
-    <title>Client Purchase Report</title>
+    <title>{{ $reportTitle ?? 'Invoice Report' }}</title>
 
     <style>
         @page {
-            margin: 20px;
+            margin: 18px;
         }
 
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 7px;
             color: #222;
         }
 
         h1 {
-            margin: 0;
-            font-size: 20px;
+            margin: 0 0 6px;
             text-align: center;
+            font-size: 17px;
         }
 
-        h3 {
-            margin-bottom: 6px;
+        .generated {
+            text-align: center;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .filters {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 12px;
+            font-size: 9px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        th,
+        td {
+            border: 1px solid #bbb;
+            padding: 4px 2px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        th {
+            background: #e9eeee;
+        }
+
+        tr {
+            page-break-inside: avoid;
         }
 
         .text-center {
             text-align: center;
         }
 
-        .text-right {
+        .amount {
             text-align: right;
-        }
-
-        .muted {
-            color: #666;
-        }
-
-        .client-box,
-        .filter-box {
-            margin-top: 15px;
-            border: 1px solid #ccc;
-            padding: 10px;
-        }
-
-        .summary-table,
-        .report-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .summary-table {
-            margin-top: 15px;
-        }
-
-        .summary-table td {
-            border: 1px solid #ccc;
-            padding: 8px;
-        }
-
-        .report-table {
-            margin-top: 15px;
-        }
-
-        .report-table th,
-        .report-table td {
-            border: 1px solid #bbb;
-            padding: 6px;
-        }
-
-        .report-table th {
-            background: #e9eeee;
         }
 
         .total-row {
@@ -79,270 +74,185 @@
             background: #f0f0f0;
         }
 
-        .filter-item {
-            display: inline-block;
-            margin-right: 15px;
-            margin-bottom: 5px;
-        }
-
         .footer {
-            margin-top: 20px;
+            margin-top: 12px;
             text-align: right;
-            font-size: 9px;
             color: #666;
+            font-size: 8px;
         }
     </style>
-
 </head>
 
 <body>
 
-<h1>Client Purchase Report</h1>
+<h1>{{ $reportTitle ?? 'Invoice Report' }}</h1>
 
-<div class="text-center muted">
-    Generated:
-    {{ now()->format('d-m-Y h:i A') }}
+<div class="generated">
+    Generated: {{ now()->format('d-m-Y h:i A') }}
 </div>
 
-
-{{-- Client --}}
-<div class="client-box">
-
-    <strong>Client:</strong>
-    {{ $client->name }}
+<div class="filters">
+    <strong>From:</strong>
+    {{ ($filters['from_date'] ?? '') ?: '-' }}
 
     &nbsp;&nbsp;
 
-    <strong>Mobile:</strong>
-    {{ $client->mobile ?? '-' }}
+    <strong>To:</strong>
+    {{ ($filters['to_date'] ?? '') ?: '-' }}
 
     &nbsp;&nbsp;
 
-    <strong>GSTIN:</strong>
-    {{ $client->gstin ?? '-' }}
-
-    <br><br>
-
-    <strong>PAN:</strong>
-    {{ $client->pan ?? '-' }}
-
-    &nbsp;&nbsp;
-
-    <strong>State:</strong>
-    {{ $client->state ?? '-' }}
-
-    @if($client->address)
-        <br><br>
-
-        <strong>Address:</strong>
-        {{ $client->address }}
-    @endif
-
-</div>
-
-
-{{-- Filters --}}
-<div class="filter-box">
-
-    <strong>Applied Filters:</strong>
-
-    <br><br>
-
-    <span class="filter-item">
-        Period:
-        {{ $filters['period'] ?? 'All Time' }}
-    </span>
-
-    <span class="filter-item">
-        From:
-        {{ $filters['date_from'] ?? '-' }}
-    </span>
-
-    <span class="filter-item">
-        To:
-        {{ $filters['date_to'] ?? '-' }}
-    </span>
-
-    <span class="filter-item">
-        Invoice:
-        {{ $filters['invoice_no'] ?? 'All' }}
-    </span>
-
-    <span class="filter-item">
-        Item:
-        {{ $filters['item_search'] ?? 'All' }}
-    </span>
-
-    <span class="filter-item">
-        Payment:
-        {{ $filters['payment_status'] ?? 'All' }}
-    </span>
-
-</div>
-
-
-{{-- Summary --}}
-<table class="summary-table">
-
-    <tr>
-
-        <td>
-            <strong>Total Invoices</strong><br>
-            {{ $summary['total_invoices'] }}
-        </td>
-
-        <td>
-            <strong>Subtotal</strong><br>
-            Rs. {{ number_format($summary['total_subtotal'], 2) }}
-        </td>
-
-        <td>
-            <strong>Tax</strong><br>
-            Rs. {{ number_format($summary['total_tax'], 2) }}
-        </td>
-
-    </tr>
-
-    <tr>
-
-        <td>
-            <strong>Total Purchase</strong><br>
-            Rs. {{ number_format($summary['total_amount'], 2) }}
-        </td>
-
-        <td>
-            <strong>Amount Received</strong><br>
-            Rs. {{ number_format($summary['total_received'], 2) }}
-        </td>
-
-        <td>
-            <strong>Balance Pending</strong><br>
-            Rs. {{ number_format($summary['total_balance'], 2) }}
-        </td>
-
-    </tr>
-
-</table>
-
-
-{{-- Invoice table --}}
-<table class="report-table">
-
-    <thead>
-    <tr>
-        <th>#</th>
-        <th>Date</th>
-        <th>Invoice</th>
-        <th>Items</th>
-        <th>Subtotal</th>
-        <th>Tax</th>
-        <th>Total</th>
-        <th>Received</th>
-        <th>Balance</th>
-    </tr>
-    </thead>
-
-    <tbody>
-
-    @forelse($invoices as $index => $invoice)
-
-        <tr>
-
-            <td class="text-center">
-                {{ $index + 1 }}
-            </td>
-
-            <td>
-                {{ \Carbon\Carbon::parse($invoice->invoice_date)->format('d-m-Y') }}
-            </td>
-
-            <td>
-                {{ $invoice->invoice_prefix }}{{ $invoice->invoice_number }}
-            </td>
-
-            <td class="text-center">
-                {{ $invoice->items_count }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($invoice->subtotal, 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($invoice->tax_amount, 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($invoice->total, 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($invoice->received_amount, 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($invoice->balance, 2) }}
-            </td>
-
-        </tr>
-
-    @empty
-
-        <tr>
-            <td colspan="9" class="text-center">
-                No invoices found for selected filters.
-            </td>
-        </tr>
-
-    @endforelse
-
-    @if($invoices->count())
-
-        <tr class="total-row">
-
-            <td colspan="4">
-                TOTAL
-            </td>
-
-            <td class="text-right">
-                {{ number_format($summary['total_subtotal'], 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($summary['total_tax'], 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($summary['total_amount'], 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($summary['total_received'], 2) }}
-            </td>
-
-            <td class="text-right">
-                {{ number_format($summary['total_balance'], 2) }}
-            </td>
-
-        </tr>
-
-    @endif
-
-    </tbody>
-
-</table>
-
-
-<div class="footer">
-
-    Total Records:
-    {{ $summary['total_invoices'] }}
+    <strong>Status:</strong>
+    {{ ucfirst(($filters['status'] ?? '') ?: 'All') }}
 
     <br>
 
-    Report generated on
-    {{ now()->format('d-m-Y h:i A') }}
+    <strong>Search:</strong>
+    {{ ($filters['search'] ?? '') ?: '-' }}
+</div>
 
+<table>
+    <thead>
+        <tr>
+            <th style="width: 3%;">#</th>
+            <th style="width: 7%;">Date</th>
+            <th style="width: 7%;">Invoice No.</th>
+            <th style="width: 9%;">Client</th>
+            <th style="width: 8%;">Mobile</th>
+            <th style="width: 9%;">GSTIN</th>
+            <th style="width: 7%;">PAN</th>
+            <th style="width: 10%;">Address</th>
+            <th style="width: 5%;">GST</th>
+            <th style="width: 5%;">IGST</th>
+            <th style="width: 5%;">CGST</th>
+            <th style="width: 5%;">SGST</th>
+            <th style="width: 5%;">Total</th>
+            <th style="width: 5%;">Received</th>
+            <th style="width: 5%;">Balance</th>
+            <th style="width: 5%;">Status</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @forelse($rows as $index => $row)
+            @php
+                $balance = (float) $row->balance;
+                $received = (float) $row->received_amount;
+
+                $paymentStatus = 'Unpaid';
+
+                if ($balance <= 0) {
+                    $paymentStatus = 'Paid';
+                } elseif ($received > 0) {
+                    $paymentStatus = 'Partial';
+                }
+            @endphp
+
+            <tr>
+                <td class="text-center">
+                    {{ $index + 1 }}
+                </td>
+
+                <td>
+                    {{ $row->invoice_date
+                        ? \Carbon\Carbon::parse($row->invoice_date)->format('d-m-Y')
+                        : '-' }}
+                </td>
+
+                <td>{{ $row->invoice_number }}</td>
+
+                <td>{{ optional($row->client)->name ?? '-' }}</td>
+
+                <td>{{ optional($row->client)->mobile ?? '-' }}</td>
+
+                <td>{{ optional($row->client)->gstin ?? '-' }}</td>
+
+                <td>{{ optional($row->client)->pan ?? '-' }}</td>
+
+                <td>{{ optional($row->client)->address ?? '-' }}</td>
+
+                <td class="amount">
+                    {{ number_format((float) $row->tax_amount, 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format((float) $row->igst_amount, 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format((float) $row->cgst_amount, 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format((float) $row->sgst_amount, 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format((float) $row->total, 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($received, 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($balance, 2) }}
+                </td>
+
+                <td class="text-center">
+                    {{ $paymentStatus }}
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="16" class="text-center">
+                    No invoices found for selected filters.
+                </td>
+            </tr>
+        @endforelse
+
+        @if($rows->count())
+            <tr class="total-row">
+                <td colspan="8">TOTAL</td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('tax_amount'), 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('igst_amount'), 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('cgst_amount'), 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('sgst_amount'), 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('total'), 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('received_amount'), 2) }}
+                </td>
+
+                <td class="amount">
+                    {{ number_format($rows->sum('balance'), 2) }}
+                </td>
+
+                <td></td>
+            </tr>
+        @endif
+    </tbody>
+</table>
+
+<div class="footer">
+    Total Records: {{ $rows->count() }}
+    <br>
+    All amounts in INR.
 </div>
 
 </body>
