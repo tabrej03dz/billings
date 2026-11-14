@@ -2678,33 +2678,70 @@
                 this.calc();
             },
 
+            normalizePaymentMode(value) {
+                const mode = String(value || '').trim().toLowerCase();
+
+                const aliases = {
+                    online: 'bank',
+                    neft: 'bank',
+                    rtgs: 'bank',
+                    imps: 'bank',
+                    bank_transfer: 'bank',
+                    'bank transfer': 'bank',
+                };
+
+                return aliases[mode] || mode;
+            },
+
             toggleFullyPaid() {
                 if (this.payment.markFullyPaid) {
-                    this.payment.received = this.totalPayable();
+                    const advance = n(this.pay.advance, 0);
+                    const credit = n(this.pay.credit_excess, 0);
+
+                    this.payment.received = n(
+                        Math.max(
+                            0,
+                            this.totalPayable() - advance - credit
+                        ).toFixed(2),
+                        0
+                    );
                 }
 
                 this.onReceivedInput();
             },
 
             onReceivedInput() {
-                const amt = n(this.payment.received, 0);
+                const mode = this.normalizePaymentMode(this.payment.mode);
+
+                const fields = {
+                    cash: 'cash',
+                    upi: 'upi',
+                    bank: 'upi',
+                    card: 'card',
+                    cheque: 'cheque',
+                };
+
+                const target = fields[mode];
+
+                // Payment mode match na ho to existing amounts zero na karein.
+                if (!target) {
+                    return false;
+                }
+
+                this.payment.mode = mode;
+
+                const amount = Math.max(0, n(this.payment.received, 0));
 
                 this.pay.cash = 0;
                 this.pay.upi = 0;
                 this.pay.card = 0;
                 this.pay.cheque = 0;
 
-                if (this.payment.mode === 'cash') {
-                    this.pay.cash = amt;
-                } else if (this.payment.mode === 'upi' || this.payment.mode === 'bank') {
-                    this.pay.upi = amt;
-                } else if (this.payment.mode === 'card') {
-                    this.pay.card = amt;
-                } else if (this.payment.mode === 'cheque') {
-                    this.pay.cheque = amt;
-                }
+                this.pay[target] = amount;
 
                 this.calc();
+
+                return true;
             },
 
             calc() {
@@ -2758,7 +2795,10 @@
                     enabled: n(INVOICE.round_off, 0) !== 0,
                 };
 
-                this.payment.mode = INVOICE.payment_method || 'cash';
+                // this.payment.mode = INVOICE.payment_method || 'cash';
+                this.payment.mode = this.normalizePaymentMode(
+                    INVOICE.payment_method || 'cash'
+                );
                 this.payment.bank_account_id = INVOICE.bank_account_id ? String(INVOICE.bank_account_id) : '';
                 this.payment.received = n(INVOICE.received ?? INVOICE.received_amount, 0);
 
@@ -2920,8 +2960,25 @@
 
                 document.getElementById('items_json').value = JSON.stringify(payload);
 
-                this.onReceivedInput();
-                this.$refs.form.submit();
+                const mode = this.normalizePaymentMode(this.payment.mode);
+
+                if (!['cash', 'upi', 'bank', 'card', 'cheque'].includes(mode)) {
+                    this.saving = false;
+
+                    alert('Payment mode select karke dobara Update karein.');
+
+                    return;
+                }
+
+                if (this.payment.markFullyPaid) {
+                    this.toggleFullyPaid();
+                } else {
+                    this.onReceivedInput();
+                }
+
+                this.$nextTick(() => {
+                    this.$refs.form.submit();
+                });
             },
 
             submitForm() {
