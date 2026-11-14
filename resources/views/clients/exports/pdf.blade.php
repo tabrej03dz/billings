@@ -254,6 +254,5 @@
     <br>
     All amounts in INR.
 </div>
-
 </body>
 </html>

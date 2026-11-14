@@ -4043,9 +4043,14 @@ class InvoiceController extends Controller
                     // 'payment_method' => $data['payment_method'] ?? null,
                     // 'bank_account_id'=> $data['bank_account_id'] ?? null,
 
-                    'payment_method'  => $validated['payment_method'] ?? null,
-                    'bank_account_id' => !empty($validated['bank_account_id'])
-                        ? (int) $validated['bank_account_id']
+                    // 'payment_method'  => $validated['payment_method'] ?? null,
+                    // 'bank_account_id' => !empty($validated['bank_account_id'])
+                    //     ? (int) $validated['bank_account_id']
+                    //     : null,
+
+                    'payment_method'  => $data['payment_method'] ?? null,
+                    'bank_account_id' => !empty($data['bank_account_id'])
+                        ? (int) $data['bank_account_id']
                         : null,
 
                     'gst_no'         => $data['gst_no'] ?? null,
