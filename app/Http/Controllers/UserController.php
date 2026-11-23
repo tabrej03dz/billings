@@ -376,41 +376,41 @@ class UserController extends Controller
 
 
     public function edit(Request $request, User $user)
-{
-    $search = trim((string) $request->query('business_search', ''));
+    {
+        $search = trim((string) $request->query('business_search', ''));
 
-    $businesses = Business::query()
-        ->select('id', 'name', 'slug', 'created_at')
-        ->when($search !== '', function ($query) use ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('slug', 'like', "%{$search}%");
-            });
-        })
-        ->orderByDesc('created_at')
-        ->orderByDesc('id')
-        ->paginate(10, ['*'], 'business_page')
-        ->withQueryString();
+        $businesses = Business::query()
+            ->select('id', 'name', 'slug', 'created_at')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'business_page')
+            ->withQueryString();
 
-    $roles = Role::orderBy('name')->get();
+        $roles = Role::orderBy('name')->get();
 
-    $selectedBusinesses = $user->businesses()
-        ->pluck('businesses.id')
-        ->toArray();
+        $selectedBusinesses = $user->businesses()
+            ->pluck('businesses.id')
+            ->toArray();
 
-    $selectedRoles = $user->roles()
-        ->pluck('name')
-        ->toArray();
+        $selectedRoles = $user->roles()
+            ->pluck('name')
+            ->toArray();
 
-    return view('users.edit', compact(
-        'user',
-        'businesses',
-        'roles',
-        'selectedBusinesses',
-        'selectedRoles',
-        'search'
-    ));
-}
+        return view('users.edit', compact(
+            'user',
+            'businesses',
+            'roles',
+            'selectedBusinesses',
+            'selectedRoles',
+            'search'
+        ));
+    }
 
     public function update(Request $request, User $user)
     {
