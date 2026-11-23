@@ -281,12 +281,29 @@ class UserController extends Controller
     }
 
 
+    // public function create()
+    // {
+    //     $businesses = Business::orderBy('name')->get();
+    //     $roles = Role::orderBy('name')->get();
+
+    //     return view('users.create', compact('businesses', 'roles'));
+    // }
+
+
     public function create()
     {
-        $businesses = Business::orderBy('name')->get();
+        $businesses = Business::query()
+            ->select('id', 'name', 'slug', 'created_at')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'business_page');
+
         $roles = Role::orderBy('name')->get();
 
-        return view('users.create', compact('businesses', 'roles'));
+        return view('users.create', compact(
+            'businesses',
+            'roles'
+        ));
     }
 
 
@@ -336,62 +353,89 @@ class UserController extends Controller
 
     
 
+    // public function edit(User $user)
+    // {
+    //     $businesses = Business::orderBy('name')->get();
+    //     $roles = Role::orderBy('name')->get();
+
+    //     $selectedBusinesses = $user->businesses()->pluck('businesses.id')->toArray();
+    //     $selectedRoles = $user->roles()->pluck('name')->toArray();
+
+    //     return view('users.edit', compact('user', 'businesses', 'roles', 'selectedBusinesses', 'selectedRoles'));
+    // }
+
+
     public function edit(User $user)
     {
-        $businesses = Business::orderBy('name')->get();
+        $businesses = Business::query()
+            ->select('id', 'name', 'slug', 'created_at')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(10, ['*'], 'business_page');
+
         $roles = Role::orderBy('name')->get();
 
-        $selectedBusinesses = $user->businesses()->pluck('businesses.id')->toArray();
-        $selectedRoles = $user->roles()->pluck('name')->toArray();
+        $selectedBusinesses = $user->businesses()
+            ->pluck('businesses.id')
+            ->toArray();
 
-        return view('users.edit', compact('user', 'businesses', 'roles', 'selectedBusinesses', 'selectedRoles'));
+        $selectedRoles = $user->roles()
+            ->pluck('name')
+            ->toArray();
+
+        return view('users.edit', compact(
+            'user',
+            'businesses',
+            'roles',
+            'selectedBusinesses',
+            'selectedRoles'
+        ));
     }
 
-
     public function update(Request $request, User $user)
-{
-    $data = $request->validate([
-        'name'     => ['required', 'string', 'max:255'],
-        'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-        'google_drive_folder_id' => [
-            'nullable',
-            Rule::unique('users', 'google_drive_folder_id')->ignore($user->id)
-        ],
-        'password' => ['nullable', 'confirmed', 'min:8'],
-        'phone' => ['required', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($user->id)],
+    {
+        $data = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'google_drive_folder_id' => [
+                'nullable',
+                Rule::unique('users', 'google_drive_folder_id')->ignore($user->id)
+            ],
+            'password' => ['nullable', 'confirmed', 'min:8'],
+            'phone' => ['required', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($user->id)],
 
-        'businesses'   => ['nullable', 'array'],
-        'businesses.*' => ['integer', 'exists:businesses,id'],
+            'businesses'   => ['nullable', 'array'],
+            'businesses.*' => ['integer', 'exists:businesses,id'],
 
-        'roles'   => ['nullable', 'array'],
-        'roles.*' => ['string', 'exists:roles,name'],
-    ]);
+            'roles'   => ['nullable', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
+        ]);
 
-    DB::transaction(function () use ($data, $user) {
-        $user->name  = $data['name'];
-        $user->email = $data['email'];
-        $user->google_drive_folder_id = $data['google_drive_folder_id'] ?? null;
+        DB::transaction(function () use ($data, $user) {
+            $user->name  = $data['name'];
+            $user->email = $data['email'];
+            $user->google_drive_folder_id = $data['google_drive_folder_id'] ?? null;
 
-        if (!empty($data['password'])) {
-            $user->password = Hash::make($data['password']);
-        }
+            if (!empty($data['password'])) {
+                $user->password = Hash::make($data['password']);
+            }
 
-        $user->phone = $data['phone'];
-        $user->save();
+            $user->phone = $data['phone'];
+            $user->save();
 
-        // sync businesses
-        $syncBusinesses = [];
-        foreach (($data['businesses'] ?? []) as $bid) {
-            $syncBusinesses[$bid] = [];
-        }
-        $user->businesses()->sync($syncBusinesses);
+            // sync businesses
+            $syncBusinesses = [];
+            foreach (($data['businesses'] ?? []) as $bid) {
+                $syncBusinesses[$bid] = [];
+            }
+            $user->businesses()->sync($syncBusinesses);
 
-        // sync spatie roles
-        $user->syncRoles($data['roles'] ?? []);
-    });
+            // sync spatie roles
+            $user->syncRoles($data['roles'] ?? []);
+        });
 
-    return redirect()->route('users.index')->with('success', 'User updated successfully.');
-}
+        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+    }
     // public function destroy(User $user)
     // {
     //     // Detach pivot (optional; cascade is safe too)

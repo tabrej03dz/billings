@@ -116,37 +116,70 @@
         </div>
     </div>
 
+
     {{-- Businesses --}}
-    <div class="space-y-3">
+    <div class="space-y-3" id="business-section">
+
         <div class="flex items-center justify-between">
             <h3 class="text-sm font-semibold">Assign Businesses</h3>
-            <span class="text-xs text-gray-500">Select one or more businesses</span>
+            <span class="text-xs text-gray-500">
+                Newest Businesses First
+            </span>
         </div>
 
+        {{-- Selected Business Counter --}}
+        <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-300">
+                Selected Businesses:
+                <strong id="selected-business-count">0</strong>
+            </span>
+
+            <span class="text-xs text-gray-500">
+                Total: {{ $businesses->total() }}
+            </span>
+        </div>
+
+        {{-- Hidden inputs for selected businesses --}}
+        <div id="selected-business-inputs"></div>
+
         <div class="rounded-xl border border-gray-200 dark:border-neutral-700 overflow-hidden">
+
             <table class="min-w-full text-sm">
                 <thead class="bg-[#BFE0E0] dark:bg-[#354A54] text-xs uppercase font-medium text-gray-700 dark:text-white">
                     <tr>
-                        <th class="px-4 py-3 text-center w-20">Select</th>
-                        <th class="px-4 py-3 text-left">Business</th>
+                        <th class="px-4 py-3 text-center w-20">
+                            Select
+                        </th>
+                        <th class="px-4 py-3 text-left">
+                            Business
+                        </th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-neutral-700 bg-white dark:bg-neutral-900">
+
+                <tbody
+                    id="business-table-body"
+                    class="divide-y divide-gray-100 dark:divide-neutral-700 bg-white dark:bg-neutral-900"
+                >
                     @forelse($businesses as $biz)
                         <tr>
                             <td class="px-4 py-3 text-center">
                                 <input
                                     type="checkbox"
-                                    name="businesses[]"
+                                    class="business-checkbox rounded border-gray-300"
                                     value="{{ $biz->id }}"
-                                    {{ in_array($biz->id, $oldBusinesses) ? 'checked' : '' }}
-                                    class="rounded border-gray-300"
+                                    @checked(in_array($biz->id, $oldBusinesses))
                                 >
                             </td>
+
                             <td class="px-4 py-3 text-gray-800 dark:text-gray-100">
-                                <div class="font-medium">{{ $biz->name }}</div>
+                                <div class="font-medium">
+                                    {{ $biz->name }}
+                                </div>
+
                                 @if(!empty($biz->slug))
-                                    <div class="text-xs text-gray-400">/{{ $biz->slug }}</div>
+                                    <div class="text-xs text-gray-400">
+                                        /{{ $biz->slug }}
+                                    </div>
                                 @endif
                             </td>
                         </tr>
@@ -161,6 +194,11 @@
             </table>
         </div>
 
+        {{-- Pagination --}}
+        <div id="business-pagination" class="mt-4">
+            {{ $businesses->links() }}
+        </div>
+
         @error('businesses')
             <p class="text-red-600 text-xs">{{ $message }}</p>
         @enderror
@@ -169,6 +207,7 @@
             <p class="text-red-600 text-xs">{{ $message }}</p>
         @enderror
     </div>
+
 
     {{-- Roles --}}
     <div class="space-y-3">
@@ -231,3 +270,138 @@
         </a>
     </div>
 </div>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const section = document.getElementById('business-section');
+
+    if (!section) return;
+
+    const tableBody = document.getElementById('business-table-body');
+    const pagination = document.getElementById('business-pagination');
+    const inputContainer = document.getElementById('selected-business-inputs');
+    const selectedCount = document.getElementById('selected-business-count');
+
+    // Previously selected businesses, including validation old input
+    const selectedBusinesses = new Set(
+        @json(array_values($oldBusinesses)).map(String)
+    );
+
+    let loading = false;
+
+    // Create actual inputs for form submission
+    function updateHiddenInputs() {
+        inputContainer.innerHTML = '';
+
+        selectedBusinesses.forEach(function (id) {
+            const input = document.createElement('input');
+
+            input.type = 'hidden';
+            input.name = 'businesses[]';
+            input.value = id;
+
+            inputContainer.appendChild(input);
+        });
+
+        selectedCount.textContent = selectedBusinesses.size;
+    }
+
+    // Maintain selection after pagination
+    function restoreCheckboxes() {
+        tableBody.querySelectorAll('.business-checkbox')
+            .forEach(function (checkbox) {
+                checkbox.checked = selectedBusinesses.has(
+                    String(checkbox.value)
+                );
+            });
+    }
+
+    // Save checkbox changes
+    tableBody.addEventListener('change', function (event) {
+
+        if (!event.target.matches('.business-checkbox')) return;
+
+        const id = String(event.target.value);
+
+        if (event.target.checked) {
+            selectedBusinesses.add(id);
+        } else {
+            selectedBusinesses.delete(id);
+        }
+
+        updateHiddenInputs();
+    });
+
+    // AJAX Pagination: prevent full page reload
+    pagination.addEventListener('click', async function (event) {
+
+        const link = event.target.closest('a[href]');
+
+        if (!link || !pagination.contains(link)) return;
+
+        event.preventDefault();
+
+        if (loading) return;
+
+        loading = true;
+
+        try {
+            const response = await fetch(link.href, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                throw new Error('Unable to load businesses');
+            }
+
+            const html = await response.text();
+
+            const parser = new DOMParser();
+            const documentNew = parser.parseFromString(
+                html,
+                'text/html'
+            );
+
+            const newBody = documentNew.getElementById(
+                'business-table-body'
+            );
+
+            const newPagination = documentNew.getElementById(
+                'business-pagination'
+            );
+
+            if (!newBody || !newPagination) {
+                throw new Error('Pagination content missing');
+            }
+
+            tableBody.innerHTML = newBody.innerHTML;
+            pagination.innerHTML = newPagination.innerHTML;
+
+            restoreCheckboxes();
+
+            window.history.replaceState(
+                {},
+                '',
+                link.href
+            );
+
+        } catch (error) {
+            console.error(error);
+            alert('Business list load nahi ho payi. Please try again.');
+        } finally {
+            loading = false;
+        }
+    });
+
+    // Initialize selected values
+    updateHiddenInputs();
+    restoreCheckboxes();
+
+});
+</script>
