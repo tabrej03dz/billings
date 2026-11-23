@@ -82,87 +82,161 @@ class UserController extends Controller
     // }
 
     public function index(Request $request)
-{
-    /*
-    |--------------------------------------------------------------------------
-    | Logged In User
-    |--------------------------------------------------------------------------
-    */
-    $authUser = $request->user();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Request Filters
-    |--------------------------------------------------------------------------
-    */
-    $show       = $request->query('show');
-    $search     = trim((string) $request->query('search', ''));
-    $businessId = $request->query('business_id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Base User Query
-    |--------------------------------------------------------------------------
-    */
-    $baseQuery = User::query();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Active / Deleted Users
-    |--------------------------------------------------------------------------
-    */
-    if ($show === 'deleted') {
-        $baseQuery->onlyTrashed();
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Search Filter
-    |--------------------------------------------------------------------------
-    |
-    | Search by:
-    | - Name
-    | - Email
-    | - Phone
-    |
-    */
-    if ($search !== '') {
-        $baseQuery->where(function ($query) use ($search) {
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%");
-        });
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Super Admin / View All Users
-    |--------------------------------------------------------------------------
-    */
-    if (
-        $authUser->hasRole('super admin') ||
-        $authUser->can('view all users')
-    ) {
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | Logged In User
+        |--------------------------------------------------------------------------
+        */
+        $authUser = $request->user();
 
         /*
         |--------------------------------------------------------------------------
-        | Business Filter
+        | Request Filters
         |--------------------------------------------------------------------------
         */
-        if (!empty($businessId)) {
-            $baseQuery->whereHas('businesses', function ($query) use ($businessId) {
-                $query->where('businesses.id', $businessId);
+        $show       = $request->query('show');
+        $search     = trim((string) $request->query('search', ''));
+        $businessId = $request->query('business_id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Base User Query
+        |--------------------------------------------------------------------------
+        */
+        $baseQuery = User::query();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active / Deleted Users
+        |--------------------------------------------------------------------------
+        */
+        if ($show === 'deleted') {
+            $baseQuery->onlyTrashed();
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search Filter
+        |--------------------------------------------------------------------------
+        |
+        | Search by:
+        | - Name
+        | - Email
+        | - Phone
+        |
+        */
+        if ($search !== '') {
+            $baseQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Load Businesses
+        | Super Admin / View All Users
         |--------------------------------------------------------------------------
-        |
-        | businesses       = actual business data
-        | businesses_count = business count
-        |
+        */
+        if (
+            $authUser->hasRole('super admin') ||
+            $authUser->can('view all users')
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | Business Filter
+            |--------------------------------------------------------------------------
+            */
+            if (!empty($businessId)) {
+                $baseQuery->whereHas('businesses', function ($query) use ($businessId) {
+                    $query->where('businesses.id', $businessId);
+                });
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | Load Businesses
+            |--------------------------------------------------------------------------
+            |
+            | businesses       = actual business data
+            | businesses_count = business count
+            |
+            */
+            $baseQuery
+                ->with([
+                    'businesses' => function ($query) {
+                        $query->select(
+                            'businesses.id',
+                            'businesses.name'
+                        )->orderBy('businesses.name');
+                    }
+                ])
+                ->withCount('businesses');
+
+            /*
+            |--------------------------------------------------------------------------
+            | Users Pagination
+            |--------------------------------------------------------------------------
+            */
+            $users = $baseQuery
+                ->latest('id')
+                ->paginate(15)
+                ->withQueryString();
+
+            /*
+            |--------------------------------------------------------------------------
+            | Businesses For Filter Dropdown
+            |--------------------------------------------------------------------------
+            */
+            $allBusinesses = Business::query()
+                ->select('id', 'name')
+                ->orderBy('name')
+                ->get();
+
+            return view('users.index', compact(
+                'users',
+                'allBusinesses',
+                'businessId',
+                'search',
+                'show'
+            ));
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Normal User - Find Active Business
+        |--------------------------------------------------------------------------
+        */
+        $activeBusinessId = $authUser->current_business_id
+            ?? session('active_business_id')
+            ?? $authUser->businesses()->value('businesses.id');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Active Business Required
+        |--------------------------------------------------------------------------
+        */
+        abort_if(
+            !$activeBusinessId,
+            403,
+            'No business selected.'
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Only Users Of Active Business
+        |--------------------------------------------------------------------------
+        */
+        $baseQuery->whereHas('businesses', function ($query) use ($activeBusinessId) {
+            $query->where('businesses.id', $activeBusinessId);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Load User Businesses
+        |--------------------------------------------------------------------------
         */
         $baseQuery
             ->with([
@@ -177,7 +251,7 @@ class UserController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Users Pagination
+        | Pagination
         |--------------------------------------------------------------------------
         */
         $users = $baseQuery
@@ -187,14 +261,16 @@ class UserController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Businesses For Filter Dropdown
+        | Normal User Doesn't Need Business Filter List
         |--------------------------------------------------------------------------
         */
-        $allBusinesses = Business::query()
-            ->select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        $allBusinesses = collect();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Return View
+        |--------------------------------------------------------------------------
+        */
         return view('users.index', compact(
             'users',
             'allBusinesses',
@@ -203,82 +279,6 @@ class UserController extends Controller
             'show'
         ));
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Normal User - Find Active Business
-    |--------------------------------------------------------------------------
-    */
-    $activeBusinessId = $authUser->current_business_id
-        ?? session('active_business_id')
-        ?? $authUser->businesses()->value('businesses.id');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Active Business Required
-    |--------------------------------------------------------------------------
-    */
-    abort_if(
-        !$activeBusinessId,
-        403,
-        'No business selected.'
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Only Users Of Active Business
-    |--------------------------------------------------------------------------
-    */
-    $baseQuery->whereHas('businesses', function ($query) use ($activeBusinessId) {
-        $query->where('businesses.id', $activeBusinessId);
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Load User Businesses
-    |--------------------------------------------------------------------------
-    */
-    $baseQuery
-        ->with([
-            'businesses' => function ($query) {
-                $query->select(
-                    'businesses.id',
-                    'businesses.name'
-                )->orderBy('businesses.name');
-            }
-        ])
-        ->withCount('businesses');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Pagination
-    |--------------------------------------------------------------------------
-    */
-    $users = $baseQuery
-        ->latest('id')
-        ->paginate(15)
-        ->withQueryString();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Normal User Doesn't Need Business Filter List
-    |--------------------------------------------------------------------------
-    */
-    $allBusinesses = collect();
-
-    /*
-    |--------------------------------------------------------------------------
-    | Return View
-    |--------------------------------------------------------------------------
-    */
-    return view('users.index', compact(
-        'users',
-        'allBusinesses',
-        'businessId',
-        'search',
-        'show'
-    ));
-}
 
 
     public function create()
