@@ -290,21 +290,31 @@ class UserController extends Controller
     // }
 
 
-    public function create()
-    {
-        $businesses = Business::query()
-            ->select('id', 'name', 'slug', 'created_at')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(10, ['*'], 'business_page');
+    public function create(Request $request)
+{
+    $search = trim((string) $request->query('business_search', ''));
 
-        $roles = Role::orderBy('name')->get();
+    $businesses = Business::query()
+        ->select('id', 'name', 'slug', 'created_at')
+        ->when($search !== '', function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        })
+        ->orderByDesc('created_at')
+        ->orderByDesc('id')
+        ->paginate(10, ['*'], 'business_page')
+        ->withQueryString();
 
-        return view('users.create', compact(
-            'businesses',
-            'roles'
-        ));
-    }
+    $roles = Role::orderBy('name')->get();
+
+    return view('users.create', compact(
+        'businesses',
+        'roles',
+        'search'
+    ));
+}
 
 
     public function store(Request $request)
@@ -365,32 +375,42 @@ class UserController extends Controller
     // }
 
 
-    public function edit(User $user)
-    {
-        $businesses = Business::query()
-            ->select('id', 'name', 'slug', 'created_at')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(10, ['*'], 'business_page');
+    public function edit(Request $request, User $user)
+{
+    $search = trim((string) $request->query('business_search', ''));
 
-        $roles = Role::orderBy('name')->get();
+    $businesses = Business::query()
+        ->select('id', 'name', 'slug', 'created_at')
+        ->when($search !== '', function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        })
+        ->orderByDesc('created_at')
+        ->orderByDesc('id')
+        ->paginate(10, ['*'], 'business_page')
+        ->withQueryString();
 
-        $selectedBusinesses = $user->businesses()
-            ->pluck('businesses.id')
-            ->toArray();
+    $roles = Role::orderBy('name')->get();
 
-        $selectedRoles = $user->roles()
-            ->pluck('name')
-            ->toArray();
+    $selectedBusinesses = $user->businesses()
+        ->pluck('businesses.id')
+        ->toArray();
 
-        return view('users.edit', compact(
-            'user',
-            'businesses',
-            'roles',
-            'selectedBusinesses',
-            'selectedRoles'
-        ));
-    }
+    $selectedRoles = $user->roles()
+        ->pluck('name')
+        ->toArray();
+
+    return view('users.edit', compact(
+        'user',
+        'businesses',
+        'roles',
+        'selectedBusinesses',
+        'selectedRoles',
+        'search'
+    ));
+}
 
     public function update(Request $request, User $user)
     {
