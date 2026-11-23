@@ -291,48 +291,48 @@ class UserController extends Controller
 
 
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'name'     => ['required', 'string', 'max:255'],
-        'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-        'google_drive_folder_id' => ['nullable', 'unique:users,google_drive_folder_id'],
-        'password' => ['required', 'confirmed', 'min:8'],
-        'phone' => ['required', 'string', 'max:255', 'unique:users,phone'],
+    {
+        $data = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'google_drive_folder_id' => ['nullable', 'unique:users,google_drive_folder_id'],
+            'password' => ['required', 'confirmed', 'min:8'],
+            'phone' => ['required', 'string', 'max:255', 'unique:users,phone'],
 
-        'businesses'   => ['nullable', 'array'],
-        'businesses.*' => ['integer', 'exists:businesses,id'],
+            'businesses'   => ['nullable', 'array'],
+            'businesses.*' => ['integer', 'exists:businesses,id'],
 
-        // dynamic spatie roles
-        'roles'   => ['nullable', 'array'],
-        'roles.*' => ['string', 'exists:roles,name'],
-    ]);
-
-    DB::transaction(function () use ($data) {
-        $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'google_drive_folder_id' => $data['google_drive_folder_id'] ?? null,
-            'password' => Hash::make($data['password']),
-            'phone' => $data['phone'],
+            // dynamic spatie roles
+            'roles'   => ['nullable', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
         ]);
 
-        // businesses attach
-        if (!empty($data['businesses'])) {
-            $attach = [];
-            foreach ($data['businesses'] as $bid) {
-                $attach[$bid] = [];
+        DB::transaction(function () use ($data) {
+            $user = User::create([
+                'name'     => $data['name'],
+                'email'    => $data['email'],
+                'google_drive_folder_id' => $data['google_drive_folder_id'] ?? null,
+                'password' => Hash::make($data['password']),
+                'phone' => $data['phone'],
+            ]);
+
+            // businesses attach
+            if (!empty($data['businesses'])) {
+                $attach = [];
+                foreach ($data['businesses'] as $bid) {
+                    $attach[$bid] = [];
+                }
+                $user->businesses()->attach($attach);
             }
-            $user->businesses()->attach($attach);
-        }
 
-        // spatie roles assign
-        if (!empty($data['roles'])) {
-            $user->assignRole($data['roles']);
-        }
-    });
+            // spatie roles assign
+            if (!empty($data['roles'])) {
+                $user->assignRole($data['roles']);
+            }
+        });
 
-    return redirect()->route('users.index')->with('success', 'User created successfully.');
-}
+        return redirect()->route('users.index')->with('success', 'User created successfully.');
+    }
 
     
 
