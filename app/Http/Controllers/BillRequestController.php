@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\BillRequestTaxConversion;
 
 class BillRequestController extends Controller
 {
@@ -79,6 +80,19 @@ class BillRequestController extends Controller
     {
         $bid = auth()->user()->current_business_id ?? session('active_business_id');
 
+        if (BillRequestTaxConversion::appliesTo((int) $bid)) {
+            $user = $request->user();
+
+            abort_unless(
+                $user->can('create invoice')
+                && (
+                    $user->hasAnyRole(['super admin', 'super_admin', 'superadmin'])
+                    || $user->businesses()->where('businesses.id', $bid)->exists()
+                ),
+                403
+            );
+        }
+
         if (!$bid) {
             return redirect()->route('bill-requests.index')
                 ->with('error', 'Active business select/attach nahi hai.');
@@ -87,6 +101,11 @@ class BillRequestController extends Controller
         try {
             $invoice = DB::transaction(function () use ($billRequest, $bid) {
                 $business = Business::findOrFail($bid);
+
+                if (BillRequestTaxConversion::appliesTo((int) $bid)) {
+                    return app(BillRequestTaxConversion::class)
+                        ->convert($billRequest, $business, (int) auth()->id());
+                }
 
                 $client = null;
 

@@ -16,6 +16,7 @@ use App\Models\InvoicePayment;
 use App\Models\Item;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use App\Services\BillRequestTaxConversion;
 
 class BillRequestController extends Controller
 {
@@ -452,6 +453,7 @@ class BillRequestController extends Controller
                 'package_duration'       => $validated['package_duration'] ?? null,
 
                 'items'                  => $items,
+                'source_payment_amount' => $validated['payment_amount'] ?? null,
 
                 'payment_amount'         => $validated['payment_amount'] ?? ($itemsTotal > 0 ? $itemsTotal : null),
                 'payment_method'         => $validated['payment_method'] ?? null,
@@ -497,6 +499,24 @@ class BillRequestController extends Controller
                     $sourceSoftware,
                     $idempotencyKey
                 ) {
+
+                    $specialBusinessId = (int) config('services.bill_request_invoice.business_id');
+
+                    if ($specialBusinessId > 0) {
+                        $existingBillRequest = BillRequest::query()
+                            ->lockForUpdate()
+                            ->findOrFail($existingBillRequest->id);
+
+                        $invoice = Invoice::withoutGlobalScope('business')
+                            ->where('business_id', $specialBusinessId)
+                            ->where('bil_request_id', (string) $existingBillRequest->id)
+                            ->where('invoice_type', 'tax')
+                            ->first();
+
+                        if ($invoice) {
+                            return;
+                        }
+                    }
                     $existingBillRequest->update([
                         'source_software'        => $sourceSoftware,
                         'source_request_id'      => $sourceRequestId !== '' ? $sourceRequestId : $existingBillRequest->source_request_id,
@@ -555,9 +575,11 @@ class BillRequestController extends Controller
 
                 return response()->json([
                     'success'            => true,
-                    'message'            => $invoice
-                        ? 'Duplicate request received. Billing request and quotation updated successfully.'
-                        : 'Duplicate request received. Billing request updated successfully.',
+                    'message'            => match ($invoice?->invoice_type) {
+                        'tax' => 'Duplicate request received. Existing Tax Invoice returned.',
+                        'quotation' => 'Duplicate request received. Billing request and quotation updated successfully.',
+                        default => 'Duplicate request received. Billing request updated successfully.',
+                    },
                     'billing_request_id' => $existingBillRequest->id,
                     'invoice_id'         => $invoice?->id,
                     'invoice_number'     => $invoice?->invoice_number,
@@ -1864,330 +1886,34 @@ class BillRequestController extends Controller
         }
     }
 
-    // public function createInvoice(Request $request, BillRequest $billRequest)
-    // {
-    //     $bid = $request->business_id;
-    //     $userId = $request->user_id;
-
-    //     try {
-    //         $invoice = DB::transaction(function () use ($billRequest, $bid, $userId) {
-    //             $business = Business::withoutGlobalScopes()->findOrFail($bid);
-
-    //             $client = null;
-
-    //             if (!empty($billRequest->gst_number)) {
-    //                 $client = Client::withoutGlobalScopes()
-    //                     ->where('business_id', $bid)
-    //                     ->where('gstin', trim($billRequest->gst_number))
-    //                     ->first();
-    //             }
-
-    //             if (!$client && !empty($billRequest->customer_phone)) {
-    //                 $client = Client::withoutGlobalScopes()
-    //                     ->where('business_id', $bid)
-    //                     ->where('mobile', trim($billRequest->customer_phone))
-    //                     ->first();
-    //             }
-
-    //             if (!$client && !empty($billRequest->customer_email)) {
-    //                 $client = Client::withoutGlobalScopes()
-    //                     ->where('business_id', $bid)
-    //                     ->where('email', trim($billRequest->customer_email))
-    //                     ->first();
-    //             }
-
-    //             if (!$client) {
-    //                 $client = Client::create([
-    //                     'business_id' => $bid,
-    //                     'name'        => $billRequest->customer_name ?: 'Walk-in Customer',
-    //                     'address'     => $billRequest->address,
-    //                     'gstin'       => $billRequest->gst_number,
-    //                     'mobile'      => $billRequest->customer_phone ?: $billRequest->customer_phone1,
-    //                     'state'       => $billRequest->state,
-    //                     'city'        => $billRequest->city,
-    //                     'pincode'     => $billRequest->pin,
-    //                     'state_code'  => null,
-    //                     'email'       => $billRequest->customer_email,
-    //                     'is_save'     => 1,
-    //                 ]);
-    //             }
-
-    //             $itemId = (int) ($billRequest->package_name ?? 0);
-
-    //             $matchedItem = Item::withoutGlobalScopes()
-    //                 ->where('business_id', $bid)
-    //                 // ->where('type', 'service')
-    //                 ->where('id', $itemId)
-    //                 ->first();
-
-    //             if (!$matchedItem) {
-    //                 throw new \Exception('Selected service item nahi mila. Item ID: ' . $itemId);
-    //             }
-
-    //             $grossAmount = (float) (
-    //                 $billRequest->selling_price
-    //                 ?? $billRequest->payment_amount
-    //                 ?? $billRequest->package_price
-    //                 ?? $matchedItem->price
-    //                 ?? 0
-    //             );
-
-    //             if ($grossAmount <= 0) {
-    //                 throw new \Exception('Bill request amount invalid hai.');
-    //             }
-
-    //             $receivedAmount = (float) ($billRequest->payment_amount ?? 0);
-    //             $invoiceDate = now(config('app.timezone'))->toDateString();
-
-    //             $taxPercent = (float) ($matchedItem->tax_rate ?? 0);
-
-    //             if ($taxPercent > 0) {
-    //                 $subtotal = round($grossAmount * 100 / (100 + $taxPercent), 2);
-    //                 $taxAmount = round($grossAmount - $subtotal, 2);
-    //             } else {
-    //                 $subtotal = round($grossAmount, 2);
-    //                 $taxAmount = 0;
-    //             }
-
-    //             $grandTotal = round($grossAmount, 2);
-    //             $balance = max(0, round($grandTotal - $receivedAmount, 2));
-
-    //             $businessStateCode = $this->normCode($business->state_code ?? '');
-    //             $clientStateCode = $this->normCode($client->state_code ?? '');
-
-    //             $isIntra = ($businessStateCode !== '' && $clientStateCode !== '')
-    //                 ? ($businessStateCode === $clientStateCode)
-    //                 : false;
-
-    //             if ($isIntra) {
-    //                 $cgstPercent = round($taxPercent / 2, 2);
-    //                 $sgstPercent = round($taxPercent / 2, 2);
-    //                 $igstPercent = 0;
-
-    //                 $cgstAmount = round($taxAmount / 2, 2);
-    //                 $sgstAmount = round($taxAmount - $cgstAmount, 2);
-    //                 $igstAmount = 0;
-    //             } else {
-    //                 $cgstPercent = 0;
-    //                 $sgstPercent = 0;
-    //                 $igstPercent = round($taxPercent, 2);
-
-    //                 $cgstAmount = 0;
-    //                 $sgstAmount = 0;
-    //                 $igstAmount = round($taxAmount, 2);
-    //             }
-
-    //             $existingInvoice = Invoice::withoutGlobalScopes()
-    //                 ->where('business_id', $bid)
-    //                 ->where('bil_request_id', $billRequest->id)
-    //                 ->where('invoice_type', 'tax')
-    //                 ->first();
-
-    //             $taxBase = 'INV';
-    //             $prefix = \App\Services\InvoiceNumber::previewPrefix($invoiceDate, $taxBase);
-
-    //             $alloc = \App\Services\InvoiceNumber::next(
-    //                 (int) $bid,
-    //                 $invoiceDate,
-    //                 $prefix,
-    //                 3,
-    //                 'tax'
-    //             );
-
-    //             $invoiceNumber = $alloc['full'];
-
-    //             \App\Services\InvoiceNumber::syncNextSeqIfMatches(
-    //                 (int) $bid,
-    //                 $invoiceDate,
-    //                 $invoiceNumber,
-    //                 3,
-    //                 'tax'
-    //             );
-
-    //             $itemDescription = $matchedItem->description ?: $matchedItem->name;
-
-    //             $itemsJson = [
-    //                 [
-    //                     'item_id'       => $matchedItem->id,
-    //                     'item_type'     => 'service',
-    //                     'description'   => $itemDescription,
-    //                     'hsn'           => $matchedItem->sac ?? '',
-    //                     'qty'           => 1,
-    //                     'tax_percent'   => round($taxPercent, 2),
-    //                     'service_rate'  => round($subtotal, 2),
-    //                     'rate'          => round($subtotal, 2),
-    //                     'tax_amount'    => round($taxAmount, 2),
-    //                     'amount'        => round($grandTotal, 2),
-    //                     'making_charge' => round($subtotal, 2),
-    //                 ],
-    //             ];
-
-    //             $invoiceData = [
-    //                 'business_id'     => $bid,
-    //                 'bil_request_id'  => $billRequest->id,
-    //                 'invoice_type'    => 'tax',
-    //                 'invoice_prefix'  => $prefix,
-    //                 'invoice_number'  => $invoiceNumber,
-    //                 'client_id'       => $client->id,
-    //                 'invoice_date'    => $invoiceDate,
-    //                 'payment_terms'   => 0,
-
-    //                 'subtotal'        => round($subtotal, 2),
-    //                 'tax_amount'      => round($taxAmount, 2),
-
-    //                 'cgst_percent'    => $cgstPercent,
-    //                 'cgst_amount'     => $cgstAmount,
-    //                 'sgst_percent'    => $sgstPercent,
-    //                 'sgst_amount'     => $sgstAmount,
-    //                 'igst_percent'    => $igstPercent,
-    //                 'igst_amount'     => $igstAmount,
-
-    //                 'discount_total'  => 0,
-    //                 'charge_total'    => 0,
-    //                 'tcs_percent'     => 0,
-    //                 'tcs_amount'      => 0,
-    //                 'round_off'       => 0,
-    //                 'less_amount'     => 0,
-
-    //                 'total'           => $grandTotal,
-    //                 'received_amount' => $receivedAmount,
-    //                 'balance'         => $balance,
-
-    //                 'payment_method'  => $billRequest->payment_method,
-    //                 'reverse_charge'  => 0,
-
-    //                 'place_of_supply_state' => $client->state,
-    //                 'place_of_supply_code'  => $client->state_code,
-
-    //                 'notes'           => 'Created from Bill Request ID: ' . ($billRequest->source_request_id ?: $billRequest->id),
-
-    //                 'charges_json'    => json_encode([]),
-    //                 'items_json'      => json_encode($itemsJson, JSON_UNESCAPED_UNICODE),
-
-    //                 'amount_in_words' => '',
-    //                 'pdf_url'         => null,
-    //                 'signature'       => null,
-    //                 'user_id'         => $userId,
-    //                 'updated_by'      => $userId,
-    //                 'kots_json'       => json_encode([]),
-    //             ];
-
-    //             if ($existingInvoice) {
-    //                 $invoice = $existingInvoice;
-    //                 $invoice->update($invoiceData);
-    //                 InvoiceItem::where('invoice_id', $invoice->id)->delete();
-    //             } else {
-    //                 $invoiceData['created_by'] = $userId;
-    //                 $invoice = Invoice::create($invoiceData);
-    //             }
-
-    //             InvoiceItem::create([
-    //                 'invoice_id'     => $invoice->id,
-    //                 'item_id'        => $matchedItem->id,
-    //                 'description'    => $itemDescription,
-    //                 'sac_code'       => $matchedItem->sac ?? null,
-    //                 'quantity'       => 1,
-    //                 'making_charge'  => round($subtotal, 2),
-    //                 'discount'       => 0,
-    //                 'tax_percent'    => round($taxPercent, 2),
-    //                 'rate'           => round($subtotal, 2),
-    //                 'amount'         => round($grandTotal, 2),
-    //             ]);
-
-    //             if ($receivedAmount > 0) {
-    //                 $method = strtolower(trim((string) $billRequest->payment_method));
-
-    //                 InvoicePayment::where('invoice_id', $invoice->id)->delete();
-
-    //                 InvoicePayment::create([
-    //                     'business_id'    => $bid,
-    //                     'invoice_id'     => $invoice->id,
-    //                     'client_id'      => $client->id,
-    //                     'total_value'    => $grandTotal,
-
-    //                     'cash_amount'    => $method === 'cash' ? $receivedAmount : 0,
-    //                     'online_amount'  => in_array($method, ['upi', 'online', 'bank'], true) ? $receivedAmount : 0,
-    //                     'card_amount'    => $method === 'card' ? $receivedAmount : 0,
-    //                     'cheque_amount'  => $method === 'cheque' ? $receivedAmount : 0,
-
-    //                     'online_mode'    => $method === 'upi' ? 'upi' : null,
-    //                     'online_ref'     => $billRequest->transaction_id,
-    //                     'bank_name'      => $billRequest->bank,
-
-    //                     'received_total' => $receivedAmount,
-    //                     'notes'          => 'Created from bill request',
-    //                     'paid_at'        => now(config('app.timezone')),
-    //                 ]);
-    //             }
-
-    //             $oldApi = [];
-
-    //             if (!empty($billRequest->api_response)) {
-    //                 $decoded = json_decode($billRequest->api_response, true);
-
-    //                 if (is_array($decoded)) {
-    //                     $oldApi = $decoded;
-    //                 }
-    //             }
-
-    //             $oldApi['created_invoice_id'] = $invoice->id;
-    //             $oldApi['created_invoice_number'] = $invoice->invoice_number;
-    //             $oldApi['created_client_id'] = $client->id;
-    //             $oldApi['invoice_type'] = 'tax';
-    //             $oldApi['processed_at'] = now(config('app.timezone'))->toDateTimeString();
-
-    //             $billRequest->update([
-    //                 'status'       => 'processed',
-    //                 'remarks'      => 'Tax invoice created successfully. Invoice No: ' . $invoice->invoice_number,
-    //                 'api_response' => json_encode($oldApi, JSON_UNESCAPED_UNICODE),
-    //             ]);
-
-    //             return $invoice;
-    //         });
-
-    //         $this->pushSaveInvoiceApi($billRequest->fresh(), $invoice->fresh());
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Invoice created successfully from bill request.',
-    //             'data'    => [
-    //                 'bill_request' => $billRequest->fresh(),
-    //                 'invoice'      => $invoice->fresh(),
-    //                 'preview_url'  => route('invoices.preview', $invoice->id),
-    //                 'show_url'     => route('invoices.show', $invoice->id),
-    //             ],
-    //         ]);
-
-    //     } catch (\Throwable $e) {
-    //         Log::error('Bill request to invoice API failed', [
-    //             'bil_request_id' => $billRequest->id,
-    //             'error'           => $e->getMessage(),
-    //             'line'            => $e->getLine(),
-    //             'file'            => $e->getFile(),
-    //         ]);
-
-    //         $billRequest->update([
-    //             'status'  => 'failed',
-    //             'remarks' => $e->getMessage(),
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Invoice create/update failed.',
-    //             'error'   => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
-
 
     public function createInvoice(Request $request, BillRequest $billRequest)
     {
         $bid = $request->business_id;
         $userId = $request->user_id;
+        $isSpecialBusiness = BillRequestTaxConversion::appliesTo((int) $bid);
+
+        if ($isSpecialBusiness) {
+            $user = $request->user();
+
+            abort_unless(
+                $user->can('create invoice')
+                && (
+                    $user->hasAnyRole(['super admin', 'super_admin', 'superadmin'])
+                    || $user->businesses()->where('businesses.id', $bid)->exists()
+                ),
+                403
+            );
+        }
 
         try {
-            $invoice = DB::transaction(function () use ($billRequest, $bid, $userId) {
+            $invoice = DB::transaction(function () use ($billRequest, $bid, $userId, $isSpecialBusiness) {
                 $business = Business::withoutGlobalScopes()->findOrFail($bid);
+
+                if ($isSpecialBusiness) {
+                    return app(BillRequestTaxConversion::class)
+                        ->convert($billRequest, $business, (int) auth()->id());
+                }
 
                 $client = null;
 

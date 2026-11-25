@@ -56,4 +56,8 @@ return [
         'drive_sa_json' => env('GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON'),
     ],
 
+    'bill_request_invoice' => [
+        'business_id' => (int) env('BILL_REQUEST_INVOICE_BUSINESS_ID', 0),
+    ],
+
 ];
