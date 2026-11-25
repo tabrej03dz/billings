@@ -63,1085 +63,952 @@ class BusinessController extends Controller
         return view('businesses.index', compact('businesses', 'search', 'status', 'perPage'));
     }
 
-    // public function create()
-    // {
-    //     $billTemplates = BillTemplate::all();
+    public function create()
+    {
+        $billTemplates = BillTemplate::query()
+            ->orderBy('name')
+            ->get();
 
-    //     $businessTypes = BusinessType::query()
-    //         ->orderBy('name')
-    //         ->get();
+        $businessTypes = BusinessType::query()
+            ->orderBy('name')
+            ->get();
 
-    //     return view('businesses.create', compact('billTemplates', 'businessTypes'));
-    // }
+        $plans = Plan::query()
+            ->where('status', 1)
+            ->orderBy('name')
+            ->get();
 
-
-    // public function create()
-    // {
-    //     $billTemplates = BillTemplate::query()
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     $businessTypes = BusinessType::query()
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     /*
-    //     * Sirf active plans.
-    //     *
-    //     * Aapke UserPlanController me bhi
-    //     * status = 1 wale plan load ho rahe hain.
-    //     */
-    //     $plans = Plan::query()
-    //         ->where('status', 1)
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     /*
-    //     * Spatie roles
-    //     */
-    //     $roles = Role::query()
-    //         ->orderBy('name')
-    //         ->get();
-
-    //     return view('businesses.create', compact(
-    //         'billTemplates',
-    //         'businessTypes',
-    //         'plans',
-    //         'roles'
-    //     ));
-    // }
-
-public function create()
-{
-    $billTemplates = BillTemplate::query()
-        ->orderBy('name')
-        ->get();
-
-    $businessTypes = BusinessType::query()
-        ->orderBy('name')
-        ->get();
-
-    $plans = Plan::query()
-        ->where('status', 1)
-        ->orderBy('name')
-        ->get();
-
-    $roles = Role::query()
-        ->orderBy('name')
-        ->get();
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXISTING USERS
-    |--------------------------------------------------------------------------
-    |
-    | Ek user ke multiple businesses ho sakte hain.
-    |
-    */
-
-    $users = User::query()
-        ->select([
-            'id',
-            'name',
-            'email',
-            'phone',
-        ])
-        ->orderBy('name')
-        ->get();
-
-    return view('businesses.create', compact(
-        'billTemplates',
-        'businessTypes',
-        'plans',
-        'roles',
-        'users'
-    ));
-}
-
-    // public function store(Request $request)
-    // {
-    //     $data = $request->validate([
-    //         'name'  => ['required', 'string', 'max:255'],
-    //         'slug'  => ['nullable', 'alpha_dash', 'max:255', 'unique:businesses,slug'],
-    //         'email' => ['required', 'email', 'max:255', 'unique:businesses,email'],
-
-    //         'mobile' => [
-    //             'nullable',
-    //             'string',
-    //             'max:20',
-    //             Rule::unique('businesses', 'mobile'),
-    //         ],
-
-    //         // ✅ Dynamic Business Type
-    //         // 'business_type_id' => [
-    //         //     'required',
-    //         //     'integer',
-    //         //     Rule::exists('business_types', 'id'),
-    //         // ],
-
-    //          'type' => ['required', 'exists:business_types,id'],
-
-    //         'gstin'   => ['nullable', 'string', 'max:50'],
-    //         'address' => ['nullable', 'string', 'max:1000'],
-    //         'terms'   => ['nullable', 'string', 'max:1000'],
-
-    //         'logo'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-    //         'signature'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-    //         'letter_head' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-
-    //         'state' => ['required', 'string', 'max:100'],
-
-    //         'pdf_template_id'     => ['required', 'integer', Rule::exists('bill_templates', 'id')],
-    //         'invoice_base_prefix' => ['nullable', 'string', 'max:100'],
-    //     ]);
-
-    //     // ✅ Split state_code & state_name
-    //     if (!empty($data['state']) && str_contains($data['state'], ',')) {
-    //         [$stateCode, $stateName] = explode(',', $data['state'], 2);
-
-    //         $data['state_code'] = trim($stateCode);
-    //         $data['state'] = trim($stateName);
-    //     }
-
-    //     // ✅ Auto-generate slug if empty
-    //     $data['slug'] = !empty($data['slug'])
-    //         ? Str::slug($data['slug'])
-    //         : Str::slug($data['name']);
-
-    //     // ✅ Ensure slug uniqueness
-    //     $originalSlug = $data['slug'];
-    //     $counter = 1;
-
-    //     while (Business::where('slug', $data['slug'])->exists()) {
-    //         $data['slug'] = $originalSlug . '-' . $counter;
-    //         $counter++;
-    //     }
-
-    //     // ✅ Upload files
-    //     if ($request->hasFile('logo')) {
-    //         $data['logo'] = $request->file('logo')->store('business_logos', 'public');
-    //     }
-
-    //     if ($request->hasFile('signature')) {
-    //         $data['signature'] = $request->file('signature')->store('business_signatures', 'public');
-    //     }
-
-    //     if ($request->hasFile('letter_head')) {
-    //         $data['letter_head'] = $request->file('letter_head')->store('business_letter_heads', 'public');
-    //     }
-
-    //     // ✅ Create business
-    //     $business = Business::create($data);
-
-    //     // ✅ Attach current user as owner
-    //     $request->user()->businesses()->syncWithoutDetaching([
-    //         $business->id => ['role' => 'owner'],
-    //     ]);
-
-    //     return redirect()
-    //         ->route('businesses.index')
-    //         ->with('success', 'Business created successfully.');
-    // }
-
-
-public function store(Request $request)
-{
-    /*
-    |--------------------------------------------------------------------------
-    | BUSINESS MOBILE RULE
-    |--------------------------------------------------------------------------
-    |
-    | New User:
-    | Mobile unique rahega.
-    |
-    | Existing User:
-    | Same business mobile allowed hai.
-    |
-    */
-
-    $businessMobileRules = [
-        'nullable',
-        'string',
-        'max:20',
-    ];
-
-    if ($request->input('user_mode') === 'new') {
-        $businessMobileRules[] = Rule::unique(
-            'businesses',
-            'mobile'
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
-    $validated = $request->validate([
+        $roles = Role::query()
+            ->orderBy('name')
+            ->get();
 
         /*
         |--------------------------------------------------------------------------
-        | BUSINESS
+        | EXISTING USERS
         |--------------------------------------------------------------------------
+        |
+        | Ek user ke multiple businesses ho sakte hain.
+        |
         */
 
-        'name' => [
-            'required',
-            'string',
-            'max:255',
-        ],
+        $users = User::query()
+            ->select([
+                'id',
+                'name',
+                'email',
+                'phone',
+            ])
+            ->orderBy('name')
+            ->get();
 
-        'slug' => [
+        return view('businesses.create', compact(
+            'billTemplates',
+            'businessTypes',
+            'plans',
+            'roles',
+            'users'
+        ));
+    }
+
+
+    public function store(Request $request)
+    {
+        /*
+        |--------------------------------------------------------------------------
+        | BUSINESS MOBILE RULE
+        |--------------------------------------------------------------------------
+        |
+        | New User:
+        | Mobile unique rahega.
+        |
+        | Existing User:
+        | Same business mobile allowed hai.
+        |
+        */
+
+        $businessMobileRules = [
             'nullable',
-            'alpha_dash',
-            'max:255',
-            Rule::unique(
+            'string',
+            'max:20',
+        ];
+
+        if ($request->input('user_mode') === 'new') {
+            $businessMobileRules[] = Rule::unique(
                 'businesses',
-                'slug'
-            ),
-        ],
-
-        'email' => [
-            'required',
-            'email',
-            'max:255',
-            Rule::unique(
-                'businesses',
-                'email'
-            ),
-        ],
-
-        'mobile' => $businessMobileRules,
-
-        'type' => [
-            'required',
-            'integer',
-            Rule::exists(
-                'business_types',
-                'id'
-            ),
-        ],
-
-        'gstin' => [
-            'nullable',
-            'string',
-            'max:50',
-        ],
-
-        'address' => [
-            'nullable',
-            'string',
-            'max:1000',
-        ],
-
-        'terms' => [
-            'nullable',
-            'string',
-            'max:1000',
-        ],
-
-        'state' => [
-            'required',
-            'string',
-            'max:100',
-        ],
-
-        'pdf_template_id' => [
-            'required',
-            'integer',
-            Rule::exists(
-                'bill_templates',
-                'id'
-            ),
-        ],
-
-        'invoice_base_prefix' => [
-            'nullable',
-            'string',
-            'max:100',
-        ],
-
-        'logo' => [
-            'nullable',
-            'image',
-            'mimes:jpg,jpeg,png,webp',
-            'max:2048',
-        ],
-
-        'signature' => [
-            'nullable',
-            'image',
-            'mimes:jpg,jpeg,png,webp',
-            'max:2048',
-        ],
-
-        'letter_head' => [
-            'nullable',
-            'image',
-            'mimes:jpg,jpeg,png,webp',
-            'max:2048',
-        ],
+                'mobile'
+            );
+        }
 
         /*
         |--------------------------------------------------------------------------
-        | USER MODE
+        | VALIDATION
         |--------------------------------------------------------------------------
         */
 
-        'user_mode' => [
-            'required',
-            Rule::in([
-                'new',
-                'existing',
-            ]),
-        ],
+        $validated = $request->validate([
+
+            /*
+            |--------------------------------------------------------------------------
+            | BUSINESS
+            |--------------------------------------------------------------------------
+            */
+
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'slug' => [
+                'nullable',
+                'alpha_dash',
+                'max:255',
+                Rule::unique(
+                    'businesses',
+                    'slug'
+                ),
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique(
+                    'businesses',
+                    'email'
+                ),
+            ],
+
+            'mobile' => $businessMobileRules,
+
+            'type' => [
+                'required',
+                'integer',
+                Rule::exists(
+                    'business_types',
+                    'id'
+                ),
+            ],
+
+            'gstin' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+
+            'address' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'terms' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'state' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+
+            'pdf_template_id' => [
+                'required',
+                'integer',
+                Rule::exists(
+                    'bill_templates',
+                    'id'
+                ),
+            ],
+
+            'invoice_base_prefix' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'logo' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'signature' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'letter_head' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | USER MODE
+            |--------------------------------------------------------------------------
+            */
+
+            'user_mode' => [
+                'required',
+                Rule::in([
+                    'new',
+                    'existing',
+                ]),
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | EXISTING USER
+            |--------------------------------------------------------------------------
+            |
+            | Sirf existing mode me validate hoga.
+            |
+            */
+
+            'existing_user_id' => [
+                'exclude_unless:user_mode,existing',
+                'required',
+                'integer',
+                Rule::exists(
+                    'users',
+                    'id'
+                ),
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | NEW USER
+            |--------------------------------------------------------------------------
+            |
+            | Sirf new mode me ye fields validate honge.
+            |
+            */
+
+            'user_name' => [
+                'exclude_unless:user_mode,new',
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'user_email' => [
+                'exclude_unless:user_mode,new',
+                'required',
+                'email',
+                'max:255',
+                Rule::unique(
+                    'users',
+                    'email'
+                ),
+            ],
+
+            'user_phone' => [
+                'exclude_unless:user_mode,new',
+                'required',
+                'string',
+                'max:255',
+                Rule::unique(
+                    'users',
+                    'phone'
+                ),
+            ],
+
+            'user_google_drive_folder_id' => [
+                'exclude_unless:user_mode,new',
+                'nullable',
+                Rule::unique(
+                    'users',
+                    'google_drive_folder_id'
+                ),
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | PASSWORD - ONLY NEW USER
+            |--------------------------------------------------------------------------
+            */
+
+            // 'user_password' => [
+            //     'exclude_unless:user_mode,new',
+            //     'required',
+            //     'string',
+            //     'min:8',
+            //     'confirmed',
+            // ],
+
+        
+
+            /*
+            |--------------------------------------------------------------------------
+            | ROLE - ONLY NEW USER
+            |--------------------------------------------------------------------------
+            */
+
+            'roles' => [
+                'exclude_unless:user_mode,new',
+                'required',
+                'array',
+                'min:1',
+            ],
+
+            'roles.*' => [
+                'string',
+                Rule::exists(
+                    'roles',
+                    'name'
+                ),
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | PLAN
+            |--------------------------------------------------------------------------
+            */
+
+            'plan_id' => [
+                'required',
+                'integer',
+                Rule::exists(
+                    'plans',
+                    'id'
+                ),
+            ],
+
+            'number_of_office' => [
+                'required',
+                'integer',
+                'min:1',
+            ],
+
+            'number_of_user' => [
+                'required',
+                'integer',
+                'min:1',
+            ],
+
+            'start_date' => [
+                'nullable',
+                'date',
+            ],
+
+            'expiry_date' => [
+                'nullable',
+                'date',
+                'after_or_equal:start_date',
+            ],
+
+            'plan_status' => [
+                'nullable',
+                'boolean',
+            ],
+
+        ], [
+
+            /*
+            |--------------------------------------------------------------------------
+            | CUSTOM MESSAGES
+            |--------------------------------------------------------------------------
+            */
+
+            'user_mode.required' =>
+                'Create New User ya Select Existing User choose karein.',
+
+            'existing_user_id.required' =>
+                'Existing user select karna zaroori hai.',
+
+            'existing_user_id.exists' =>
+                'Selected user nahi mila.',
+
+            'user_name.required' =>
+                'User name required hai.',
+
+            'user_email.required' =>
+                'User login email required hai.',
+
+            'user_email.unique' =>
+                'Is email ka user already exist karta hai. Existing User option use karein.',
+
+            'user_phone.required' =>
+                'User phone required hai.',
+
+            'user_phone.unique' =>
+                'Is phone number ka user already exist karta hai. Existing User option use karein.',
+
+            'roles.required' =>
+                'New user ke liye kam se kam ek role select karna zaroori hai.',
+
+            'plan_id.required' =>
+                'Plan select karna zaroori hai.',
+
+            'number_of_office.required' =>
+                'Number of offices required hai.',
+
+            'number_of_office.min' =>
+                'Kam se kam 1 office hona chahiye.',
+
+            'number_of_user.required' =>
+                'Number of users required hai.',
+
+            'number_of_user.min' =>
+                'Kam se kam 1 user hona chahiye.',
+
+            'expiry_date.after_or_equal' =>
+                'Expiry date start date se pehle nahi ho sakti.',
+        ]);
 
         /*
         |--------------------------------------------------------------------------
-        | EXISTING USER
-        |--------------------------------------------------------------------------
-        |
-        | Sirf existing mode me validate hoga.
-        |
-        */
-
-        'existing_user_id' => [
-            'exclude_unless:user_mode,existing',
-            'required',
-            'integer',
-            Rule::exists(
-                'users',
-                'id'
-            ),
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | NEW USER
-        |--------------------------------------------------------------------------
-        |
-        | Sirf new mode me ye fields validate honge.
-        |
-        */
-
-        'user_name' => [
-            'exclude_unless:user_mode,new',
-            'required',
-            'string',
-            'max:255',
-        ],
-
-        'user_email' => [
-            'exclude_unless:user_mode,new',
-            'required',
-            'email',
-            'max:255',
-            Rule::unique(
-                'users',
-                'email'
-            ),
-        ],
-
-        'user_phone' => [
-            'exclude_unless:user_mode,new',
-            'required',
-            'string',
-            'max:255',
-            Rule::unique(
-                'users',
-                'phone'
-            ),
-        ],
-
-        'user_google_drive_folder_id' => [
-            'exclude_unless:user_mode,new',
-            'nullable',
-            Rule::unique(
-                'users',
-                'google_drive_folder_id'
-            ),
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | PASSWORD - ONLY NEW USER
+        | STATE
         |--------------------------------------------------------------------------
         */
 
-        // 'user_password' => [
-        //     'exclude_unless:user_mode,new',
-        //     'required',
-        //     'string',
-        //     'min:8',
-        //     'confirmed',
-        // ],
+        $stateCode = null;
+        $stateName = $validated['state'];
 
-    
-
-        /*
-        |--------------------------------------------------------------------------
-        | ROLE - ONLY NEW USER
-        |--------------------------------------------------------------------------
-        */
-
-        'roles' => [
-            'exclude_unless:user_mode,new',
-            'required',
-            'array',
-            'min:1',
-        ],
-
-        'roles.*' => [
-            'string',
-            Rule::exists(
-                'roles',
-                'name'
-            ),
-        ],
-
-        /*
-        |--------------------------------------------------------------------------
-        | PLAN
-        |--------------------------------------------------------------------------
-        */
-
-        'plan_id' => [
-            'required',
-            'integer',
-            Rule::exists(
-                'plans',
-                'id'
-            ),
-        ],
-
-        'number_of_office' => [
-            'required',
-            'integer',
-            'min:1',
-        ],
-
-        'number_of_user' => [
-            'required',
-            'integer',
-            'min:1',
-        ],
-
-        'start_date' => [
-            'nullable',
-            'date',
-        ],
-
-        'expiry_date' => [
-            'nullable',
-            'date',
-            'after_or_equal:start_date',
-        ],
-
-        'plan_status' => [
-            'nullable',
-            'boolean',
-        ],
-
-    ], [
-
-        /*
-        |--------------------------------------------------------------------------
-        | CUSTOM MESSAGES
-        |--------------------------------------------------------------------------
-        */
-
-        'user_mode.required' =>
-            'Create New User ya Select Existing User choose karein.',
-
-        'existing_user_id.required' =>
-            'Existing user select karna zaroori hai.',
-
-        'existing_user_id.exists' =>
-            'Selected user nahi mila.',
-
-        'user_name.required' =>
-            'User name required hai.',
-
-        'user_email.required' =>
-            'User login email required hai.',
-
-        'user_email.unique' =>
-            'Is email ka user already exist karta hai. Existing User option use karein.',
-
-        'user_phone.required' =>
-            'User phone required hai.',
-
-        'user_phone.unique' =>
-            'Is phone number ka user already exist karta hai. Existing User option use karein.',
-
-        'roles.required' =>
-            'New user ke liye kam se kam ek role select karna zaroori hai.',
-
-        'plan_id.required' =>
-            'Plan select karna zaroori hai.',
-
-        'number_of_office.required' =>
-            'Number of offices required hai.',
-
-        'number_of_office.min' =>
-            'Kam se kam 1 office hona chahiye.',
-
-        'number_of_user.required' =>
-            'Number of users required hai.',
-
-        'number_of_user.min' =>
-            'Kam se kam 1 user hona chahiye.',
-
-        'expiry_date.after_or_equal' =>
-            'Expiry date start date se pehle nahi ho sakti.',
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | STATE
-    |--------------------------------------------------------------------------
-    */
-
-    $stateCode = null;
-    $stateName = $validated['state'];
-
-    if (
-        !empty($validated['state']) &&
-        str_contains(
-            $validated['state'],
-            ','
-        )
-    ) {
-        [
-            $stateCode,
-            $stateName
-        ] = explode(
-            ',',
-            $validated['state'],
-            2
-        );
-
-        $stateCode = trim($stateCode);
-        $stateName = trim($stateName);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SLUG
-    |--------------------------------------------------------------------------
-    */
-
-    $slug = !empty($validated['slug'])
-        ? Str::slug(
-            $validated['slug']
-        )
-        : Str::slug(
-            $validated['name']
-        );
-
-    if (empty($slug)) {
-        $slug = 'business';
-    }
-
-    $originalSlug = $slug;
-    $counter = 1;
-
-    while (
-        Business::query()
-            ->where(
-                'slug',
-                $slug
+        if (
+            !empty($validated['state']) &&
+            str_contains(
+                $validated['state'],
+                ','
             )
-            ->exists()
-    ) {
-        $slug =
-            $originalSlug .
-            '-' .
-            $counter;
-
-        $counter++;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | FILE VARIABLES
-    |--------------------------------------------------------------------------
-    */
-
-    $logoPath = null;
-    $signaturePath = null;
-    $letterHeadPath = null;
-
-    try {
-
-        /*
-        |--------------------------------------------------------------------------
-        | UPLOAD FILES
-        |--------------------------------------------------------------------------
-        */
-
-        if ($request->hasFile('logo')) {
-            $logoPath = $request
-                ->file('logo')
-                ->store(
-                    'business_logos',
-                    'public'
-                );
-        }
-
-        if ($request->hasFile('signature')) {
-            $signaturePath = $request
-                ->file('signature')
-                ->store(
-                    'business_signatures',
-                    'public'
-                );
-        }
-
-        if ($request->hasFile('letter_head')) {
-            $letterHeadPath = $request
-                ->file('letter_head')
-                ->store(
-                    'business_letter_heads',
-                    'public'
-                );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | DATABASE TRANSACTION
-        |--------------------------------------------------------------------------
-        */
-
-        DB::transaction(function () use (
-            $request,
-            $validated,
-            $slug,
-            $stateCode,
-            $stateName,
-            $logoPath,
-            $signaturePath,
-            $letterHeadPath
         ) {
+            [
+                $stateCode,
+                $stateName
+            ] = explode(
+                ',',
+                $validated['state'],
+                2
+            );
+
+            $stateCode = trim($stateCode);
+            $stateName = trim($stateName);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SLUG
+        |--------------------------------------------------------------------------
+        */
+
+        $slug = !empty($validated['slug'])
+            ? Str::slug(
+                $validated['slug']
+            )
+            : Str::slug(
+                $validated['name']
+            );
+
+        if (empty($slug)) {
+            $slug = 'business';
+        }
+
+        $originalSlug = $slug;
+        $counter = 1;
+
+        while (
+            Business::query()
+                ->where(
+                    'slug',
+                    $slug
+                )
+                ->exists()
+        ) {
+            $slug =
+                $originalSlug .
+                '-' .
+                $counter;
+
+            $counter++;
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILE VARIABLES
+        |--------------------------------------------------------------------------
+        */
+
+        $logoPath = null;
+        $signaturePath = null;
+        $letterHeadPath = null;
+
+        try {
 
             /*
             |--------------------------------------------------------------------------
-            | 1. CREATE BUSINESS
+            | UPLOAD FILES
             |--------------------------------------------------------------------------
             */
 
-            $business = Business::create([
-                'name' =>
-                    $validated['name'],
+            if ($request->hasFile('logo')) {
+                $logoPath = $request
+                    ->file('logo')
+                    ->store(
+                        'business_logos',
+                        'public'
+                    );
+            }
 
-                'slug' =>
-                    $slug,
+            if ($request->hasFile('signature')) {
+                $signaturePath = $request
+                    ->file('signature')
+                    ->store(
+                        'business_signatures',
+                        'public'
+                    );
+            }
 
-                'email' =>
-                    $validated['email'],
-
-                'mobile' =>
-                    $validated['mobile'] ?? null,
-
-                'type' =>
-                    $validated['type'],
-
-                'gstin' =>
-                    $validated['gstin'] ?? null,
-
-                'address' =>
-                    $validated['address'] ?? null,
-
-                'terms' =>
-                    $validated['terms'] ?? null,
-
-                'state_code' =>
-                    $stateCode,
-
-                'state' =>
-                    $stateName,
-
-                'pdf_template_id' =>
-                    $validated['pdf_template_id'],
-
-                'invoice_base_prefix' =>
-                    $validated['invoice_base_prefix']
-                        ?? null,
-
-                'logo' =>
-                    $logoPath,
-
-                'signature' =>
-                    $signaturePath,
-
-                'letter_head' =>
-                    $letterHeadPath,
-            ]);
+            if ($request->hasFile('letter_head')) {
+                $letterHeadPath = $request
+                    ->file('letter_head')
+                    ->store(
+                        'business_letter_heads',
+                        'public'
+                    );
+            }
 
             /*
             |--------------------------------------------------------------------------
-            | 2. CURRENT LOGGED-IN USER
+            | DATABASE TRANSACTION
             |--------------------------------------------------------------------------
-            |
-            | Existing system ka current behavior preserve.
-            |
             */
 
-            if ($request->user()) {
-                $request->user()
-                    ->businesses()
+            DB::transaction(function () use (
+                $request,
+                $validated,
+                $slug,
+                $stateCode,
+                $stateName,
+                $logoPath,
+                $signaturePath,
+                $letterHeadPath
+            ) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | 1. CREATE BUSINESS
+                |--------------------------------------------------------------------------
+                */
+
+                $business = Business::create([
+                    'name' =>
+                        $validated['name'],
+
+                    'slug' =>
+                        $slug,
+
+                    'email' =>
+                        $validated['email'],
+
+                    'mobile' =>
+                        $validated['mobile'] ?? null,
+
+                    'type' =>
+                        $validated['type'],
+
+                    'gstin' =>
+                        $validated['gstin'] ?? null,
+
+                    'address' =>
+                        $validated['address'] ?? null,
+
+                    'terms' =>
+                        $validated['terms'] ?? null,
+
+                    'state_code' =>
+                        $stateCode,
+
+                    'state' =>
+                        $stateName,
+
+                    'pdf_template_id' =>
+                        $validated['pdf_template_id'],
+
+                    'invoice_base_prefix' =>
+                        $validated['invoice_base_prefix']
+                            ?? null,
+
+                    'logo' =>
+                        $logoPath,
+
+                    'signature' =>
+                        $signaturePath,
+
+                    'letter_head' =>
+                        $letterHeadPath,
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | 2. CURRENT LOGGED-IN USER
+                |--------------------------------------------------------------------------
+                |
+                | Existing system ka current behavior preserve.
+                |
+                */
+
+                if ($request->user()) {
+                    $request->user()
+                        ->businesses()
+                        ->syncWithoutDetaching([
+                            $business->id => [
+                                'role' => 'owner',
+                            ],
+                        ]);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | 3. NEW OR EXISTING USER
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $validated['user_mode']
+                    ===
+                    'existing'
+                ) {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | EXISTING USER
+                    |--------------------------------------------------------------------------
+                    |
+                    | Existing user ka:
+                    | - name change nahi hoga
+                    | - email change nahi hoga
+                    | - phone change nahi hoga
+                    | - password change nahi hoga
+                    | - role change nahi hoga
+                    |
+                    */
+
+                    $user = User::query()
+                        ->findOrFail(
+                            $validated[
+                                'existing_user_id'
+                            ]
+                        );
+
+                } else {
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | CREATE NEW USER
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $user = User::create([
+                        'name' =>
+                            $validated['user_name'],
+
+                        'email' =>
+                            $validated['user_email'],
+
+                        'phone' =>
+                            $validated['user_phone'],
+
+                        'google_drive_folder_id' =>
+                            $validated[
+                                'user_google_drive_folder_id'
+                            ] ?? null,
+
+                        'password' => Hash::make(
+                            'password'
+                        ),
+                    ]);
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | ROLE ONLY FOR NEW USER
+                    |--------------------------------------------------------------------------
+                    */
+
+                    $user->assignRole(
+                        $validated['roles']
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | 4. ATTACH USER TO BUSINESS
+                |--------------------------------------------------------------------------
+                |
+                | syncWithoutDetaching ki wajah se:
+                |
+                | Existing user ke purane businesses delete nahi honge.
+                | Naya business usi user ke account me add ho jayega.
+                |
+                */
+
+                $user->businesses()
                     ->syncWithoutDetaching([
                         $business->id => [
                             'role' => 'owner',
                         ],
                     ]);
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 3. NEW OR EXISTING USER
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                $validated['user_mode']
-                ===
-                'existing'
-            ) {
 
                 /*
                 |--------------------------------------------------------------------------
-                | EXISTING USER
+                | 5. CURRENT BUSINESS
                 |--------------------------------------------------------------------------
-                |
-                | Existing user ka:
-                | - name change nahi hoga
-                | - email change nahi hoga
-                | - phone change nahi hoga
-                | - password change nahi hoga
-                | - role change nahi hoga
-                |
-                */
-
-                $user = User::query()
-                    ->findOrFail(
-                        $validated[
-                            'existing_user_id'
-                        ]
-                    );
-
-            } else {
-
-                /*
-                |--------------------------------------------------------------------------
-                | CREATE NEW USER
-                |--------------------------------------------------------------------------
-                */
-
-                $user = User::create([
-                    'name' =>
-                        $validated['user_name'],
-
-                    'email' =>
-                        $validated['user_email'],
-
-                    'phone' =>
-                        $validated['user_phone'],
-
-                    'google_drive_folder_id' =>
-                        $validated[
-                            'user_google_drive_folder_id'
-                        ] ?? null,
-
-                    'password' => Hash::make(
-                        'password'
-                    ),
-                ]);
-
-                /*
-                |--------------------------------------------------------------------------
-                | ROLE ONLY FOR NEW USER
-                |--------------------------------------------------------------------------
-                */
-
-                $user->assignRole(
-                    $validated['roles']
-                );
-            }
-
-            /*
-            |--------------------------------------------------------------------------
-            | 4. ATTACH USER TO BUSINESS
-            |--------------------------------------------------------------------------
-            |
-            | syncWithoutDetaching ki wajah se:
-            |
-            | Existing user ke purane businesses delete nahi honge.
-            | Naya business usi user ke account me add ho jayega.
-            |
-            */
-
-            $user->businesses()
-                ->syncWithoutDetaching([
-                    $business->id => [
-                        'role' => 'owner',
-                    ],
-                ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | 5. CURRENT BUSINESS
-            |--------------------------------------------------------------------------
-            */
-
-            if (
-                \Illuminate\Support\Facades\Schema::hasColumn(
-                    'users',
-                    'current_business_id'
-                )
-            ) {
-
-                /*
-                | New User:
-                | current business naye business ko set karo.
-                |
-                | Existing User:
-                | Sirf tab set karo jab current_business_id blank hai.
                 */
 
                 if (
-                    $validated['user_mode']
-                        === 'new'
-                    ||
-                    empty(
-                        $user->current_business_id
+                    \Illuminate\Support\Facades\Schema::hasColumn(
+                        'users',
+                        'current_business_id'
                     )
                 ) {
-                    $user->current_business_id =
-                        $business->id;
 
-                    $user->save();
+                    /*
+                    | New User:
+                    | current business naye business ko set karo.
+                    |
+                    | Existing User:
+                    | Sirf tab set karo jab current_business_id blank hai.
+                    */
+
+                    if (
+                        $validated['user_mode']
+                            === 'new'
+                        ||
+                        empty(
+                            $user->current_business_id
+                        )
+                    ) {
+                        $user->current_business_id =
+                            $business->id;
+
+                        $user->save();
+                    }
                 }
-            }
 
-            /*
-            |--------------------------------------------------------------------------
-            | 6. GET PLAN
-            |--------------------------------------------------------------------------
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | 6. GET PLAN
+                |--------------------------------------------------------------------------
+                */
 
-            $plan = Plan::query()
-                ->with('permissions')
-                ->findOrFail(
-                    $validated['plan_id']
-                );
+                $plan = Plan::query()
+                    ->with('permissions')
+                    ->findOrFail(
+                        $validated['plan_id']
+                    );
 
-            /*
-            |--------------------------------------------------------------------------
-            | 7. START DATE
-            |--------------------------------------------------------------------------
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | 7. START DATE
+                |--------------------------------------------------------------------------
+                */
 
-            $startDate =
-                !empty(
-                    $validated['start_date']
-                )
-                    ? Carbon::parse(
+                $startDate =
+                    !empty(
                         $validated['start_date']
-                    )->startOfDay()
-                    : now()->startOfDay();
+                    )
+                        ? Carbon::parse(
+                            $validated['start_date']
+                        )->startOfDay()
+                        : now()->startOfDay();
 
-            /*
-            |--------------------------------------------------------------------------
-            | 8. EXPIRY DATE
-            |--------------------------------------------------------------------------
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | 8. EXPIRY DATE
+                |--------------------------------------------------------------------------
+                */
 
-            if (
-                !empty(
-                    $validated['expiry_date']
-                )
-            ) {
-                $expiryDate =
-                    Carbon::parse(
+                if (
+                    !empty(
                         $validated['expiry_date']
-                    )->startOfDay();
-
-            } else {
-
-                $durationDays = max(
-                    0,
-                    (int) (
-                        $plan->duration_days
-                        ?? 0
                     )
-                );
+                ) {
+                    $expiryDate =
+                        Carbon::parse(
+                            $validated['expiry_date']
+                        )->startOfDay();
 
-                $expiryDate =
-                    $startDate
-                        ->copy()
-                        ->addDays(
-                            $durationDays
-                        );
-            }
+                } else {
 
-            /*
-            |--------------------------------------------------------------------------
-            | 9. CREATE USER PLAN
-            |--------------------------------------------------------------------------
-            */
+                    $durationDays = max(
+                        0,
+                        (int) (
+                            $plan->duration_days
+                            ?? 0
+                        )
+                    );
 
-            UserPlan::create([
-                'business_id' =>
-                    $business->id,
+                    $expiryDate =
+                        $startDate
+                            ->copy()
+                            ->addDays(
+                                $durationDays
+                            );
+                }
 
-                'user_id' =>
-                    $user->id,
+                /*
+                |--------------------------------------------------------------------------
+                | 9. CREATE USER PLAN
+                |--------------------------------------------------------------------------
+                */
 
-                'plan_id' =>
-                    $plan->id,
+                UserPlan::create([
+                    'business_id' =>
+                        $business->id,
 
-                'number_of_office' =>
-                    $validated[
-                        'number_of_office'
-                    ],
+                    'user_id' =>
+                        $user->id,
 
-                'number_of_user' =>
-                    $validated[
-                        'number_of_user'
-                    ],
+                    'plan_id' =>
+                        $plan->id,
 
-                'start_date' =>
-                    $startDate
-                        ->toDateString(),
+                    'number_of_office' =>
+                        $validated[
+                            'number_of_office'
+                        ],
 
-                'expiry_date' =>
-                    $expiryDate
-                        ->toDateString(),
+                    'number_of_user' =>
+                        $validated[
+                            'number_of_user'
+                        ],
 
-                'status' =>
-                    $request->has(
-                        'plan_status'
-                    )
-                        ? $request->boolean(
+                    'start_date' =>
+                        $startDate
+                            ->toDateString(),
+
+                    'expiry_date' =>
+                        $expiryDate
+                            ->toDateString(),
+
+                    'status' =>
+                        $request->has(
                             'plan_status'
                         )
-                        : true,
-            ]);
+                            ? $request->boolean(
+                                'plan_status'
+                            )
+                            : true,
+                ]);
 
-            /*
-            |--------------------------------------------------------------------------
-            | 10. PLAN PERMISSIONS
-            |--------------------------------------------------------------------------
-            |
-            | Existing user's purane permissions remove nahi karenge.
-            | Naye plan ki permissions sirf add hongi.
-            |
-            */
+                /*
+                |--------------------------------------------------------------------------
+                | 10. PLAN PERMISSIONS
+                |--------------------------------------------------------------------------
+                |
+                | Existing user's purane permissions remove nahi karenge.
+                | Naye plan ki permissions sirf add hongi.
+                |
+                */
 
-            if (
-                $plan
-                    ->permissions
-                    ->isNotEmpty()
-            ) {
-                $permissionNames =
+                if (
                     $plan
                         ->permissions
-                        ->pluck('name')
-                        ->toArray();
+                        ->isNotEmpty()
+                ) {
+                    $permissionNames =
+                        $plan
+                            ->permissions
+                            ->pluck('name')
+                            ->toArray();
 
-                $user->givePermissionTo(
-                    $permissionNames
+                    $user->givePermissionTo(
+                        $permissionNames
+                    );
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | 11. CLEAR PERMISSION CACHE
+                |--------------------------------------------------------------------------
+                */
+
+                app(
+                    PermissionRegistrar::class
+                )->forgetCachedPermissions();
+
+                $user->unsetRelation(
+                    'permissions'
                 );
-            }
+
+                $user->unsetRelation(
+                    'roles'
+                );
+            });
 
             /*
             |--------------------------------------------------------------------------
-            | 11. CLEAR PERMISSION CACHE
+            | SUCCESS
             |--------------------------------------------------------------------------
             */
 
-            app(
-                PermissionRegistrar::class
-            )->forgetCachedPermissions();
+            $message =
+                $validated['user_mode']
+                    === 'existing'
+                    ? 'Business existing user ke saath successfully create ho gaya.'
+                    : 'Business, new user aur plan successfully create ho gaya.';
 
-            $user->unsetRelation(
-                'permissions'
-            );
-
-            $user->unsetRelation(
-                'roles'
-            );
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUCCESS
-        |--------------------------------------------------------------------------
-        */
-
-        $message =
-            $validated['user_mode']
-                === 'existing'
-                ? 'Business existing user ke saath successfully create ho gaya.'
-                : 'Business, new user aur plan successfully create ho gaya.';
-
-        return redirect()
-            ->route(
-                'businesses.index'
-            )
-            ->with(
-                'success',
-                $message
-            );
-
-    } catch (\Throwable $e) {
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE UPLOADED FILES ON ERROR
-        |--------------------------------------------------------------------------
-        */
-
-        if ($logoPath) {
-            Storage::disk('public')
-                ->delete(
-                    $logoPath
+            return redirect()
+                ->route(
+                    'businesses.index'
+                )
+                ->with(
+                    'success',
+                    $message
                 );
+
+        } catch (\Throwable $e) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | DELETE UPLOADED FILES ON ERROR
+            |--------------------------------------------------------------------------
+            */
+
+            if ($logoPath) {
+                Storage::disk('public')
+                    ->delete(
+                        $logoPath
+                    );
+            }
+
+            if ($signaturePath) {
+                Storage::disk('public')
+                    ->delete(
+                        $signaturePath
+                    );
+            }
+
+            if ($letterHeadPath) {
+                Storage::disk('public')
+                    ->delete(
+                        $letterHeadPath
+                    );
+            }
+
+            report($e);
+
+            /*
+            |--------------------------------------------------------------------------
+            | ERROR SCREEN PAR DIKHAO
+            |--------------------------------------------------------------------------
+            */
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'error' =>
+                        'Business create nahi ho paya: ' .
+                        $e->getMessage(),
+                ]);
         }
-
-        if ($signaturePath) {
-            Storage::disk('public')
-                ->delete(
-                    $signaturePath
-                );
-        }
-
-        if ($letterHeadPath) {
-            Storage::disk('public')
-                ->delete(
-                    $letterHeadPath
-                );
-        }
-
-        report($e);
-
-        /*
-        |--------------------------------------------------------------------------
-        | ERROR SCREEN PAR DIKHAO
-        |--------------------------------------------------------------------------
-        */
-
-        return back()
-            ->withInput()
-            ->withErrors([
-                'error' =>
-                    'Business create nahi ho paya: ' .
-                    $e->getMessage(),
-            ]);
     }
-}
 
 
     // public function edit(Business $business)
