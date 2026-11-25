@@ -444,39 +444,6 @@ class BirthdayRecordController extends Controller
         }
     }
 
-
-//    public function send(BirthdayRecord $birthdayRecord){
-//
-//        $phone = $birthdayRecord->phone;
-//
-//
-//        $api = ApiKey::withoutGlobalScope('business')
-//            ->where('user_id', $birthdayRecord->user_id)
-//            ->first();
-//
-//
-//        $url = $api->wishes_api;
-//        $to = preg_replace('/\D+/', '', $phone);
-//
-//        // If 10 digit => add 91 (India)
-//        if (strlen($to) === 10) $to = '91' . $to;
-//        // ✅ Payload (adjust keys if your provider expects different)
-//        $payload = [
-//            'number'      => $to,
-//            'Video' => asset('asset/video/birthday-wish.mp4'),
-//        ];
-//
-//        Log::info('WA WEBHOOK REQ', ['url'=>$url, 'payload'=>$payload]);
-//
-//        $res = Http::timeout(60)->acceptJson()->post($url, $payload);
-//
-//        Log::info('WA WEBHOOK RES', [
-//            'status' => $res->status(),
-//            'body'   => $res->body(),
-//        ]);
-//        return back()->with('success', 'Wishes sent successfully');
-//    }
-
     public function send(BirthdayRecord $birthdayRecord)
     {
         $today = Carbon::now()->timezone(config('app.timezone'));
