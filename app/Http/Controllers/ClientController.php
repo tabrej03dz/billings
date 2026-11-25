@@ -13,179 +13,111 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 
-
-
 class ClientController extends Controller
 {
-    
-
-    // public function index(Request $request)
-    // {
-    //     $q = trim((string) $request->get('q', ''));
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Base client query
-    //     |--------------------------------------------------------------------------
-    //     | Client model me active business ka Global Scope laga hai, isliye
-    //     | yahan dobara business_id filter nahi lagaya gaya.
-    //     */
-    //     $baseQuery = Client::query()
-    //         ->where('is_save', true);
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Total saved clients
-    //     |--------------------------------------------------------------------------
-    //     | Search ke bina actual client count.
-    //     */
-    //     $totalClients = (clone $baseQuery)->count();
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Client listing
-    //     |--------------------------------------------------------------------------
-    //     */
-    //     $clients = $baseQuery
-    //         ->when($q !== '', function ($query) use ($q) {
-    //             $query->where(function ($subQuery) use ($q) {
-    //                 $subQuery
-    //                     ->where('name', 'like', "%{$q}%")
-    //                     ->orWhere('mobile', 'like', "%{$q}%")
-    //                     ->orWhere('gstin', 'like', "%{$q}%")
-    //                     ->orWhere('pan', 'like', "%{$q}%")
-    //                     ->orWhere('state', 'like', "%{$q}%")
-    //                     ->orWhere('address', 'like', "%{$q}%");
-    //             });
-    //         })
-    //         ->latest()
-    //         ->paginate(15)
-    //         ->withQueryString();
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | New user guide
-    //     |--------------------------------------------------------------------------
-    //     | 5 saved clients se kam hone tak user ko new user maana jayega.
-    //     */
-    //     $showClientSuggestion = $totalClients < 5;
-
-    //     return view('clients.index', compact(
-    //         'clients',
-    //         'q',
-    //         'totalClients',
-    //         'showClientSuggestion'
-    //     ));
-    // }
-
 
     public function index(Request $request)
-{
-    $q = trim((string) $request->get('q', ''));
+    {
+        $q = trim((string) $request->get('q', ''));
 
-    /*
-    |--------------------------------------------------------------------------
-    | Active Tab
-    |--------------------------------------------------------------------------
-    |
-    | client / supplier
-    |
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Active Tab
+        |--------------------------------------------------------------------------
+        |
+        | client / supplier
+        |
+        */
 
-    $type = $request->get('type', 'client');
+        $type = $request->get('type', 'client');
 
-    if (!in_array($type, ['client', 'supplier'], true)) {
-        $type = 'client';
+        if (!in_array($type, ['client', 'supplier'], true)) {
+            $type = 'client';
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Base Query
+        |--------------------------------------------------------------------------
+        */
+
+        $baseQuery = Client::query()
+            ->where('is_save', true)
+            ->where('party_type', $type);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Counts
+        |--------------------------------------------------------------------------
+        */
+
+        $totalClients = Client::query()
+            ->where('is_save', true)
+            ->whereIn('party_type', [
+                'client',
+                'both',
+            ])
+            ->count();
+
+
+        $totalSuppliers = Client::query()
+            ->where('is_save', true)
+            ->whereIn('party_type', [
+                'supplier',
+                'both',
+            ])
+            ->count();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Current Tab Listing
+        |--------------------------------------------------------------------------
+        */
+
+        $clients = $baseQuery
+            ->when($q !== '', function ($query) use ($q) {
+
+                $query->where(function ($subQuery) use ($q) {
+
+                    $subQuery
+                        ->where('name', 'like', "%{$q}%")
+                        ->orWhere('mobile', 'like', "%{$q}%")
+                        ->orWhere('gstin', 'like', "%{$q}%")
+                        ->orWhere('pan', 'like', "%{$q}%")
+                        ->orWhere('state', 'like', "%{$q}%")
+                        ->orWhere('address', 'like', "%{$q}%");
+
+                });
+
+            })
+            ->latest()
+            ->paginate(15)
+            ->withQueryString();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Client Guide
+        |--------------------------------------------------------------------------
+        */
+
+        $showClientSuggestion =
+            $type === 'client'
+            && $totalClients < 5;
+
+
+        return view('clients.index', compact(
+            'clients',
+            'q',
+            'type',
+            'totalClients',
+            'totalSuppliers',
+            'showClientSuggestion'
+        ));
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Base Query
-    |--------------------------------------------------------------------------
-    */
-
-    $baseQuery = Client::query()
-        ->where('is_save', true)
-        ->where('party_type', $type);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Counts
-    |--------------------------------------------------------------------------
-    */
-
-    $totalClients = Client::query()
-        ->where('is_save', true)
-        ->whereIn('party_type', [
-            'client',
-            'both',
-        ])
-        ->count();
-
-
-    $totalSuppliers = Client::query()
-        ->where('is_save', true)
-        ->whereIn('party_type', [
-            'supplier',
-            'both',
-        ])
-        ->count();
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Current Tab Listing
-    |--------------------------------------------------------------------------
-    */
-
-    $clients = $baseQuery
-        ->when($q !== '', function ($query) use ($q) {
-
-            $query->where(function ($subQuery) use ($q) {
-
-                $subQuery
-                    ->where('name', 'like', "%{$q}%")
-                    ->orWhere('mobile', 'like', "%{$q}%")
-                    ->orWhere('gstin', 'like', "%{$q}%")
-                    ->orWhere('pan', 'like', "%{$q}%")
-                    ->orWhere('state', 'like', "%{$q}%")
-                    ->orWhere('address', 'like', "%{$q}%");
-
-            });
-
-        })
-        ->latest()
-        ->paginate(15)
-        ->withQueryString();
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Client Guide
-    |--------------------------------------------------------------------------
-    */
-
-    $showClientSuggestion =
-        $type === 'client'
-        && $totalClients < 5;
-
-
-    return view('clients.index', compact(
-        'clients',
-        'q',
-        'type',
-        'totalClients',
-        'totalSuppliers',
-        'showClientSuggestion'
-    ));
-}
-
-    // public function create()
-    // {
-    //     return view('clients.create');
-    // }
 
     public function create(Request $request)
     {
@@ -197,76 +129,6 @@ class ClientController extends Controller
 
         return view('clients.create', compact('type'));
     }
-
-
-    // public function store(Request $request)
-    // {
-    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
-
-    //     $data = $request->validate([
-    //         'name'    => ['required','string','max:255'],
-    //         'mobile'  => [
-    //             'nullable','string','max:20',
-    //             Rule::unique('clients','mobile')->where(fn($q) => $q->where('business_id',$bid)),
-    //         ],
-    //         'gstin'   => [
-    //             'nullable','string','max:50',
-    //             Rule::unique('clients','gstin')->where(fn($q) => $q->where('business_id',$bid)),
-    //         ],
-    //         'pan'     => [
-    //             'nullable','string','max:50',
-    //             Rule::unique('clients','pan')->where(fn($q) => $q->where('business_id',$bid)),
-    //         ],
-    //         'state'   => ['nullable','string','max:100'],
-    //         'address' => ['nullable','string','max:1000'],
-    //     ]);
-
-    //     $data['state_code'] = null;
-
-    //     // ✅ CASE 1: State dropdown selected
-    //     if (!empty($data['state']) && str_contains($data['state'], ',')) {
-    //         [$code, $name] = explode(',', $data['state'], 2);
-    //         $data['state_code'] = trim($code);
-    //         $data['state']      = trim($name);
-    //     }
-
-    //     // ✅ CASE 2: State NOT selected → derive from GSTIN
-    //     if (
-    //         empty($data['state']) &&
-    //         !empty($data['gstin']) &&
-    //         strlen($data['gstin']) >= 2
-    //     ) {
-    //         $gstStates = [
-    //             '01'=>'Jammu and Kashmir','02'=>'Himachal Pradesh','03'=>'Punjab',
-    //             '04'=>'Chandigarh','05'=>'Uttarakhand','06'=>'Haryana','07'=>'Delhi',
-    //             '08'=>'Rajasthan','09'=>'Uttar Pradesh','10'=>'Bihar','11'=>'Sikkim',
-    //             '12'=>'Arunachal Pradesh','13'=>'Nagaland','14'=>'Manipur','15'=>'Mizoram',
-    //             '16'=>'Tripura','17'=>'Meghalaya','18'=>'Assam','19'=>'West Bengal',
-    //             '20'=>'Jharkhand','21'=>'Odisha','22'=>'Chhattisgarh',
-    //             '23'=>'Madhya Pradesh','24'=>'Gujarat',
-    //             '26'=>'Dadra and Nagar Haveli and Daman and Diu',
-    //             '27'=>'Maharashtra','29'=>'Karnataka','30'=>'Goa','31'=>'Lakshadweep',
-    //             '32'=>'Kerala','33'=>'Tamil Nadu','34'=>'Puducherry',
-    //             '35'=>'Andaman and Nicobar Islands','36'=>'Telangana',
-    //             '37'=>'Andhra Pradesh','38'=>'Ladakh',
-    //         ];
-
-    //         $code = substr(strtoupper($data['gstin']), 0, 2);
-
-    //         if (isset($gstStates[$code])) {
-    //             $data['state_code'] = $code;
-    //             $data['state']      = $gstStates[$code];
-    //         }
-    //     }
-
-    //     $data['business_id'] = $bid;
-
-    //     Client::create($data);
-
-    //     return redirect()
-    //         ->route('clients.index')
-    //         ->with('success','Client created successfully.');
-    // }
 
     public function store(Request $request)
     {
@@ -547,44 +409,6 @@ class ClientController extends Controller
         return view('clients.edit', compact('client'));
     }
 
-    // public function update(Request $request, Client $client)
-    // {
-    //     $bid = $request->user()->current_business_id ?? session('active_business_id');
-
-    //     $data = $request->validate([
-    //         'name'    => ['required','string','max:255'],
-    //         'mobile'  => [
-    //             'nullable','string','max:20',
-    //             Rule::unique('clients','mobile')
-    //                 ->ignore($client->id)
-    //                 ->where(fn($q) => $q->where('business_id',$bid)),
-    //         ],
-    //         'gstin'   => [
-    //             'nullable','string','max:50',
-    //             Rule::unique('clients','gstin')
-    //                 ->ignore($client->id)
-    //                 ->where(fn($q) => $q->where('business_id',$bid)),
-    //         ],
-    //         'pan'     => [
-    //             'nullable','string','max:50',
-    //             Rule::unique('clients','pan')
-    //                 ->ignore($client->id)
-    //                 ->where(fn($q) => $q->where('business_id',$bid)),
-    //         ],
-    //         'state'   => ['nullable','string','max:100'],
-    //         'address' => ['nullable','string','max:1000'],
-    //     ]);
-    //     if (!empty($data['state']) && str_contains($data['state'], ',')) {
-    //         [$code, $name] = explode(',', $data['state'], 2);
-
-    //         $data['state_code'] = trim($code); // "09"
-    //         $data['state']      = trim($name); // "Uttar Pradesh"
-    //     }
-
-    //     $client->update($data);
-
-    //     return redirect()->route('clients.index')->with('success','Client updated successfully.');
-    // }
 
 
     public function update(
