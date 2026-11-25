@@ -16,46 +16,32 @@ class ItemBarcodeController extends Controller
     ) {
     }
 
-    /**
-     * Single item ka barcode generate karega.
-     */
-    // public function generate(Request $request, Item $item): RedirectResponse
-    // {
-    //     $this->authorizeItem($request, $item);
 
-    //     $this->barcodeService->generate($item);
+    public function generate(
+        Request $request,
+        Item $item
+    ): RedirectResponse {
 
-    //     return back()->with(
-    //         'success',
-    //         'Barcode generated successfully.'
-    //     );
-    // }
+        $this->authorizeItem(
+            $request,
+            $item
+        );
 
-public function generate(
-    Request $request,
-    Item $item
-): RedirectResponse {
+        /*
+        |--------------------------------------------------------------------------
+        | Generate only when missing
+        |--------------------------------------------------------------------------
+        */
 
-    $this->authorizeItem(
-        $request,
-        $item
-    );
+        $this->barcodeService->generate(
+            $item
+        );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Generate only when missing
-    |--------------------------------------------------------------------------
-    */
-
-    $this->barcodeService->generate(
-        $item
-    );
-
-    return back()->with(
-        'success',
-        'Barcode generated successfully.'
-    );
-}
+        return back()->with(
+            'success',
+            'Barcode generated successfully.'
+        );
+    }
 
     /**
      * Current business ke sab missing barcodes generate karega.
@@ -89,65 +75,65 @@ public function generate(
     /**
      * Single item ke barcode labels print karega.
      */
-public function printOne(
-    Request $request,
-    Item $item
-): View {
+    public function printOne(
+        Request $request,
+        Item $item
+    ): View {
 
-    $this->authorizeItem(
-        $request,
-        $item
-    );
+        $this->authorizeItem(
+            $request,
+            $item
+        );
 
-    /*
-    |--------------------------------------------------------------------------
-    | Barcode
-    |--------------------------------------------------------------------------
-    |
-    | Existing hai = same rahega
-    | Blank hai = naya generate hoga
-    |
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Barcode
+        |--------------------------------------------------------------------------
+        |
+        | Existing hai = same rahega
+        | Blank hai = naya generate hoga
+        |
+        */
 
-    $this->barcodeService->generate(
-        $item
-    );
+        $this->barcodeService->generate(
+            $item
+        );
 
-    $item->refresh();
+        $item->refresh();
 
-    $quantity = max(
-        1,
-        min(
-            200,
-            $request->integer(
-                'quantity',
-                1
+        $quantity = max(
+            1,
+            min(
+                200,
+                $request->integer(
+                    'quantity',
+                    1
+                )
             )
-        )
-    );
+        );
 
-    $item->forceFill([
-        'barcode_printed_at' => now(),
-    ])->saveQuietly();
+        $item->forceFill([
+            'barcode_printed_at' => now(),
+        ])->saveQuietly();
 
-    return view(
-        'items.barcodes.print',
-        [
-            'items' => collect([
-                [
-                    'item' => $item->fresh(),
-                    'quantity' => $quantity,
-                ],
-            ]),
+        return view(
+            'items.barcodes.print',
+            [
+                'items' => collect([
+                    [
+                        'item' => $item->fresh(),
+                        'quantity' => $quantity,
+                    ],
+                ]),
 
-            'autoPrint' =>
-                $request->boolean(
-                    'print',
-                    true
-                ),
-        ]
-    );
-}
+                'autoPrint' =>
+                    $request->boolean(
+                        'print',
+                        true
+                    ),
+            ]
+        );
+    }
 
     /**
      * Selected multiple items ke labels print karega.
