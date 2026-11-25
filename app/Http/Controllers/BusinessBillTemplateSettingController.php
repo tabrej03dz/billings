@@ -8,13 +8,6 @@ use Illuminate\Http\Request;
 
 class BusinessBillTemplateSettingController extends Controller
 {
-
-
-
-
-
-
-
     public function edit(Request $request, BillTemplate $template)
     {
         $businessId = session('active_business_id');
@@ -38,45 +31,6 @@ class BusinessBillTemplateSettingController extends Controller
 
         return view('bill_templates.customize', compact('template', 'setting'));
     }
-
-    // public function save(Request $request, BillTemplate $template)
-    // {
-    //     $data = $request->validate([
-    //         'primary_color' => ['required'],
-    //         'secondary_color' => ['nullable'],
-    //         'text_color' => ['required'],
-    //         'font_family' => ['required', 'string', 'max:100'],
-    //         'muted_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-    //         'border_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-    //         'light_bg_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-    //         'soft_bg_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-    //     ]);
-
-    //     BusinessBillTemplateSetting::updateOrCreate(
-    //         [
-    //             'business_id' => session('active_business_id'),
-    //             'bill_template_id' => $template->id,
-    //         ],
-    //         [
-    //             'primary_color' => $data['primary_color'],
-    //             'secondary_color' => $data['secondary_color'],
-    //             'text_color' => $data['text_color'],
-    //             'font_family' => $data['font_family'],
-    //             'show_logo' => $request->boolean('show_logo'),
-    //             'show_tagline' => $request->boolean('show_tagline'),
-    //             'show_signature' => $request->boolean('show_signature'),
-    //             'show_terms' => $request->boolean('show_terms'),
-
-    //             'muted_color' => $data['muted_color'],
-    //             'border_color' => $data['border_color'],
-    //             'light_bg_color' => $data['light_bg_color'],
-    //             'soft_bg_color' => $data['soft_bg_color'],
-              
-    //         ]
-    //     );
-
-    //     return back()->with('success', 'Template customization saved successfully.');
-    // }
 
     public function save(Request $request, BillTemplate $template)
     {
