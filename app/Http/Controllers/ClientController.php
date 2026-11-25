@@ -714,76 +714,6 @@ class ClientController extends Controller
         ]);
     }
 
-
-    /**
-     * Client purchase report.
-     */
-    // public function show(Request $request, Client $client)
-    // {
-    //     $businessId = $this->resolveBusinessId($request);
-
-    //     abort_unless($businessId, 403, 'Active business not found.');
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Filtered invoice query
-    //     |--------------------------------------------------------------------------
-    //     */
-    //     $invoiceQuery = $this->buildInvoiceReportQuery(
-    //         $request,
-    //         $client,
-    //         $businessId
-    //     );
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Summary - filtered records only
-    //     |--------------------------------------------------------------------------
-    //     */
-    //     $summary = $this->getReportSummary($invoiceQuery);
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Pagination
-    //     |--------------------------------------------------------------------------
-    //     */
-    //     $perPage = (int) $request->get('per_page', 15);
-
-    //     if (!in_array($perPage, [15, 25, 50, 100], true)) {
-    //         $perPage = 15;
-    //     }
-
-    //     $invoices = (clone $invoiceQuery)
-    //         ->withCount('items')
-    //         ->paginate($perPage)
-    //         ->withQueryString();
-
-    //     /*
-    //     |--------------------------------------------------------------------------
-    //     | Recent items according to currently filtered invoices
-    //     |--------------------------------------------------------------------------
-    //     */
-    //     $filteredInvoiceIds = (clone $invoiceQuery)
-    //         ->reorder()
-    //         ->select('id');
-
-    //     $recentItems = InvoiceItem::query()
-    //         ->with('invoice')
-    //         ->whereIn('invoice_id', $filteredInvoiceIds)
-    //         ->latest('created_at')
-    //         ->limit(10)
-    //         ->get();
-
-    //     return view('clients.show', [
-    //         'client'      => $client,
-    //         'invoices'    => $invoices,
-    //         'summary'     => $summary,
-    //         'recentItems' => $recentItems,
-    //         'filters'     => $request->query(),
-    //     ]);
-    // }
-
-
     public function show(Request $request, Client $client)
     {
         $businessId = $this->resolveBusinessId($request);
@@ -1358,6 +1288,4 @@ class ClientController extends Controller
                 ->sum('balance'),
         ];
     }
-
-
 }
